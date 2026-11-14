@@ -445,4 +445,22 @@ struct AISelectionStatefulTests {
         store.replaceRangeInNote(id: id, range: NSRange(location: NSNotFound, length: 5), newText: "Вторжение")
         #expect(store.history.first(where: { $0.id == id })?.text == initial)
     }
+
+    // MARK: - ModelStore
+
+    @Test func gigaAMModelConfiguration() {
+        let giga = RecognitionModel.russianGigaAM
+        #expect(giga.id == "ru_giga")
+        #expect(giga.systemName == "GigaAM")
+        #expect(giga.languageCode == "ru")
+        #expect(giga.isBundled == true)
+        #expect(giga.fileName == "gigaam")
+    }
+
+    @Test func modelStoreCatalogContainsGigaAM() {
+        let store = ModelStore.shared
+        let model = store.model(named: "ru_giga")
+        #expect(model != nil)
+        #expect(model?.systemName == "GigaAM")
+    }
 }

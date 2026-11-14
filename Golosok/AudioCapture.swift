@@ -810,7 +810,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         guard let model = store.model(named: store.activeModelID) else { return ("", []) }
         if model.isBundled {
             guard let cliPath = Bundle.main.path(forResource: "transcribe-cli", ofType: nil),
-                  let modelPath = Bundle.main.path(forResource: model.fileName, ofType: "gguf") else {
+                  let modelPath = store.localModelPath(for: model.id) else {
                 AppLogger.shared.error("Recognition", "transcribe-cli или встроенная модель не найдены в бандле")
                 return ("", [])
             }
