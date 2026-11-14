@@ -8,6 +8,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AppLogger.shared.info("App", "Запуск Golosok",
                               details: "версия \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"), микрофон: \(mic), доступ AX: \(ax)")
         let hotKey = NativeHotKeyManager.shared
+        hotKey.isExternalRecordingActive = {
+            AudioCapture.shared.isRecording
+        }
         hotKey.onHotKeyPressed = {
             if hotKey.mode == .pushToTalk {
                 if !AudioCapture.shared.isRecording {

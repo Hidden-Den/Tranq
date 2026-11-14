@@ -173,6 +173,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     func cancelRecording() {
         removeEscMonitor()
+        NativeHotKeyManager.shared.resetModifierState()
         guard isRecording else { return }
         timer?.invalidate()
         timer = nil
@@ -240,6 +241,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     func stopRecording() {
         removeEscMonitor()
+        NativeHotKeyManager.shared.resetModifierState()
         pasteTarget = NSWorkspace.shared.frontmostApplication
         timer?.invalidate()
         timer = nil

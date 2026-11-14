@@ -105,4 +105,111 @@ struct HotKeyTriggerTests {
             #expect(manager.pendingTrigger == nil)
         }
     }
+
+    @Test func capsLockToggleModeEventTap() {
+        let manager = NativeHotKeyManager.shared
+        let originalTrigger = manager.trigger
+        let originalMode = manager.mode
+        defer {
+            manager.trigger = originalTrigger
+            manager.mode = originalMode
+            manager.resetModifierState()
+        }
+
+        manager.setTrigger(.singleModifier(.capsLock))
+        manager.mode = .toggle
+        manager.lastCapsLockState = false
+
+        var pressedCount = 0
+        manager.onHotKeyPressed = {
+            pressedCount += 1
+        }
+        manager.onHotKeyReleased = {}
+
+        // 1st press: Caps Lock turns ON (eventKeyCode 57, maskAlphaShift set)
+        let event1 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
+        event1.flags = .maskAlphaShift
+        manager.handleEventTap(type: .flagsChanged, event: event1)
+        #expect(pressedCount == 1)
+
+        // 2nd press: Caps Lock turns OFF (even if eventKeyCode is 0, maskAlphaShift cleared)
+        let event2 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+        event2.flags = []
+        manager.handleEventTap(type: .flagsChanged, event: event2)
+        #expect(pressedCount == 2)
+
+        // 3rd press: Caps Lock turns ON again
+        let event3 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
+        event3.flags = .maskAlphaShift
+        manager.handleEventTap(type: .flagsChanged, event: event3)
+        #expect(pressedCount == 3)
+    }
+
+    @Test func capsLockPushToTalkModeEventTap() {
+        let manager = NativeHotKeyManager.shared
+        let originalTrigger = manager.trigger
+        let originalMode = manager.mode
+        defer {
+            manager.trigger = originalTrigger
+            manager.mode = originalMode
+            manager.resetModifierState()
+        }
+
+        manager.setTrigger(.singleModifier(.capsLock))
+        manager.mode = .pushToTalk
+        manager.lastCapsLockState = false
+
+        var pressedCount = 0
+        var releasedCount = 0
+        manager.onHotKeyPressed = {
+            pressedCount += 1
+        }
+        manager.onHotKeyReleased = {
+            releasedCount += 1
+        }
+
+        // 1st press: Starts recording
+        let event1 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
+        event1.flags = .maskAlphaShift
+        manager.handleEventTap(type: .flagsChanged, event: event1)
+        #expect(pressedCount == 1)
+        #expect(releasedCount == 0)
+
+        // 2nd press: Stops recording
+        let event2 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
+        event2.flags = []
+        manager.handleEventTap(type: .flagsChanged, event: event2)
+        #expect(pressedCount == 1)
+        #expect(releasedCount == 1)
+
+        // 3rd press: Starts recording again
+        let event3 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
+        event3.flags = .maskAlphaShift
+        manager.handleEventTap(type: .flagsChanged, event: event3)
+        #expect(pressedCount == 2)
+        #expect(releasedCount == 1)
+
+        manager.resetModifierState()
+    }
+
+    @Test func otherModifierIgnoredWhenCapsLockConfigured() {
+        let manager = NativeHotKeyManager.shared
+        let originalTrigger = manager.trigger
+        defer {
+            manager.trigger = originalTrigger
+            manager.resetModifierState()
+        }
+
+        manager.setTrigger(.singleModifier(.capsLock))
+        manager.lastCapsLockState = false
+
+        var pressedCount = 0
+        manager.onHotKeyPressed = { pressedCount += 1 }
+
+        // User presses Option while Caps Lock is configured
+        let optionEvent = CGEvent(keyboardEventSource: nil, virtualKey: 58, keyDown: true)!
+        optionEvent.flags = .maskAlternate
+        manager.handleEventTap(type: .flagsChanged, event: optionEvent)
+        #expect(pressedCount == 0)
+    }
 }

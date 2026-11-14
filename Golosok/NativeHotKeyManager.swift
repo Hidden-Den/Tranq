@@ -26,6 +26,10 @@ public class NativeHotKeyManager {
 
     public var onHotKeyPressed: (() -> Void)?
     public var onHotKeyReleased: (() -> Void)?
+    public var isExternalRecordingActive: (() -> Bool)?
+    public var lastCapsLockState: Bool = NSEvent.modifierFlags.contains(.capsLock)
+    private var capsLockWatchdog: Timer?
+    private var capsLockPhysicalHoldDetected: Bool = false
 
     private init() {
         var eventTypes = [
@@ -156,6 +160,9 @@ public class NativeHotKeyManager {
     }
 
     private func registerEventTap(for key: SingleModifierKey) -> Bool {
+        if key == .capsLock {
+            lastCapsLockState = NSEvent.modifierFlags.contains(.capsLock)
+        }
         if isTestEnvironment {
             return true
         }
@@ -191,11 +198,62 @@ public class NativeHotKeyManager {
         return true
     }
 
-    private func handleEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+    private func startCapsLockReleaseWatchdog() {
+        stopCapsLockReleaseWatchdog()
+        capsLockPhysicalHoldDetected = false
+
+        let timer = Timer(timeInterval: 0.04, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            let isDown = CGEventSource.keyState(.hidSystemState, key: 57) || CGEventSource.keyState(.combinedSessionState, key: 57)
+            if isDown {
+                if !self.capsLockPhysicalHoldDetected {
+                    self.capsLockPhysicalHoldDetected = true
+                    AppLogger.shared.info("HotKey", "Caps Lock: обнаружено физическое удержание")
+                }
+            } else if self.capsLockPhysicalHoldDetected {
+                AppLogger.shared.info("HotKey", "Caps Lock: физически отпущен")
+                self.stopCapsLockReleaseWatchdog()
+                let isActive = self.isModifierActive || (self.isExternalRecordingActive?() ?? false)
+                if isActive {
+                    self.isModifierActive = false
+                    self.dispatchToMain {
+                        self.onHotKeyReleased?()
+                    }
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.capsLockWatchdog = timer
+    }
+
+    private func stopCapsLockReleaseWatchdog() {
+        capsLockWatchdog?.invalidate()
+        capsLockWatchdog = nil
+        capsLockPhysicalHoldDetected = false
+    }
+
+    public func resetModifierState() {
+        stopCapsLockReleaseWatchdog()
+        isModifierActive = false
+    }
+
+    private func dispatchToMain(_ action: @escaping () -> Void) {
+        if Thread.isMainThread {
+            action()
+        } else {
+            DispatchQueue.main.async(execute: action)
+        }
+    }
+
+    @discardableResult
+    func handleEventTap(proxy: CGEventTapProxy? = nil, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if isModifierActive {
                 isModifierActive = false
-                DispatchQueue.main.async { [weak self] in
+                dispatchToMain { [weak self] in
                     self?.onHotKeyReleased?()
                 }
             }
@@ -209,38 +267,42 @@ public class NativeHotKeyManager {
             return Unmanaged.passUnretained(event)
         }
 
-        let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
-        guard eventKeyCode == key.rawValue else {
-            return Unmanaged.passUnretained(event)
-        }
-
         if key == .capsLock {
+            let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+            let currentCapsLock = event.flags.contains(.maskAlphaShift)
+            let isCapsLockTransition = (eventKeyCode == SingleModifierKey.capsLock.rawValue) || (currentCapsLock != lastCapsLockState)
+
+            guard isCapsLockTransition else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            lastCapsLockState = currentCapsLock
+
             if mode == .toggle {
-                DispatchQueue.main.async { [weak self] in
+                dispatchToMain { [weak self] in
                     self?.onHotKeyPressed?()
                 }
             } else {
-                let isPhysicalDown = (event.flags.rawValue & 0x80) != 0
-                if isPhysicalDown {
-                    if !isModifierActive {
-                        isModifierActive = true
-                        DispatchQueue.main.async { [weak self] in
-                            self?.onHotKeyPressed?()
-                        }
+                let isRecordingActive = isModifierActive || (self.isExternalRecordingActive?() ?? false)
+                if isRecordingActive {
+                    stopCapsLockReleaseWatchdog()
+                    isModifierActive = false
+                    dispatchToMain { [weak self] in
+                        self?.onHotKeyReleased?()
                     }
                 } else {
-                    if isModifierActive {
-                        isModifierActive = false
-                        DispatchQueue.main.async { [weak self] in
-                            self?.onHotKeyReleased?()
-                        }
-                    } else {
-                        DispatchQueue.main.async { [weak self] in
-                            self?.onHotKeyPressed?()
-                        }
+                    isModifierActive = true
+                    dispatchToMain { [weak self] in
+                        self?.onHotKeyPressed?()
                     }
+                    startCapsLockReleaseWatchdog()
                 }
             }
+            return Unmanaged.passUnretained(event)
+        }
+
+        let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+        guard eventKeyCode == key.rawValue else {
             return Unmanaged.passUnretained(event)
         }
 
@@ -248,14 +310,14 @@ public class NativeHotKeyManager {
         if isDown {
             if !isModifierActive {
                 isModifierActive = true
-                DispatchQueue.main.async { [weak self] in
+                dispatchToMain { [weak self] in
                     self?.onHotKeyPressed?()
                 }
             }
         } else {
             if isModifierActive {
                 isModifierActive = false
-                DispatchQueue.main.async { [weak self] in
+                dispatchToMain { [weak self] in
                     self?.onHotKeyReleased?()
                 }
             }
@@ -278,6 +340,7 @@ public class NativeHotKeyManager {
     }
 
     public func unregister() {
+        stopCapsLockReleaseWatchdog()
         if let ref = hotKeyRef {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil
