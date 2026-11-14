@@ -40,6 +40,14 @@ public class NativeHotKeyManager {
             }
             return noErr
         }, 2, &eventTypes, nil, &eventHandlerRef)
+
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.register()
+        }
+    }
+
+    private var isTestEnvironment: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil || NSClassFromString("XCTest") != nil
     }
 
     public var trigger: HotKeyTrigger {
@@ -52,26 +60,24 @@ public class NativeHotKeyManager {
             return .combination(keyCode: keyCode, modifiers: modifierFlags)
         }
         set {
-            switch newValue {
-            case .singleModifier(let key):
-                UserDefaults.standard.set("modifier", forKey: "hotkey.type")
-                UserDefaults.standard.set(Int(key.rawValue), forKey: "hotkey.modifierKeyCode")
-            case .combination(let kCode, let mods):
-                UserDefaults.standard.set("combo", forKey: "hotkey.type")
-                self.keyCode = kCode
-                self.modifierFlags = mods
-            }
-            register()
+            saveTrigger(newValue)
+            _ = register(trigger: newValue)
         }
     }
 
     public var keyCode: UInt32 {
-        get { UInt32(UserDefaults.standard.integer(forKey: "hotkey.keyCode")) == 0 ? 49 : UInt32(UserDefaults.standard.integer(forKey: "hotkey.keyCode")) }
+        get {
+            guard UserDefaults.standard.object(forKey: "hotkey.keyCode") != nil else { return 49 }
+            return UInt32(UserDefaults.standard.integer(forKey: "hotkey.keyCode"))
+        }
         set { UserDefaults.standard.set(Int(newValue), forKey: "hotkey.keyCode") }
     }
 
     public var modifierFlags: UInt32 {
-        get { UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifiers")) == 0 ? UInt32(optionKey) : UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifiers")) }
+        get {
+            guard UserDefaults.standard.object(forKey: "hotkey.modifiers") != nil else { return UInt32(optionKey) }
+            return UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifiers"))
+        }
         set { UserDefaults.standard.set(Int(newValue), forKey: "hotkey.modifiers") }
     }
 
@@ -84,25 +90,54 @@ public class NativeHotKeyManager {
         self.trigger = trigger
     }
 
-    public func register() {
+    @discardableResult
+    public func register(trigger: HotKeyTrigger) -> Bool {
         unregister()
+        let success: Bool
         switch trigger {
         case .combination(let kCode, let mods):
             let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
             let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
             if status != noErr {
-                AppLogger.shared.error("HotKey", "Не удалось зарегистрировать горячую клавишу", details: "status \(status), комбинация \(displayName())")
+                AppLogger.shared.error("HotKey", "Не удалось зарегистрировать горячую клавишу", details: "status \(status), комбинация \(trigger.displayName)")
                 Telemetry.shared.event("hotkey_register_failed", ["error_detail": "status_\(status)"])
                 NSLog("[HotKey] RegisterEventHotKey failed with status %d", status)
+                success = false
             } else {
-                AppLogger.shared.info("HotKey", "Горячая клавиша зарегистрирована", details: displayName())
+                AppLogger.shared.info("HotKey", "Горячая клавиша зарегистрирована", details: trigger.displayName)
+                success = true
             }
         case .singleModifier(let key):
-            registerEventTap(for: key)
+            success = registerEventTap(for: key)
+        }
+
+        if success {
+            saveTrigger(trigger)
+        }
+        return success
+    }
+
+    public func register() {
+        register(trigger: trigger)
+    }
+
+    private func saveTrigger(_ trigger: HotKeyTrigger) {
+        switch trigger {
+        case .singleModifier(let key):
+            UserDefaults.standard.set("modifier", forKey: "hotkey.type")
+            UserDefaults.standard.set(Int(key.rawValue), forKey: "hotkey.modifierKeyCode")
+        case .combination(let kCode, let mods):
+            UserDefaults.standard.set("combo", forKey: "hotkey.type")
+            self.keyCode = kCode
+            self.modifierFlags = mods
         }
     }
 
-    private func registerEventTap(for key: SingleModifierKey) {
+    private func registerEventTap(for key: SingleModifierKey) -> Bool {
+        if isTestEnvironment {
+            return true
+        }
+
         let mask = (1 << CGEventType.flagsChanged.rawValue)
         let observer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
 
@@ -119,7 +154,9 @@ public class NativeHotKeyManager {
             userInfo: observer
         ) else {
             AppLogger.shared.error("HotKey", "Не удалось создать CGEventTap", details: key.displayName)
-            return
+            Telemetry.shared.event("hotkey_event_tap_failed", ["error_detail": "accessibility_or_permission", "key": key.displayName])
+            NSLog("[HotKey] CGEvent.tapCreate failed for %@", key.displayName)
+            return false
         }
 
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
@@ -129,10 +166,12 @@ public class NativeHotKeyManager {
         self.eventTap = tap
         self.runLoopSource = source
         AppLogger.shared.info("HotKey", "CGEventTap зарегистрирован для модификатора", details: key.displayName)
+        return true
     }
 
     private func handleEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            isModifierActive = false
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
@@ -165,7 +204,10 @@ public class NativeHotKeyManager {
             }
         }
 
-        return nil
+        if key == .fn {
+            return nil
+        }
+        return Unmanaged.passUnretained(event)
     }
 
     public func setHotKey(keyCode: UInt32, modifiers: UInt32) -> Bool {

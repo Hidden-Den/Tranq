@@ -26,6 +26,24 @@ struct HotKeyTriggerTests {
         #expect(SingleModifierKey.rightCommand.displayName == "Правый ⌘")
     }
 
+    @Test func singleModifierFlagDistinction() {
+        // Holding Left Option: device bit 0x20 is set, 0x40 is not
+        let leftOptionFlags = CGEventFlags(rawValue: 0x00080020)
+        #expect(SingleModifierKey.leftOption.isPressed(flags: leftOptionFlags) == true)
+        #expect(SingleModifierKey.rightOption.isPressed(flags: leftOptionFlags) == false)
+
+        // Holding Right Option: device bit 0x40 is set, 0x20 is not
+        let rightOptionFlags = CGEventFlags(rawValue: 0x00080040)
+        #expect(SingleModifierKey.rightOption.isPressed(flags: rightOptionFlags) == true)
+        #expect(SingleModifierKey.leftOption.isPressed(flags: rightOptionFlags) == false)
+
+        // Caps Lock physical press has bit 0x80 set
+        let capsLockDownFlags = CGEventFlags(rawValue: 0x80)
+        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockDownFlags) == true)
+        let capsLockUpFlags = CGEventFlags(rawValue: 0x00)
+        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockUpFlags) == false)
+    }
+
     @Test func hotKeyTriggerDisplayName() {
         let fnTrigger = HotKeyTrigger.singleModifier(.fn)
         #expect(fnTrigger.displayName == "Fn")
@@ -44,7 +62,7 @@ struct HotKeyTriggerTests {
 
         manager.trigger = .singleModifier(.rightOption)
         #expect(manager.trigger == .singleModifier(.rightOption))
-        #expect(manager.displayName() == "Правый ⌥")
+        #expect(manager.displayName() == SingleModifierKey.rightOption.displayName)
 
         manager.trigger = .combination(keyCode: 49, modifiers: 2048)
         #expect(manager.trigger == .combination(keyCode: 49, modifiers: 2048))
@@ -53,11 +71,14 @@ struct HotKeyTriggerTests {
 
     @Test func hotKeySettingsPresets() {
         let settings = HotKeySettings.shared
+        let original = settings.trigger
+        defer { settings.setPreset(original) }
+
         settings.setPreset(.singleModifier(.fn))
         #expect(settings.hotKeyName == "Fn")
 
         settings.setPreset(.singleModifier(.rightOption))
-        #expect(settings.hotKeyName == "Правый ⌥")
+        #expect(settings.hotKeyName == SingleModifierKey.rightOption.displayName)
 
         settings.reset()
         #expect(settings.hotKeyName.contains("Space"))

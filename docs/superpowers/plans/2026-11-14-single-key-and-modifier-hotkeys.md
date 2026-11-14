@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Enable single modifier keys (Fn / Globe, Right Option, Right Command, etc.) and standalone single keys as dictation triggers alongside existing key combinations, supporting both Push-to-Talk (walkie-talkie) and Toggle modes.
+**Goal:** Enable single modifier keys (Fn / Globe, Right Option, Right Command, etc.) as dictation triggers alongside existing key combinations, supporting both Push-to-Talk (walkie-talkie) and Toggle modes.
 
 **Architecture:** A hybrid hotkey engine in `NativeHotKeyManager`: standard key combinations use Carbon's `RegisterEventHotKey`, while single modifier keys use a Quartz `CGEventTap` listening to `flagsChanged` events by hardware `keyCode`. `HotKeySettings` handles interactive capture of both modifier and standard key events, and `SettingsView` surfaces preset buttons and live badges under a minimalist Notion/Linear aesthetic.
 
 **Tech Stack:** Swift 5.9+, AppKit (`NSEvent`), CoreGraphics (`CGEventTap`, `CGEventFlags`), Carbon (`RegisterEventHotKey`), SwiftUI, Swift Testing.
 
-**Spec:** [docs/superpowers/specs/2026-11-14-fn-key-hotkey-support-design.md](file:///Users/nuter/Documents/Golosok/docs/superpowers/specs/2026-11-14-fn-key-hotkey-support-design.md)
+**Spec:** [docs/superpowers/specs/2026-11-14-fn-key-hotkey-support-design.md](docs/superpowers/specs/2026-11-14-fn-key-hotkey-support-design.md)
 
 ## Global Constraints
 

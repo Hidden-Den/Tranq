@@ -25,7 +25,7 @@
 - Сохранение полной обратной совместимости с существующими комбинациями клавиш (например, `⌥ + Space`).
 
 ### Не-цели (Non-Goals)
-- Назначение других изолированных модификаторов (Shift, Command, Option по отдельности) в рамках данной итерации — фокус именно на `Fn` (Globe / Mic).
+- Назначение немодификаторных одиночных символьных клавиш (буквы, цифры) без модификаторов в качестве глобального хоткея.
 - Замена существующих аудиомоделей или логики вставки текста.
 
 ### Анти-цели (Anti-Goals)
@@ -59,8 +59,13 @@
 ## 5. Архитектура и реализация (Technical Specification)
 
 ### 5.1. Хранение настроек (`HotKeySettings` и `UserDefaults`)
-- Добавляется поле `isFnKey: Bool` (или `HotKeyType: .combination | .fnKey`), сохраняемое в `UserDefaults` под ключом `hotkey.isFn`.
-- Метод `displayName()` возвращает `"Fn"` (или отображает компактный бейдж `Fn`), когда активен режим клавиши `Fn`.
+- Используется модель `HotKeyTrigger`: `.combination(keyCode, modifiers)` или `.singleModifier(SingleModifierKey)`.
+- В `UserDefaults`:
+  - `hotkey.type`: `"combo"` или `"modifier"`
+  - При `type == "modifier"`: `hotkey.modifierKeyCode` (например, 63 для Fn, 61 для Right Option)
+  - При `type == "combo"`: сохраняются `hotkey.keyCode` и `hotkey.modifiers`
+- Обратная совместимость: если `hotkey.type` не задан, по умолчанию используется `combo` с `keyCode` (по умолчанию 49) и `modifiers` (по умолчанию optionKey).
+- Метод `displayName()` возвращает локализованное название клавиши или комбинации (например, `"Fn"`, `"Правый ⌥"`, `"⌥ + Space"`).
 
 ### 5.2. Детектирование клавиши в `HotKeySettings.beginCapture()`
 - Монитор захвата расширяется: помимо `.keyDown`, слушается `.flagsChanged`.

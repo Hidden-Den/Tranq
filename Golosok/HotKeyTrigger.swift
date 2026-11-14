@@ -20,31 +20,61 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .fn: return "Fn"
-        case .rightOption: return "Правый ⌥"
-        case .leftOption: return "Левый ⌥"
-        case .rightCommand: return "Правый ⌘"
-        case .leftCommand: return "Левый ⌘"
-        case .rightControl: return "Правый ⌃"
-        case .leftControl: return "Левый ⌃"
-        case .rightShift: return "Правый ⇧"
-        case .leftShift: return "Левый ⇧"
-        case .capsLock: return "Caps Lock"
+        case .fn:
+            return "Fn"
+        case .rightOption:
+            return NSLocalizedString("HotKey.Modifier.RightOption", value: "Правый ⌥", comment: "Right Option")
+        case .leftOption:
+            return NSLocalizedString("HotKey.Modifier.LeftOption", value: "Левый ⌥", comment: "Left Option")
+        case .rightCommand:
+            return NSLocalizedString("HotKey.Modifier.RightCommand", value: "Правый ⌘", comment: "Right Command")
+        case .leftCommand:
+            return NSLocalizedString("HotKey.Modifier.LeftCommand", value: "Левый ⌘", comment: "Left Command")
+        case .rightControl:
+            return NSLocalizedString("HotKey.Modifier.RightControl", value: "Правый ⌃", comment: "Right Control")
+        case .leftControl:
+            return NSLocalizedString("HotKey.Modifier.LeftControl", value: "Левый ⌃", comment: "Left Control")
+        case .rightShift:
+            return NSLocalizedString("HotKey.Modifier.RightShift", value: "Правый ⇧", comment: "Right Shift")
+        case .leftShift:
+            return NSLocalizedString("HotKey.Modifier.LeftShift", value: "Левый ⇧", comment: "Left Shift")
+        case .capsLock:
+            return "Caps Lock"
+        }
+    }
+
+    /// Device-dependent bitmask from IOKit (`IOLLEvent.h`)
+    public var deviceMask: UInt64 {
+        switch self {
+        case .fn: return 0x00800000          // NX_SECONDARYFNMASK
+        case .rightOption: return 0x00000040 // NX_DEVICERALTKEYMASK
+        case .leftOption: return 0x00000020  // NX_DEVICELALTKEYMASK
+        case .rightCommand: return 0x00000010 // NX_DEVICERCMDKEYMASK
+        case .leftCommand: return 0x00000008  // NX_DEVICELCMDKEYMASK
+        case .rightControl: return 0x00002000 // NX_DEVICERCTLKEYMASK
+        case .leftControl: return 0x00000001  // NX_DEVICELCTLKEYMASK
+        case .rightShift: return 0x00000004   // NX_DEVICERSHIFTKEYMASK
+        case .leftShift: return 0x00000002    // NX_DEVICELSHIFTKEYMASK
+        case .capsLock: return 0x00000080     // NX_DEVICE_ALPHASHIFT_STATELESS_MASK
         }
     }
 
     public func isPressed(flags: CGEventFlags) -> Bool {
+        if (flags.rawValue & deviceMask) != 0 {
+            return true
+        }
+        // Fallback for virtual or non-Apple keyboards omitting device bits
         switch self {
         case .fn:
             return flags.contains(.maskSecondaryFn)
         case .rightOption, .leftOption:
-            return flags.contains(.maskAlternate)
+            return (flags.rawValue & 0x60) == 0 && flags.contains(.maskAlternate)
         case .rightCommand, .leftCommand:
-            return flags.contains(.maskCommand)
+            return (flags.rawValue & 0x18) == 0 && flags.contains(.maskCommand)
         case .rightControl, .leftControl:
-            return flags.contains(.maskControl)
+            return (flags.rawValue & 0x2001) == 0 && flags.contains(.maskControl)
         case .rightShift, .leftShift:
-            return flags.contains(.maskShift)
+            return (flags.rawValue & 0x06) == 0 && flags.contains(.maskShift)
         case .capsLock:
             return flags.contains(.maskAlphaShift)
         }
