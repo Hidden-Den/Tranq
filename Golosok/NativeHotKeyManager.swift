@@ -200,11 +200,7 @@ public class NativeHotKeyManager {
     }
 
     private func dispatchToMain(_ action: @escaping () -> Void) {
-        if Thread.isMainThread {
-            action()
-        } else {
-            DispatchQueue.main.async(execute: action)
-        }
+        DispatchQueue.main.async(execute: action)
     }
 
     @discardableResult

@@ -106,13 +106,17 @@ struct HotKeyTriggerTests {
         #expect(manager.displayName() == "Fn")
     }
 
-    @Test func fnToggleModeEventTap() {
+    @Test func fnToggleModeEventTap() async throws {
         let manager = NativeHotKeyManager.shared
         let originalTrigger = manager.trigger
         let originalMode = manager.mode
+        let originalPressed = manager.onHotKeyPressed
+        let originalReleased = manager.onHotKeyReleased
         defer {
             manager.trigger = originalTrigger
             manager.mode = originalMode
+            manager.onHotKeyPressed = originalPressed
+            manager.onHotKeyReleased = originalReleased
             manager.resetModifierState()
         }
 
@@ -129,26 +133,33 @@ struct HotKeyTriggerTests {
         let eventDown = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: true)!
         eventDown.flags = [.maskSecondaryFn, CGEventFlags(rawValue: 0x00800000)]
         manager.handleEventTap(type: .flagsChanged, event: eventDown)
+        try await Task.sleep(nanoseconds: 50_000_000)
         #expect(pressedCount == 1)
 
         // Fn up
         let eventUp = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: false)!
         eventUp.flags = []
         manager.handleEventTap(type: .flagsChanged, event: eventUp)
+        try await Task.sleep(nanoseconds: 50_000_000)
         #expect(pressedCount == 1)
 
         // Fn down again
         manager.handleEventTap(type: .flagsChanged, event: eventDown)
+        try await Task.sleep(nanoseconds: 50_000_000)
         #expect(pressedCount == 2)
     }
 
-    @Test func fnPushToTalkModeEventTap() {
+    @Test func fnPushToTalkModeEventTap() async throws {
         let manager = NativeHotKeyManager.shared
         let originalTrigger = manager.trigger
         let originalMode = manager.mode
+        let originalPressed = manager.onHotKeyPressed
+        let originalReleased = manager.onHotKeyReleased
         defer {
             manager.trigger = originalTrigger
             manager.mode = originalMode
+            manager.onHotKeyPressed = originalPressed
+            manager.onHotKeyReleased = originalReleased
             manager.resetModifierState()
         }
 
@@ -168,6 +179,7 @@ struct HotKeyTriggerTests {
         let eventDown = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: true)!
         eventDown.flags = [.maskSecondaryFn, CGEventFlags(rawValue: 0x00800000)]
         manager.handleEventTap(type: .flagsChanged, event: eventDown)
+        try await Task.sleep(nanoseconds: 50_000_000)
         #expect(pressedCount == 1)
         #expect(releasedCount == 0)
 
@@ -175,6 +187,7 @@ struct HotKeyTriggerTests {
         let eventUp = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: false)!
         eventUp.flags = []
         manager.handleEventTap(type: .flagsChanged, event: eventUp)
+        try await Task.sleep(nanoseconds: 50_000_000)
         #expect(pressedCount == 1)
         #expect(releasedCount == 1)
     }
