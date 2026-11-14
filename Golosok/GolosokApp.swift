@@ -61,8 +61,15 @@ struct GolosokApp: App {
             ContentView()
                 .frame(minWidth: 990, minHeight: 710)
         }
+        .windowStyle(.hiddenTitleBar)
         
         .commands {
+            CommandGroup(replacing: .sidebar) {
+                Button("Боковое меню") {
+                    NotificationCenter.default.post(name: NSNotification.Name("ToggleSidebar"), object: nil)
+                }
+                .keyboardShortcut("\\", modifiers: .command)
+            }
             CommandGroup(replacing: .appInfo) {
                 Button("О программе") {
                     NSApp.activate(ignoringOtherApps: true)

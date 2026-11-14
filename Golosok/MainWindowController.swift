@@ -22,6 +22,10 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
               !window.className.contains("StatusBar") else { return }
         
         window.isReleasedWhenClosed = false
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
+        window.isMovableByWindowBackground = true
         
         if self.mainWindow !== window {
             self.mainWindow = window

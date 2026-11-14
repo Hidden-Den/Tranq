@@ -494,6 +494,10 @@ struct WindowAndDockSettingsTests {
         controller.register(window: window)
         #expect(controller.mainWindow === window)
         #expect(window.isReleasedWhenClosed == false)
+        #expect(window.titleVisibility == .hidden)
+        #expect(window.titlebarAppearsTransparent == true)
+        #expect(window.styleMask.contains(.fullSizeContentView))
+        #expect(window.isMovableByWindowBackground == true)
 
         window.orderFront(nil)
         #expect(window.isVisible)

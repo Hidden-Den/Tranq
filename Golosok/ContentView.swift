@@ -507,6 +507,8 @@ struct ContentView: View {
     @ObservedObject var permissions = PermissionManager.shared
     @ObservedObject var promptStore = PromptStore.shared
     
+    @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
+    
     @State private var isSplashFinished = false
     @State private var currentTab: MainTab = .history
     @State private var selectedItemId: UUID?
@@ -538,6 +540,20 @@ struct ContentView: View {
     @State private var cachedSyncedMatchIndices: [Int] = []
     @State private var cachedNativeMatchRanges: [NSRange] = []
     @FocusState private var isSearchFieldFocused: Bool
+    
+    private var currentTabTitle: String {
+        switch currentTab {
+        case .history: return String(localized: "История")
+        case .dashboard: return String(localized: "Борд")
+        case .settings: return String(localized: "Настройки")
+        }
+    }
+    
+    private func toggleSidebar() {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            isSidebarVisible.toggle()
+        }
+    }
     
     private var displayedHistory: [TranscriptionItem] {
         searchText.isEmpty ? audioCapture.history : filteredResults
@@ -609,6 +625,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
             currentTab = .settings
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
+            toggleSidebar()
+        }
         .background(WindowAccessor())
         .animation(.easeOut(duration: 0.16), value: isFileDropTargeted)
     }
@@ -675,20 +694,91 @@ struct ContentView: View {
     
     var mainInterface: some View {
         HStack(spacing: 0) {
-            sidebarView
-            Divider().background(Color.uiHairline)
-            Group {
-                switch currentTab {
-                case .history: historyDetailView
-                case .dashboard: DashboardView()
-                case .settings: SettingsView()
+            if isSidebarVisible {
+                sidebarView
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                Divider().background(Color.uiHairline)
+                    .transition(.opacity)
+            }
+            
+            VStack(spacing: 0) {
+                mainTopBar
+                Divider().background(Color.uiHairline)
+                
+                Group {
+                    switch currentTab {
+                    case .history: historyDetailView
+                    case .dashboard: DashboardView()
+                    case .settings: SettingsView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }.frame(minWidth: 840, minHeight: 520)
     }
     
+    private var sidebarTopBar: some View {
+        HStack(spacing: 8) {
+            Spacer()
+                .frame(width: 70)
+            
+            Button(action: toggleSidebar) {
+                Image(systemName: "sidebar.leading")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(.uiMidGray)
+                    .frame(width: 26, height: 26)
+                    .background(Color.uiCanvas.opacity(0.6))
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+            }
+            .buttonStyle(TactileButtonStyle())
+            .help(LocalizedStringKey("Скрыть меню"))
+            
+            Spacer()
+        }
+        .frame(height: 38)
+        .padding(.trailing, 10)
+    }
+    
+    private var mainTopBar: some View {
+        HStack(spacing: 8) {
+            if !isSidebarVisible {
+                Spacer()
+                    .frame(width: 70)
+                
+                Button(action: toggleSidebar) {
+                    Image(systemName: "sidebar.leading")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 26, height: 26)
+                        .background(Color.uiPaper)
+                        .cornerRadius(6)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                }
+                .buttonStyle(TactileButtonStyle())
+                .help(LocalizedStringKey("Показать меню"))
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+            
+            Text(currentTabTitle)
+                .font(UIStyleFont.display(size: 13, weight: .semibold))
+                .foregroundColor(.uiInk)
+                .padding(.leading, isSidebarVisible ? 0 : 4)
+            
+            Spacer()
+        }
+        .frame(height: 38)
+        .padding(.leading, isSidebarVisible ? 20 : 0)
+        .padding(.trailing, 10)
+        .background(Color.uiCanvas)
+    }
+    
     private var sidebarView: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
+            sidebarTopBar
             sidebarHeader
             VStack(spacing: 4) {
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
@@ -722,7 +812,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-        }.padding(.horizontal, 16).padding(.top, 16)
+        }.padding(.horizontal, 16)
     }
     
     private var historySearchAndList: some View {
