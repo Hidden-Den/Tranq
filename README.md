@@ -11,20 +11,20 @@
   </a>
 </p>
 
-Native voice dictation and offline audio transcription powered by Sber GigaAM v3 and Whisper Large v3. Hardware-accelerated inference for Apple Silicon. Zero telemetry, zero external tracking, 100% offline.
+Native voice dictation and offline audio transcription powered by Sber GigaAM v3 and Whisper (Large-v3 Turbo / Medium). Hardware-accelerated inference for Apple Silicon. Local speech recognition is 100% offline; optional AI post-processing connects directly to your chosen provider or local Ollama. Zero telemetry, zero external tracking.
 
 ---
 
 ## Architecture & Capabilities
 
-* **Complete Autonomy (Zero Cloud):** Local speech-to-text inference runs directly on-device. Audio streams never leave the Mac. Zero telemetry, tracking, or telemetry endpoints.
+* **Local Speech Recognition (100% Offline):** Speech-to-text inference runs entirely on-device without internet access. Audio streams never leave your Mac. Zero telemetry, analytics, or background tracking.
 * **Direct Input:** Press your global hotkey (default `⌥ + Space`, or single key `Fn`) — dictate — text is inserted directly under your active cursor in any application (VS Code, Notion, Telegram, Xcode, Obsidian, Slack, browsers).
 * **Hardware Acceleration:** Neural network models run on Apple Silicon (M1–M5) leveraging Core ML, Apple Neural Engine (ANE), and Metal Performance Shaders without CPU overheating.
 * **Dual Operation Modes:**
   * **Toggle (Переключение):** Press once to start recording, press again to stop, transcribe, and insert.
   * **Push-to-Talk (Рация):** Hold key down while speaking, release to transcribe and paste immediately.
 * **Offline Batch Transcription:** Transcribe audio and video recordings of any length (MP3, WAV, M4A, AAC, FLAC, OGG, OPUS, MP4, MOV, WebM, MKV).
-* **Direct AI Post-Processing (Optional):** Clean up punctuation, summarize, or translate transcriptions via direct Bring-Your-Own-Key connections (OpenAI, Groq, DeepSeek) or local Ollama instances, with zero intermediate proxy servers.
+* **Direct AI Post-Processing (Optional):** Clean up punctuation, summarize, or translate transcriptions via direct Bring-Your-Own-Key connections (OpenAI, Groq, DeepSeek) requiring network access, or 100% locally via Ollama. Zero intermediate proxy servers.
 
 ---
 
@@ -35,7 +35,7 @@ Native voice dictation and offline audio transcription powered by Sber GigaAM v3
 | **OS** | macOS 13.5+ (Ventura, Sonoma, Sequoia) |
 | **Architecture** | Apple Silicon (arm64: M1 / M2 / M3 / M4 / M5) |
 | **Languages & Frameworks** | Swift 5.9+, SwiftUI, AppKit |
-| **Speech Models** | GigaAM v3 RNN-T (GGUF Q8_0) / Whisper Large v3 |
+| **Speech Models** | GigaAM v3 RNN-T (GGUF Q8_0) / Whisper Large-v3 Turbo / Whisper Medium (Q5) |
 | **Acceleration Engines** | Core ML / Apple Neural Engine (ANE) / MPS |
 | **HotKey Subsystem** | Carbon Event Manager (combos) + Quartz CGEventTap (modifiers like `Fn`) |
 | **Memory Footprint** | ~70 MB idle / ~100 MB active inference |
@@ -95,7 +95,7 @@ open Golosok.xcodeproj
 Press `⌘ + R` in Xcode to build and run, or build via command line:
 
 ```bash
-xcodebuild -scheme Golosok -configuration Release build
+xcodebuild -project Golosok.xcodeproj -target Golosok -configuration Release build
 ```
 
 ---

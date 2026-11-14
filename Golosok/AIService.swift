@@ -105,11 +105,33 @@ final class AIProviderStore: ObservableObject {
     private static let defaults = UserDefaults.standard
 
     private init() {
-        let initialPreset = AIProviderPresets.preset(id: Self.defaults.string(forKey: "ai.providerID") ?? "") ?? AIProviderPresets.all[0]
-        providerID = Self.defaults.string(forKey: "ai.providerID") ?? initialPreset.id
-        baseURL = Self.defaults.string(forKey: "ai.baseURL") ?? initialPreset.baseURL
-        model = Self.defaults.string(forKey: "ai.model") ?? initialPreset.defaultModel
-        apiKey = KeyStore.get("ai.apiKey") ?? ""
+        // One-time cleanup for removed account credentials
+        KeyStore.delete("account.token")
+
+        let storedID = Self.defaults.string(forKey: "ai.providerID") ?? ""
+        let initialID: String
+        let initialBaseURL: String
+        let initialModel: String
+
+        if let preset = AIProviderPresets.preset(id: storedID) {
+            initialID = preset.id
+            initialBaseURL = Self.defaults.string(forKey: "ai.baseURL") ?? preset.baseURL
+            initialModel = Self.defaults.string(forKey: "ai.model") ?? preset.defaultModel
+        } else {
+            // Stored provider is unknown, legacy or was the removed proxy; reset to default preset
+            let defaultPreset = AIProviderPresets.all[0]
+            initialID = defaultPreset.id
+            initialBaseURL = defaultPreset.baseURL
+            initialModel = defaultPreset.defaultModel
+            Self.defaults.set(initialID, forKey: "ai.providerID")
+            Self.defaults.set(initialBaseURL, forKey: "ai.baseURL")
+            Self.defaults.set(initialModel, forKey: "ai.model")
+        }
+
+        self.providerID = initialID
+        self.baseURL = initialBaseURL
+        self.model = initialModel
+        self.apiKey = KeyStore.get("ai.apiKey") ?? ""
     }
 
     var currentPreset: AIProviderPreset? {
