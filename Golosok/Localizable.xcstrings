@@ -671,58 +671,6 @@
     "deepseek-chat" : {
 
     },
-    "Design & Dev by Kozak • 2026" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design & Dev by Kozak • 2026"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design & Dev by Kozak • 2026"
-          }
-        }
-      }
-    },
-    "Design & Development by " : {
-
-    },
-    "Design & Development by Kozak • 2026" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design & Development by Kozak • 2026"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design & Development by Kozak • 2026"
-          }
-        }
-      }
-    },
-    "Design by Kozak" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design by Kozak"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Design by Kozak"
-          }
-        }
-      }
-    },
     "DownloadStatus.Connecting" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1152,9 +1100,6 @@
           }
         }
       }
-    },
-    "Kozak" : {
-
     },
     "llama-3.3-70b-versatile" : {
 
@@ -3011,22 +2956,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Надиктуйте мысль – текст сразу появится под курсором в любом приложении"
-          }
-        }
-      }
-    },
-    "Нажимая «Начать использовать», вы принимаете [Условия лицензии](https://golosok.space/docs/public-offer/) и [Политику конфиденциальности](https://golosok.space/docs/privacy-policy/)." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "By tapping “Start using”, you accept the [License Terms](https://golosok.space/docs/public-offer/) and [Privacy Policy](https://golosok.space/docs/privacy-policy/)."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нажимая «Начать использовать», вы принимаете [Условия лицензии](https://golosok.space/docs/public-offer/) и [Политику конфиденциальности](https://golosok.space/docs/privacy-policy/)."
           }
         }
       }

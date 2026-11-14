@@ -67,12 +67,8 @@ struct AboutView: View {
             
             Divider().background(Color.uiHairline)
             
-            // 5. КНОПКА ЗАКРЫТИЯ И ПОДВАЛ
+            // 5. КНОПКА ЗАКРЫТИЯ
             HStack {
-                Text("Design & Dev by Kozak • 2026")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundColor(.uiMidGray)
-                
                 Spacer()
                 
                 UIOutlineButton(title: "Закрыть") {
