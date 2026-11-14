@@ -27,6 +27,7 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
         window.titlebarSeparatorStyle = .none
         window.styleMask.insert(.fullSizeContentView)
         window.isMovableByWindowBackground = true
+        window.backgroundColor = .black
         
         if self.mainWindow !== window {
             self.mainWindow = window

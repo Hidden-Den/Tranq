@@ -705,55 +705,50 @@ struct ContentView: View {
                     .frame(width: isSidebarVisible ? 260 : 0, alignment: .leading)
                     .clipped()
                 
-                // Основная рабочая плашка (чисто-чёрная с закруглёнными углами, как в Antigravity)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.uiCanvas)
-                    
-                    Group {
-                        switch currentTab {
-                        case .history: historyDetailView
-                        case .dashboard: DashboardView()
-                        case .settings: SettingsView()
-                        }
+                Group {
+                    switch currentTab {
+                    case .history: historyDetailView
+                    case .dashboard: DashboardView()
+                    case .settings: SettingsView()
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .padding(.trailing, 8)
-                .padding(.bottom, 8)
-                .padding(.top, 2)
-                .padding(.leading, isSidebarVisible ? 4 : 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(minWidth: 840, minHeight: 520)
-        .background(Color.uiGraphite)
+        .background(Color.uiCanvas)
         .ignoresSafeArea()
     }
     
     private var topBar: some View {
         HStack(spacing: 8) {
-            Spacer().frame(width: 70)
+            // Точный отступ под светофор macOS (красная, жёлтая, зелёная кнопки)
+            Spacer().frame(width: 76)
             
+            // Кнопка сворачивания, идеально выровненная по центру светофора
             sidebarToggleButton
             
-            Text(currentTabTitle)
-                .font(UIStyleFont.display(size: 13, weight: .semibold))
-                .foregroundColor(.uiInk)
-                .padding(.leading, 6)
+            // Заголовок раздела показывается ТОЛЬКО когда боковое меню скрыто, чтобы не дублировать
+            if !isSidebarVisible {
+                Text(currentTabTitle)
+                    .font(UIStyleFont.display(size: 13, weight: .semibold))
+                    .foregroundColor(.uiInk)
+                    .padding(.leading, 6)
+                    .transition(.opacity)
+            }
             
             Spacer()
         }
-        .frame(height: 38)
+        .frame(height: 44)
     }
     
     private var sidebarToggleButton: some View {
         Button(action: toggleSidebar) {
             Image(systemName: "sidebar.leading")
-                .font(.system(size: 13, weight: .regular))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.uiInkSoft)
                 .frame(width: 26, height: 26)
-                .background(Color.uiPaper.opacity(0.45))
+                .background(Color.uiPaper.opacity(0.6))
                 .cornerRadius(6)
                 .contentShape(Rectangle())
         }
@@ -785,7 +780,7 @@ struct ContentView: View {
         }
         .padding(.top, 4)
         .frame(width: 260)
-        .background(Color.uiGraphite)
+        .background(Color.uiCanvas)
     }
     
     private var sidebarHeader: some View {

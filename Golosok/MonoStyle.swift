@@ -70,8 +70,8 @@ extension Color {
     // MARK: - Shadcn / Vercel Dynamic Tokens
     static let uiCanvas = dynamic(light: "#ffffff", dark: "#000000")
     static let uiPaper = dynamic(light: "#f8f8fa", dark: "#141417")
-    static let uiSidebar = dynamic(light: "#ededf0", dark: "#18181b")
-    static let uiGraphite = dynamic(light: "#ededf0", dark: "#18181b")
+    static let uiSidebar = dynamic(light: "#ffffff", dark: "#000000")
+    static let uiGraphite = dynamic(light: "#ffffff", dark: "#000000")
     static let uiInk = dynamic(light: "#0a0a0a", dark: "#fafafa")
     static let uiInkSoft = dynamic(light: "#171717", dark: "#d4d4d8")
     static let uiMidGray = dynamic(light: "#737373", dark: "#a1a1aa")
