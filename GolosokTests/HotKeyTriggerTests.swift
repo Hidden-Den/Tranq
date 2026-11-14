@@ -3,6 +3,7 @@ import CoreGraphics
 @testable import Golosok
 
 @Suite(.serialized)
+@MainActor
 struct HotKeyTriggerTests {
     @Test func singleModifierKeyCodeMapping() {
         #expect(SingleModifierKey.from(keyCode: 63) == .fn)

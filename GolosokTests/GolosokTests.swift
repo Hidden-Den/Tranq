@@ -377,6 +377,7 @@ struct GolosokTests {
 // MARK: - AI-обработка выделенного фрагмента
 
 @Suite(.serialized)
+@MainActor
 struct AISelectionStatefulTests {
 
     @Test func aiRequestSelectionFlagsAreCorrect() {

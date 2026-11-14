@@ -527,7 +527,11 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         guard let idx = history.firstIndex(where: { $0.id == id }) else { return }
         let item = history[idx]
         let nsText = item.text as NSString
-        guard range.location != NSNotFound, range.location + range.length <= nsText.length else { return }
+        guard range.location != NSNotFound,
+              range.location >= 0,
+              range.length >= 0,
+              range.location <= nsText.length,
+              range.length <= nsText.length - range.location else { return }
         let result = nsText.replacingCharacters(in: range, with: newText)
         history[idx] = TranscriptionItem(id: item.id, date: item.date, text: result, duration: item.duration, speedup: item.speedup, isUnread: item.isUnread)
     }
