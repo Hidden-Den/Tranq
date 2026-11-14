@@ -3,6 +3,7 @@ transcribe-cli
 DerivedData/
 xcuserdata/
 .DS_Store
+.superpowers/
 Golosok/whisper-cli
 *.pbxproj
 Golosok/ffmpeg
