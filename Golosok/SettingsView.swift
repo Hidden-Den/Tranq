@@ -186,54 +186,6 @@ struct SettingsView: View {
                             }
                         }
                         
-                        HStack(spacing: 8) {
-                            Text(LocalizedStringKey("HotKey.QuickPresets"))
-                                .font(UIStyleFont.body(size: 12, weight: .regular))
-                                .foregroundColor(.uiMidGray)
-                            Spacer()
-                            Button {
-                                hotKey.setPreset(.singleModifier(.fn))
-                            } label: {
-                                Text(LocalizedStringKey("HotKey.Preset.Fn"))
-                                    .font(UIStyleFont.body(size: 11, weight: hotKey.isFnPreset ? .bold : .medium))
-                                    .foregroundColor(hotKey.isFnPreset ? .uiInk : .uiMidGray)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 10)
-                                    .background(hotKey.isFnPreset ? Color.uiCanvas : Color.clear)
-                                    .cornerRadius(12)
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(hotKey.isFnPreset ? Color.uiAccent.opacity(0.3) : Color.uiHairline, lineWidth: 1))
-                            }
-                            .buttonStyle(TactileButtonStyle())
-
-                            Button {
-                                hotKey.setPreset(.singleModifier(.rightOption))
-                            } label: {
-                                Text(LocalizedStringKey("HotKey.Preset.RightOption"))
-                                    .font(UIStyleFont.body(size: 11, weight: hotKey.isRightOptionPreset ? .bold : .medium))
-                                    .foregroundColor(hotKey.isRightOptionPreset ? .uiInk : .uiMidGray)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 10)
-                                    .background(hotKey.isRightOptionPreset ? Color.uiCanvas : Color.clear)
-                                    .cornerRadius(12)
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(hotKey.isRightOptionPreset ? Color.uiAccent.opacity(0.3) : Color.uiHairline, lineWidth: 1))
-                            }
-                            .buttonStyle(TactileButtonStyle())
-
-                            Button {
-                                hotKey.reset()
-                            } label: {
-                                Text(LocalizedStringKey("HotKey.Preset.Default"))
-                                    .font(UIStyleFont.body(size: 11, weight: hotKey.isDefaultPreset ? .bold : .medium))
-                                    .foregroundColor(hotKey.isDefaultPreset ? .uiInk : .uiMidGray)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 10)
-                                    .background(hotKey.isDefaultPreset ? Color.uiCanvas : Color.clear)
-                                    .cornerRadius(12)
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(hotKey.isDefaultPreset ? Color.uiAccent.opacity(0.3) : Color.uiHairline, lineWidth: 1))
-                            }
-                            .buttonStyle(TactileButtonStyle())
-                        }
-                        
                         Divider().background(Color.uiHairline)
                         
                         HStack {

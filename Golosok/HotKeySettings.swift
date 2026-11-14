@@ -52,21 +52,6 @@ public final class HotKeySettings: ObservableObject {
         setPreset(.combination(keyCode: 49, modifiers: UInt32(optionKey)))
     }
 
-    public var isFnPreset: Bool {
-        trigger == .singleModifier(.fn)
-    }
-
-    public var isRightOptionPreset: Bool {
-        trigger == .singleModifier(.rightOption)
-    }
-
-    public var isDefaultPreset: Bool {
-        if case .combination(let kc, let mods) = trigger, kc == 49, mods == UInt32(optionKey) {
-            return true
-        }
-        return false
-    }
-
     public func beginCapture() {
         guard !isCapturing else { return }
         isCapturing = true
@@ -83,7 +68,12 @@ public final class HotKeySettings: ObservableObject {
 
             if event.type == .flagsChanged {
                 if let modKey = SingleModifierKey.from(keyCode: UInt32(event.keyCode)) {
-                    let flags = CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
+                    if modKey == .capsLock {
+                        self.setPreset(.singleModifier(.capsLock))
+                        return nil
+                    }
+
+                    let flags = event.cgEvent?.flags ?? CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
                     if modKey.isPressed(flags: flags) {
                         // Modifier pressed down: defer committing in case user is starting a combination
                         self.pendingSingleModifier = modKey
@@ -101,6 +91,10 @@ public final class HotKeySettings: ObservableObject {
             }
 
             if event.type == .keyDown {
+                if event.keyCode == 57 {
+                    self.setPreset(.singleModifier(.capsLock))
+                    return nil
+                }
                 // A key was pressed down while holding modifiers: cancel single-modifier candidate
                 self.pendingSingleModifier = nil
 

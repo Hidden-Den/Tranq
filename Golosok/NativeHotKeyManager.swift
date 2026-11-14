@@ -214,6 +214,36 @@ public class NativeHotKeyManager {
             return Unmanaged.passUnretained(event)
         }
 
+        if key == .capsLock {
+            if mode == .toggle {
+                DispatchQueue.main.async { [weak self] in
+                    self?.onHotKeyPressed?()
+                }
+            } else {
+                let isPhysicalDown = (event.flags.rawValue & 0x80) != 0
+                if isPhysicalDown {
+                    if !isModifierActive {
+                        isModifierActive = true
+                        DispatchQueue.main.async { [weak self] in
+                            self?.onHotKeyPressed?()
+                        }
+                    }
+                } else {
+                    if isModifierActive {
+                        isModifierActive = false
+                        DispatchQueue.main.async { [weak self] in
+                            self?.onHotKeyReleased?()
+                        }
+                    } else {
+                        DispatchQueue.main.async { [weak self] in
+                            self?.onHotKeyPressed?()
+                        }
+                    }
+                }
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
         let isDown = key.isPressed(flags: event.flags)
         if isDown {
             if !isModifierActive {

@@ -85,6 +85,10 @@ struct HotKeyTriggerTests {
 
         settings.reset()
         #expect(settings.hotKeyName.contains("Space"))
+
+        settings.setPreset(.singleModifier(.capsLock))
+        #expect(settings.trigger == .singleModifier(.capsLock))
+        #expect(settings.hotKeyName == "Caps Lock")
     }
 
     @Test func pendingTriggerHandling() {
