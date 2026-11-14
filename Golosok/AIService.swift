@@ -18,6 +18,14 @@ struct AIProviderPreset: Identifiable {
 enum AIProviderPresets {
     static let all: [AIProviderPreset] = [
         AIProviderPreset(
+            id: "openrouter",
+            name: "OpenRouter",
+            hint: "claude-haiku-5.5, gemini-3.8-flash",
+            baseURL: "https://openrouter.ai/api/v1",
+            defaultModel: "anthropic/claude-haiku-5.5",
+            needsKey: true
+        ),
+        AIProviderPreset(
             id: "openai",
             name: "OpenAI",
             hint: "gpt-4o-mini, gpt-4o",
@@ -43,7 +51,7 @@ enum AIProviderPresets {
         ),
         AIProviderPreset(
             id: "ollama",
-            name: "Ollama (локально)",
+            name: "Ollama локально",
             hint: "LM Studio / локальный сервер",
             baseURL: "http://localhost:11434/v1",
             defaultModel: "gemma3:1b",
@@ -223,10 +231,21 @@ final class AIService {
         session = URLSession(configuration: cfg)
     }
 
+    private struct ReasoningConfig: Codable {
+        let effort: String?
+        let exclude: Bool?
+    }
+
+    private struct ProviderConfig: Codable {
+        let sort: String?
+    }
+
     private struct ChatRequest: Codable {
         let model: String?
         let messages: [AIChatMessage]
         let temperature: Double
+        let reasoning: ReasoningConfig?
+        let provider: ProviderConfig?
     }
 
     func chat(messages: [AIChatMessage], using config: AIProviderConfig, completion: @escaping (Result<String, AIError>) -> Void) {
@@ -241,7 +260,22 @@ final class AIService {
         if !config.apiKey.isEmpty {
             request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         }
-        let body = ChatRequest(model: config.model, messages: messages, temperature: 0.3)
+        if config.baseURL.contains("openrouter.ai") {
+            request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
+            request.setValue("Golosok", forHTTPHeaderField: "X-Title")
+        }
+
+        let isOpenRouter = config.baseURL.contains("openrouter.ai")
+        let reasoning = isOpenRouter ? ReasoningConfig(effort: "none", exclude: true) : nil
+        let provider = isOpenRouter ? ProviderConfig(sort: "latency") : nil
+
+        let body = ChatRequest(
+            model: config.model,
+            messages: messages,
+            temperature: 0.1,
+            reasoning: reasoning,
+            provider: provider
+        )
         guard let data = try? JSONEncoder().encode(body) else {
             completion(.failure(.parse("кодирование запроса")))
             return

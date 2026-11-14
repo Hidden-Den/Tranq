@@ -271,7 +271,7 @@ HStack {
                                 .font(UIStyleFont.body(size: 13, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
-                            Text("Apple Metal (MTL0)")
+                            Text("Apple Metal")
                                 .font(UIStyleFont.body(size: 12, weight: .regular))
                                 .foregroundColor(.uiMidGray)
                         }
@@ -308,7 +308,10 @@ HStack {
                     }
                 }
                 
-                // РАЗДЕЛ 3.5: ИИ-ПРОВАЙДЕР
+                // РАЗДЕЛ 3.5: ГОЛОСОВОЙ ВВОД И СИНТЕЗ
+                VoiceIntelligenceSection()
+
+                // РАЗДЕЛ 3.6: ИИ-ПРОВАЙДЕР
                 AIProviderSection()
 
                 // РАЗДЕЛ 4: ДАННЫЕ

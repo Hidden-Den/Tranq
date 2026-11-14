@@ -59,9 +59,12 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private var startTime: Date?
     private var escMonitor: Any?
     private var pasteTarget: NSRunningApplication?
-    
+    private var focusTarget: FocusSnapshot?
+
     @Published var isRecording = false
     @Published var isProcessingFile = false
+    @Published var isSynthesizingThought = false
+    @Published var hudStatusMessage: String? = nil
     @Published var fileProcessingProgress: Double = 0.0
     @Published var transcribedText = ""
     @Published var warningMessage: String? = nil
@@ -180,10 +183,14 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         audioRecorder?.stop()
         audioRecorder = nil
         SoundEffect.playCancel()
+        pasteTarget = nil
+        focusTarget = nil
         
         DispatchQueue.main.async {
             self.warningMessage = nil
             self.isRecording = false
+            self.isSynthesizingThought = false
+            self.hudStatusMessage = nil
             self.audioSamples = Array(repeating: 0.15, count: 9)
             self.transcribedText = String(localized: "Запись отменена")
             OverlayPanelManager.shared.hideOverlay()
@@ -243,6 +250,8 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         guard isRecording else { return }
         removeEscMonitor()
         pasteTarget = NSWorkspace.shared.frontmostApplication
+        focusTarget = InsertionService.shared.captureFocus()
+        hudStatusMessage = nil
         timer?.invalidate()
         timer = nil
         audioRecorder?.stop()
@@ -463,43 +472,150 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         let processingTimeSecs = Date().timeIntervalSince(processStartTime)
         let calculatedSpeedup = max(1.0, realAudioSecs / max(0.1, processingTimeSecs))
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             if prettyFormattedText.isEmpty {
                 AppLogger.shared.warn("Recognition", "Речь не распознана", details: String(format: "аудио %.1f с", realAudioSecs))
                 OverlayPanelManager.shared.showWarning(message: String(localized: "Речь не распознана"))
+                finish()
+                return
+            }
+
+            let noteId = UUID()
+            let shouldSynthesize = !isFileImport && VoiceIntelligenceSettings.shared.mode == .smart
+            
+            // Фиксируем исходный сырой транскрипт до любых ИИ-манипуляций
+            TranscriptJournal.shared.recordInitial(
+                id: noteId,
+                rawText: rawText,
+                durationSec: realAudioSecs,
+                targetAppName: self.focusTarget?.appName
+            )
+
+            if shouldSynthesize {
+                self.isSynthesizingThought = true
+                ThoughtSynthesizer.shared.synthesize(
+                    rawText: rawText,
+                    style: VoiceIntelligenceSettings.shared.style
+                ) { [weak self] finalText, isFallback in
+                    guard let self = self else { return }
+                    DispatchQueue.main.async {
+                        self.isSynthesizingThought = false
+                        TranscriptJournal.shared.updateFinal(
+                            id: noteId,
+                            stageOneText: prettyFormattedText,
+                            finalText: finalText,
+                            isFallback: isFallback
+                        )
+                        self.saveAndInsertTranscription(
+                            noteId: noteId,
+                            finalText: finalText,
+                            durationFormatted: durationFormatted,
+                            calculatedSpeedup: calculatedSpeedup,
+                            realAudioSecs: realAudioSecs,
+                            accumulatedWords: accumulatedWords,
+                            sourceURL: sourceURL,
+                            isFileImport: isFileImport,
+                            completion: completion,
+                            finish: finish
+                        )
+                    }
+                }
             } else {
-                self.transcribedText = prettyFormattedText
-                self.isSuccessDone = true
-                let formatter = DateFormatter()
-                formatter.dateFormat = "dd.MM.yyyy, HH:mm"
-                let dateStr = formatter.string(from: Date())
-                
-                let newItem = TranscriptionItem(id: UUID(), date: dateStr, text: prettyFormattedText, duration: durationFormatted, speedup: calculatedSpeedup, isUnread: true)
-                
-                self.saveAudioForNote(id: newItem.id, sourceURL: sourceURL)
-                if !accumulatedWords.isEmpty {
-                    self.saveTimingsForNote(id: newItem.id, words: accumulatedWords, duration: realAudioSecs)
-                }
-                if isFileImport { try? FileManager.default.removeItem(at: sourceURL) }
-                self.history.insert(newItem, at: 0)
-                
-                NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: newItem.id)
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(prettyFormattedText, forType: .string)
-                
-                if !isFileImport && self.autoPasteEnabled {
-                    self.pasteToActiveApp()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { SoundEffect.playSuccess() }
-                } else {
-                    SoundEffect.playSuccess()
-                }
-                
-                if completion == nil {
-                    OverlayPanelManager.shared.scheduleHide(after: 0.8)
+                TranscriptJournal.shared.updateFinal(
+                    id: noteId,
+                    stageOneText: prettyFormattedText,
+                    finalText: prettyFormattedText,
+                    isFallback: false
+                )
+                self.saveAndInsertTranscription(
+                    noteId: noteId,
+                    finalText: prettyFormattedText,
+                    durationFormatted: durationFormatted,
+                    calculatedSpeedup: calculatedSpeedup,
+                    realAudioSecs: realAudioSecs,
+                    accumulatedWords: accumulatedWords,
+                    sourceURL: sourceURL,
+                    isFileImport: isFileImport,
+                    completion: completion,
+                    finish: finish
+                )
+            }
+        }
+    }
+    
+    private func saveAndInsertTranscription(
+        noteId: UUID,
+        finalText: String,
+        durationFormatted: String,
+        calculatedSpeedup: Double,
+        realAudioSecs: Double,
+        accumulatedWords: [TimedWord],
+        sourceURL: URL,
+        isFileImport: Bool,
+        completion: (() -> Void)?,
+        finish: @escaping () -> Void
+    ) {
+        self.transcribedText = finalText
+        self.isSuccessDone = true
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy, HH:mm"
+        let dateStr = formatter.string(from: Date())
+        
+        let newItem = TranscriptionItem(
+            id: noteId,
+            date: dateStr,
+            text: finalText,
+            duration: durationFormatted,
+            speedup: calculatedSpeedup,
+            isUnread: true
+        )
+        
+        self.saveAudioForNote(id: newItem.id, sourceURL: sourceURL)
+        if !accumulatedWords.isEmpty {
+            self.saveTimingsForNote(id: newItem.id, words: accumulatedWords, duration: realAudioSecs)
+        }
+        if isFileImport { try? FileManager.default.removeItem(at: sourceURL) }
+        self.history.insert(newItem, at: 0)
+        
+        NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: newItem.id)
+        
+        if isFileImport || !self.autoPasteEnabled {
+            InsertionService.shared.copyToPasteboard(text: finalText, markTransient: false)
+            SoundEffect.playSuccess()
+            if completion == nil {
+                OverlayPanelManager.shared.scheduleHide(after: 0.8)
+            }
+            finish()
+        } else {
+            InsertionService.shared.paste(
+                text: finalText,
+                target: self.focusTarget,
+                autoPasteEnabled: true
+            ) { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .pasted:
+                        SoundEffect.playSuccess()
+                    case .copied:
+                        self?.hudStatusMessage = String(localized: "Скопировано")
+                        SoundEffect.playSuccess()
+                    case .focusChanged:
+                        self?.hudStatusMessage = String(localized: "Скопировано")
+                        SoundEffect.playSuccess()
+                    case .secureInput:
+                        self?.hudStatusMessage = String(localized: "Защищенный ввод")
+                        SoundEffect.playSuccess()
+                    case .accessibilityDenied:
+                        self?.hudStatusMessage = String(localized: "Нет прав")
+                        SoundEffect.playSuccess()
+                    }
+                    if completion == nil {
+                        OverlayPanelManager.shared.scheduleHide(after: 1.0)
+                    }
+                    finish()
                 }
             }
-            
-            finish()
         }
     }
     
@@ -995,44 +1111,11 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     private func pasteToActiveApp() {
-        guard autoPasteEnabled else { return }
-        guard AXIsProcessTrusted() else {
-            AppLogger.shared.warn("Paste", "Доступ AX недоступен — пропускаем вставку. Пользователь должен включить её в Настройках.")
-            return
-        }
-        guard let target = pasteTarget else { return }
-        let pid = target.processIdentifier
-        target.activate(options: [.activateIgnoringOtherApps])
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            guard self.canAcceptPaste(pid: pid) else {
-                AppLogger.shared.info("Paste", "Вставка пропущена: под фокусом нет редактируемого поля", details: target.localizedName)
-                return
-            }
-            AppLogger.shared.info("Paste", "Cmd+V отправлен", details: target.localizedName)
-            let source = CGEventSource(stateID: .combinedSessionState)
-            guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true),
-                  let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false) else { return }
-            keyDown.flags = .maskCommand; keyUp.flags = .maskCommand
-            keyDown.postToPid(pid)
-            keyUp.postToPid(pid)
-        }
-    }
-
-    private func canAcceptPaste(pid: pid_t) -> Bool {
-        let app = AXUIElementCreateApplication(pid)
-        var focusedRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
-              let focusedElement = focusedRef else { return true }
-        var roleRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, kAXRoleAttribute as CFString, &roleRef) == .success,
-              let roleString = roleRef as? String else { return true }
-        switch roleString {
-        case "AXTextField", "AXTextArea", "AXTextView", "AXComboBox", "AXSearchField",
-             "AXDocument", "AXScrollArea", "AXWebArea":
-            return true
-        default:
-            return false
-        }
+        InsertionService.shared.paste(
+            text: self.transcribedText,
+            target: self.focusTarget,
+            autoPasteEnabled: self.autoPasteEnabled
+        ) { _ in }
     }
     
     // MARK: - Субтитры

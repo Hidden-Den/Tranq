@@ -162,3 +162,81 @@ struct AIInputField: View {
         }
     }
 }
+
+// MARK: - Секция «Голосовой ввод и синтез»
+
+struct VoiceIntelligenceSection: View {
+    @ObservedObject var settings = VoiceIntelligenceSettings.shared
+
+    var body: some View {
+        UICard {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text("ГОЛОСОВОЙ ВВОД И СИНТЕЗ")
+                        .font(UIStyleFont.body(size: 11, weight: .bold))
+                        .tracking(1.0)
+                        .foregroundColor(.uiMidGray)
+                    Spacer()
+                    UIBadge(text: settings.mode == .smart ? "Умная речь" : "Прямой")
+                }
+
+                // Переключатель режима
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Умная речь")
+                            .font(UIStyleFont.body(size: 13, weight: .medium))
+                            .foregroundColor(.uiInk)
+                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Дословная расшифровка без изменений")
+                            .font(UIStyleFont.body(size: 11, weight: .regular))
+                            .foregroundColor(.uiMidGray)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { settings.mode == .smart },
+                        set: { settings.mode = $0 ? .smart : .direct }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                }
+
+                if settings.mode == .smart {
+                    Divider().background(Color.uiHairline)
+
+                    // Стиль мысли
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Стиль текста")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Формат оформления очищенной мысли")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        UIDropdownPicker(selection: $settings.style, options: VoiceStyle.allCases.map { s in
+                            .init(LocalizedStringKey(s.title), value: s)
+                        }, width: 160)
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Движок обработки
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Движок синтеза")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text(LocalizedStringKey(settings.engine.subtitle))
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        UIDropdownPicker(selection: $settings.engine, options: VoiceEngine.allCases.map { e in
+                            .init(LocalizedStringKey(e.title), value: e)
+                        }, width: 210)
+                    }
+                }
+            }
+        }
+    }
+}
