@@ -694,12 +694,9 @@ struct ContentView: View {
     }
     
     var mainInterface: some View {
-        VStack(spacing: 0) {
-            topBar
-            Divider().background(Color.uiHairline)
-            
+        ZStack(alignment: .topLeading) {
             HStack(spacing: 0) {
-                sidebarContent
+                sidebarColumn
                     .frame(width: 270)
                     .offset(x: isSidebarVisible ? 0 : -270)
                     .opacity(isSidebarVisible ? 1.0 : 0.0)
@@ -709,46 +706,45 @@ struct ContentView: View {
                 Color.uiHairline
                     .frame(width: isSidebarVisible ? 1 : 0)
                 
-                Group {
-                    switch currentTab {
-                    case .history: historyDetailView
-                    case .dashboard: DashboardView()
-                    case .settings: SettingsView()
+                VStack(spacing: 0) {
+                    mainHeader
+                    Divider().background(Color.uiHairline)
+                    
+                    Group {
+                        switch currentTab {
+                        case .history: historyDetailView
+                        case .dashboard: DashboardView()
+                        case .settings: SettingsView()
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.uiCanvas)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Фиксированная панель слева: отступ под светофор macOS и кнопка переключения
+            HStack(spacing: 8) {
+                Spacer().frame(width: 68)
+                sidebarToggleButton
+            }
+            .frame(height: 38)
         }
         .frame(minWidth: 840, minHeight: 520)
         .ignoresSafeArea()
     }
     
-    private var topBar: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Spacer().frame(width: 68)
-                
-                sidebarToggleButton
-                
-                Spacer()
-            }
-            .frame(width: isSidebarVisible ? 270 : 102)
-            .background(isSidebarVisible ? Color.uiSidebar : Color.uiCanvas)
-            
-            Color.uiHairline
-                .frame(width: isSidebarVisible ? 1 : 0)
-            
-            HStack(spacing: 8) {
-                Text(currentTabTitle)
-                    .font(UIStyleFont.display(size: 13, weight: .semibold))
-                    .foregroundColor(.uiInk)
-                Spacer()
-            }
-            .padding(.leading, isSidebarVisible ? 20 : 10)
-            .padding(.trailing, 16)
-            .background(Color.uiCanvas)
+    private var mainHeader: some View {
+        HStack(spacing: 8) {
+            Text(currentTabTitle)
+                .font(UIStyleFont.display(size: 13, weight: .semibold))
+                .foregroundColor(.uiInk)
+            Spacer()
         }
         .frame(height: 38)
+        .padding(.leading, isSidebarVisible ? 20 : 112)
+        .padding(.trailing, 16)
+        .background(Color.uiCanvas)
     }
     
     private var sidebarToggleButton: some View {
@@ -765,8 +761,9 @@ struct ContentView: View {
         .help(isSidebarVisible ? LocalizedStringKey("Скрыть меню") : LocalizedStringKey("Показать меню"))
     }
     
-    private var sidebarContent: some View {
+    private var sidebarColumn: some View {
         VStack(alignment: .leading, spacing: 14) {
+            Spacer().frame(height: 38)
             sidebarHeader
             VStack(spacing: 4) {
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
@@ -787,7 +784,6 @@ struct ContentView: View {
             if currentTab == .history { historySearchAndList } else { Spacer() }
             sidebarFooter
         }
-        .padding(.top, 10)
         .frame(width: 270)
         .background(Color.uiSidebar)
     }
