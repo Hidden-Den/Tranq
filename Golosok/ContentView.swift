@@ -966,39 +966,11 @@ struct ContentView: View {
                                     audioCapture.importAndTranscribeFile()
                                 }
                             }
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Что ещё умеет")
-                                    .font(UIStyleFont.body(size: 11, weight: .medium))
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.down.doc").font(.system(size: 11, weight: .medium)).foregroundColor(.uiMidGray)
+                                Text("Перетащите файл в окно программы — расшифровка начнётся автоматически")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
                                     .foregroundColor(.uiMidGray)
-
-                                Button(action: openAccountSettings) {
-                                    HStack(spacing: 12) {
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.uiCanvas)
-                                                .frame(width: 34, height: 34)
-                                            Image(systemName: "icloud.fill").font(.system(size: 15, weight: .semibold)).foregroundColor(.uiInk)
-                                        }
-                                        VStack(alignment: .leading, spacing: 1) {
-                                            Text("Голосок+").font(UIStyleFont.display(size: 13, weight: .semibold)).foregroundColor(.uiInk)
-                                            Text("Облачный ИИ помогает редактировать заметки. Расшифровка — всегда локально").font(UIStyleFont.body(size: 11, weight: .regular)).foregroundColor(.uiMidGray)
-                                        }
-                                        Spacer(minLength: 8)
-                                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundColor(.uiMidGray)
-                                    }
-                                    .padding(12)
-                                    .background(Color.uiSidebar)
-                                    .cornerRadius(14)
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.uiHairline, lineWidth: 1))
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(TactileButtonStyle())
-
-                                HStack(spacing: 6) {
-                                    Image(systemName: "arrow.down.doc").font(.system(size: 11, weight: .medium)).foregroundColor(.uiMidGray)
-                                    Text("Перетащите файл в окно программы — расшифровка начнётся автоматически")
-                                        .font(UIStyleFont.body(size: 11, weight: .regular))
-                                        .foregroundColor(.uiMidGray)
-                                }
                             }
                         }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
@@ -1276,14 +1248,6 @@ struct ContentView: View {
             noteText: sel.selectedText,
             scope: .selection(range: sel.range, fullText: sel.fullText)
         )
-    }
-
-    private func openAccountSettings() {
-        currentTab = .settings
-        searchText = ""
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            NotificationCenter.default.post(name: NSNotification.Name("ScrollToAccount"), object: nil)
-        }
     }
 
     private func createNote() {

@@ -287,10 +287,6 @@ HStack {
                 // РАЗДЕЛ 3.5: ИИ-ПРОВАЙДЕР
                 AIProviderSection()
 
-                // РАЗДЕЛ 3.6: АККАУНТ
-                AccountSection()
-                    .id("account")
-
                 // РАЗДЕЛ 4: ДАННЫЕ
                 UICard {
                     HStack {
@@ -312,9 +308,6 @@ HStack {
             .padding(20)
         }
         .background(Color.uiCanvas)
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScrollToAccount"))) { _ in
-            withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo("account", anchor: .top) }
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             permissions.refreshPermissions()
         }
