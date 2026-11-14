@@ -720,18 +720,34 @@
         }
       }
     },
-    "HotKey.Capture" : {
+    "HotKey.CapsLockUnsupported" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Press a key or shortcut…"
+            "value" : "Caps Lock is not supported"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нажмите клавишу или сочетание…"
+            "value" : "Caps Lock не поддерживается"
+          }
+        }
+      }
+    },
+    "HotKey.Capture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press a key or shortcut. Caps Lock is not supported"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите клавишу или сочетание. Caps Lock не поддерживается"
           }
         }
       }

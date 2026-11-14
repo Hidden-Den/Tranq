@@ -12,6 +12,7 @@ public final class HotKeySettings: ObservableObject {
     @Published public var hotKeyName: String = ""
     @Published public var isCapturing = false
     @Published public var isTaken = false
+    @Published public var warningMessage: String? = nil
 
     private var monitor: Any?
     private var pendingSingleModifier: SingleModifierKey?
@@ -56,6 +57,7 @@ public final class HotKeySettings: ObservableObject {
         guard !isCapturing else { return }
         isCapturing = true
         isTaken = false
+        warningMessage = nil
         pendingSingleModifier = nil
 
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
@@ -66,13 +68,13 @@ public final class HotKeySettings: ObservableObject {
                 return event
             }
 
+            if event.keyCode == 57 {
+                self.warningMessage = NSLocalizedString("HotKey.CapsLockUnsupported", value: "Caps Lock не поддерживается", comment: "Caps Lock unsupported warning")
+                return nil
+            }
+
             if event.type == .flagsChanged {
                 if let modKey = SingleModifierKey.from(keyCode: UInt32(event.keyCode)) {
-                    if modKey == .capsLock {
-                        self.setPreset(.singleModifier(.capsLock))
-                        return nil
-                    }
-
                     let flags = event.cgEvent?.flags ?? CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
                     if modKey.isPressed(flags: flags) {
                         // Modifier pressed down: defer committing in case user is starting a combination
@@ -91,10 +93,6 @@ public final class HotKeySettings: ObservableObject {
             }
 
             if event.type == .keyDown {
-                if event.keyCode == 57 {
-                    self.setPreset(.singleModifier(.capsLock))
-                    return nil
-                }
                 // A key was pressed down while holding modifiers: cancel single-modifier candidate
                 self.pendingSingleModifier = nil
 
@@ -124,6 +122,7 @@ public final class HotKeySettings: ObservableObject {
 
     public func endCapture() {
         pendingSingleModifier = nil
+        warningMessage = nil
         if let m = monitor {
             NSEvent.removeMonitor(m)
             monitor = nil

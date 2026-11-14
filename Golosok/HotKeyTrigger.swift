@@ -12,7 +12,6 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
     case leftControl = 59
     case rightShift = 60
     case leftShift = 56
-    case capsLock = 57
 
     public static func from(keyCode: UInt32) -> SingleModifierKey? {
         SingleModifierKey(rawValue: keyCode)
@@ -38,8 +37,6 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
             return NSLocalizedString("HotKey.Modifier.RightShift", value: "Правый ⇧", comment: "Right Shift")
         case .leftShift:
             return NSLocalizedString("HotKey.Modifier.LeftShift", value: "Левый ⇧", comment: "Left Shift")
-        case .capsLock:
-            return "Caps Lock"
         }
     }
 
@@ -55,7 +52,6 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
         case .leftControl: return 0x00000001  // NX_DEVICELCTLKEYMASK
         case .rightShift: return 0x00000004   // NX_DEVICERSHIFTKEYMASK
         case .leftShift: return 0x00000002    // NX_DEVICELSHIFTKEYMASK
-        case .capsLock: return 0x00000080     // NX_DEVICE_ALPHASHIFT_STATELESS_MASK
         }
     }
 
@@ -75,8 +71,6 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
             return (flags.rawValue & 0x2001) == 0 && flags.contains(.maskControl)
         case .rightShift, .leftShift:
             return (flags.rawValue & 0x06) == 0 && flags.contains(.maskShift)
-        case .capsLock:
-            return (flags.rawValue & 0x80) != 0
         }
     }
 }

@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import CoreGraphics
 @testable import Golosok
 
@@ -15,7 +16,7 @@ struct HotKeyTriggerTests {
         #expect(SingleModifierKey.from(keyCode: 59) == .leftControl)
         #expect(SingleModifierKey.from(keyCode: 60) == .rightShift)
         #expect(SingleModifierKey.from(keyCode: 56) == .leftShift)
-        #expect(SingleModifierKey.from(keyCode: 57) == .capsLock)
+        #expect(SingleModifierKey.from(keyCode: 57) == nil)
         #expect(SingleModifierKey.from(keyCode: 999) == nil)
     }
 
@@ -36,15 +37,6 @@ struct HotKeyTriggerTests {
         let rightOptionFlags = CGEventFlags(rawValue: 0x00080040)
         #expect(SingleModifierKey.rightOption.isPressed(flags: rightOptionFlags) == true)
         #expect(SingleModifierKey.leftOption.isPressed(flags: rightOptionFlags) == false)
-
-        // Caps Lock physical press has bit 0x80 set
-        let capsLockDownFlags = CGEventFlags(rawValue: 0x80)
-        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockDownFlags) == true)
-        let capsLockUpFlags = CGEventFlags(rawValue: 0x00)
-        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockUpFlags) == false)
-        // Caps Lock latched ON but physical key released (0x80 not set, maskAlphaShift set)
-        let capsLockLatchedFlags = CGEventFlags.maskAlphaShift
-        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockLatchedFlags) == false)
     }
 
     @Test func hotKeyTriggerDisplayName() {
@@ -85,10 +77,6 @@ struct HotKeyTriggerTests {
 
         settings.reset()
         #expect(settings.hotKeyName.contains("Space"))
-
-        settings.setPreset(.singleModifier(.capsLock))
-        #expect(settings.trigger == .singleModifier(.capsLock))
-        #expect(settings.hotKeyName == "Caps Lock")
     }
 
     @Test func pendingTriggerHandling() {
@@ -106,7 +94,19 @@ struct HotKeyTriggerTests {
         }
     }
 
-    @Test func capsLockToggleModeEventTap() {
+    @Test func unsupportedModifierFallsBackToFn() {
+        let manager = NativeHotKeyManager.shared
+        let original = manager.trigger
+        defer { manager.trigger = original }
+
+        UserDefaults.standard.set("modifier", forKey: "hotkey.type")
+        UserDefaults.standard.set(57, forKey: "hotkey.modifierKeyCode") // Legacy Caps Lock code
+
+        #expect(manager.trigger == .singleModifier(.fn))
+        #expect(manager.displayName() == "Fn")
+    }
+
+    @Test func fnToggleModeEventTap() {
         let manager = NativeHotKeyManager.shared
         let originalTrigger = manager.trigger
         let originalMode = manager.mode
@@ -116,9 +116,8 @@ struct HotKeyTriggerTests {
             manager.resetModifierState()
         }
 
-        manager.setTrigger(.singleModifier(.capsLock))
+        manager.setTrigger(.singleModifier(.fn))
         manager.mode = .toggle
-        manager.lastCapsLockState = false
 
         var pressedCount = 0
         manager.onHotKeyPressed = {
@@ -126,26 +125,24 @@ struct HotKeyTriggerTests {
         }
         manager.onHotKeyReleased = {}
 
-        // 1st press: Caps Lock turns ON (eventKeyCode 57, maskAlphaShift set)
-        let event1 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
-        event1.flags = .maskAlphaShift
-        manager.handleEventTap(type: .flagsChanged, event: event1)
+        // Fn down
+        let eventDown = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: true)!
+        eventDown.flags = [.maskSecondaryFn, CGEventFlags(rawValue: 0x00800000)]
+        manager.handleEventTap(type: .flagsChanged, event: eventDown)
         #expect(pressedCount == 1)
 
-        // 2nd press: Caps Lock turns OFF (even if eventKeyCode is 0, maskAlphaShift cleared)
-        let event2 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
-        event2.flags = []
-        manager.handleEventTap(type: .flagsChanged, event: event2)
-        #expect(pressedCount == 2)
+        // Fn up
+        let eventUp = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: false)!
+        eventUp.flags = []
+        manager.handleEventTap(type: .flagsChanged, event: eventUp)
+        #expect(pressedCount == 1)
 
-        // 3rd press: Caps Lock turns ON again
-        let event3 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
-        event3.flags = .maskAlphaShift
-        manager.handleEventTap(type: .flagsChanged, event: event3)
-        #expect(pressedCount == 3)
+        // Fn down again
+        manager.handleEventTap(type: .flagsChanged, event: eventDown)
+        #expect(pressedCount == 2)
     }
 
-    @Test func capsLockPushToTalkModeEventTap() {
+    @Test func fnPushToTalkModeEventTap() {
         let manager = NativeHotKeyManager.shared
         let originalTrigger = manager.trigger
         let originalMode = manager.mode
@@ -155,9 +152,8 @@ struct HotKeyTriggerTests {
             manager.resetModifierState()
         }
 
-        manager.setTrigger(.singleModifier(.capsLock))
+        manager.setTrigger(.singleModifier(.fn))
         manager.mode = .pushToTalk
-        manager.lastCapsLockState = false
 
         var pressedCount = 0
         var releasedCount = 0
@@ -168,48 +164,18 @@ struct HotKeyTriggerTests {
             releasedCount += 1
         }
 
-        // 1st press: Starts recording
-        let event1 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
-        event1.flags = .maskAlphaShift
-        manager.handleEventTap(type: .flagsChanged, event: event1)
+        // 1st press down: starts recording
+        let eventDown = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: true)!
+        eventDown.flags = [.maskSecondaryFn, CGEventFlags(rawValue: 0x00800000)]
+        manager.handleEventTap(type: .flagsChanged, event: eventDown)
         #expect(pressedCount == 1)
         #expect(releasedCount == 0)
 
-        // 2nd press: Stops recording
-        let event2 = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)!
-        event2.flags = []
-        manager.handleEventTap(type: .flagsChanged, event: event2)
+        // Key up: stops recording
+        let eventUp = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: false)!
+        eventUp.flags = []
+        manager.handleEventTap(type: .flagsChanged, event: eventUp)
         #expect(pressedCount == 1)
         #expect(releasedCount == 1)
-
-        // 3rd press: Starts recording again
-        let event3 = CGEvent(keyboardEventSource: nil, virtualKey: 57, keyDown: true)!
-        event3.flags = .maskAlphaShift
-        manager.handleEventTap(type: .flagsChanged, event: event3)
-        #expect(pressedCount == 2)
-        #expect(releasedCount == 1)
-
-        manager.resetModifierState()
-    }
-
-    @Test func otherModifierIgnoredWhenCapsLockConfigured() {
-        let manager = NativeHotKeyManager.shared
-        let originalTrigger = manager.trigger
-        defer {
-            manager.trigger = originalTrigger
-            manager.resetModifierState()
-        }
-
-        manager.setTrigger(.singleModifier(.capsLock))
-        manager.lastCapsLockState = false
-
-        var pressedCount = 0
-        manager.onHotKeyPressed = { pressedCount += 1 }
-
-        // User presses Option while Caps Lock is configured
-        let optionEvent = CGEvent(keyboardEventSource: nil, virtualKey: 58, keyDown: true)!
-        optionEvent.flags = .maskAlternate
-        manager.handleEventTap(type: .flagsChanged, event: optionEvent)
-        #expect(pressedCount == 0)
     }
 }
