@@ -36,6 +36,21 @@ public final class HotKeySettings: ObservableObject {
         setPreset(.combination(keyCode: 49, modifiers: UInt32(optionKey)))
     }
 
+    public var isFnPreset: Bool {
+        trigger == .singleModifier(.fn)
+    }
+
+    public var isRightOptionPreset: Bool {
+        trigger == .singleModifier(.rightOption)
+    }
+
+    public var isDefaultPreset: Bool {
+        if case .combination(let kc, _) = trigger, kc == 49 {
+            return true
+        }
+        return false
+    }
+
     public func beginCapture() {
         guard !isCapturing else { return }
         isCapturing = true

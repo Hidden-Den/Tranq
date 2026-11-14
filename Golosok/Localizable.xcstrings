@@ -725,13 +725,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Press a key combination…"
+            "value" : "Press a key or shortcut…"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нажмите сочетание клавиш…"
+            "value" : "Нажмите клавишу или сочетание…"
           }
         }
       }
