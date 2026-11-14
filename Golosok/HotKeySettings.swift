@@ -37,7 +37,13 @@ public final class HotKeySettings: ObservableObject {
             refreshName()
             return true
         } else {
-            self.isTaken = true
+            switch preset {
+            case .combination:
+                self.isTaken = true
+            case .singleModifier:
+                self.isTaken = false
+                PermissionManager.shared.requestAccessibilityPermission()
+            }
             return false
         }
     }

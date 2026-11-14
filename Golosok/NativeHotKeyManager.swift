@@ -171,7 +171,12 @@ public class NativeHotKeyManager {
 
     private func handleEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            isModifierActive = false
+            if isModifierActive {
+                isModifierActive = false
+                DispatchQueue.main.async { [weak self] in
+                    self?.onHotKeyReleased?()
+                }
+            }
             if let tap = eventTap {
                 CGEvent.tapEnable(tap: tap, enable: true)
             }
