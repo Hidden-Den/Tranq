@@ -75,7 +75,7 @@ struct SettingsView: View {
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            Toggle("", isOn: $audioCapture.hideInDock)
+                            Toggle("Скрыть в Dock", isOn: $audioCapture.hideInDock)
                                 .labelsHidden()
                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
                         }

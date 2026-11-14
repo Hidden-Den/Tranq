@@ -494,9 +494,13 @@ struct WindowAndDockSettingsTests {
         controller.register(window: window)
         #expect(controller.mainWindow === window)
 
+        window.orderFront(nil)
+        #expect(window.isVisible)
+
         // windowShouldClose should intercept, order out, and return false
         let shouldClose = controller.windowShouldClose(window)
         #expect(shouldClose == false)
+        #expect(!window.isVisible)
 
         // Other windows should not be blocked from closing
         let otherWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),

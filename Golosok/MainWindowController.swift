@@ -48,9 +48,14 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     
     /// Скрывает главное окно без завершения работы приложения.
     func hideMainWindow() {
-        DispatchQueue.main.async {
+        if Thread.isMainThread {
             self.mainWindow?.orderOut(nil)
             self.isWindowVisible = false
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.mainWindow?.orderOut(nil)
+                self?.isWindowVisible = false
+            }
         }
     }
     
@@ -58,10 +63,7 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         if sender === mainWindow {
-            sender.orderOut(nil)
-            DispatchQueue.main.async {
-                self.isWindowVisible = false
-            }
+            hideMainWindow()
             return false
         }
         return originalDelegate?.windowShouldClose?(sender) ?? true
