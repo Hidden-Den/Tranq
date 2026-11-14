@@ -158,10 +158,21 @@ public class NativeHotKeyManager {
         }
     }
 
+    private var hasLoggedAccessibilityWarning = false
+
     private func registerEventTap(for key: SingleModifierKey) -> Bool {
         if isTestEnvironment {
             return true
         }
+
+        guard AXIsProcessTrusted() else {
+            if !hasLoggedAccessibilityWarning {
+                hasLoggedAccessibilityWarning = true
+                AppLogger.shared.warn("HotKey", "Ожидание прав Универсального доступа", details: key.displayName)
+            }
+            return false
+        }
+        hasLoggedAccessibilityWarning = false
 
         let mask = (1 << CGEventType.flagsChanged.rawValue)
         let observer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
