@@ -7,7 +7,7 @@ import SwiftUI
 final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     static let shared = MainWindowController()
     
-    private(set) weak var mainWindow: NSWindow?
+    private(set) var mainWindow: NSWindow?
     private weak var originalDelegate: NSWindowDelegate?
     @Published var isWindowVisible: Bool = true
     
@@ -17,7 +17,11 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     
     /// Регистрирует главное окно приложения и подключает перехват закрытия.
     func register(window: NSWindow) {
-        guard !(window is NSPanel), window.canBecomeKey else { return }
+        guard !(window is NSPanel),
+              window.styleMask.contains(.titled),
+              !window.className.contains("StatusBar") else { return }
+        
+        window.isReleasedWhenClosed = false
         
         if self.mainWindow !== window {
             self.mainWindow = window
@@ -34,14 +38,32 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     func showMainWindow() {
         DispatchQueue.main.async {
             NSApp.activate(ignoringOtherApps: true)
-            if let window = self.mainWindow {
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
-            } else if let window = NSApp.windows.first(where: { !($0 is NSPanel) && $0.canBecomeKey }) {
-                self.register(window: window)
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
+            
+            let targetWindow: NSWindow? = {
+                if let w = self.mainWindow { return w }
+                if let w = NSApp.windows.first(where: {
+                    !($0 is NSPanel) &&
+                    $0.styleMask.contains(.titled) &&
+                    !$0.className.contains("StatusBar")
+                }) {
+                    self.register(window: w)
+                    return w
+                }
+                return nil
+            }()
+            
+            guard let window = targetWindow else {
+                AppLogger.shared.error("Window", "Главное окно приложения не найдено")
+                return
             }
+            
+            if window.isMiniaturized {
+                window.deminiaturize(nil)
+            }
+            
+            window.setIsVisible(true)
+            window.makeKeyAndOrderFront(nil)
+            window.orderFrontRegardless()
             self.isWindowVisible = true
         }
     }
