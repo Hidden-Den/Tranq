@@ -100,6 +100,13 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         }
     }
     
+    @Published var hideInDock: Bool = UserDefaults.standard.bool(forKey: "hideInDock") {
+        didSet {
+            UserDefaults.standard.set(hideInDock, forKey: "hideInDock")
+            applyActivationPolicy()
+        }
+    }
+    
     @Published var autoOpenNoteEnabled: Bool = UserDefaults.standard.object(forKey: "autoOpenNoteEnabled") as? Bool ?? true {
         didSet { UserDefaults.standard.set(autoOpenNoteEnabled, forKey: "autoOpenNoteEnabled") }
     }
@@ -159,6 +166,18 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 if enabled { try SMAppService.mainApp.register() }
                 else { try SMAppService.mainApp.unregister() }
             } catch {}
+        }
+    }
+    
+    func applyActivationPolicy() {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        DispatchQueue.main.async {
+            if self.hideInDock {
+                NSApp.setActivationPolicy(.accessory)
+            } else {
+                NSApp.setActivationPolicy(.regular)
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
     

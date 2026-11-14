@@ -3,6 +3,7 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AudioCapture.shared.applyActivationPolicy()
         let mic = PermissionManager.shared.isMicGranted
         let ax = PermissionManager.shared.isAccessibilityGranted
         AppLogger.shared.info("App", "Запуск Golosok",
@@ -26,6 +27,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         hotKey.register()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            MainWindowController.shared.showMainWindow()
+        }
+        return true
     }
 }
 
@@ -80,7 +88,31 @@ struct GolosokApp: App {
 
         .defaultSize(width: 990, height: 710)
         
-        MenuBarExtra("Голосок", systemImage: "waveform") {
+        MenuBarExtra("Голосок", systemImage: audioCapture.isRecording ? "record.circle.fill" : "waveform") {
+            if audioCapture.isRecording {
+                Text("Идет запись...")
+                Button("Остановить запись") {
+                    AudioCapture.shared.stopRecording()
+                }
+            } else {
+                Button("Начать запись") {
+                    AudioCapture.shared.startRecording()
+                }
+            }
+            
+            Divider()
+            
+            Button("Развернуть Голосок") {
+                MainWindowController.shared.showMainWindow()
+            }
+            
+            Button("Настройки…") {
+                MainWindowController.shared.showMainWindow()
+                NotificationCenter.default.post(name: NSNotification.Name("OpenSettingsTab"), object: nil)
+            }
+            
+            Divider()
+            
             Button("Скопировать последнюю запись") {
                 if let last = audioCapture.history.first?.text {
                     NSPasteboard.general.clearContents()
@@ -89,22 +121,15 @@ struct GolosokApp: App {
             }
             .disabled(audioCapture.history.isEmpty)
             
-            Divider()
-            
             Button("Транскрибировать аудиофайл...") {
                 AudioCapture.shared.importAndTranscribeFile()
             }
             
-            Button("Развернуть Голосок") {
-                NSApp.activate(ignoringOtherApps: true)
-                if let window = NSApplication.shared.windows.first {
-                    window.makeKeyAndOrderFront(nil)
-                }
-            }
-            
             Divider()
             
-            Button("Завершить") { NSApplication.shared.terminate(nil) }
+            Button("Завершить") {
+                NSApplication.shared.terminate(nil)
+            }
         }
     }
 }

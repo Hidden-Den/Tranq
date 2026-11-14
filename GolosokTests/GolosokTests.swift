@@ -7,6 +7,7 @@
 
 import Testing
 import Foundation
+import AppKit
 @testable import Golosok
 
 struct GolosokTests {
@@ -462,5 +463,47 @@ struct AISelectionStatefulTests {
         let model = store.model(named: "ru_giga")
         #expect(model != nil)
         #expect(model?.systemName == "GigaAM")
+    }
+}
+
+// MARK: - Window and Dock / MenuBar settings
+
+struct WindowAndDockSettingsTests {
+    @Test @MainActor func hideInDockPersistence() {
+        let store = AudioCapture.shared
+        let originalHideInDock = store.hideInDock
+        defer {
+            store.hideInDock = originalHideInDock
+        }
+
+        store.hideInDock = true
+        #expect(store.hideInDock == true)
+        #expect(UserDefaults.standard.bool(forKey: "hideInDock") == true)
+
+        store.hideInDock = false
+        #expect(store.hideInDock == false)
+        #expect(UserDefaults.standard.bool(forKey: "hideInDock") == false)
+    }
+
+    @Test @MainActor func mainWindowControllerInterception() {
+        let controller = MainWindowController()
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 300, height: 200),
+                              styleMask: [.titled, .closable],
+                              backing: .buffered,
+                              defer: false)
+        controller.register(window: window)
+        #expect(controller.mainWindow === window)
+
+        // windowShouldClose should intercept, order out, and return false
+        let shouldClose = controller.windowShouldClose(window)
+        #expect(shouldClose == false)
+
+        // Other windows should not be blocked from closing
+        let otherWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100),
+                                   styleMask: [.titled, .closable],
+                                   backing: .buffered,
+                                   defer: false)
+        let otherShouldClose = controller.windowShouldClose(otherWindow)
+        #expect(otherShouldClose == true)
     }
 }
