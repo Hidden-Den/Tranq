@@ -27,6 +27,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         hotKey.register()
+        
+        DispatchQueue.main.async {
+            if let window = NSApp.windows.first(where: {
+                !($0 is NSPanel) &&
+                $0.styleMask.contains(.titled) &&
+                !$0.className.contains("StatusBar")
+            }) {
+                MainWindowController.shared.register(window: window)
+            }
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -89,19 +99,6 @@ struct GolosokApp: App {
         .defaultSize(width: 990, height: 710)
         
         MenuBarExtra("Голосок", systemImage: audioCapture.isRecording ? "record.circle.fill" : "waveform") {
-            if audioCapture.isRecording {
-                Text("Идет запись...")
-                Button("Остановить запись") {
-                    AudioCapture.shared.stopRecording()
-                }
-            } else {
-                Button("Начать запись") {
-                    AudioCapture.shared.startRecording()
-                }
-            }
-            
-            Divider()
-            
             Button("Развернуть Голосок") {
                 MainWindowController.shared.showMainWindow()
             }
@@ -109,20 +106,6 @@ struct GolosokApp: App {
             Button("Настройки…") {
                 MainWindowController.shared.showMainWindow()
                 NotificationCenter.default.post(name: NSNotification.Name("OpenSettingsTab"), object: nil)
-            }
-            
-            Divider()
-            
-            Button("Скопировать последнюю запись") {
-                if let last = audioCapture.history.first?.text {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(last, forType: .string)
-                }
-            }
-            .disabled(audioCapture.history.isEmpty)
-            
-            Button("Транскрибировать аудиофайл...") {
-                AudioCapture.shared.importAndTranscribeFile()
             }
             
             Divider()

@@ -493,6 +493,7 @@ struct WindowAndDockSettingsTests {
                               defer: false)
         controller.register(window: window)
         #expect(controller.mainWindow === window)
+        #expect(window.isReleasedWhenClosed == false)
 
         window.orderFront(nil)
         #expect(window.isVisible)
