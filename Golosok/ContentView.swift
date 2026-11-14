@@ -550,7 +550,7 @@ struct ContentView: View {
     }
     
     private func toggleSidebar() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+        withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.32)) {
             isSidebarVisible.toggle()
         }
     }
@@ -693,20 +693,20 @@ struct ContentView: View {
     }
     
     var mainInterface: some View {
-        HStack(spacing: 0) {
-            if isSidebarVisible {
-                sidebarView
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                Divider().background(Color.uiHairline)
-                    .transition(.opacity)
-            }
+        VStack(spacing: 0) {
+            topBar
+            Divider().background(Color.uiHairline)
             
-            VStack(spacing: 0) {
-                mainTopBar
-                Divider().background(Color.uiHairline)
+            HStack(spacing: 0) {
+                sidebarContent
+                    .frame(width: 270)
+                    .offset(x: isSidebarVisible ? 0 : -270)
+                    .opacity(isSidebarVisible ? 1.0 : 0.0)
+                    .frame(width: isSidebarVisible ? 270 : 0, alignment: .leading)
+                    .clipped()
+                
+                Color.uiHairline
+                    .frame(width: isSidebarVisible ? 1 : 0)
                 
                 Group {
                     switch currentTab {
@@ -717,68 +717,54 @@ struct ContentView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }.frame(minWidth: 840, minHeight: 520)
-    }
-    
-    private var sidebarTopBar: some View {
-        HStack(spacing: 8) {
-            Spacer()
-                .frame(width: 70)
-            
-            Button(action: toggleSidebar) {
-                Image(systemName: "sidebar.leading")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.uiMidGray)
-                    .frame(width: 26, height: 26)
-                    .background(Color.uiCanvas.opacity(0.6))
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-            }
-            .buttonStyle(TactileButtonStyle())
-            .help(LocalizedStringKey("Скрыть меню"))
-            
-            Spacer()
         }
-        .frame(height: 38)
-        .padding(.trailing, 10)
+        .frame(minWidth: 840, minHeight: 520)
     }
     
-    private var mainTopBar: some View {
-        HStack(spacing: 8) {
-            if !isSidebarVisible {
-                Spacer()
-                    .frame(width: 70)
+    private var topBar: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Spacer().frame(width: 68)
                 
-                Button(action: toggleSidebar) {
-                    Image(systemName: "sidebar.leading")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.uiMidGray)
-                        .frame(width: 26, height: 26)
-                        .background(Color.uiPaper)
-                        .cornerRadius(6)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                }
-                .buttonStyle(TactileButtonStyle())
-                .help(LocalizedStringKey("Показать меню"))
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                sidebarToggleButton
+                
+                Spacer()
             }
+            .frame(width: isSidebarVisible ? 270 : 102)
+            .background(isSidebarVisible ? Color.uiSidebar : Color.uiCanvas)
             
-            Text(currentTabTitle)
-                .font(UIStyleFont.display(size: 13, weight: .semibold))
-                .foregroundColor(.uiInk)
-                .padding(.leading, isSidebarVisible ? 0 : 4)
+            Color.uiHairline
+                .frame(width: isSidebarVisible ? 1 : 0)
             
-            Spacer()
+            HStack(spacing: 8) {
+                Text(currentTabTitle)
+                    .font(UIStyleFont.display(size: 13, weight: .semibold))
+                    .foregroundColor(.uiInk)
+                Spacer()
+            }
+            .padding(.leading, isSidebarVisible ? 20 : 10)
+            .padding(.trailing, 16)
+            .background(Color.uiCanvas)
         }
         .frame(height: 38)
-        .padding(.leading, isSidebarVisible ? 20 : 0)
-        .padding(.trailing, 10)
-        .background(Color.uiCanvas)
     }
     
-    private var sidebarView: some View {
+    private var sidebarToggleButton: some View {
+        Button(action: toggleSidebar) {
+            Image(systemName: "sidebar.leading")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundColor(.uiMidGray)
+                .frame(width: 26, height: 26)
+                .background(Color.uiPaper.opacity(0.35))
+                .cornerRadius(6)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(TactileButtonStyle())
+        .help(isSidebarVisible ? LocalizedStringKey("Скрыть меню") : LocalizedStringKey("Показать меню"))
+    }
+    
+    private var sidebarContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sidebarTopBar
             sidebarHeader
             VStack(spacing: 4) {
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
@@ -798,7 +784,10 @@ struct ContentView: View {
             Divider().background(Color.uiHairline)
             if currentTab == .history { historySearchAndList } else { Spacer() }
             sidebarFooter
-        }.frame(width: 270).background(Color.uiSidebar)
+        }
+        .padding(.top, 10)
+        .frame(width: 270)
+        .background(Color.uiSidebar)
     }
     
     private var sidebarHeader: some View {
