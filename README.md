@@ -3,92 +3,86 @@
 > **Read this in another language: [Русский](README_RU.md)**
 
 <p align="left">
-  <a href="https://github.com/jaywcjlove/awesome-swift-macos-apps">
-    <img src="https://img.shields.io/badge/Featured_in-Awesome_Swift_macOS_Apps-black?style=for-the-badge&logo=swift&logoColor=F05138" alt="Awesome Swift macOS Apps">
+  <a href="https://github.com/Nuteres/Golosok/releases">
+    <img src="https://img.shields.io/github/v/release/Nuteres/Golosok?style=for-the-badge&color=black&logo=apple" alt="Latest Release">
   </a>
-  <a href="https://github.com/Berliner187/Golosok/releases">
-    <img src="https://img.shields.io/github/v/release/Berliner187/Golosok?style=for-the-badge&color=black&logo=apple" alt="Latest Release">
-  </a>
-  <a href="https://github.com/Berliner187/Golosok/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-Open_Source-black?style=for-the-badge" alt="License">
+  <a href="https://github.com/Nuteres/Golosok/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-black?style=for-the-badge" alt="License">
   </a>
 </p>
 
-**Native voice dictation powered by Sber GigaAM v3. Inference on Apple Silicon.**  
-Instant text input via `⌥ + Space` and offline media file transcription.
-
-![Golosok Demo 1](https://raw.githubusercontent.com/Berliner187/Golosok/main/.github/assets/promo.gif)
-
-![Golosok Demo 2](https://raw.githubusercontent.com/Berliner187/Golosok/main/.github/assets/promo-2.gif)
-
-## 🌟 Recognition
-
-* **Featured in [Awesome Swift macOS Apps](https://github.com/jaywcjlove/awesome-swift-macos-apps)** — Official curated directory of elite native Swift applications for macOS by [@jaywcjlove](https://github.com/jaywcjlove).
+Native voice dictation and offline audio transcription powered by Sber GigaAM v3 and Whisper (Large-v3 Turbo / Medium). Hardware-accelerated inference for Apple Silicon. Local speech recognition is 100% offline; optional AI post-processing connects directly to your chosen provider or local Ollama. Zero telemetry, zero external tracking.
 
 ---
 
-## Features & Architecture
+## Architecture & Capabilities
 
-* **Full Autonomy (Zero Cloud).** Inference runs 100% locally. Audio stream never leaves your Mac. Total privacy.
-* **Direct Input.** Press `⌥ + Space` — dictate — text drops instantly under your active cursor. Works in any app: VS Code, Notion, Telegram, Xcode, Obsidian, Slack, and more.
-* **Hardware Acceleration.** The model is optimized specifically for Apple Silicon (M-series). Execution is offloaded to CoreML / Apple Neural Engine (ANE) without CPU overheating.
-* **Context & Slang Awareness.** Excellent understanding of Russian, English, IT slang, code-switching ("Runglish"), and automatic punctuation placement.
-* **Batch File Processing.** Offline transcription for audio/video files of any duration (MP3, WAV, M4A, MP4, WebM).
+* **Local Speech Recognition (100% Offline):** Speech-to-text inference runs entirely on-device without internet access. Audio streams never leave your Mac. Zero telemetry, analytics, or background tracking.
+* **Direct Input:** Press your global hotkey (default `⌥ + Space`, or single key `Fn`) — dictate — text is inserted directly under your active cursor in any application (VS Code, Notion, Telegram, Xcode, Obsidian, Slack, browsers).
+* **Hardware Acceleration:** Neural network models run on Apple Silicon (M1–M5) leveraging Core ML, Apple Neural Engine (ANE), and Metal Performance Shaders without CPU overheating.
+* **Dual Operation Modes:**
+  * **Toggle (Переключение):** Press once to start recording, press again to stop, transcribe, and insert.
+  * **Push-to-Talk (Рация):** Hold key down while speaking, release to transcribe and paste immediately.
+* **Offline Batch Transcription:** Transcribe audio and video recordings of any length (MP3, WAV, M4A, AAC, FLAC, OGG, OPUS, MP4, MOV, WebM, MKV).
+* **Direct AI Post-Processing (Optional):** Clean up punctuation, summarize, or translate transcriptions via direct Bring-Your-Own-Key connections (OpenAI, Groq, DeepSeek) requiring network access, or 100% locally via Ollama. Zero intermediate proxy servers.
 
-## Technical Specifications
+---
+
+## Technical Specifications & Stack
 
 | Component | Specification |
 | :--- | :--- |
-| **OS** | macOS 13.0+ (Ventura, Sonoma, Sequoia) |
-| **Hardware** | Apple Silicon (M1 / M2 / M3 / M4 / M5) |
-| **Model Engine** | GigaAM v3 RNN-T (GGUF Q8_0) / Whisper Large v3 |
-| **RAM (Idle)** | ~70 MB |
-| **RAM (Active Inference)** | ~100 MB |
-| **Distribution Size** | ~270 MB |
+| **OS** | macOS 13.5+ (Ventura, Sonoma, Sequoia) |
+| **Architecture** | Apple Silicon (arm64: M1 / M2 / M3 / M4 / M5) |
+| **Languages & Frameworks** | Swift 5.9+, SwiftUI, AppKit |
+| **Speech Models** | GigaAM v3 RNN-T (GGUF Q8_0) / Whisper Large-v3 Turbo / Whisper Medium (Q5) |
+| **Acceleration Engines** | Core ML / Apple Neural Engine (ANE) / MPS |
+| **HotKey Subsystem** | Carbon Event Manager (combos) + Quartz CGEventTap (modifiers like `Fn`) |
+| **Memory Footprint** | ~70 MB idle / ~100 MB active inference |
+| **Telemetry & Analytics** | None (Completely removed) |
+| **Distribution Format** | Compressed `.dmg` disk image (~260 MB) |
+
+---
 
 ## Installation
 
-1. Download the latest `Golosok.dmg` from the [Releases](../../releases) section.
-2. Drag `Golosok.app` into your `/Applications` folder.
+1. Download `Golosok.dmg` from the [Releases](https://github.com/Nuteres/Golosok/releases) section.
+2. Drag `Golosok.app` to your `/Applications` folder.
 
-**Bypassing macOS Gatekeeper:**  
-This project is distributed as open-source software without an annual paid Apple Developer ID certificate. To prevent macOS from blocking the first launch, remove the quarantine attribute via Terminal:
+### Gatekeeper Quarantine Removal
+
+This build is distributed as open source without a paid Apple Developer certificate. If macOS blocks the initial launch, remove the quarantine attribute:
 
 ```bash
 xattr -cr /Applications/Golosok.app
 ```
 
-*(GUI Alternative: Control + Right-click on the app icon -> Open -> Confirm).*
+*(Alternatively: Control + Right-click `Golosok.app` -> Open -> Confirm).*
+
+---
 
 ## System Permissions
 
-On the first launch, the app will request two macOS permissions:
-1. **Microphone** — for capturing voice input.
-2. **Accessibility** — for automated text insertion (`Cmd + V`) directly under your active cursor.
+* **Microphone:** Required for capturing voice input.
+* **Accessibility:** Required for simulated keyboard insertion (`⌘ + V`) into active applications and global modifier event taps (`Fn`).
 
-*(If you are updating from an older version and the Accessibility toggle seems frozen — remove Golosok from the system list using the `-` button and re-add it).*
+---
 
-## Controls & Shortcuts
+## Controls
 
-Golosok runs silently in the background. Control is bound to global hotkeys:
+* **Global Hotkey (Default `⌥ + Space` or `Fn`):**
+  * In **Toggle** mode: 1st press starts recording, 2nd press finalizes transcription and pastes text.
+  * In **Push-to-Talk** mode: Hold key to record, release to transcribe.
+* **`ESC`:** Cancels recording immediately without saving or pasting.
+* **Menu Bar Status Icon:** Access recent dictation history, copy snippets, and open settings.
 
-* **`⌥ + Space` (Option + Space) — Start / Stop Dictation**
-  * **1st Press:** Activates recording (white island UI with green equalizer).
-  * **2nd Press:** Stops recording. Triggers inference (~0.1s) and pastes text into your focused input field.
-* **Push-to-Talk / Hold Mode** *(Selectable in Settings)*
-  * Hold `⌥ + Space` to record, release to instantly transcribe and paste.
-* **`ESC` — Cancel**
-  * Instant hard-reset of the current recording without pasting or saving.
-
-A menu bar icon (`waveform`) provides access to recent dictation history, one-click clipboard copying, and app settings.
+---
 
 ## Building from Source
 
-If you want to clone the repository and build the Xcode project manually:
-
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Berliner187/Golosok.git
+git clone https://github.com/Nuteres/Golosok.git
 cd Golosok
 
 # 2. Download GigaAM model weights
@@ -98,4 +92,16 @@ curl -L -o Golosok/gigaam.gguf https://huggingface.co/memoravox/gigaam-v3-e2e-rn
 open Golosok.xcodeproj
 ```
 
-In Xcode, press `⌘ + R` to build and run.
+Press `⌘ + R` in Xcode to build and run, or build via command line:
+
+```bash
+xcodebuild -project Golosok.xcodeproj -target Golosok -configuration Release build
+```
+
+---
+
+## License
+
+Licensed under the [MIT License](LICENSE).
+Original work Copyright (c) 2026 Kozak Developer (Berliner187).
+Modifications Copyright (c) 2026 Nuteres.

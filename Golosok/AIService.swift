@@ -13,7 +13,6 @@ struct AIProviderPreset: Identifiable {
     let baseURL: String
     let defaultModel: String
     let needsKey: Bool
-    var isProxy: Bool = false
 }
 
 enum AIProviderPresets {
@@ -49,15 +48,6 @@ enum AIProviderPresets {
             baseURL: "http://localhost:11434/v1",
             defaultModel: "gemma3:1b",
             needsKey: false
-        ),
-        AIProviderPreset(
-            id: "golosok_proxy",
-            name: "Голосок+",
-            hint: "Облачные модели на серверах Голоска — по подписке",
-            baseURL: "https://golosok.space/api/v1",
-            defaultModel: "",
-            needsKey: false,
-            isProxy: true
         )
     ]
 
@@ -70,7 +60,6 @@ struct AIProviderConfig {
     let baseURL: String
     let apiKey: String
     let model: String
-    let isProxy: Bool
 }
 
 enum AIError: LocalizedError {
@@ -116,11 +105,33 @@ final class AIProviderStore: ObservableObject {
     private static let defaults = UserDefaults.standard
 
     private init() {
-        let initialPreset = AIProviderPresets.preset(id: Self.defaults.string(forKey: "ai.providerID") ?? "") ?? AIProviderPresets.all[0]
-        providerID = Self.defaults.string(forKey: "ai.providerID") ?? initialPreset.id
-        baseURL = Self.defaults.string(forKey: "ai.baseURL") ?? initialPreset.baseURL
-        model = Self.defaults.string(forKey: "ai.model") ?? initialPreset.defaultModel
-        apiKey = KeyStore.get("ai.apiKey") ?? ""
+        // One-time cleanup for removed account credentials
+        KeyStore.delete("account.token")
+
+        let storedID = Self.defaults.string(forKey: "ai.providerID") ?? ""
+        let initialID: String
+        let initialBaseURL: String
+        let initialModel: String
+
+        if let preset = AIProviderPresets.preset(id: storedID) {
+            initialID = preset.id
+            initialBaseURL = Self.defaults.string(forKey: "ai.baseURL") ?? preset.baseURL
+            initialModel = Self.defaults.string(forKey: "ai.model") ?? preset.defaultModel
+        } else {
+            // Stored provider is unknown, legacy or was the removed proxy; reset to default preset
+            let defaultPreset = AIProviderPresets.all[0]
+            initialID = defaultPreset.id
+            initialBaseURL = defaultPreset.baseURL
+            initialModel = defaultPreset.defaultModel
+            Self.defaults.set(initialID, forKey: "ai.providerID")
+            Self.defaults.set(initialBaseURL, forKey: "ai.baseURL")
+            Self.defaults.set(initialModel, forKey: "ai.model")
+        }
+
+        self.providerID = initialID
+        self.baseURL = initialBaseURL
+        self.model = initialModel
+        self.apiKey = KeyStore.get("ai.apiKey") ?? ""
     }
 
     var currentPreset: AIProviderPreset? {
@@ -128,20 +139,15 @@ final class AIProviderStore: ObservableObject {
     }
 
     var config: AIProviderConfig {
-        let isProxy = currentPreset?.isProxy ?? false
-        return AIProviderConfig(
+        AIProviderConfig(
             baseURL: baseURL,
-            apiKey: isProxy ? AccountStore.shared.token : apiKey,
-            model: model,
-            isProxy: isProxy
+            apiKey: apiKey,
+            model: model
         )
     }
 
     var isConfigured: Bool {
-        if currentPreset?.isProxy == true {
-            return true
-        }
-        return !baseURL.trimmingCharacters(in: .whitespaces).isEmpty
+        !baseURL.trimmingCharacters(in: .whitespaces).isEmpty
             && !model.trimmingCharacters(in: .whitespaces).isEmpty
             && (apiKey.isEmpty ? !(currentPreset?.needsKey ?? true) : true)
     }
@@ -160,7 +166,6 @@ final class AIProviderStore: ObservableObject {
     }
 
     func refreshModels() {
-        guard !(currentPreset?.isProxy ?? false) else { return }
         isLoadingModels = true
         installedModels = []
         AIService.shared.listModels(using: config) { [weak self] result in
@@ -180,12 +185,7 @@ final class AIProviderStore: ObservableObject {
     func testConnection() {
         guard isConfigured else {
             testOK = false
-            testResult = currentPreset?.isProxy == true ? String(localized: "Подключите аккаунт") : String(localized: "Заполните baseURL и модель")
-            return
-        }
-        if currentPreset?.isProxy == true {
-            testOK = true
-            testResult = String(localized: "Сервер доступен через аккаунт")
+            testResult = String(localized: "Заполните baseURL и модель")
             return
         }
         isTesting = true
@@ -241,8 +241,7 @@ final class AIService {
         if !config.apiKey.isEmpty {
             request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         }
-        addProxyHeaders(&request, config: config)
-        let body = ChatRequest(model: config.isProxy ? nil : config.model, messages: messages, temperature: 0.3)
+        let body = ChatRequest(model: config.model, messages: messages, temperature: 0.3)
         guard let data = try? JSONEncoder().encode(body) else {
             completion(.failure(.parse("кодирование запроса")))
             return
@@ -295,7 +294,6 @@ final class AIService {
         if !config.apiKey.isEmpty {
             request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         }
-        addProxyHeaders(&request, config: config)
         session.dataTask(with: request) { data, response, error in
             if let error {
                 completion(.failure(.network(error.localizedDescription)))
@@ -325,7 +323,6 @@ final class AIService {
         if !config.apiKey.isEmpty {
             request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         }
-        addProxyHeaders(&request, config: config)
         session.dataTask(with: request) { data, response, error in
             if let error {
                 completion(.failure(.network(error.localizedDescription)))
@@ -352,15 +349,6 @@ final class AIService {
 
     private func url(_ base: String, path: String) -> URL? {
         URL(string: "\(base.trimmingCharacters(in: CharacterSet(charactersIn: "/ ")))/\(path)")
-    }
-
-    private func addProxyHeaders(_ request: inout URLRequest, config: AIProviderConfig) {
-        guard config.isProxy else { return }
-        request.setValue(Telemetry.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
-        if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
-            request.setValue(version, forHTTPHeaderField: "X-App-Version")
-        }
-        request.setValue(ProcessInfo.processInfo.operatingSystemVersionString, forHTTPHeaderField: "X-OS-Version")
     }
 
     private static func extractError(from data: Data) -> String? {

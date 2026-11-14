@@ -135,23 +135,6 @@ struct SettingsView: View {
                         
                         Divider().background(Color.uiHairline)
                         
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Делиться аналитикой")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Автоматическая отправка анонимных метрик производительности")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            Spacer()
-                            Toggle("", isOn: $audioCapture.analyticsEnabled)
-                                .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
-                        }
-                        
-                        Divider().background(Color.uiHairline)
-                        
                         // 4. Звуки
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
@@ -304,10 +287,6 @@ HStack {
                 // РАЗДЕЛ 3.5: ИИ-ПРОВАЙДЕР
                 AIProviderSection()
 
-                // РАЗДЕЛ 3.6: АККАУНТ
-                AccountSection()
-                    .id("account")
-
                 // РАЗДЕЛ 4: ДАННЫЕ
                 UICard {
                     HStack {
@@ -329,9 +308,6 @@ HStack {
             .padding(20)
         }
         .background(Color.uiCanvas)
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScrollToAccount"))) { _ in
-            withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo("account", anchor: .top) }
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             permissions.refreshPermissions()
         }
