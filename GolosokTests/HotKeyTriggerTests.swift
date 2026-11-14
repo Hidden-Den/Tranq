@@ -30,4 +30,22 @@ struct HotKeyTriggerTests {
         let comboTrigger = HotKeyTrigger.combination(keyCode: 49, modifiers: 2048)
         #expect(comboTrigger.displayName.contains("Space"))
     }
+
+    @Test func nativeHotKeyManagerTriggerPersistence() {
+        let manager = NativeHotKeyManager.shared
+        let original = manager.trigger
+        defer { manager.trigger = original }
+
+        manager.trigger = .singleModifier(.fn)
+        #expect(manager.trigger == .singleModifier(.fn))
+        #expect(manager.displayName() == "Fn")
+
+        manager.trigger = .singleModifier(.rightOption)
+        #expect(manager.trigger == .singleModifier(.rightOption))
+        #expect(manager.displayName() == "Правый ⌥")
+
+        manager.trigger = .combination(keyCode: 49, modifiers: 2048)
+        #expect(manager.trigger == .combination(keyCode: 49, modifiers: 2048))
+        #expect(manager.displayName().contains("Space"))
+    }
 }
