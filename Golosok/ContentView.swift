@@ -606,6 +606,10 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
+            currentTab = .settings
+        }
+        .background(WindowAccessor())
         .animation(.easeOut(duration: 0.16), value: isFileDropTargeted)
     }
 

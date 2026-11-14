@@ -52,12 +52,30 @@ struct SettingsView: View {
                                 Text("Запуск при входе")
                                     .font(UIStyleFont.body(size: 13, weight: .medium))
                                     .foregroundColor(.uiInk)
-                                Text("Автоматически открывать в строке меню")
+                                Text("Автоматический запуск при старте системы")
                                     .font(UIStyleFont.body(size: 11, weight: .regular))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
                             Toggle("", isOn: $audioCapture.launchAtLoginEnabled)
+                                .labelsHidden()
+                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                        }
+                        
+                        Divider().background(Color.uiHairline)
+                        
+                        // 2. Скрыть в Dock
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Скрыть в Dock")
+                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .foregroundColor(.uiInk)
+                                Text("Работа в фоне без значка в Dock")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            Spacer()
+                            Toggle("Скрыть в Dock", isOn: $audioCapture.hideInDock)
                                 .labelsHidden()
                                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
                         }
