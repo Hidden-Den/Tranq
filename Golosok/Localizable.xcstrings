@@ -1,150 +1,6 @@
 {
   "sourceLanguage" : "ru",
   "strings" : {
-    "Строка меню" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menu bar"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Строка меню"
-          }
-        }
-      }
-    },
-    "Иконка быстрого доступа у часов" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quick access icon near the clock"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Иконка быстрого доступа у часов"
-          }
-        }
-      }
-    },
-    "Скрыть в Dock" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hide in Dock"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Скрыть в Dock"
-          }
-        }
-      }
-    },
-    "Работа в фоне без значка в Dock" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Run in background without Dock icon"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Работа в фоне без значка в Dock"
-          }
-        }
-      }
-    },
-    "Автоматический запуск при старте системы" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start automatically at system login"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Автоматический запуск при старте системы"
-          }
-        }
-      }
-    },
-    "Идет запись..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recording in progress..."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Идет запись..."
-          }
-        }
-      }
-    },
-    "Начать запись" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start recording"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Начать запись"
-          }
-        }
-      }
-    },
-    "Остановить запись" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop recording"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Остановить запись"
-          }
-        }
-      }
-    },
-    "Настройки…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Settings…"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Настройки…"
-          }
-        }
-      }
-    },
     "" : {
       "localizations" : {
         "en" : {
@@ -164,7 +20,7 @@
     " • 2026" : {
 
     },
-    "/ %lld" : {
+    "\/ %lld" : {
 
     },
     "%.0f мин" : {
@@ -199,19 +55,19 @@
         }
       }
     },
-    "%.1f / %.1f МБ (%d%%)" : {
+    "%.1f \/ %.1f МБ (%d%%)" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%.1f / %.1f MB (%d%%)"
+            "value" : "%.1f \/ %.1f MB (%d%%)"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%.1f / %.1f МБ (%d%%)"
+            "value" : "%.1f \/ %.1f МБ (%d%%)"
           }
         }
       }
@@ -268,12 +124,12 @@
     "%lld МБ — Apple Metal" : {
 
     },
-    "%lld/%lld" : {
+    "%lld\/%lld" : {
       "localizations" : {
         "ru" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$lld/%2$lld"
+            "value" : "%1$lld\/%2$lld"
           }
         }
       }
@@ -310,19 +166,19 @@
         }
       }
     },
-    "⌘ + O / МЕНЮ" : {
+    "⌘ + O \/ МЕНЮ" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌘ + O / MENU"
+            "value" : "⌘ + O \/ MENU"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌘ + O / МЕНЮ"
+            "value" : "⌘ + O \/ МЕНЮ"
           }
         }
       }
@@ -347,19 +203,19 @@
         }
       }
     },
-    "✍️ Переписать в пост/письмо" : {
+    "✍️ Переписать в пост\/письмо" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "✍️ Rewrite as post/email"
+            "value" : "✍️ Rewrite as post\/email"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "✍️ Переписать в пост/письмо"
+            "value" : "✍️ Переписать в пост\/письмо"
           }
         }
       }
@@ -500,7 +356,7 @@
         }
       }
     },
-    "0/0" : {
+    "0\/0" : {
 
     },
     "4 ФОРМАТА" : {
@@ -876,34 +732,146 @@
         }
       }
     },
-    "HotKey.Taken" : {
+    "HotKey.Modifier.LeftCommand" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Already in use"
+            "value" : "Left ⌘"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Занято"
+            "value" : "Левый ⌘"
           }
         }
       }
     },
-    "HotKey.QuickPresets" : {
+    "HotKey.Modifier.LeftControl" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Presets"
+            "value" : "Left ⌃"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Быстрый выбор"
+            "value" : "Левый ⌃"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.LeftOption" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Left ⌥"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Левый ⌥"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.LeftShift" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Left ⇧"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Левый ⇧"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.RightCommand" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right ⌘"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правый ⌘"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.RightControl" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right ⌃"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правый ⌃"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.RightOption" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right ⌥"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правый ⌥"
+          }
+        }
+      }
+    },
+    "HotKey.Modifier.RightShift" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right ⇧"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правый ⇧"
+          }
+        }
+      }
+    },
+    "HotKey.Preset.Default" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⌥ + Space"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⌥ + Space"
           }
         }
       }
@@ -940,146 +908,34 @@
         }
       }
     },
-    "HotKey.Preset.Default" : {
+    "HotKey.QuickPresets" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌥ + Space"
+            "value" : "Quick Presets"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⌥ + Space"
+            "value" : "Быстрый выбор"
           }
         }
       }
     },
-    "HotKey.Modifier.RightOption" : {
+    "HotKey.Taken" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Right ⌥"
+            "value" : "Already in use"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Правый ⌥"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.LeftOption" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Left ⌥"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Левый ⌥"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.RightCommand" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right ⌘"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Правый ⌘"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.LeftCommand" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Left ⌘"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Левый ⌘"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.RightControl" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right ⌃"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Правый ⌃"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.LeftControl" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Left ⌃"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Левый ⌃"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.RightShift" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right ⇧"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Правый ⇧"
-          }
-        }
-      }
-    },
-    "HotKey.Modifier.LeftShift" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Left ⇧"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Левый ⇧"
+            "value" : "Занято"
           }
         }
       }
@@ -1104,7 +960,7 @@
     "llama-3.3-70b-versatile" : {
 
     },
-    "LM Studio / локальный сервер" : {
+    "LM Studio \/ локальный сервер" : {
 
     },
     "Markdown (.md)" : {
@@ -1351,6 +1207,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Автоматический ввод надиктованного текста и расшифровка аудиофайлов. Локальная обработка речи без передачи данных посторонним."
+          }
+        }
+      }
+    },
+    "Автоматический запуск при старте системы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start automatically at system login"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Автоматический запуск при старте системы"
           }
         }
       }
@@ -2003,19 +1875,19 @@
         }
       }
     },
-    "Диктовка (Старт / Стоп)" : {
+    "Диктовка (Старт \/ Стоп)" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dictation (Start / Stop)"
+            "value" : "Dictation (Start \/ Stop)"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Диктовка (Старт / Стоп)"
+            "value" : "Диктовка (Старт \/ Стоп)"
           }
         }
       }
@@ -2345,6 +2217,22 @@
         }
       }
     },
+    "Идет запись..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording in progress..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Идет запись..."
+          }
+        }
+      }
+    },
     "Извлечение аудио..." : {
       "localizations" : {
         "en" : {
@@ -2453,6 +2341,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Иконка"
+          }
+        }
+      }
+    },
+    "Иконка быстрого доступа у часов" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick access icon near the clock"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Иконка быстрого доступа у часов"
           }
         }
       }
@@ -2889,6 +2793,22 @@
         }
       }
     },
+    "Настройки…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройки…"
+          }
+        }
+      }
+    },
     "НАЧАЛО ПЕРИОДА" : {
       "localizations" : {
         "en" : {
@@ -2901,6 +2821,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "НАЧАЛО ПЕРИОДА"
+          }
+        }
+      }
+    },
+    "Начать запись" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start recording"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Начать запись"
           }
         }
       }
@@ -3393,6 +3329,22 @@
         }
       }
     },
+    "Остановить запись" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop recording"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Остановить запись"
+          }
+        }
+      }
+    },
     "Отключить" : {
       "localizations" : {
         "en" : {
@@ -3653,19 +3605,19 @@
         }
       }
     },
-    "Переписать в пост/письмо" : {
+    "Переписать в пост\/письмо" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rewrite as post/email"
+            "value" : "Rewrite as post\/email"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Переписать в пост/письмо"
+            "value" : "Переписать в пост\/письмо"
           }
         }
       }
@@ -4174,6 +4126,22 @@
         }
       }
     },
+    "Работа в фоне без значка в Dock" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run in background without Dock icon"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Работа в фоне без значка в Dock"
+          }
+        }
+      }
+    },
     "Развернуть Голосок" : {
       "localizations" : {
         "en" : {
@@ -4515,6 +4483,22 @@
         }
       }
     },
+    "Светлая" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Светлая"
+          }
+        }
+      }
+    },
     "Сводка по расшифровкам, активности и темпу работы за период" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4662,6 +4646,22 @@
         }
       }
     },
+    "Системный" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Системный"
+          }
+        }
+      }
+    },
     "Скачать" : {
       "localizations" : {
         "en" : {
@@ -4739,6 +4739,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Скорость"
+          }
+        }
+      }
+    },
+    "Скрыть в Dock" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide in Dock"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скрыть в Dock"
           }
         }
       }
@@ -5024,6 +5040,22 @@
         }
       }
     },
+    "Строка меню" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu bar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Строка меню"
+          }
+        }
+      }
+    },
     "Субтитры (.srt)" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5087,6 +5119,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Текст сразу появится под курсором в любом приложении"
+          }
+        }
+      }
+    },
+    "Тёмная" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тёмная"
+          }
+        }
+      }
+    },
+    "Тёмная, светлая или системная тема" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark, light, or system theme"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тёмная, светлая или системная тема"
           }
         }
       }
@@ -5265,6 +5329,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "УТРО"
+          }
+        }
+      }
+    },
+    "Цвет интерфейса" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interface color"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Цвет интерфейса"
           }
         }
       }

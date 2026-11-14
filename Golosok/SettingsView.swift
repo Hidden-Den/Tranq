@@ -55,9 +55,9 @@ struct SettingsView: View {
                             get: { theme.current },
                             set: { theme.select($0) }
                         ), options: [
-                            .init("Системный", value: AppTheme.system),
-                            .init("Тёмный", value: AppTheme.dark),
-                            .init("Светлый", value: AppTheme.light)
+                            .init("Система", value: AppTheme.system),
+                            .init("Тёмная", value: AppTheme.dark),
+                            .init("Светлая", value: AppTheme.light)
                         ], width: 140)
                     }
                 }
