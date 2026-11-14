@@ -24,6 +24,7 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
         window.isReleasedWhenClosed = false
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
         window.styleMask.insert(.fullSizeContentView)
         window.isMovableByWindowBackground = true
         

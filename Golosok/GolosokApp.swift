@@ -59,6 +59,7 @@ struct GolosokApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .ignoresSafeArea()
                 .frame(minWidth: 990, minHeight: 710)
         }
         .windowStyle(.hiddenTitleBar)

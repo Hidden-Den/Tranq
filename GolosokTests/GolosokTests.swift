@@ -496,6 +496,7 @@ struct WindowAndDockSettingsTests {
         #expect(window.isReleasedWhenClosed == false)
         #expect(window.titleVisibility == .hidden)
         #expect(window.titlebarAppearsTransparent == true)
+        #expect(window.titlebarSeparatorStyle == .none)
         #expect(window.styleMask.contains(.fullSizeContentView))
         #expect(window.isMovableByWindowBackground == true)
 

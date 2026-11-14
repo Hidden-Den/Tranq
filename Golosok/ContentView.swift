@@ -571,6 +571,7 @@ struct ContentView: View {
                 .transition(.opacity).onAppear { permissions.checkPermissions() }
             }
         }
+        .ignoresSafeArea()
         // Автоматическое открытие заметки
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoSelectNote"))) { notification in
             if audioCapture.autoOpenNoteEnabled, let newId = notification.object as? UUID {
@@ -719,6 +720,7 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 840, minHeight: 520)
+        .ignoresSafeArea()
     }
     
     private var topBar: some View {
