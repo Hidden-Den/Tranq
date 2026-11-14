@@ -48,19 +48,15 @@ struct AboutView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     AboutLinkButton(title: "GitHub", icon: "terminal.fill") {
-                        openURL(URL(string: "https://github.com/Berliner187/Golosok")!)
+                        openURL(URL(string: "https://github.com/Nuteres/Golosok")!)
                     }
-                    AboutLinkButton(title: "Сайт", icon: "globe") {
-                        openURL(URL(string: "https://golosok.space")!)
-                    }
+                    AboutLinkButton(title: "Сайт", icon: "globe", isEnabled: false) { }
                 }
                 
                 HStack(spacing: 8) {
-                    AboutLinkButton(title: "Поддержка", icon: "envelope") {
-                        openURL(URL(string: "https://telegram.me/fancycode")!)
-                    }
+                    AboutLinkButton(title: "Поддержка", icon: "envelope", isEnabled: false) { }
                     AboutLinkButton(title: "Релизы", icon: "doc.text") {
-                        openURL(URL(string: "https://github.com/Berliner187/Golosok/releases")!)
+                        openURL(URL(string: "https://github.com/Nuteres/Golosok/releases")!)
                     }
                 }
             }
@@ -99,10 +95,13 @@ struct TechBadge: View {
 struct AboutLinkButton: View {
     let title: LocalizedStringKey
     let icon: String
+    var isEnabled: Bool = true
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            if isEnabled { action() }
+        }) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .medium))
@@ -113,9 +112,14 @@ struct AboutLinkButton: View {
             .padding(.vertical, 7)
             .background(Color.uiCanvas)
             .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.uiHairline, lineWidth: 1))
-            .foregroundColor(.uiInk)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isEnabled ? Color.uiHairline : Color.uiHairline.opacity(0.35), lineWidth: 1)
+            )
+            .foregroundColor(isEnabled ? .uiInk : .uiMidGray)
+            .opacity(isEnabled ? 1.0 : 0.4)
         }
+        .disabled(!isEnabled)
         .buttonStyle(TactileButtonStyle())
     }
 }
