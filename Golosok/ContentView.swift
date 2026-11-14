@@ -550,7 +550,7 @@ struct ContentView: View {
     }
     
     private func toggleSidebar() {
-        withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.32)) {
+        withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.52)) {
             isSidebarVisible.toggle()
         }
     }
@@ -694,21 +694,21 @@ struct ContentView: View {
     }
     
     var mainInterface: some View {
-        ZStack(alignment: .topLeading) {
+        VStack(spacing: 0) {
+            topBar
+            
             HStack(spacing: 0) {
                 sidebarColumn
-                    .frame(width: 270)
-                    .offset(x: isSidebarVisible ? 0 : -270)
+                    .frame(width: 260)
+                    .offset(x: isSidebarVisible ? 0 : -40)
                     .opacity(isSidebarVisible ? 1.0 : 0.0)
-                    .frame(width: isSidebarVisible ? 270 : 0, alignment: .leading)
+                    .frame(width: isSidebarVisible ? 260 : 0, alignment: .leading)
                     .clipped()
                 
-                Color.uiHairline
-                    .frame(width: isSidebarVisible ? 1 : 0)
-                
-                VStack(spacing: 0) {
-                    mainHeader
-                    Divider().background(Color.uiHairline)
+                // Основная рабочая плашка (чисто-чёрная с закруглёнными углами, как в Antigravity)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.uiCanvas)
                     
                     Group {
                         switch currentTab {
@@ -717,43 +717,43 @@ struct ContentView: View {
                         case .settings: SettingsView()
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .background(Color.uiCanvas)
+                .padding(.trailing, 8)
+                .padding(.bottom, 8)
+                .padding(.top, 2)
+                .padding(.leading, isSidebarVisible ? 4 : 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Фиксированная панель слева: отступ под светофор macOS и кнопка переключения
-            HStack(spacing: 8) {
-                Spacer().frame(width: 68)
-                sidebarToggleButton
-            }
-            .frame(height: 38)
         }
         .frame(minWidth: 840, minHeight: 520)
+        .background(Color.uiGraphite)
         .ignoresSafeArea()
     }
     
-    private var mainHeader: some View {
+    private var topBar: some View {
         HStack(spacing: 8) {
+            Spacer().frame(width: 70)
+            
+            sidebarToggleButton
+            
             Text(currentTabTitle)
                 .font(UIStyleFont.display(size: 13, weight: .semibold))
                 .foregroundColor(.uiInk)
+                .padding(.leading, 6)
+            
             Spacer()
         }
         .frame(height: 38)
-        .padding(.leading, isSidebarVisible ? 20 : 112)
-        .padding(.trailing, 16)
-        .background(Color.uiCanvas)
     }
     
     private var sidebarToggleButton: some View {
         Button(action: toggleSidebar) {
             Image(systemName: "sidebar.leading")
                 .font(.system(size: 13, weight: .regular))
-                .foregroundColor(.uiMidGray)
+                .foregroundColor(.uiInkSoft)
                 .frame(width: 26, height: 26)
-                .background(Color.uiPaper.opacity(0.35))
+                .background(Color.uiPaper.opacity(0.45))
                 .cornerRadius(6)
                 .contentShape(Rectangle())
         }
@@ -763,7 +763,6 @@ struct ContentView: View {
     
     private var sidebarColumn: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Spacer().frame(height: 38)
             sidebarHeader
             VStack(spacing: 4) {
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
@@ -780,12 +779,13 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal, 8)
-            Divider().background(Color.uiHairline)
+            
             if currentTab == .history { historySearchAndList } else { Spacer() }
             sidebarFooter
         }
-        .frame(width: 270)
-        .background(Color.uiSidebar)
+        .padding(.top, 4)
+        .frame(width: 260)
+        .background(Color.uiGraphite)
     }
     
     private var sidebarHeader: some View {
