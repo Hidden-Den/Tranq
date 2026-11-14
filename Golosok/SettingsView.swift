@@ -165,7 +165,11 @@ struct SettingsView: View {
                                 Text("Горячая клавиша")
                                     .font(UIStyleFont.body(size: 13, weight: .medium))
                                     .foregroundColor(.uiInk)
-                                if hotKey.isCapturing {
+                                if let warning = hotKey.warningMessage {
+                                    Text(warning)
+                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .foregroundColor(.uiWarn)
+                                } else if hotKey.isCapturing {
                                     Text(LocalizedStringKey("HotKey.Capture"))
                                         .font(UIStyleFont.body(size: 11, weight: .regular))
                                         .foregroundColor(.uiMidGray)

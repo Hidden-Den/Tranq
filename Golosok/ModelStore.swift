@@ -84,14 +84,20 @@ final class ModelStore: NSObject, ObservableObject {
     func localModelPath(for id: String) -> String? {
         guard let model = model(named: id) else { return nil }
         if model.isBundled {
-            return Bundle.main.path(forResource: model.fileName, ofType: model.id == "ru_giga" ? "gguf" : nil)
+            if let bundledPath = Bundle.main.path(forResource: model.fileName, ofType: model.id == "ru_giga" ? "gguf" : nil) {
+                return bundledPath
+            }
         }
-        let path = modelsDir.appendingPathComponent(model.fileName).path
+        let fullName = model.id == "ru_giga" && !model.fileName.hasSuffix(".gguf") ? "\(model.fileName).gguf" : model.fileName
+        let path = modelsDir.appendingPathComponent(fullName).path
         return FileManager.default.fileExists(atPath: path) ? path : nil
     }
 
     func isDownloaded(_ id: String) -> Bool {
-        guard let model = model(named: id), !model.isBundled else { return true }
+        guard let model = model(named: id) else { return false }
+        if model.isBundled {
+            return localModelPath(for: id) != nil
+        }
         return FileManager.default.fileExists(atPath: modelsDir.appendingPathComponent(model.fileName).path)
     }
 

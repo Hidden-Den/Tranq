@@ -239,6 +239,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     }
     
     func stopRecording() {
+        guard isRecording else { return }
         removeEscMonitor()
         pasteTarget = NSWorkspace.shared.frontmostApplication
         timer?.invalidate()
@@ -527,7 +528,11 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         guard let idx = history.firstIndex(where: { $0.id == id }) else { return }
         let item = history[idx]
         let nsText = item.text as NSString
-        guard range.location != NSNotFound, range.location + range.length <= nsText.length else { return }
+        guard range.location != NSNotFound,
+              range.location >= 0,
+              range.length >= 0,
+              range.location <= nsText.length,
+              range.length <= nsText.length - range.location else { return }
         let result = nsText.replacingCharacters(in: range, with: newText)
         history[idx] = TranscriptionItem(id: item.id, date: item.date, text: result, duration: item.duration, speedup: item.speedup, isUnread: item.isUnread)
     }
@@ -805,7 +810,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         guard let model = store.model(named: store.activeModelID) else { return ("", []) }
         if model.isBundled {
             guard let cliPath = Bundle.main.path(forResource: "transcribe-cli", ofType: nil),
-                  let modelPath = Bundle.main.path(forResource: model.fileName, ofType: "gguf") else {
+                  let modelPath = store.localModelPath(for: model.id) else {
                 AppLogger.shared.error("Recognition", "transcribe-cli или встроенная модель не найдены в бандле")
                 return ("", [])
             }

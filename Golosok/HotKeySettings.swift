@@ -2,58 +2,113 @@ import SwiftUI
 import AppKit
 import Carbon
 
-final class HotKeySettings: ObservableObject {
-    static let shared = HotKeySettings()
+public final class HotKeySettings: ObservableObject {
+    public static let shared = HotKeySettings()
 
-    @Published var mode: HotKeyMode {
+    @Published public var mode: HotKeyMode {
         didSet { NativeHotKeyManager.shared.mode = mode }
     }
-    @Published var hotKeyName: String = ""
-    @Published var isCapturing = false
-    @Published var isTaken = false
+    @Published public var trigger: HotKeyTrigger
+    @Published public var hotKeyName: String = ""
+    @Published public var isCapturing = false
+    @Published public var isTaken = false
+    @Published public var warningMessage: String? = nil
 
     private var monitor: Any?
+    private var pendingSingleModifier: SingleModifierKey?
 
     private init() {
         mode = NativeHotKeyManager.shared.mode
+        trigger = NativeHotKeyManager.shared.trigger
         hotKeyName = NativeHotKeyManager.shared.displayName()
     }
 
-    func refreshName() {
+    public func refreshName() {
+        trigger = NativeHotKeyManager.shared.trigger
         hotKeyName = NativeHotKeyManager.shared.displayName()
     }
 
-    func reset() {
-        _ = NativeHotKeyManager.shared.setHotKey(keyCode: 49, modifiers: UInt32(optionKey))
-        refreshName()
-    }
-
-    func beginCapture() {
-        guard !isCapturing else { return }
-        isCapturing = true
-        isTaken = false
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.keyCode == 53 {
-                self.endCapture()
-                return event
+    @discardableResult
+    public func setPreset(_ preset: HotKeyTrigger) -> Bool {
+        endCapture()
+        let succeeded = NativeHotKeyManager.shared.register(trigger: preset)
+        if succeeded {
+            self.trigger = preset
+            self.isTaken = false
+            refreshName()
+            return true
+        } else {
+            switch preset {
+            case .combination:
+                self.isTaken = true
+            case .singleModifier:
+                self.isTaken = false
+                PermissionManager.shared.requestAccessibilityPermission()
             }
-            let allowed: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
-            let mods = event.modifierFlags.intersection(allowed)
-            guard !mods.isEmpty, let carbon = self.carbonModifiers(from: mods) else {
-                return event
-            }
-            let keyCode = UInt32(event.keyCode)
-            let succeeded = self.sameAsCurrent(keyCode: keyCode, carbon: carbon)
-                || NativeHotKeyManager.shared.setHotKey(keyCode: keyCode, modifiers: carbon)
-            self.isTaken = !succeeded
-            if succeeded { self.refreshName() }
-            self.endCapture()
-            return nil
+            return false
         }
     }
 
-    private func sameAsCurrent(keyCode: UInt32, carbon: UInt32) -> Bool {
-        NativeHotKeyManager.shared.keyCode == keyCode && NativeHotKeyManager.shared.modifierFlags == carbon
+    public func reset() {
+        setPreset(.combination(keyCode: 49, modifiers: UInt32(optionKey)))
+    }
+
+    public func beginCapture() {
+        guard !isCapturing else { return }
+        isCapturing = true
+        isTaken = false
+        warningMessage = nil
+        pendingSingleModifier = nil
+
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
+            guard let self = self else { return event }
+
+            if event.type == .keyDown && event.keyCode == 53 {
+                self.endCapture()
+                return event
+            }
+
+            if event.keyCode == 57 {
+                self.warningMessage = NSLocalizedString("HotKey.CapsLockUnsupported", value: "Caps Lock не поддерживается", comment: "Caps Lock unsupported warning")
+                return nil
+            }
+
+            if event.type == .flagsChanged {
+                if let modKey = SingleModifierKey.from(keyCode: UInt32(event.keyCode)) {
+                    let flags = event.cgEvent?.flags ?? CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
+                    if modKey.isPressed(flags: flags) {
+                        // Modifier pressed down: defer committing in case user is starting a combination
+                        self.pendingSingleModifier = modKey
+                    } else {
+                        // Modifier released
+                        if self.pendingSingleModifier == modKey {
+                            self.pendingSingleModifier = nil
+                            self.setPreset(.singleModifier(modKey))
+                            return nil
+                        }
+                        self.pendingSingleModifier = nil
+                    }
+                }
+                return event
+            }
+
+            if event.type == .keyDown {
+                // A key was pressed down while holding modifiers: cancel single-modifier candidate
+                self.pendingSingleModifier = nil
+
+                let allowed: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+                let mods = event.modifierFlags.intersection(allowed)
+                guard !mods.isEmpty, let carbon = self.carbonModifiers(from: mods) else {
+                    return event
+                }
+                let keyCode = UInt32(event.keyCode)
+                let newTrigger = HotKeyTrigger.combination(keyCode: keyCode, modifiers: carbon)
+                self.setPreset(newTrigger)
+                return nil
+            }
+
+            return event
+        }
     }
 
     private func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32? {
@@ -65,8 +120,13 @@ final class HotKeySettings: ObservableObject {
         return value
     }
 
-    func endCapture() {
-        if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
+    public func endCapture() {
+        pendingSingleModifier = nil
+        warningMessage = nil
+        if let m = monitor {
+            NSEvent.removeMonitor(m)
+            monitor = nil
+        }
         isCapturing = false
     }
 }

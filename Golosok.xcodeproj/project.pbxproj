@@ -268,11 +268,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C4F2FF393016646A006F9170 /* OverlayPanel.swift in Sources */,
-				C4F2FF4130168DD0006F9170 /* DashboardView.swift in Sources */,
-				C4F2FF3B30166B56006F9170 /* PermissionManager.swift in Sources */,
-				C457EFF53017853C007F26A1 /* NativeHotKeyManager.swift in Sources */,
-				C4F2FF3D30166B6D006F9170 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -366,7 +361,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_OBJC_BRIDGING_HEADER = "Golosok/MonoSTT-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -424,7 +418,6 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OBJC_BRIDGING_HEADER = "Golosok/MonoSTT-Bridging-Header.h";
 			};
 			name = Release;
 		};
@@ -452,7 +445,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Golosok/MonoSTT-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -481,7 +473,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Golosok/MonoSTT-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
