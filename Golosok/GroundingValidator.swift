@@ -32,6 +32,10 @@ public struct GroundingValidator {
             sanitizedOutput = String(sanitizedOutput.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
+        guard !sanitizedOutput.isEmpty else {
+            return .rejected(reason: "Пустой ответ после очистки кавычек")
+        }
+
         // 2. Проверка на мета-зачины
         let lowerOutput = sanitizedOutput.lowercased()
         for preamble in forbiddenPreambles {
@@ -62,6 +66,16 @@ public struct GroundingValidator {
         // 5. Проверка чисел (Strict Numbers Grounding)
         let inputNumbers = extractNumbers(from: trimmedInput)
         let outputNumbers = extractNumbers(from: sanitizedOutput)
+
+        // В чистом стиле все надиктованные числа должны сохраняться
+        if style == .clean {
+            for num in inputNumbers {
+                if !outputNumbers.contains(num) {
+                    return .rejected(reason: "Пропущено исходное число \(num)")
+                }
+            }
+        }
+
         for num in outputNumbers {
             if !inputNumbers.contains(num) {
                 return .rejected(reason: "Модель придумала число \(num), отсутствовавшее в речи")
@@ -92,7 +106,7 @@ public struct GroundingValidator {
     }
 
     private static func extractNumbers(from text: String) -> Set<String> {
-        let pattern = #"\b\d+([.,]\d+)?\b"#
+        let pattern = #"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d.,])"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let nsString = text as NSString
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))

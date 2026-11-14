@@ -199,6 +199,8 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     func startRecording() {
         guard !isProcessingFile else { return }
+        self.isSynthesizingThought = false
+        self.hudStatusMessage = nil
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
@@ -482,6 +484,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
             }
 
             let noteId = UUID()
+            let jobFocusTarget = self.focusTarget
             let shouldSynthesize = !isFileImport && VoiceIntelligenceSettings.shared.mode == .smart
             
             // Фиксируем исходный сырой транскрипт до любых ИИ-манипуляций
@@ -489,7 +492,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 id: noteId,
                 rawText: rawText,
                 durationSec: realAudioSecs,
-                targetAppName: self.focusTarget?.appName
+                targetAppName: jobFocusTarget?.appName
             )
 
             if shouldSynthesize {
@@ -501,15 +504,29 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                     guard let self = self else { return }
                     DispatchQueue.main.async {
                         self.isSynthesizingThought = false
+
+                        var resolvedText = finalText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if resolvedText.isEmpty {
+                            resolvedText = prettyFormattedText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        if resolvedText.isEmpty {
+                            AppLogger.shared.warn("Recognition", "Текст пуст после очистки от слов-паразитов")
+                            OverlayPanelManager.shared.showWarning(message: String(localized: "Речь не распознана"))
+                            finish()
+                            return
+                        }
+
                         TranscriptJournal.shared.updateFinal(
                             id: noteId,
                             stageOneText: prettyFormattedText,
-                            finalText: finalText,
+                            finalText: resolvedText,
                             isFallback: isFallback
                         )
                         self.saveAndInsertTranscription(
                             noteId: noteId,
-                            finalText: finalText,
+                            finalText: resolvedText,
+                            isTransformedByAI: !isFallback,
+                            target: jobFocusTarget,
                             durationFormatted: durationFormatted,
                             calculatedSpeedup: calculatedSpeedup,
                             realAudioSecs: realAudioSecs,
@@ -531,6 +548,8 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 self.saveAndInsertTranscription(
                     noteId: noteId,
                     finalText: prettyFormattedText,
+                    isTransformedByAI: false,
+                    target: jobFocusTarget,
                     durationFormatted: durationFormatted,
                     calculatedSpeedup: calculatedSpeedup,
                     realAudioSecs: realAudioSecs,
@@ -547,6 +566,8 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private func saveAndInsertTranscription(
         noteId: UUID,
         finalText: String,
+        isTransformedByAI: Bool,
+        target: FocusSnapshot?,
         durationFormatted: String,
         calculatedSpeedup: Double,
         realAudioSecs: Double,
@@ -572,7 +593,9 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         )
         
         self.saveAudioForNote(id: newItem.id, sourceURL: sourceURL)
-        if !accumulatedWords.isEmpty {
+        // Синхронизированные тайминги слов сохраняем только для непреобразованного текста,
+        // так как ИИ меняет порядок слов, удаляет слова-паразиты и перефразирует структуру
+        if !isTransformedByAI && !accumulatedWords.isEmpty {
             self.saveTimingsForNote(id: newItem.id, words: accumulatedWords, duration: realAudioSecs)
         }
         if isFileImport { try? FileManager.default.removeItem(at: sourceURL) }
@@ -590,7 +613,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         } else {
             InsertionService.shared.paste(
                 text: finalText,
-                target: self.focusTarget,
+                target: target,
                 autoPasteEnabled: true
             ) { [weak self] result in
                 DispatchQueue.main.async {

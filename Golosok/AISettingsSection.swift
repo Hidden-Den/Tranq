@@ -191,7 +191,7 @@ struct VoiceIntelligenceSection: View {
                             .foregroundColor(.uiMidGray)
                     }
                     Spacer()
-                    Toggle("", isOn: Binding(
+                    Toggle("Умная речь", isOn: Binding(
                         get: { settings.mode == .smart },
                         set: { settings.mode = $0 ? .smart : .direct }
                     ))

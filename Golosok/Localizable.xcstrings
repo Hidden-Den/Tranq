@@ -4271,6 +4271,22 @@
         }
       }
     },
+    "Синтез мысли..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synthesizing thought..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синтез мысли..."
+          }
+        }
+      }
+    },
     "Редактировать" : {
       "localizations" : {
         "en" : {

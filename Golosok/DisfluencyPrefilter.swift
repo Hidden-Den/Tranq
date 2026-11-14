@@ -6,8 +6,9 @@ public struct DisfluencyPrefilter {
     /// Регулярные выражения для однозначных звуковых паразитов и хезитаций
     private static let fillerPatterns: [String] = [
         // Русские однозначные паузные заполнители
-        #"(?i)(?<=^|\s)[эе]?[эе]{2,}(?=[,\s.!?]|$)"#,       // эээ, еее, ээ
-        #"(?i)(?<=^|\s)[мm]{2,}(?=[,\s.!?]|$)"#,             // мм, ммм
+        #"(?i)(?<=^|\s)э{2,}(?=[,\s.!?]|$)"#,               // ээ, эээ
+        #"(?i)(?<=^|\s)е{3,}(?=[,\s.!?]|$)"#,               // еее (3+ буквы, чтобы не удалять местоимение «ее»)
+        #"(?i)(?<!\d)(?<!\d\s)(?<=^|\s)[мm]{2,}(?=[,\s.!?]|$)"#, // мм, ммм (не после цифр: сохраняет «5 мм»)
         #"(?i)(?<=^|\s)[аa]{3,}(?=[,\s.!?]|$)"#,             // ааа, аааа
         #"(?i)(?<=^|\s)н[уu]{2,}(?=[,\s.!?]|$)"#,            // нуу, нууу
         #"(?i)(?<=^|\s)[хx][ммm]+(?=[,\s.!?]|$)"#,           // хм, хмм
@@ -17,8 +18,7 @@ public struct DisfluencyPrefilter {
 
         // Английские однозначные паузные заполнители
         #"(?i)(?<=^|\s)uh+(?=[,\s.!?]|$)"#,                  // uh, uhh
-        #"(?i)(?<=^|\s)um+(?=[,\s.!?]|$)"#,                  // um, umm
-        #"(?i)(?<=^|\s)er+(?=[,\s.!?]|$)"#                   // er, err
+        #"(?i)(?<=^|\s)um+(?=[,\s.!?]|$)"#                   // um, umm
     ]
 
     private static let compiledFillerRegexes: [NSRegularExpression] = {
@@ -27,9 +27,9 @@ public struct DisfluencyPrefilter {
 
     /// Паттерн для схлопывания непосредственных повторов одинаковых слов (заиканий)
     /// Например: «я я думаю», «в в проекте», «надо надо сделать»
+    /// Ограничен только буквенными токенами, чтобы не повреждать группы цифр («999 999»)
     private static let stutterRegex: NSRegularExpression? = {
-        // Ловит два одинаковых слова подряд, разделенных пробелом
-        let pattern = #"(?i)\b([a-zа-яё0-9]+)\s+\1\b"#
+        let pattern = #"(?i)\b([a-zа-яё]+)\s+\1\b"#
         return try? NSRegularExpression(pattern: pattern)
     }()
 
@@ -38,7 +38,7 @@ public struct DisfluencyPrefilter {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !result.isEmpty else { return "" }
 
-        // 1. Схлопывание очевидных повторов слов (заиканий)
+        // 1. Схлопывание очевидных повторов буквенных слов (заиканий)
         if let stutterRegex = stutterRegex {
             var previous = ""
             // Прогоняем цикл до стабилизации (на случай тройных заиканий «я я я»)
@@ -68,12 +68,12 @@ public struct DisfluencyPrefilter {
         cleaned = cleaned.replacingOccurrences(of: #"\s+([,.:;!?])"#, with: "$1", options: .regularExpression)
         // Схлопываем повторяющиеся запятые: «привет,, как дела» -> «привет, как дела»
         cleaned = cleaned.replacingOccurrences(of: #",(\s*,)+"#, with: ",", options: .regularExpression)
+        // Убираем запятые перед точкой или концом предложения: «думаю,.» -> «думаю.»
+        cleaned = cleaned.replacingOccurrences(of: #",+\s*([.:;!?])"#, with: "$1", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: #",+\s*$"#, with: "", options: .regularExpression)
         // Убираем висячие запятые в начале строки: «, привет» -> «привет»
         cleaned = cleaned.replacingOccurrences(of: #"^[,.:;!?\s]+"#, with: "", options: .regularExpression)
-        // Капитализируем первую букву если она строчная
-        if let first = cleaned.first, first.isLowercase {
-            cleaned = first.uppercased() + cleaned.dropFirst()
-        }
+        // Сохраняем оригинальную капитализацию расшифровки
         return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

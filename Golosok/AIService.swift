@@ -243,7 +243,7 @@ final class AIService {
     private struct ChatRequest: Codable {
         let model: String?
         let messages: [AIChatMessage]
-        let temperature: Double
+        let temperature: Double?
         let reasoning: ReasoningConfig?
         let provider: ProviderConfig?
     }
@@ -268,11 +268,13 @@ final class AIService {
         let isOpenRouter = config.baseURL.contains("openrouter.ai")
         let reasoning = isOpenRouter ? ReasoningConfig(effort: "none", exclude: true) : nil
         let provider = isOpenRouter ? ProviderConfig(sort: "latency") : nil
+        // Для OpenRouter опускаем поле temperature (nil), чтобы исключить HTTP 400 на моделях с фиксированной температурой
+        let temp: Double? = isOpenRouter ? nil : 0.1
 
         let body = ChatRequest(
             model: config.model,
             messages: messages,
-            temperature: 0.1,
+            temperature: temp,
             reasoning: reasoning,
             provider: provider
         )

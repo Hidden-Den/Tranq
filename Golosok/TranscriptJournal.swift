@@ -38,7 +38,9 @@ public final class TranscriptJournal: ObservableObject {
     @Published public private(set) var lastRecord: JournalRecord?
 
     private let ioQueue = DispatchQueue(label: "com.golosok.transcript.journal", qos: .utility)
-    private let maxRecords = 200
+    private var pendingRecords: [UUID: JournalRecord] = [:]
+    private let pendingLock = NSLock()
+    private let maxFileBytes: UInt64 = 5 * 1024 * 1024 // 5 MB ротация
 
     private var journalFileURL: URL? {
         guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
@@ -47,7 +49,9 @@ public final class TranscriptJournal: ObservableObject {
         return dir.appendingPathComponent("transcript_journal.jsonl")
     }
 
-    private init() {}
+    private init() {
+        loadLastRecordFromDisk()
+    }
 
     /// Сохранение сырой расшифровки на диск ДО начала синтеза мысли
     public func recordInitial(id: UUID, rawText: String, durationSec: Double, targetAppName: String?) {
@@ -58,6 +62,10 @@ public final class TranscriptJournal: ObservableObject {
             durationSec: durationSec,
             targetAppName: targetAppName
         )
+
+        pendingLock.lock()
+        pendingRecords[id] = record
+        pendingLock.unlock()
 
         DispatchQueue.main.async {
             self.lastRecord = record
@@ -70,14 +78,18 @@ public final class TranscriptJournal: ObservableObject {
 
     /// Обновление записи финальным результатом после валидатора или отката
     public func updateFinal(id: UUID, stageOneText: String?, finalText: String, isFallback: Bool) {
+        pendingLock.lock()
+        let initial = pendingRecords.removeValue(forKey: id)
+        pendingLock.unlock()
+
         let updated = JournalRecord(
             id: id,
             timestamp: Date(),
-            rawText: lastRecord?.rawText ?? finalText,
+            rawText: initial?.rawText ?? lastRecord?.rawText ?? finalText,
             stageOneText: stageOneText,
             finalPastedText: finalText,
-            durationSec: lastRecord?.durationSec ?? 0,
-            targetAppName: lastRecord?.targetAppName,
+            durationSec: initial?.durationSec ?? lastRecord?.durationSec ?? 0,
+            targetAppName: initial?.targetAppName ?? lastRecord?.targetAppName,
             isFallback: isFallback
         )
 
@@ -90,7 +102,7 @@ public final class TranscriptJournal: ObservableObject {
         }
     }
 
-    /// Действие «Вставить оригинал» — копирует в буфер обмена и вставляет исходный дословный текст
+    /// Восстановление дословного оригинала речи: вставка под курсор или копирование в буфер
     public func pasteOriginal(completion: @escaping (Bool) -> Void) {
         guard let record = lastRecord, !record.rawText.isEmpty else {
             completion(false)
@@ -98,9 +110,33 @@ public final class TranscriptJournal: ObservableObject {
         }
 
         let raw = record.rawText
-        InsertionService.shared.copyToPasteboard(text: raw, markTransient: false)
-        AppLogger.shared.info("Journal", "Восстановлен оригинальный сырой транскрипт", details: raw)
-        completion(true)
+        AppLogger.shared.info("Journal", "Восстановление оригинального транскрипта", details: "\(raw.count) симв.")
+
+        let target = InsertionService.shared.captureFocus()
+        InsertionService.shared.paste(text: raw, target: target, autoPasteEnabled: true) { result in
+            DispatchQueue.main.async {
+                completion(result == .pasted || result == .copied)
+            }
+        }
+    }
+
+    private func loadLastRecordFromDisk() {
+        ioQueue.async {
+            guard let url = self.journalFileURL,
+                  FileManager.default.fileExists(atPath: url.path),
+                  let data = try? Data(contentsOf: url),
+                  let content = String(data: data, encoding: .utf8) else { return }
+
+            let lines = content.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            guard let lastLine = lines.last, let lineData = lastLine.data(using: .utf8) else { return }
+            if let decoded = try? JSONDecoder().decode(JournalRecord.self, from: lineData) {
+                DispatchQueue.main.async {
+                    if self.lastRecord == nil {
+                        self.lastRecord = decoded
+                    }
+                }
+            }
+        }
     }
 
     private func appendToFile(_ record: JournalRecord) {
@@ -109,15 +145,23 @@ public final class TranscriptJournal: ObservableObject {
             let data = try JSONEncoder().encode(record)
             if let line = String(data: data, encoding: .utf8) {
                 let entry = line + "\n"
+                guard let entryData = entry.data(using: .utf8) else { return }
+
+                if FileManager.default.fileExists(atPath: url.path) {
+                    // Ротация при превышении 5 МБ
+                    if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                       let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
+                        try? FileManager.default.removeItem(at: url)
+                    }
+                }
+
                 if FileManager.default.fileExists(atPath: url.path) {
                     let fileHandle = try FileHandle(forWritingTo: url)
                     fileHandle.seekToEndOfFile()
-                    if let entryData = entry.data(using: .utf8) {
-                        fileHandle.write(entryData)
-                    }
+                    try fileHandle.write(contentsOf: entryData)
                     try fileHandle.close()
                 } else {
-                    try entry.write(to: url, atomically: true, encoding: .utf8)
+                    try entryData.write(to: url, options: .atomic)
                 }
             }
         } catch {

@@ -214,7 +214,7 @@ struct FloatingWidgetView: View {
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
-                } else if audioCapture.isSynthesizingThought {
+                } else if !audioCapture.isRecording && audioCapture.isSynthesizingThought {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 13, weight: .bold))
@@ -285,7 +285,7 @@ struct FloatingWidgetView: View {
             .clipShape(Capsule())
             .overlay(
                 Group {
-                    if audioCapture.transcribedText == String(localized: "Расшифровка...") || audioCapture.isProcessingFile || audioCapture.isSynthesizingThought {
+                    if audioCapture.transcribedText == String(localized: "Расшифровка...") || audioCapture.isProcessingFile || (!audioCapture.isRecording && audioCapture.isSynthesizingThought) {
                         RotatingGlowBorder()
                     } else if audioCapture.warningMessage != nil {
                         Capsule().stroke(Color(hex: "#F59E0B").opacity(0.6), lineWidth: 1.2)
@@ -314,7 +314,7 @@ struct FloatingWidgetView: View {
     
     private func getWidth() -> CGFloat {
         if audioCapture.warningMessage != nil { return 210 }
-        if audioCapture.isSynthesizingThought { return 180 }
+        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return 180 }
         if audioCapture.isProcessingFile { return 110 }
         if audioCapture.isRecording { return 200 }
         if audioCapture.isSuccessDone {
@@ -325,7 +325,7 @@ struct FloatingWidgetView: View {
     
     private func getGlowColor() -> Color {
         if audioCapture.warningMessage != nil { return Color(hex: "#F59E0B") }
-        if audioCapture.isSynthesizingThought { return Color(hex: "#C084FC") }
+        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return Color(hex: "#C084FC") }
         if audioCapture.isProcessingFile || audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color(hex: "#6366F1") }
         if audioCapture.isSuccessDone { return Color(hex: "#10B981") }
         return Color(hex: "#10B981")

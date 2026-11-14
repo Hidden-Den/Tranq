@@ -34,29 +34,38 @@ public final class ThoughtSynthesizer {
         }
 
         let settings = VoiceIntelligenceSettings.shared
+        let messages = buildMessages(for: stageOneText, style: style)
 
         switch settings.engine {
         case .airGapped:
-            // 100% Air-Gapped режим: проверяем локальный Ollama, если запущен, иначе мгновенный детерминированный Stage 1
-            if AIProviderStore.shared.providerID == "ollama" && AIProviderStore.shared.isConfigured {
-                let messages = buildMessages(for: stageOneText, style: style)
-                let config = AIProviderStore.shared.config
-                runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, completion: completion)
-            } else {
-                AppLogger.shared.info("Synthesizer", "Air-Gapped: применен детерминированный фильтр речи этапа 1")
-                completion(stageOneText, false)
-            }
+            // 100% Air-Gapped режим: нулевой сетевой трафик, только локальный детерминированный Stage 1
+            AppLogger.shared.info("Synthesizer", "Air-Gapped: применен детерминированный фильтр речи этапа 1")
+            completion(stageOneText, false)
 
-        case .openRouter, .ollama:
-            guard AIProviderStore.shared.isConfigured else {
-                AppLogger.shared.info("Synthesizer", "ИИ-провайдер не настроен — отдан текст этапа 1")
+        case .ollama:
+            // Строго локальный адрес Ollama на loopback
+            let modelName = settings.localModel.isEmpty ? "gemma3:1b" : settings.localModel
+            let config = AIProviderConfig(
+                baseURL: "http://localhost:11434/v1",
+                apiKey: "",
+                model: modelName
+            )
+            runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
+
+        case .openRouter:
+            let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
+            guard !apiKey.isEmpty else {
+                AppLogger.shared.info("Synthesizer", "OpenRouter API-ключ не настроен — отдан текст этапа 1")
                 completion(stageOneText, true)
                 return
             }
-
-            let messages = buildMessages(for: stageOneText, style: style)
-            let config = AIProviderStore.shared.config
-            runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, completion: completion)
+            let modelName = settings.openRouterModel.isEmpty ? "anthropic/claude-haiku-5.5" : settings.openRouterModel
+            let config = AIProviderConfig(
+                baseURL: "https://openrouter.ai/api/v1",
+                apiKey: apiKey,
+                model: modelName
+            )
+            runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
         }
     }
 
@@ -65,39 +74,62 @@ public final class ThoughtSynthesizer {
         config: AIProviderConfig,
         stageOneText: String,
         style: VoiceStyle,
+        timeout: Double,
         completion: @escaping (_ finalText: String, _ isFallback: Bool) -> Void
     ) {
         AppLogger.shared.info("Synthesizer", "Старт синтеза мысли [\(style.title)] через \(config.baseURL) / \(config.model)")
 
         let startTime = Date()
+        let lock = NSLock()
+        var isCompleted = false
+
+        let safeCompletion: (String, Bool) -> Void = { text, isFallback in
+            lock.lock()
+            defer { lock.unlock() }
+            guard !isCompleted else { return }
+            isCompleted = true
+            DispatchQueue.main.async {
+                completion(text, isFallback)
+            }
+        }
+
+        // Адаптивный сторож по времени
+        let timeoutSec = max(1.5, timeout)
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeoutSec) {
+            lock.lock()
+            let alreadyFinished = isCompleted
+            lock.unlock()
+            if !alreadyFinished {
+                AppLogger.shared.warn("Synthesizer", String(format: "Таймаут синтеза (%.1f с) — откат на этап 1", timeoutSec))
+                safeCompletion(stageOneText, true)
+            }
+        }
 
         AIService.shared.chat(messages: messages, using: config) { result in
             let duration = Date().timeIntervalSince(startTime)
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let rawOutput):
-                    AppLogger.shared.info("Synthesizer", String(format: "Ответ получен за %.2f с", duration))
+            switch result {
+            case .success(let rawOutput):
+                AppLogger.shared.info("Synthesizer", String(format: "Ответ получен за %.2f с", duration))
 
-                    // 1. Вырезаем возможные блоки рассуждений <think>...</think>
-                    let cleanContent = Self.stripThinkingTags(from: rawOutput)
+                // 1. Вырезаем возможные блоки рассуждений <think>...</think>
+                let cleanContent = Self.stripThinkingTags(from: rawOutput)
 
-                    // 2. Детерминированный Grounding Validator
-                    let validation = GroundingValidator.validate(input: stageOneText, output: cleanContent, style: style)
+                // 2. Детерминированный Grounding Validator
+                let validation = GroundingValidator.validate(input: stageOneText, output: cleanContent, style: style)
 
-                    switch validation {
-                    case .valid(let validatedText):
-                        AppLogger.shared.info("Synthesizer", "Валидация успешна: мысль готова к вставке")
-                        completion(validatedText, false)
+                switch validation {
+                case .valid(let validatedText):
+                    AppLogger.shared.info("Synthesizer", "Валидация успешна: мысль готова к вставке")
+                    safeCompletion(validatedText, false)
 
-                    case .rejected(let reason):
-                        AppLogger.shared.warn("Synthesizer", "Валидатор отклонил результат (\(reason)) — откат на этап 1")
-                        completion(stageOneText, true)
-                    }
-
-                case .failure(let error):
-                    AppLogger.shared.warn("Synthesizer", "Сбой вызова ИИ: \(error.localizedDescription) — защитный откат на этап 1")
-                    completion(stageOneText, true)
+                case .rejected(let reason):
+                    AppLogger.shared.warn("Synthesizer", "Валидатор отклонил результат (\(reason)) — откат на этап 1")
+                    safeCompletion(stageOneText, true)
                 }
+
+            case .failure(let error):
+                AppLogger.shared.warn("Synthesizer", "Сбой вызова ИИ: \(error.localizedDescription) — защитный откат на этап 1")
+                safeCompletion(stageOneText, true)
             }
         }
     }
