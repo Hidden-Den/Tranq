@@ -86,4 +86,19 @@ struct HotKeyTriggerTests {
         settings.reset()
         #expect(settings.hotKeyName.contains("Space"))
     }
+
+    @Test func pendingTriggerHandling() {
+        let manager = NativeHotKeyManager.shared
+        let original = manager.trigger
+        defer { manager.trigger = original }
+
+        manager.register(trigger: .singleModifier(.fn))
+        #expect(manager.pendingTrigger == nil)
+
+        let invalidCombo = HotKeyTrigger.combination(keyCode: 99999, modifiers: 0)
+        let success = manager.register(trigger: invalidCombo)
+        if !success {
+            #expect(manager.pendingTrigger == nil)
+        }
+    }
 }

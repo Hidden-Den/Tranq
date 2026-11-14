@@ -100,7 +100,12 @@ public class NativeHotKeyManager {
             saveTrigger(trigger)
             pendingTrigger = nil
         } else {
-            pendingTrigger = trigger
+            switch trigger {
+            case .singleModifier:
+                pendingTrigger = trigger
+            case .combination:
+                pendingTrigger = nil
+            }
             if previousTrigger != trigger {
                 _ = applyRegistration(for: previousTrigger)
             }
@@ -132,8 +137,8 @@ public class NativeHotKeyManager {
         if let pending = pendingTrigger {
             if register(trigger: pending) {
                 HotKeySettings.shared.refreshName()
-                return
             }
+            return
         }
         _ = applyRegistration(for: trigger)
     }
