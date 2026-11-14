@@ -855,7 +855,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Рация — зажал, говоришь, отпустил"
+            "value" : "Рация"
           }
         }
       }
@@ -871,7 +871,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Переключатель"
+            "value" : "Переключение"
           }
         }
       }
