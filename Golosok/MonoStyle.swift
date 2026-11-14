@@ -59,7 +59,7 @@ extension Color {
     
     static func dynamic(light: String, dark: String) -> Color {
         return Color(NSColor(name: nil) { appearance in
-            if appearance.name == .darkAqua {
+            if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
                 return NSColor(hex: dark)
             } else {
                 return NSColor(hex: light)

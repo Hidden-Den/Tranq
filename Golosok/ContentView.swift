@@ -722,10 +722,10 @@ struct ContentView: View {
     
     private var topBar: some View {
         HStack(spacing: 8) {
-            // Точный отступ под светофор macOS (красная, жёлтая, зелёная кнопки)
+            // Точный отступ под светофор macOS (красная, жёлтая, зелёная кнопки: x = 18..66)
             Spacer().frame(width: 76)
             
-            // Кнопка сворачивания, идеально выровненная по центру светофора
+            // Кнопка сворачивания, центр которой строго совпадает с осью светофора (y = 16.2 pt)
             sidebarToggleButton
             
             // Заголовок раздела показывается ТОЛЬКО когда боковое меню скрыто, чтобы не дублировать
@@ -739,7 +739,7 @@ struct ContentView: View {
             
             Spacer()
         }
-        .frame(height: 44)
+        .frame(height: 32.5)
     }
     
     private var sidebarToggleButton: some View {

@@ -51,14 +51,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 struct GolosokApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject var audioCapture = AudioCapture.shared
+    @ObservedObject var theme = ThemeSettings.shared
 
     init() {
         LanguageSettings.shared.apply()
+        ThemeSettings.shared.apply()
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(theme.current.colorScheme)
                 .ignoresSafeArea()
                 .frame(minWidth: 990, minHeight: 710)
         }

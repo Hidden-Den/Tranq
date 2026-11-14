@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject var audioCapture = AudioCapture.shared
     @ObservedObject var permissions = PermissionManager.shared
     @ObservedObject var language = LanguageSettings.shared
+    @ObservedObject var theme = ThemeSettings.shared
     @ObservedObject var models = ModelStore.shared
     @ObservedObject var hotKey = HotKeySettings.shared
     @State private var showingClearHistoryAlert = false
@@ -34,6 +35,29 @@ struct SettingsView: View {
                             .init("Система", value: AppLanguage.system),
                             .init("Русский", value: AppLanguage.ru),
                             .init("English", value: AppLanguage.en)
+                        ], width: 140)
+                    }
+                }
+                
+                // РАЗДЕЛ 0.5: ЦВЕТ ИНТЕРФЕЙСА
+                UICard {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Цвет интерфейса")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Тёмная, светлая или системная тема")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        UIDropdownPicker(selection: Binding(
+                            get: { theme.current },
+                            set: { theme.select($0) }
+                        ), options: [
+                            .init("Системный", value: AppTheme.system),
+                            .init("Тёмный", value: AppTheme.dark),
+                            .init("Светлый", value: AppTheme.light)
                         ], width: 140)
                     }
                 }
