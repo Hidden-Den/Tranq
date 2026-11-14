@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OnboardingView: View {
     @ObservedObject var permissions = PermissionManager.shared
-    @ObservedObject var audioCapture = AudioCapture.shared
     @Binding var isPresented: Bool
     
     var canContinue: Bool {
@@ -94,30 +93,6 @@ struct OnboardingView: View {
                                     permissions.requestAccessibilityPermission()
                                 }
                             }
-                        }
-                        
-                        Divider().background(Color.uiHairline)
-                        
-                        // ШАГ 3: Анонимная аналитика
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(audioCapture.analyticsEnabled ? Color(hex: "#10B981") : Color.uiMidGray.opacity(0.4))
-                                .frame(width: 10, height: 10)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Делиться аналитикой")
-                                    .font(UIStyleFont.display(size: 14, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Автоматическая отправка данных диагностики поможет совершенствовать продукт")
-                                    .font(UIStyleFont.body(size: 12, weight: .regular))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $audioCapture.analyticsEnabled)
-                                .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
                         }
                     }
                 }

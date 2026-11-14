@@ -125,7 +125,6 @@ public class NativeHotKeyManager {
             let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
             if status != noErr {
                 AppLogger.shared.error("HotKey", "Не удалось зарегистрировать горячую клавишу", details: "status \(status), комбинация \(trigger.displayName)")
-                Telemetry.shared.event("hotkey_register_failed", ["error_detail": "status_\(status)"])
                 NSLog("[HotKey] RegisterEventHotKey failed with status %d", status)
                 return false
             } else {
@@ -180,7 +179,6 @@ public class NativeHotKeyManager {
             userInfo: observer
         ) else {
             AppLogger.shared.error("HotKey", "Не удалось создать CGEventTap", details: key.displayName)
-            Telemetry.shared.event("hotkey_event_tap_failed", ["error_detail": "accessibility_or_permission", "key": key.displayName])
             NSLog("[HotKey] CGEvent.tapCreate failed for %@", key.displayName)
             return false
         }

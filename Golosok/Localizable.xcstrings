@@ -1362,38 +1362,6 @@
         }
       }
     },
-    "Автоматическая отправка анонимных метрик производительности" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic sending of anonymous performance metrics"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Автоматическая отправка анонимных метрик производительности"
-          }
-        }
-      }
-    },
-    "Автоматическая отправка данных диагностики поможет совершенствовать продукт" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic diagnostics data helps us improve the product"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Автоматическая отправка данных диагностики поможет совершенствовать продукт"
-          }
-        }
-      }
-    },
     "Автоматически открывать в строке меню" : {
       "localizations" : {
         "en" : {
@@ -2117,22 +2085,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ДВИЖОК И УСКОРЕНИЕ"
-          }
-        }
-      }
-    },
-    "Делиться аналитикой" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share analytics"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Делиться аналитикой"
           }
         }
       }

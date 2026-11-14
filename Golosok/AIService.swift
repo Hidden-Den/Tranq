@@ -356,7 +356,6 @@ final class AIService {
 
     private func addProxyHeaders(_ request: inout URLRequest, config: AIProviderConfig) {
         guard config.isProxy else { return }
-        request.setValue(Telemetry.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             request.setValue(version, forHTTPHeaderField: "X-App-Version")
         }
