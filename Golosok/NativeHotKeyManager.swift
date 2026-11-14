@@ -22,6 +22,7 @@ public class NativeHotKeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isModifierActive: Bool = false
+    public private(set) var pendingTrigger: HotKeyTrigger?
 
     public var onHotKeyPressed: (() -> Void)?
     public var onHotKeyReleased: (() -> Void)?
@@ -92,8 +93,23 @@ public class NativeHotKeyManager {
 
     @discardableResult
     public func register(trigger: HotKeyTrigger) -> Bool {
+        let previousTrigger = self.trigger
+        let success = applyRegistration(for: trigger)
+
+        if success {
+            saveTrigger(trigger)
+            pendingTrigger = nil
+        } else {
+            pendingTrigger = trigger
+            if previousTrigger != trigger {
+                _ = applyRegistration(for: previousTrigger)
+            }
+        }
+        return success
+    }
+
+    private func applyRegistration(for trigger: HotKeyTrigger) -> Bool {
         unregister()
-        let success: Bool
         switch trigger {
         case .combination(let kCode, let mods):
             let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
@@ -102,23 +118,24 @@ public class NativeHotKeyManager {
                 AppLogger.shared.error("HotKey", "Не удалось зарегистрировать горячую клавишу", details: "status \(status), комбинация \(trigger.displayName)")
                 Telemetry.shared.event("hotkey_register_failed", ["error_detail": "status_\(status)"])
                 NSLog("[HotKey] RegisterEventHotKey failed with status %d", status)
-                success = false
+                return false
             } else {
                 AppLogger.shared.info("HotKey", "Горячая клавиша зарегистрирована", details: trigger.displayName)
-                success = true
+                return true
             }
         case .singleModifier(let key):
-            success = registerEventTap(for: key)
+            return registerEventTap(for: key)
         }
-
-        if success {
-            saveTrigger(trigger)
-        }
-        return success
     }
 
     public func register() {
-        register(trigger: trigger)
+        if let pending = pendingTrigger {
+            if register(trigger: pending) {
+                HotKeySettings.shared.refreshName()
+                return
+            }
+        }
+        _ = applyRegistration(for: trigger)
     }
 
     private func saveTrigger(_ trigger: HotKeyTrigger) {

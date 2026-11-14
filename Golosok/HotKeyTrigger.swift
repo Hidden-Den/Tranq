@@ -76,7 +76,7 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
         case .rightShift, .leftShift:
             return (flags.rawValue & 0x06) == 0 && flags.contains(.maskShift)
         case .capsLock:
-            return flags.contains(.maskAlphaShift)
+            return (flags.rawValue & 0x80) != 0
         }
     }
 }

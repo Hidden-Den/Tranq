@@ -42,6 +42,9 @@ struct HotKeyTriggerTests {
         #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockDownFlags) == true)
         let capsLockUpFlags = CGEventFlags(rawValue: 0x00)
         #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockUpFlags) == false)
+        // Caps Lock latched ON but physical key released (0x80 not set, maskAlphaShift set)
+        let capsLockLatchedFlags = CGEventFlags.maskAlphaShift
+        #expect(SingleModifierKey.capsLock.isPressed(flags: capsLockLatchedFlags) == false)
     }
 
     @Test func hotKeyTriggerDisplayName() {
