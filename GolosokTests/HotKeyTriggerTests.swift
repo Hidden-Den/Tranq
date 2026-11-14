@@ -2,6 +2,7 @@ import Testing
 import CoreGraphics
 @testable import Golosok
 
+@Suite(.serialized)
 struct HotKeyTriggerTests {
     @Test func singleModifierKeyCodeMapping() {
         #expect(SingleModifierKey.from(keyCode: 63) == .fn)
@@ -47,5 +48,17 @@ struct HotKeyTriggerTests {
         manager.trigger = .combination(keyCode: 49, modifiers: 2048)
         #expect(manager.trigger == .combination(keyCode: 49, modifiers: 2048))
         #expect(manager.displayName().contains("Space"))
+    }
+
+    @Test func hotKeySettingsPresets() {
+        let settings = HotKeySettings.shared
+        settings.setPreset(.singleModifier(.fn))
+        #expect(settings.hotKeyName == "Fn")
+
+        settings.setPreset(.singleModifier(.rightOption))
+        #expect(settings.hotKeyName == "Правый ⌥")
+
+        settings.reset()
+        #expect(settings.hotKeyName.contains("Space"))
     }
 }
