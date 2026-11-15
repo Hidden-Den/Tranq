@@ -114,6 +114,9 @@ struct VoiceIntelligencePhase3Tests {
     @Test func localSynthClientFallsBackGracefullyWithoutDaemon() async {
         let client = LocalSynthServiceClient.shared
         client.mockService = nil
+        let originalCLI = client.isCLIEnabled
+        client.isCLIEnabled = false
+        defer { client.isCLIEnabled = originalCLI }
 
         // Когда XPC сервис не подключен в системе, synthesize обязан детерминированно возвращать nil
         if !client.isServiceAvailable {

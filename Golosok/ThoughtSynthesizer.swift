@@ -82,9 +82,11 @@ public final class ThoughtSynthesizer {
                     details: "Размер: \(slmModel?.sizeMB ?? 0) МБ, стиль: \(style.title)"
                 )
 
+                let targetModelPath = slmModel.map { SLMModelStore.shared.localFileURL(for: $0).path }
                 if let synthResult = await LocalSynthServiceClient.shared.synthesize(
                     transcript: stageOneText,
                     stylePrompt: systemPrompt,
+                    modelPath: targetModelPath,
                     timeout: settings.adaptiveTimeoutSeconds
                 ) {
                     let cleaned = Self.stripThinkingTags(from: synthResult)
@@ -114,8 +116,8 @@ public final class ThoughtSynthesizer {
                 } else {
                     AppLogger.shared.warn(
                         "Pipeline",
-                        "Этап 2: Локальный инференс не вернул результат (демон XPC в разработке)",
-                        details: "Модель «\(modelName)» загружена на диск, но локальный исполнитель инференса еще не подключен в системе. Безопасный откат на нормализованный текст GigaAM."
+                        "Этап 2: Локальный инференс не вернул результат",
+                        details: "Модель «\(modelName)» загружена на диск, но локальный исполнитель не вернул ответ. Безопасный откат на нормализованный текст GigaAM."
                     )
                 }
                 DispatchQueue.main.async {
