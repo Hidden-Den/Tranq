@@ -88,6 +88,13 @@ struct GolosokApp: App {
                 .keyboardShortcut("o", modifiers: .command)
             }
 
+            CommandGroup(after: .pasteboard) {
+                Button(String(localized: "Вставить оригинал речи")) {
+                    TranscriptJournal.shared.pasteOriginal { _ in }
+                }
+                .keyboardShortcut("z", modifiers: [.command, .option])
+            }
+
             CommandGroup(after: .textEditing) {
                 Button("Найти в стенограмме…") {
                     NSApp.activate(ignoringOtherApps: true)

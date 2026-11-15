@@ -4287,6 +4287,38 @@
         }
       }
     },
+    "Умная речь" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Voice"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Умная речь"
+          }
+        }
+      }
+    },
+    "Вставить оригинал речи" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste Original Speech"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вставить оригинал речи"
+          }
+        }
+      }
+    },
     "Редактировать" : {
       "localizations" : {
         "en" : {

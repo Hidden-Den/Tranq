@@ -493,7 +493,9 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 id: noteId,
                 rawText: rawText,
                 durationSec: realAudioSecs,
-                targetAppName: jobFocusTarget?.appName
+                targetAppName: jobFocusTarget?.appName,
+                targetPid: jobFocusTarget?.pid,
+                targetBundleId: jobFocusTarget?.bundleIdentifier
             )
 
             if shouldSynthesize {
