@@ -51,15 +51,26 @@ public final class SLMModelStore: NSObject, ObservableObject {
     public static let catalog: [SLMModel] = [
         SLMModel(
             id: "vikhr_1.5b",
-            name: "Vikhr 1.5B Q4",
-            fileName: "Vikhr-Qwen-2.5-1.5b-Instruct-Q4_K_M.gguf",
+            name: "QVikhr 2.5 1.5B SMPO Q4",
+            fileName: "QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M.gguf",
             sizeMB: 985,
             downloadURLs: [
-                URL(string: "https://huggingface.co/Vikhrmodels/Vikhr-Qwen-2.5-1.5B-Instruct-GGUF/resolve/main/Vikhr-Qwen-2.5-1.5b-Instruct-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/QuantFactory/Vikhr-Qwen-2.5-1.5B-Instruct-GGUF/resolve/main/Vikhr-Qwen-2.5-1.5B-Instruct.Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/itlwas/Vikhr-Qwen-2.5-1.5B-Instruct-Q4_K_M-GGUF/resolve/main/vikhr-qwen-2.5-1.5b-instruct-q4_k_m.gguf")!
+                URL(string: "https://huggingface.co/Vikhrmodels/QVikhr-2.5-1.5B-Instruct-SMPO_GGUF/resolve/main/QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/mradermacher/QVikhr-2.5-1.5B-Instruct-SMPO-GGUF/resolve/main/QVikhr-2.5-1.5B-Instruct-SMPO.Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/itlwas/QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M-GGUF/resolve/main/qvikhr-2.5-1.5b-instruct-smpo-q4_k_m.gguf")!
             ],
-            description: "Оптимизирована для русской речи и очистки от мусора"
+            description: "Обновленная модель Вихрь с алгоритмом выравнивания SMPO"
+        ),
+        SLMModel(
+            id: "qvikhr_3_4b",
+            name: "QVikhr 3 4B Q4",
+            fileName: "QVikhr-3-4B-Instruction-Q4_K_M.gguf",
+            sizeMB: 2497,
+            downloadURLs: [
+                URL(string: "https://huggingface.co/Vikhrmodels/QVikhr-3-4B-Instruction-GGUF/resolve/main/QVikhr-3-4B-Instruction-Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/mradermacher/QVikhr-3-4B-Instruction-GGUF/resolve/main/QVikhr-3-4B-Instruction.Q4_K_M.gguf")!
+            ],
+            description: "Новое поколение Вихря на архитектуре Qwen 3 для 16 ГБ RAM"
         ),
         SLMModel(
             id: "vikhr_0.5b",
@@ -74,16 +85,27 @@ public final class SLMModelStore: NSObject, ObservableObject {
             description: "Русскоязычный тюнинг в ультракомпактном размере"
         ),
         SLMModel(
-            id: "qwen_0.5b",
-            name: "Qwen 2.5 0.5B Q4",
-            fileName: "qwen2.5-0.5b-instruct-q4_k_m.gguf",
-            sizeMB: 491,
+            id: "qwen_3.5_0.8b",
+            name: "Qwen 3.5 0.8B Q4",
+            fileName: "Qwen3.5-0.8B-Q4_K_M.gguf",
+            sizeMB: 532,
             downloadURLs: [
-                URL(string: "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf")!,
-                URL(string: "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/lmstudio-community/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf")!
+                URL(string: "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_0.gguf")!
             ],
-            description: "Ультралегкая модель для базовых Mac с 8 ГБ памяти"
+            description: "Новейшая ультралегкая модель поколения Qwen 3.5"
+        ),
+        SLMModel(
+            id: "qwen_3.5_2b",
+            name: "Qwen 3.5 2B Q4",
+            fileName: "Qwen3.5-2B-Q4_K_M.gguf",
+            sizeMB: 1280,
+            downloadURLs: [
+                URL(string: "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen_Qwen3.5-2B-Q4_K_M.gguf")!,
+                URL(string: "https://huggingface.co/lmstudio-community/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf")!
+            ],
+            description: "Новейшая сбалансированная модель поколения Qwen 3.5"
         ),
         SLMModel(
             id: "llama_3.2_1b",
@@ -95,19 +117,7 @@ public final class SLMModelStore: NSObject, ObservableObject {
                 URL(string: "https://huggingface.co/hugging-quants/Llama-3.2-1B-Instruct-Q4_K_M-GGUF/resolve/main/llama-3.2-1b-instruct-q4_k_m.gguf")!,
                 URL(string: "https://huggingface.co/lmstudio-community/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf")!
             ],
-            description: "Компактная быстрая мультиязычная модель"
-        ),
-        SLMModel(
-            id: "qwen_1.5b",
-            name: "Qwen 2.5 1.5B Q4",
-            fileName: "qwen2.5-1.5b-instruct-q4_k_m.gguf",
-            sizeMB: 1117,
-            downloadURLs: [
-                URL(string: "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf")!,
-                URL(string: "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/lmstudio-community/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf")!
-            ],
-            description: "Сбалансированная модель для сложных инструкций"
+            description: "Компактная быстрая мультиязычная модель от Meta"
         )
     ]
 
@@ -208,10 +218,14 @@ public final class SLMModelStore: NSObject, ObservableObject {
 
     /// Поиск модели в каталоге по ID или имени файла с поддержкой legacy ключей
     public func model(named id: String) -> SLMModel? {
-        if id == "qwen_3.5_1.5b" {
-            return Self.catalog.first(where: { $0.id == "qwen_1.5b" })
+        switch id {
+        case "qwen_0.5b":
+            return Self.catalog.first(where: { $0.id == "qwen_3.5_0.8b" })
+        case "qwen_1.5b", "qwen_3.5_1.5b":
+            return Self.catalog.first(where: { $0.id == "qwen_3.5_2b" })
+        default:
+            return Self.catalog.first(where: { $0.id == id || $0.fileName == id })
         }
-        return Self.catalog.first(where: { $0.id == id || $0.fileName == id })
     }
 
     /// Отмена текущей загрузки модели

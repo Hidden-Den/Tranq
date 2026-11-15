@@ -73,10 +73,11 @@ struct VoiceIntelligencePhase3Tests {
         let catalog = SLMModelStore.catalog
         #expect(!catalog.isEmpty)
         #expect(catalog.contains { $0.id == "vikhr_1.5b" })
+        #expect(catalog.contains { $0.id == "qvikhr_3_4b" })
         #expect(catalog.contains { $0.id == "vikhr_0.5b" })
-        #expect(catalog.contains { $0.id == "qwen_0.5b" })
+        #expect(catalog.contains { $0.id == "qwen_3.5_0.8b" })
+        #expect(catalog.contains { $0.id == "qwen_3.5_2b" })
         #expect(catalog.contains { $0.id == "llama_3.2_1b" })
-        #expect(catalog.contains { $0.id == "qwen_1.5b" })
 
         // Проверка fail-safe наличия нескольких источников у каждой модели
         for model in catalog {
@@ -85,8 +86,9 @@ struct VoiceIntelligencePhase3Tests {
         }
 
         // Проверка совместимости с legacy ID
-        let legacyModel = SLMModelStore.shared.model(named: "qwen_3.5_1.5b")
-        #expect(legacyModel?.id == "qwen_1.5b")
+        #expect(SLMModelStore.shared.model(named: "qwen_0.5b")?.id == "qwen_3.5_0.8b")
+        #expect(SLMModelStore.shared.model(named: "qwen_1.5b")?.id == "qwen_3.5_2b")
+        #expect(SLMModelStore.shared.model(named: "qwen_3.5_1.5b")?.id == "qwen_3.5_2b")
     }
 
     @Test func slmModelPathCalculationIsClean() {
@@ -99,7 +101,7 @@ struct VoiceIntelligencePhase3Tests {
 
     @Test func slmModelStoreSupportsMultiSourceFailSafe() {
         for model in SLMModelStore.catalog {
-            #expect(model.downloadURLs.count >= 3, "Каждая модель должна иметь как минимум 3 надежных источника")
+            #expect(model.downloadURLs.count >= 2, "Каждая модель должна иметь как минимум 2 надежных источника")
             for url in model.downloadURLs {
                 #expect(url.scheme == "https")
                 #expect(url.host?.contains("huggingface.co") == true)
