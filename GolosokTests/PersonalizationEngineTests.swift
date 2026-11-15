@@ -142,4 +142,33 @@ final class PersonalizationEngineTests: XCTestCase {
         }
         wait(for: [expectation], timeout: 1.0)
     }
+
+    func testApplyRulesDeterministicSubstitutions() {
+        let engine = PersonalizationEngine.shared
+        engine.resetMemory(restoreBuiltins: true)
+
+        let input = "Нужно поднять кубернейтс и настроить no8m для интеграции."
+        let output = engine.applyRules(to: input)
+
+        XCTAssertTrue(output.contains("Kubernetes"))
+        XCTAssertTrue(output.contains("n8n"))
+        XCTAssertFalse(output.contains("кубернейтс"))
+        XCTAssertFalse(output.contains("no8m"))
+    }
+
+    func testCapitalizedRussianSentenceWordsNotLearnedAsTerms() {
+        let engine = PersonalizationEngine.shared
+        engine.resetMemory()
+
+        let original = "нужно сделать это"
+        let edited = "Нужно сделать это"
+        engine.learnFromEdit(original: original, edited: edited)
+
+        let expectation = XCTestExpectation(description: "Wait learning")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertFalse(engine.learnedTerms.contains(where: { $0.term == "Нужно" }))
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1.0)
+    }
 }

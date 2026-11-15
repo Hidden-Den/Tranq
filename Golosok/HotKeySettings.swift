@@ -28,6 +28,10 @@ public final class HotKeySettings: ObservableObject {
         hotKeyName = NativeHotKeyManager.shared.displayName()
     }
 
+    public var isConfigured: Bool {
+        trigger != .none
+    }
+
     @discardableResult
     public func setPreset(_ preset: HotKeyTrigger) -> Bool {
         endCapture()
@@ -44,13 +48,19 @@ public final class HotKeySettings: ObservableObject {
             case .singleModifier:
                 self.isTaken = false
                 PermissionManager.shared.requestAccessibilityPermission()
+            case .none:
+                self.isTaken = false
             }
             return false
         }
     }
 
     public func reset() {
-        setPreset(.combination(keyCode: 49, modifiers: UInt32(optionKey)))
+        setPreset(.none)
+    }
+
+    public func clear() {
+        setPreset(.none)
     }
 
     public func beginCapture() {
@@ -74,20 +84,23 @@ public final class HotKeySettings: ObservableObject {
             }
 
             if event.type == .flagsChanged {
-                if let modKey = SingleModifierKey.from(keyCode: UInt32(event.keyCode)) {
-                    let flags = event.cgEvent?.flags ?? CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
-                    if modKey.isPressed(flags: flags) {
-                        // Modifier pressed down: defer committing in case user is starting a combination
-                        self.pendingSingleModifier = modKey
-                    } else {
-                        // Modifier released
-                        if self.pendingSingleModifier == modKey {
-                            self.pendingSingleModifier = nil
-                            self.setPreset(.singleModifier(modKey))
-                            return nil
-                        }
+                let flags = event.cgEvent?.flags ?? CGEventFlags(rawValue: UInt64(event.modifierFlags.rawValue))
+
+                // Если модификатор был зажат и теперь отпущен — фиксируем его
+                if let pending = self.pendingSingleModifier {
+                    if !pending.isPressed(flags: flags) {
                         self.pendingSingleModifier = nil
+                        self.setPreset(.singleModifier(pending))
+                        return nil
                     }
+                }
+
+                if let modKey = SingleModifierKey.from(keyCode: UInt32(event.keyCode)) {
+                    if modKey.isPressed(flags: flags) {
+                        self.pendingSingleModifier = modKey
+                    }
+                } else if flags.contains(.maskSecondaryFn) || (flags.rawValue & SingleModifierKey.fn.deviceMask) != 0 {
+                    self.pendingSingleModifier = .fn
                 }
                 return event
             }

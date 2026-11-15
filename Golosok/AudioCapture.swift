@@ -525,9 +525,9 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                     DispatchQueue.main.async {
                         self.isSynthesizingThought = false
 
-                        var resolvedText = finalText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        var resolvedText = PersonalizationEngine.shared.applyRules(to: finalText.trimmingCharacters(in: .whitespacesAndNewlines))
                         if resolvedText.isEmpty {
-                            resolvedText = prettyFormattedText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            resolvedText = PersonalizationEngine.shared.applyRules(to: prettyFormattedText.trimmingCharacters(in: .whitespacesAndNewlines))
                         }
                         if resolvedText.isEmpty {
                             AppLogger.shared.warn("Recognition", "Текст пуст после очистки от слов-паразитов")
@@ -566,20 +566,21 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                     }
                 }
             } else {
+                let resolvedDirectText = PersonalizationEngine.shared.applyRules(to: prettyFormattedText)
                 AppLogger.shared.info(
                     "Pipeline",
                     "Этап 2 пропущен: \(isFileImport ? "импорт файла" : "режим прямого ввода")",
-                    details: "Итог: «\(prettyFormattedText)»"
+                    details: "Итог: «\(resolvedDirectText)»"
                 )
                 TranscriptJournal.shared.updateFinal(
                     id: noteId,
                     stageOneText: prettyFormattedText,
-                    finalText: prettyFormattedText,
+                    finalText: resolvedDirectText,
                     isFallback: false
                 )
                 self.saveAndInsertTranscription(
                     noteId: noteId,
-                    finalText: prettyFormattedText,
+                    finalText: resolvedDirectText,
                     isTransformedByAI: false,
                     target: jobFocusTarget,
                     durationFormatted: durationFormatted,

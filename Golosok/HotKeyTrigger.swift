@@ -76,11 +76,18 @@ public enum SingleModifierKey: UInt32, CaseIterable, Codable, Sendable {
 }
 
 public enum HotKeyTrigger: Equatable, Codable, Sendable {
+    case none
     case combination(keyCode: UInt32, modifiers: UInt32)
     case singleModifier(SingleModifierKey)
 
+    public static let optionSpace = HotKeyTrigger.combination(keyCode: 49, modifiers: UInt32(optionKey))
+    public static let fnKey = HotKeyTrigger.singleModifier(.fn)
+    public static let rightOptionKey = HotKeyTrigger.singleModifier(.rightOption)
+
     public var displayName: String {
         switch self {
+        case .none:
+            return NSLocalizedString("HotKey.None", value: "Не назначено", comment: "No hotkey assigned")
         case .singleModifier(let key):
             return key.displayName
         case .combination(let keyCode, let modifiers):

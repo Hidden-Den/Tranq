@@ -68,18 +68,20 @@ public struct GroundingValidator {
         let outputWordCount = sanitizedOutput.split(whereSeparator: { $0.isWhitespace }).count
 
         // 3. Проверка вопросов (защита от чат-бот ответов)
-        let isExplicitQuestion = trimmedInput.contains("?")
-        if isExplicitQuestion {
-            // Для чистой мысли и делового стиля вопрос обязан оставаться вопросом
-            if (style == .clean || style == .formal) && !sanitizedOutput.contains("?") {
+        let isDirectQuestion = (hasLeadingQuestionKeyword(trimmedInput) || (inputWordCount <= 12 && trimmedInput.hasSuffix("?")))
+        let hasQuestionMark = trimmedInput.contains("?")
+
+        if isDirectQuestion {
+            // Для чистой мысли и делового стиля прямой вопрос обязан оставаться вопросом
+            if (style == .clean || style == .formal) && !sanitizedOutput.contains("?") && !hasLeadingQuestionKeyword(sanitizedOutput) {
                 return .rejected(reason: "Модель ответила на вопрос вместо сохранения вопроса")
             }
             if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
                 return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
             }
-        } else if hasLeadingQuestionKeyword(trimmedInput) {
-            // Если в исходном тексте не было знака '?', но он начинается с вопросительного слова:
-            // Отклоняем, только если модель развернула ответ (сильный рост длины)
+        } else if hasQuestionMark {
+            // Если вопросительный знак встретился в длинной мысли или сложноподчиненном предложении
+            // (например, «Нужно подумать, как сделать...?»), отклоняем только если модель развернула ответ
             if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
                 return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
             }

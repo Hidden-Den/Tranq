@@ -48,7 +48,7 @@ struct VoiceIntelligencePhase4Tests {
     }
 
     @Test func subordinateClauseWithQuestionWordIsNotFalselyRejected() {
-        let input = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать про No8M и про Кубернейтс под тем, как эффективно сделать интеграцию с онлайн-университетом для No8."
+        let input = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать про No8M и про Кубернейтс под тем, как эффективно сделать интеграцию с онлайн-университетом для No8?"
         let output = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать о No8M и Кубернейтс, как эффективно интегрировать с онлайн-университетом для No8."
         let result = GroundingValidator.validate(input: input, output: output, style: .clean)
         if case .valid(let text) = result {

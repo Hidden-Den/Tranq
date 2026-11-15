@@ -76,7 +76,8 @@ struct HotKeyTriggerTests {
         #expect(settings.hotKeyName == SingleModifierKey.rightOption.displayName)
 
         settings.reset()
-        #expect(settings.hotKeyName.contains("Space"))
+        #expect(settings.trigger == .none)
+        #expect(settings.hotKeyName == "Не назначено")
     }
 
     @Test func pendingTriggerHandling() {
@@ -94,7 +95,7 @@ struct HotKeyTriggerTests {
         }
     }
 
-    @Test func unsupportedModifierFallsBackToFn() {
+    @Test func unsupportedModifierFallsBackToNone() {
         let manager = NativeHotKeyManager.shared
         let original = manager.trigger
         defer { manager.trigger = original }
@@ -102,8 +103,8 @@ struct HotKeyTriggerTests {
         UserDefaults.standard.set("modifier", forKey: "hotkey.type")
         UserDefaults.standard.set(57, forKey: "hotkey.modifierKeyCode") // Legacy Caps Lock code
 
-        #expect(manager.trigger == .singleModifier(.fn))
-        #expect(manager.displayName() == "Fn")
+        #expect(manager.trigger == .none)
+        #expect(manager.displayName() == "Не назначено")
     }
 
     @Test func fnToggleModeEventTap() async throws {

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @ObservedObject var permissions = PermissionManager.shared
+    @ObservedObject var hotKey = HotKeySettings.shared
     @Binding var isPresented: Bool
     
     var canContinue: Bool {
@@ -94,9 +95,53 @@ struct OnboardingView: View {
                                 }
                             }
                         }
+
+                        Divider().background(Color.uiHairline)
+
+                        // ШАГ 3: Горячая клавиша (По выбору)
+                        HStack(spacing: 16) {
+                            Circle()
+                                .fill(hotKey.isConfigured ? Color(hex: "#10B981") : Color.uiMidGray.opacity(0.4))
+                                .frame(width: 10, height: 10)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text("Горячая клавиша")
+                                        .font(UIStyleFont.display(size: 14, weight: .medium))
+                                        .foregroundColor(.uiInk)
+                                    Text("По выбору")
+                                        .font(UIStyleFont.body(size: 10, weight: .regular))
+                                        .foregroundColor(.uiMidGray)
+                                }
+                                Text(hotKey.isConfigured ? "Назначена: \(hotKey.hotKeyName)" : "Выберите клавишу для старта диктовки")
+                                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+
+                            Spacer()
+
+                            HStack(spacing: 6) {
+                                if hotKey.isConfigured {
+                                    UIBadge(text: hotKey.hotKeyName)
+                                    UIOutlineButton(title: "Сбросить") {
+                                        hotKey.clear()
+                                    }
+                                } else {
+                                    UIOutlineButton(title: "Fn") {
+                                        hotKey.setPreset(.fnKey)
+                                    }
+                                    UIOutlineButton(title: "⌥ Пробел") {
+                                        hotKey.setPreset(.optionSpace)
+                                    }
+                                    UIOutlineButton(title: "Правый ⌥") {
+                                        hotKey.setPreset(.rightOptionKey)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                .frame(maxWidth: 480)
+                .frame(maxWidth: 520)
                 
                 UIPrimaryButton(title: canContinue ? LocalizedStringKey("Начать использование") : LocalizedStringKey("Требуется доступ к микрофону")) {
                     if canContinue {

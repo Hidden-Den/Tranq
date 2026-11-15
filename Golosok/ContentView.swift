@@ -509,7 +509,6 @@ struct ContentView: View {
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     
-    @State private var isSplashFinished = false
     @State private var currentTab: MainTab = .history
     @State private var selectedItemId: UUID?
     @State private var showOnboarding = false
@@ -562,16 +561,14 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            if !isSplashFinished {
-                SplashView(isFinished: $isSplashFinished).transition(.opacity).zIndex(2)
+            if !permissions.onboardingCompleted {
+                OnboardingView(isPresented: $showOnboarding)
             } else {
-                Group {
-                    if !permissions.onboardingCompleted { OnboardingView(isPresented: $showOnboarding) }
-                    else { mainInterface }
-                }
-                .transition(.opacity).onAppear { permissions.checkPermissions() }
+                mainInterface
             }
         }
+        .transition(.opacity)
+        .onAppear { permissions.checkPermissions() }
         .ignoresSafeArea()
         // Автоматическое открытие заметки
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoSelectNote"))) { notification in

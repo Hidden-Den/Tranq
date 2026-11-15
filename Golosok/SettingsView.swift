@@ -202,6 +202,10 @@ struct SettingsView: View {
                                     Text(LocalizedStringKey("HotKey.Taken"))
                                         .font(UIStyleFont.body(size: 11, weight: .regular))
                                         .foregroundColor(.uiWarn)
+                                } else if !hotKey.isConfigured {
+                                    Text("Клавиша не назначена")
+                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .foregroundColor(.uiMidGray)
                                 }
                             }
                             Spacer()
@@ -210,7 +214,12 @@ struct SettingsView: View {
                             } else {
                                 UIBadge(text: hotKey.hotKeyName)
                             }
-                            UIOutlineButton(title: hotKey.isCapturing ? LocalizedStringKey("Отмена") : LocalizedStringKey("Изменить")) {
+                            if hotKey.isConfigured && !hotKey.isCapturing {
+                                UIOutlineButton(title: "Сбросить") {
+                                    hotKey.clear()
+                                }
+                            }
+                            UIOutlineButton(title: hotKey.isCapturing ? LocalizedStringKey("Отмена") : (hotKey.isConfigured ? LocalizedStringKey("Изменить") : LocalizedStringKey("Назначить"))) {
                                 if hotKey.isCapturing { hotKey.endCapture() } else { hotKey.beginCapture() }
                             }
                         }

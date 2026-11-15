@@ -54,8 +54,21 @@ class PermissionManager: ObservableObject {
     }
     
     func requestAccessibilityPermission() {
+        if AXIsProcessTrusted() {
+            DispatchQueue.main.async {
+                self.isAccessibilityGranted = true
+            }
+            return
+        }
+        
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        _ = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        let isTrusted = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        if isTrusted {
+            DispatchQueue.main.async {
+                self.isAccessibilityGranted = true
+            }
+            return
+        }
         
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)

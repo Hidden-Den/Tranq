@@ -186,7 +186,7 @@ public final class PersonalizationEngine: ObservableObject {
                     let words = repClean.split(separator: " ").map { String($0) }
                     for w in words {
                         let cleanedW = Self.cleanWord(w)
-                        if cleanedW.count >= 2 && (cleanedW.first?.isUppercase == true || Self.isLatinWord(cleanedW)) {
+                        if cleanedW.count >= 2 && Self.isSpecializedTerm(cleanedW) {
                             let lower = cleanedW.lowercased()
                             if let tIdx = self.learnedTerms.firstIndex(where: { $0.term.lowercased() == lower }) {
                                 self.learnedTerms[tIdx].term = cleanedW
@@ -428,6 +428,8 @@ public final class PersonalizationEngine: ObservableObject {
     }
 
     public func resetMemory(restoreBuiltins: Bool = false) {
+        saveWorkItem?.cancel()
+        saveWorkItem = nil
         lock.lock()
         correctionRules.removeAll()
         learnedTerms.removeAll()
@@ -443,7 +445,6 @@ public final class PersonalizationEngine: ObservableObject {
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
-        scheduleSave()
         AppLogger.shared.info("Personalization", "Память адаптивного обучения очищена (восстановление справочника: \(restoreBuiltins))")
     }
 
@@ -457,6 +458,42 @@ public final class PersonalizationEngine: ObservableObject {
         let latinRegex = try? NSRegularExpression(pattern: #"^[A-Za-z0-9_\-\.]{2,}$"#)
         let range = NSRange(location: 0, length: (word as NSString).length)
         return latinRegex?.firstMatch(in: word, options: [], range: range) != nil
+    }
+
+    public static func isSpecializedTerm(_ word: String) -> Bool {
+        if isLatinWord(word) { return true }
+        // Кириллическая аббревиатура от 2 заглавных букв (ФНС, ГОСТ, ИП, ЭДО)
+        if word.count >= 2 && word.allSatisfy({ ("А"..."Я").contains($0) || $0 == "Ё" }) {
+            return true
+        }
+        // Смешанный буквенно-цифровой идентификатор (1С, M1, v2)
+        let hasLetter = word.contains(where: { $0.isLetter })
+        let hasNumber = word.contains(where: { $0.isNumber })
+        if hasLetter && hasNumber {
+            return true
+        }
+        return false
+    }
+
+    /// Детерминированное применение активных правил словаря к тексту
+    public func applyRules(to text: String) -> String {
+        guard !text.isEmpty else { return text }
+        lock.lock()
+        let rulesSnapshot = self.correctionRules
+        lock.unlock()
+
+        guard !rulesSnapshot.isEmpty else { return text }
+
+        var result = text
+        for rule in rulesSnapshot where !rule.pattern.isEmpty && !rule.replacement.isEmpty {
+            let pattern = NSRegularExpression.escapedPattern(for: rule.pattern)
+            let regexPattern = "(?i)(?<=^|[\\s.,!?;:\"«»()—–-]|\\b)\(pattern)(?=[\\s.,!?;:\"«»()—–-]|\\b|$)"
+            if let regex = try? NSRegularExpression(pattern: regexPattern) {
+                let range = NSRange(location: 0, length: (result as NSString).length)
+                result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: rule.replacement)
+            }
+        }
+        return result
     }
 
     public static func extractCandidateTerms(from text: String) -> [String] {
@@ -593,6 +630,7 @@ public final class PersonalizationEngine: ObservableObject {
     public static let builtinRules: [(pattern: String, replacement: String, category: String)] = [
         // IT, DevOps, Cloud & Code
         ("кубернайт", "Kubernetes", "it"),
+        ("кубернейтс", "Kubernetes", "it"),
         ("кубере", "Kubernetes", "it"),
         ("кубер", "Kubernetes", "it"),
         ("кубернетис", "Kubernetes", "it"),
@@ -613,8 +651,13 @@ public final class PersonalizationEngine: ObservableObject {
         ("редисе", "Redis", "it"),
         ("джейсон", "JSON", "it"),
         ("джсон", "JSON", "it"),
+        ("no8m", "n8n", "it"),
+        ("но8м", "n8n", "it"),
+        ("но8", "n8n", "it"),
         ("no8", "n8n", "it"),
+        ("n8m", "n8n", "it"),
         ("n8", "n8n", "it"),
+        ("эн восемь эн", "n8n", "it"),
         ("эн восемь", "n8n", "it"),
         ("гитхаб", "GitHub", "it"),
         ("гитлаб", "GitLab", "it"),

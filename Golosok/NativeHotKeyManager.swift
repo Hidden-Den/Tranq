@@ -54,15 +54,23 @@ public class NativeHotKeyManager {
 
     public var trigger: HotKeyTrigger {
         get {
-            let type = UserDefaults.standard.string(forKey: "hotkey.type") ?? "combo"
+            guard let type = UserDefaults.standard.string(forKey: "hotkey.type") else {
+                return .none
+            }
+            if type == "none" {
+                return .none
+            }
             if type == "modifier" {
                 let keyCode = UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifierKeyCode"))
                 if let key = SingleModifierKey.from(keyCode: keyCode) {
                     return .singleModifier(key)
                 }
-                return .singleModifier(.fn)
+                return .none
             }
-            return .combination(keyCode: keyCode, modifiers: modifierFlags)
+            if type == "combo" {
+                return .combination(keyCode: keyCode, modifiers: modifierFlags)
+            }
+            return .none
         }
         set {
             saveTrigger(newValue)
@@ -107,7 +115,7 @@ public class NativeHotKeyManager {
             switch trigger {
             case .singleModifier:
                 pendingTrigger = trigger
-            case .combination:
+            case .combination, .none:
                 pendingTrigger = nil
             }
             if previousTrigger != trigger {
@@ -120,6 +128,9 @@ public class NativeHotKeyManager {
     private func applyRegistration(for trigger: HotKeyTrigger) -> Bool {
         unregister()
         switch trigger {
+        case .none:
+            AppLogger.shared.info("HotKey", "Горячая клавиша не назначена")
+            return true
         case .combination(let kCode, let mods):
             let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
             let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
@@ -148,6 +159,8 @@ public class NativeHotKeyManager {
 
     private func saveTrigger(_ trigger: HotKeyTrigger) {
         switch trigger {
+        case .none:
+            UserDefaults.standard.set("none", forKey: "hotkey.type")
         case .singleModifier(let key):
             UserDefaults.standard.set("modifier", forKey: "hotkey.type")
             UserDefaults.standard.set(Int(key.rawValue), forKey: "hotkey.modifierKeyCode")
@@ -231,21 +244,17 @@ public class NativeHotKeyManager {
             return Unmanaged.passUnretained(event)
         }
 
-        let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
-        guard eventKeyCode == key.rawValue else {
-            return Unmanaged.passUnretained(event)
-        }
-
         let isDown = key.isPressed(flags: event.flags)
-        if isDown {
-            if !isModifierActive {
-                isModifierActive = true
-                dispatchToMain { [weak self] in
-                    self?.onHotKeyPressed?()
+        if isDown != isModifierActive {
+            if isDown {
+                let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
+                if key == .fn || eventKeyCode == key.rawValue || (event.flags.rawValue & key.deviceMask) != 0 {
+                    isModifierActive = true
+                    dispatchToMain { [weak self] in
+                        self?.onHotKeyPressed?()
+                    }
                 }
-            }
-        } else {
-            if isModifierActive {
+            } else {
                 isModifierActive = false
                 dispatchToMain { [weak self] in
                     self?.onHotKeyReleased?()
@@ -253,9 +262,6 @@ public class NativeHotKeyManager {
             }
         }
 
-        if key == .fn {
-            return nil
-        }
         return Unmanaged.passUnretained(event)
     }
 
