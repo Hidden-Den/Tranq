@@ -4319,6 +4319,86 @@
         }
       }
     },
+    "Адаптация под приложения" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Adaptation"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адаптация под приложения"
+          }
+        }
+      }
+    },
+    "Учет контекста активного окна" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active window context awareness"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Учет контекста активного окна"
+          }
+        }
+      }
+    },
+    "Словарь терминов" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom Terms"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Словарь терминов"
+          }
+        }
+      }
+    },
+    "Защита специфических слов и имен" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection of domain terms and names"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Защита специфических слов и имен"
+          }
+        }
+      }
+    },
+    "Новый термин" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New term"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый термин"
+          }
+        }
+      }
+    },
     "Редактировать" : {
       "localizations" : {
         "en" : {

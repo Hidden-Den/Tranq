@@ -14,16 +14,36 @@ public struct GroundingValidator {
         "конечно",
         "я исправил",
         "текст расшифровки",
-        "очищенный текст"
+        "очищенный текст",
+        "исходный текст"
     ]
 
-    /// Полная детерминированная валидация сгенерированного текста
-    public static func validate(input: String, output: String, style: VoiceStyle) -> ValidationResult {
+    private static let promptStructuralTokens: Set<String> = [
+        "role", "task", "constraints", "context", "input", "output", "prompt",
+        "instructions", "goal", "example", "steps", "rules", "format"
+    ]
+
+    /// Полная детерминированная валидация сгенерированного текста с учетом дифференцированных порогов стилей
+    public static func validate(
+        input: String,
+        output: String,
+        style: VoiceStyle,
+        customTerms: Set<String> = []
+    ) -> ValidationResult {
         let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
         var sanitizedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !sanitizedOutput.isEmpty else {
             return .rejected(reason: "Пустой ответ модели")
+        }
+
+        // Очистка от шаблонных меток разделения (например: "Исходный текст: ... Очищенный текст: ...")
+        let sectionPattern = #"(?is)^\s*исходный\s+текст\s*:.*?(?:очищенный|исправленный|отредактированный)\s+текст\s*:\s*"#
+        if let match = sanitizedOutput.range(of: sectionPattern, options: .regularExpression) {
+            let extracted = String(sanitizedOutput[match.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !extracted.isEmpty {
+                sanitizedOutput = extracted
+            }
         }
 
         // 1. Очистка внешних кавычек если модель их добавила
@@ -44,31 +64,33 @@ public struct GroundingValidator {
             }
         }
 
-        // 3. Проверка длины: выход не должен быть в 2.5 раза длиннее входа
         let inputWordCount = trimmedInput.split(whereSeparator: { $0.isWhitespace }).count
         let outputWordCount = sanitizedOutput.split(whereSeparator: { $0.isWhitespace }).count
-        if outputWordCount > max(8, Int(Double(inputWordCount) * 2.2)) {
-            return .rejected(reason: "Выход модели превысил допустимый объем генерации")
-        }
 
-        // 4. Проверка вопросов (защита от чат-бот ответов)
-        let isInputQuestion = trimmedInput.contains("?") || hasQuestionKeyword(trimmedInput)
-        if isInputQuestion {
-            // Если на входе был вопрос, в чистом стиле выход должен остаться вопросом
-            if style == .clean && trimmedInput.hasSuffix("?") && !sanitizedOutput.contains("?") {
+        // 3. Проверка вопросов (защита от чат-бот ответов)
+        let isExplicitQuestion = trimmedInput.contains("?")
+        if isExplicitQuestion {
+            // Для чистой мысли и делового стиля вопрос обязан оставаться вопросом
+            if (style == .clean || style == .formal) && !sanitizedOutput.contains("?") {
                 return .rejected(reason: "Модель ответила на вопрос вместо сохранения вопроса")
             }
-            if outputWordCount > max(6, inputWordCount + 4) {
+            if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
+                return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
+            }
+        } else if hasLeadingQuestionKeyword(trimmedInput) {
+            // Если в исходном тексте не было знака '?', но он начинается с вопросительного слова:
+            // Отклоняем, только если модель развернула ответ (сильный рост длины)
+            if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
                 return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
             }
         }
 
-        // 5. Проверка чисел (Strict Numbers Grounding)
+        // 4. Проверка чисел (Strict Numbers Grounding)
         let inputNumbers = extractNumbers(from: trimmedInput)
-        let outputNumbers = extractNumbers(from: sanitizedOutput)
+        let outputNumbers = extractNumbers(from: sanitizedOutput, excludingListIndices: style == .bullets)
 
-        // В чистом стиле все надиктованные числа должны сохраняться
-        if style == .clean {
+        // В стилях clean, formal и bullets все исходные числа должны сохраняться
+        if style == .clean || style == .formal || style == .bullets {
             for num in inputNumbers {
                 if !outputNumbers.contains(num) {
                     return .rejected(reason: "Пропущено исходное число \(num)")
@@ -82,16 +104,50 @@ public struct GroundingValidator {
             }
         }
 
-        // 6. Проверка латиницы и технических терминов
-        let inputLatin = extractLatinTokens(from: trimmedInput)
-        let outputLatin = extractLatinTokens(from: sanitizedOutput)
-        for token in outputLatin {
-            if !inputLatin.contains(token.lowercased()) {
-                // Если стиль не Prompt и токена не было вовсе — проверяем строгость
-                if style != .prompt {
-                    return .rejected(reason: "Новый латинский термин \(token) не найден в речи")
+        // 5. Проверка латиницы и пользовательского словаря терминов
+        if style != .prompt {
+            let inputLatinLower = Set(extractLatinTokens(from: trimmedInput).map { $0.lowercased() })
+            let outputLatin = extractLatinTokens(from: sanitizedOutput)
+            var customTermsTokens = Set<String>()
+            for term in customTerms {
+                for tok in extractLatinTokens(from: term) {
+                    customTermsTokens.insert(tok.lowercased())
                 }
             }
+
+            for token in outputLatin {
+                let lowerToken = token.lowercased()
+                if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
+                    continue
+                }
+                return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
+            }
+        }
+
+        // 6. Проверка структуры маркированного списка для стиля «Тезисы»
+        if style == .bullets && inputWordCount > 5 {
+            let bulletRegex = #"(?m)^\s*([-•*]|\d+[.)])\s+"#
+            let hasBullets = sanitizedOutput.range(of: bulletRegex, options: .regularExpression) != nil
+            if !hasBullets {
+                return .rejected(reason: "Стиль тезисов требует наличия маркированного списка")
+            }
+        }
+
+        // 7. Дифференцированная проверка длины по стилям
+        let maxAllowedWords: Int
+        switch style {
+        case .clean:
+            maxAllowedWords = max(10, Int(Double(inputWordCount) * 1.8))
+        case .formal:
+            maxAllowedWords = max(12, Int(Double(inputWordCount) * 2.0))
+        case .bullets:
+            maxAllowedWords = max(15, Int(Double(inputWordCount) * 2.2))
+        case .prompt:
+            maxAllowedWords = max(25, Int(Double(inputWordCount) * 3.0))
+        }
+
+        if outputWordCount > maxAllowedWords {
+            return .rejected(reason: "Выход модели превысил допустимый объем генерации для выбранного стиля")
         }
 
         return .valid(sanitizedText: sanitizedOutput)
@@ -99,17 +155,35 @@ public struct GroundingValidator {
 
     // MARK: - Вспомогательные методы
 
-    private static func hasQuestionKeyword(_ text: String) -> Bool {
-        let lower = text.lowercased()
+    private static func hasLeadingQuestionKeyword(_ text: String) -> Bool {
+        let lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         let keywords = ["как ", "почему ", "где ", "когда ", "сколько ", "зачем ", "что такое", "кто такой"]
-        return keywords.contains { lower.hasPrefix($0) || lower.contains(" " + $0) }
+        if keywords.contains(where: { lower.hasPrefix($0) }) {
+            return true
+        }
+        let conversationalPrefixes = ["подскажи, ", "подскажи ", "скажи, ", "скажи ", "слушай, ", "слушай "]
+        for prefix in conversationalPrefixes {
+            if lower.hasPrefix(prefix) {
+                let remainder = String(lower.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+                if keywords.contains(where: { remainder.hasPrefix($0) }) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
-    private static func extractNumbers(from text: String) -> Set<String> {
+    private static func extractNumbers(from text: String, excludingListIndices: Bool = false) -> Set<String> {
+        var processedText = text
+        if excludingListIndices {
+            // Удаляем структурные маркеры нумерации списков в начале строк (например: "1. ", "2) ")
+            let listIndexPattern = #"(?m)^\s*\d+[.)]\s+"#
+            processedText = processedText.replacingOccurrences(of: listIndexPattern, with: "", options: .regularExpression)
+        }
         let pattern = #"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d.,])"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        let nsString = text as NSString
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+        let nsString = processedText as NSString
+        let matches = regex.matches(in: processedText, options: [], range: NSRange(location: 0, length: nsString.length))
         var numbers = Set<String>()
         for m in matches {
             numbers.insert(nsString.substring(with: m.range))
@@ -124,7 +198,7 @@ public struct GroundingValidator {
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
         var tokens = Set<String>()
         for m in matches {
-            tokens.insert(nsString.substring(with: m.range).lowercased())
+            tokens.insert(nsString.substring(with: m.range))
         }
         return tokens
     }

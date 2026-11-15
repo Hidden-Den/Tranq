@@ -14,7 +14,7 @@ struct AIProviderSection: View {
                     .tracking(1.0)
                     .foregroundColor(.uiMidGray)
 
-                Text(LocalizedStringKey("BYO-ключ. Транскрипция уходит напрямую в ваш OpenAI-совместимый сервис — Голосок не выступает оператором данных."))
+                Text(LocalizedStringKey("BYO-ключ. Транскрипция уходит напрямую в выбранный вами сервис — Голосок не выступает оператором данных."))
                     .font(UIStyleFont.body(size: 11, weight: .regular))
                     .foregroundColor(.uiMidGray)
                     .lineSpacing(2)
@@ -28,14 +28,9 @@ struct AIProviderSection: View {
                     }
                 }
 
-                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: "https://api.openai.com/v1")
+                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.currentPreset?.baseURL ?? "https://api.openai.com/v1")
                 AIInputField(title: "API-ключ", text: $store.apiKey, placeholder: "sk-…", isSecure: true)
-
-                if store.providerID == "ollama" {
-                    ollamaModelField
-                } else {
-                    AIInputField(title: "Модель", text: $store.model, placeholder: "gpt-4o-mini")
-                }
+                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset?.defaultModel ?? "gpt-4o-mini")
 
                 HStack(spacing: 10) {
                     UIOutlineButton(title: "Проверить") {
@@ -55,53 +50,6 @@ struct AIProviderSection: View {
                     }
                     Spacer()
                 }
-            }
-        }
-    }
-
-    private var ollamaModelField: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Модель")
-                .font(UIStyleFont.body(size: 11, weight: .medium))
-                .foregroundColor(.uiMidGray)
-            HStack(spacing: 8) {
-                UIDropdownPicker(selection: $store.model, options: {
-                    var arr: [UIDropdownOption<String>] = []
-                    if !store.model.isEmpty && !store.installedModels.contains(store.model) {
-                        arr.append(.init(store.model, value: store.model))
-                    }
-                    arr.append(contentsOf: store.installedModels.map { .init($0, value: $0) })
-                    return arr
-                }(), fullWidth: true)
-
-                Button(action: { store.refreshModels() }) {
-                    if store.isLoadingModels {
-                        ProgressView().controlSize(.small)
-                            .frame(width: 28, height: 28)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.uiInk)
-                            .frame(width: 28, height: 28)
-                    }
-                }
-                .buttonStyle(TactileButtonStyle())
-                .background(Color.uiPaper)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.uiHairline, lineWidth: 1))
-                .help(String(localized: "Обновить список моделей"))
-            }
-            if store.installedModels.isEmpty && !store.isLoadingModels {
-                Text("Нет скачанных моделей — запустите Ollama и нажмите ↻")
-                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                    .foregroundColor(.uiMidGray)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .onAppear {
-            if store.installedModels.isEmpty && !store.isLoadingModels {
-                store.refreshModels()
             }
         }
     }
@@ -236,23 +184,62 @@ struct VoiceIntelligenceSection: View {
                         }, width: 210)
                     }
 
-                    if settings.engine == .openRouter {
+                    if settings.engine == .airGapped {
                         Divider().background(Color.uiHairline)
 
-                        // Модель OpenRouter
+                        // Языковая модель SLM на устройстве
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Модель OpenRouter")
+                                Text("Языковая модель")
                                     .font(UIStyleFont.body(size: 13, weight: .medium))
                                     .foregroundColor(.uiInk)
-                                Text("Быстрая модель для синтеза")
+                                Text("Оффлайн SLM для Apple Silicon")
                                     .font(UIStyleFont.body(size: 11, weight: .regular))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            UIDropdownPicker(selection: $settings.openRouterModel, options: OpenRouterCatalogService.shared.models.map { m in
+                            UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
                                 .init(LocalizedStringKey(m.name), value: m.id)
                             }, width: 210)
+                        }
+
+                        ActiveSLMModelStatusRow(modelID: settings.localModel)
+                            .padding(.vertical, 4)
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Адаптация под приложения
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Адаптация под приложения")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Учет контекста активного окна")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        Toggle(String(localized: "Адаптация под приложения"), isOn: $settings.adaptiveAppProfilesEnabled)
+                            .labelsHidden()
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Словарь и адаптивное обучение
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Словарь и обучение")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Справочник терминов, автозамены речи и системный промпт")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        UIOutlineButton(title: "Открыть словарь") {
+                            NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
                         }
                     }
                 }
@@ -260,3 +247,85 @@ struct VoiceIntelligenceSection: View {
         }
     }
 }
+
+struct ActiveSLMModelStatusRow: View {
+    let modelID: String
+    @ObservedObject var slmStore = SLMModelStore.shared
+
+    var body: some View {
+        if let model = slmStore.model(named: modelID) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(LocalizedStringKey(model.name))
+                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .foregroundColor(.uiInk)
+                        .lineLimit(1)
+                    Text("\(model.sizeMB) МБ — Apple Metal")
+                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                        .lineLimit(1)
+                    Text(LocalizedStringKey(model.description))
+                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .layoutPriority(1)
+
+                Spacer(minLength: 8)
+
+                if slmStore.downloadingID == model.id {
+                    HStack(spacing: 8) {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            ProgressView(value: slmStore.downloadProgress)
+                                .frame(width: 170)
+                            Text(LocalizedStringKey(slmStore.downloadStatus))
+                                .font(UIStyleFont.body(size: 10, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
+                        .frame(width: 170, alignment: .trailing)
+
+                        UIOutlineButton(title: "Отмена") {
+                            slmStore.cancelDownload()
+                        }
+                    }
+                } else if slmStore.isModelDownloaded(model) {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#10B981"))
+                                .frame(width: 6, height: 6)
+                            Text("Скачана на Mac")
+                                .font(UIStyleFont.body(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#10B981"))
+                                .lineLimit(1)
+                        }
+                        UIOutlineButton(title: "Удалить") {
+                            slmStore.delete(model: model)
+                        }
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#F59E0B"))
+                                .frame(width: 6, height: 6)
+                            Text("Не скачана")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .lineLimit(1)
+                        }
+                        UIOutlineButton(title: "Скачать") {
+                            slmStore.startDownload(model: model)
+                        }
+                    }
+                }
+            }
+            .frame(minHeight: 52)
+        }
+    }
+}
+
+

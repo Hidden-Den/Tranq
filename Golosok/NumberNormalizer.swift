@@ -4,51 +4,51 @@ public struct NumberNormalizer {
 
     private static let units: [String: Int] = [
         "ноль": 0, "нуль": 0,
-        "один": 1, "одна": 1, "одно": 1,
-        "два": 2, "две": 2,
-        "три": 3,
-        "четыре": 4,
-        "пять": 5,
-        "шесть": 6,
-        "семь": 7,
-        "восемь": 8,
-        "девять": 9
+        "один": 1, "одна": 1, "одно": 1, "одного": 1, "одному": 1, "одним": 1, "одном": 1,
+        "два": 2, "две": 2, "двух": 2, "двум": 2, "двумя": 2,
+        "три": 3, "трех": 3, "трёх": 3, "трем": 3, "трём": 3, "тремя": 3,
+        "четыре": 4, "четырех": 4, "четырёх": 4, "четырем": 4, "четырём": 4, "четырьмя": 4,
+        "пять": 5, "пяти": 5, "пятью": 5,
+        "шесть": 6, "шести": 6, "шестью": 6,
+        "семь": 7, "семи": 7, "семью": 7,
+        "восемь": 8, "восьми": 8, "восемью": 8,
+        "девять": 9, "девяти": 9, "девятью": 9
     ]
 
     private static let teens: [String: Int] = [
-        "десять": 10,
-        "одиннадцать": 11,
-        "двенадцать": 12,
-        "тринадцать": 13,
-        "четырнадцать": 14,
-        "пятнадцать": 15,
-        "шестнадцать": 16,
-        "семнадцать": 17,
-        "восемнадцать": 18,
-        "девятнадцать": 19
+        "десять": 10, "десяти": 10, "десятью": 10,
+        "одиннадцать": 11, "одиннадцати": 11,
+        "двенадцать": 12, "двенадцати": 12,
+        "тринадцать": 13, "тринадцати": 13,
+        "четырнадцать": 14, "четырнадцати": 14,
+        "пятнадцать": 15, "пятнадцати": 15,
+        "шестнадцать": 16, "шестнадцати": 16,
+        "семнадцать": 17, "семнадцати": 17,
+        "восемнадцать": 18, "восемнадцати": 18,
+        "девятнадцать": 19, "девятнадцати": 19
     ]
 
     private static let tens: [String: Int] = [
-        "двадцать": 20,
-        "тридцать": 30,
-        "сорок": 40,
-        "пятьдесят": 50,
-        "шестьдесят": 60,
-        "семьдесят": 70,
-        "восемьдесят": 80,
-        "девяносто": 90
+        "двадцать": 20, "двадцати": 20,
+        "тридцать": 30, "тридцати": 30,
+        "сорок": 40, "сорока": 40,
+        "пятьдесят": 50, "пятидесяти": 50,
+        "шестьдесят": 60, "шестидесяти": 60,
+        "семьдесят": 70, "семидесяти": 70,
+        "восемьдесят": 80, "восьмидесяти": 80,
+        "девяносто": 90, "девяноста": 90
     ]
 
     private static let hundreds: [String: Int] = [
-        "сто": 100,
-        "двести": 200,
-        "триста": 300,
-        "четыреста": 400,
-        "пятьсот": 500,
-        "шестьсот": 600,
-        "семьсот": 700,
-        "восемьсот": 800,
-        "девятьсот": 900
+        "сто": 100, "ста": 100,
+        "двести": 200, "двухсот": 200,
+        "триста": 300, "трехсот": 300, "трёхсот": 300,
+        "четыреста": 400, "четырехсот": 400, "четырёхсот": 400,
+        "пятьсот": 500, "пятисот": 500,
+        "шестьсот": 600, "шестисот": 600,
+        "семьсот": 700, "семисот": 700,
+        "восемьсот": 800, "восьмисот": 800,
+        "девятьсот": 900, "девятисот": 900
     ]
 
     private static let scales: [String: Int] = [
@@ -114,17 +114,31 @@ public struct NumberNormalizer {
             }
 
             // 3. Проверяем составное число
-            if isNumberWord(lower) {
+            if let firstRank = getRank(lower) {
                 var numberTokens: [(val: Int, scale: Bool)] = []
                 var j = i
-                while j < tokens.count && isNumberWord(tokens[j].word.lowercased()) {
+                var lastRank = firstRank
+
+                while j < tokens.count {
                     let w = tokens[j].word.lowercased()
+                    guard let rank = getRank(w) else { break }
+
+                    if j > i && !canFollow(prev: lastRank, next: rank) {
+                        break
+                    }
+
                     if let s = scales[w] {
                         numberTokens.append((s, true))
                     } else if let v = valueOfWord(w) {
                         numberTokens.append((v, false))
                     }
+
+                    lastRank = rank
+                    let hasPunct = !tokens[j].trailingPunctuation.isEmpty
                     j += 1
+                    if hasPunct {
+                        break
+                    }
                 }
 
                 if !numberTokens.isEmpty {
@@ -162,6 +176,31 @@ public struct NumberNormalizer {
             }
             return Token(raw: raw, word: cleanWord, trailingPunctuation: punct)
         }
+    }
+
+    private enum NumRank: Int {
+        case unit = 1
+        case teen = 2
+        case ten = 3
+        case hundred = 4
+        case scale = 5
+    }
+
+    private static func getRank(_ word: String) -> NumRank? {
+        if scales[word] != nil { return .scale }
+        if hundreds[word] != nil { return .hundred }
+        if tens[word] != nil { return .ten }
+        if teens[word] != nil { return .teen }
+        if units[word] != nil || ordinals[word] != nil { return .unit }
+        return nil
+    }
+
+    private static func canFollow(prev: NumRank, next: NumRank) -> Bool {
+        if next == .scale { return true }
+        if prev == .scale { return true }
+        if prev == .hundred && (next == .ten || next == .teen || next == .unit) { return true }
+        if prev == .ten && next == .unit { return true }
+        return false
     }
 
     private static func isNumberWord(_ word: String) -> Bool {
