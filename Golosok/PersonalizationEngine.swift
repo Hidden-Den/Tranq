@@ -58,6 +58,8 @@ private struct PersonalizationSnapshot: Codable {
     var isLearningEnabled: Bool
     var rules: [CorrectionRule]
     var terms: [LearnedTerm]
+    var deletedBuiltinPatterns: [String]?
+    var deletedBuiltinTerms: [String]?
 }
 
 /// Сверхбыстрый локальный движок персонализации и адаптивного обучения (On-Device In-Context Learning)
@@ -73,6 +75,9 @@ public final class PersonalizationEngine: ObservableObject {
 
     @Published public private(set) var correctionRules: [CorrectionRule] = []
     @Published public private(set) var learnedTerms: [LearnedTerm] = []
+
+    private var deletedBuiltinPatterns: Set<String> = []
+    private var deletedBuiltinTerms: Set<String> = []
 
     private let queue = DispatchQueue(label: "com.golosok.personalization", qos: .utility)
     private var saveWorkItem: DispatchWorkItem?
@@ -254,14 +259,15 @@ public final class PersonalizationEngine: ObservableObject {
             }
         }
 
-        // Если прямого совпадения терминов мало, добавляем топ-3 самых частых термина пользователя
+        // Если прямого совпадения терминов мало, добавляем топ-3 самых частых персональных терминов пользователя
+        // Встроенные термины из общего каталога включаются только при прямом совпадении с речью, чтобы не смещать промпт
         if matchedTerms.count < 3 {
-            let topTerms = termsSnapshot
-                .filter { ($0.count >= 2 || $0.isManual) && !matchedTerms.contains($0.term) }
+            let topUserTerms = termsSnapshot
+                .filter { ($0.category == "custom" || $0.category == nil) && ($0.count >= 2 || $0.isManual) && !matchedTerms.contains($0.term) }
                 .sorted { $0.count > $1.count }
                 .prefix(3 - matchedTerms.count)
                 .map { $0.term }
-            matchedTerms.append(contentsOf: topTerms)
+            matchedTerms.append(contentsOf: topUserTerms)
         }
 
         guard !matchedRules.isEmpty || !matchedTerms.isEmpty else { return "" }
@@ -333,7 +339,14 @@ public final class PersonalizationEngine: ObservableObject {
         let cleaned = Self.cleanWord(newTerm)
         guard !cleaned.isEmpty else { return }
         lock.lock()
-        if let idx = learnedTerms.firstIndex(where: { $0.term.lowercased() == oldTerm.lowercased() }) {
+        if let existingIdx = learnedTerms.firstIndex(where: { $0.term.lowercased() == cleaned.lowercased() }) {
+            // Термин с таким именем уже существует — объединяем данные и удаляем старую запись
+            if let oldIdx = learnedTerms.firstIndex(where: { $0.term.lowercased() == oldTerm.lowercased() }), oldIdx != existingIdx {
+                learnedTerms[existingIdx].count += learnedTerms[oldIdx].count
+                learnedTerms[existingIdx].lastUsed = Date()
+                learnedTerms.remove(at: oldIdx)
+            }
+        } else if let idx = learnedTerms.firstIndex(where: { $0.term.lowercased() == oldTerm.lowercased() }) {
             learnedTerms[idx].term = cleaned
             learnedTerms[idx].lastUsed = Date()
         }
@@ -371,7 +384,12 @@ public final class PersonalizationEngine: ObservableObject {
         let rClean = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pClean.isEmpty else { return }
         lock.lock()
-        if let idx = correctionRules.firstIndex(where: { $0.id == id }) {
+        if let existingIdx = correctionRules.firstIndex(where: { $0.pattern.lowercased() == pClean.lowercased() && $0.id != id }) {
+            // Другое правило с таким шаблоном уже существует — обновляем его и удаляем дубликат
+            correctionRules[existingIdx].replacement = rClean
+            correctionRules[existingIdx].lastUsed = Date()
+            correctionRules.removeAll { $0.id == id }
+        } else if let idx = correctionRules.firstIndex(where: { $0.id == id }) {
             correctionRules[idx].pattern = pClean
             correctionRules[idx].replacement = rClean
             correctionRules[idx].lastUsed = Date()
@@ -384,8 +402,10 @@ public final class PersonalizationEngine: ObservableObject {
     }
 
     public func removeTerm(_ term: String) {
+        let lower = term.lowercased()
         lock.lock()
-        learnedTerms.removeAll { $0.term.lowercased() == term.lowercased() }
+        deletedBuiltinTerms.insert(lower)
+        learnedTerms.removeAll { $0.term.lowercased() == lower }
         lock.unlock()
         DispatchQueue.main.async {
             self.objectWillChange.send()
@@ -396,7 +416,10 @@ public final class PersonalizationEngine: ObservableObject {
 
     public func removeRule(id: UUID) {
         lock.lock()
-        correctionRules.removeAll { $0.id == id }
+        if let rule = correctionRules.first(where: { $0.id == id }) {
+            deletedBuiltinPatterns.insert(rule.pattern.lowercased())
+            correctionRules.removeAll { $0.id == id }
+        }
         lock.unlock()
         DispatchQueue.main.async {
             self.objectWillChange.send()
@@ -408,10 +431,14 @@ public final class PersonalizationEngine: ObservableObject {
         lock.lock()
         correctionRules.removeAll()
         learnedTerms.removeAll()
+        deletedBuiltinPatterns.removeAll()
+        deletedBuiltinTerms.removeAll()
         if restoreBuiltins {
             seedDefaultRules()
         }
         lock.unlock()
+
+        VoiceIntelligenceSettings.shared.clearUserTerms()
 
         DispatchQueue.main.async {
             self.objectWillChange.send()
@@ -549,7 +576,9 @@ public final class PersonalizationEngine: ObservableObject {
         let snapshot = PersonalizationSnapshot(
             isLearningEnabled: isLearningEnabled,
             rules: correctionRules,
-            terms: learnedTerms
+            terms: learnedTerms,
+            deletedBuiltinPatterns: Array(deletedBuiltinPatterns),
+            deletedBuiltinTerms: Array(deletedBuiltinTerms)
         )
         lock.unlock()
 
@@ -709,7 +738,8 @@ public final class PersonalizationEngine: ObservableObject {
 
     private func seedDefaultRules() {
         for item in Self.builtinRules {
-            if !self.correctionRules.contains(where: { $0.pattern.lowercased() == item.pattern.lowercased() }) {
+            let lower = item.pattern.lowercased()
+            if !self.deletedBuiltinPatterns.contains(lower) && !self.correctionRules.contains(where: { $0.pattern.lowercased() == lower }) {
                 self.correctionRules.append(CorrectionRule(
                     pattern: item.pattern,
                     replacement: item.replacement,
@@ -721,7 +751,8 @@ public final class PersonalizationEngine: ObservableObject {
             }
         }
         for item in Self.builtinTerms {
-            if !self.learnedTerms.contains(where: { $0.term.lowercased() == item.term.lowercased() }) {
+            let lower = item.term.lowercased()
+            if !self.deletedBuiltinTerms.contains(lower) && !self.learnedTerms.contains(where: { $0.term.lowercased() == lower }) {
                 self.learnedTerms.append(LearnedTerm(
                     term: item.term,
                     count: 3,
@@ -742,6 +773,13 @@ public final class PersonalizationEngine: ObservableObject {
                   let snapshot = try? JSONDecoder().decode(PersonalizationSnapshot.self, from: data) else {
                 self.lock.lock()
                 self.seedDefaultRules()
+                let userTerms = VoiceIntelligenceSettings.shared.userTerms
+                for term in userTerms {
+                    let cleaned = Self.cleanWord(term)
+                    if !cleaned.isEmpty && !self.learnedTerms.contains(where: { $0.term.lowercased() == cleaned.lowercased() }) {
+                        self.learnedTerms.append(LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true, category: "custom"))
+                    }
+                }
                 self.lock.unlock()
                 return
             }
@@ -749,8 +787,14 @@ public final class PersonalizationEngine: ObservableObject {
             self.lock.lock()
             self.correctionRules = snapshot.rules
             self.learnedTerms = snapshot.terms
+            if let deletedPatterns = snapshot.deletedBuiltinPatterns {
+                self.deletedBuiltinPatterns = Set(deletedPatterns.map { $0.lowercased() })
+            }
+            if let deletedTerms = snapshot.deletedBuiltinTerms {
+                self.deletedBuiltinTerms = Set(deletedTerms.map { $0.lowercased() })
+            }
 
-            // Добавляем отсутствующие встроенные правила и термины
+            // Добавляем отсутствующие встроенные правила и термины (с сохранением удаленных)
             self.seedDefaultRules()
 
             // Очищаем ошибочно изученные обычные кириллические слова с заглавной буквы

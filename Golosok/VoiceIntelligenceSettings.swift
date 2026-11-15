@@ -133,7 +133,11 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     }
 
     public func removeUserTerm(_ term: String) {
-        userTerms.removeAll { $0 == term }
+        userTerms.removeAll { $0.lowercased() == term.lowercased() }
+    }
+
+    public func clearUserTerms() {
+        self.userTerms = []
     }
 
     public func resetToDefaults() {
