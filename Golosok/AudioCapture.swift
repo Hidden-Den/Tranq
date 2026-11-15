@@ -231,6 +231,7 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
             startTime = Date()
             SoundEffect.playStart()
             AppLogger.shared.info("Recording", "Запись началась", details: "режим: \(HotKeySettings.shared.mode == .pushToTalk ? "рация" : "переключатель")")
+            ThoughtSynthesizer.shared.prewarmConnection(for: VoiceIntelligenceSettings.shared.engine)
             
             escMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 if event.keyCode == 53 { self?.cancelRecording() }

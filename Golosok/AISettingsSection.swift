@@ -235,6 +235,26 @@ struct VoiceIntelligenceSection: View {
                             .init(LocalizedStringKey(e.title), value: e)
                         }, width: 210)
                     }
+
+                    if settings.engine == .openRouter {
+                        Divider().background(Color.uiHairline)
+
+                        // Модель OpenRouter
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Модель OpenRouter")
+                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .foregroundColor(.uiInk)
+                                Text("Быстрая модель для синтеза")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            Spacer()
+                            UIDropdownPicker(selection: $settings.openRouterModel, options: OpenRouterCatalogService.shared.models.map { m in
+                                .init(LocalizedStringKey(m.name), value: m.id)
+                            }, width: 210)
+                        }
+                    }
                 }
             }
         }

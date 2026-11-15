@@ -23,7 +23,8 @@ public final class ThoughtSynthesizer {
 
         // Этап 1: Детерминированный префильтр и базовая нормализация
         let prefiltered = DisfluencyPrefilter.filter(trimmedRaw)
-        let stageOneText = TextFormatter.formatIntoParagraphs(prefiltered)
+        let formatted = TextFormatter.formatIntoParagraphs(prefiltered)
+        let stageOneText = NumberNormalizer.normalize(formatted)
 
         // Если фраза очень короткая (1-3 слова), пропускаем тяжелый синтез
         let wordCount = stageOneText.split(whereSeparator: { $0.isWhitespace }).count
@@ -53,7 +54,7 @@ public final class ThoughtSynthesizer {
             runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
 
         case .openRouter:
-            let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
+            let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeychainStore.get("ai.apiKey") ?? KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
             guard !apiKey.isEmpty else {
                 AppLogger.shared.info("Synthesizer", "OpenRouter API-ключ не настроен — отдан текст этапа 1")
                 completion(stageOneText, true)
@@ -69,6 +70,23 @@ public final class ThoughtSynthesizer {
         }
     }
 
+    /// Предварительный прогрев сетевого сокета и TLS 1.3 во время диктовки
+    public func prewarmConnection(for engine: VoiceEngine) {
+        guard engine == .openRouter else { return }
+        let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeychainStore.get("ai.apiKey") ?? KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
+        guard !apiKey.isEmpty else { return }
+
+        Task.detached(priority: .utility) {
+            guard let url = URL(string: "https://openrouter.ai/api/v1/models") else { return }
+            var request = URLRequest(url: url)
+            request.httpMethod = "HEAD"
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            request.timeoutInterval = 2.0
+            _ = try? await URLSession.shared.data(for: request)
+            AppLogger.shared.info("Synthesizer", "TLS сессия к OpenRouter успешно прогрета")
+        }
+    }
+
     private func runAISynthesis(
         messages: [AIChatMessage],
         config: AIProviderConfig,
@@ -77,9 +95,9 @@ public final class ThoughtSynthesizer {
         timeout: Double,
         completion: @escaping (_ finalText: String, _ isFallback: Bool) -> Void
     ) {
-        AppLogger.shared.info("Synthesizer", "Старт синтеза мысли [\(style.title)] через \(config.baseURL) / \(config.model)")
+        AppLogger.shared.info("Synthesizer", "Старт стриминга мысли [\(style.title)] через \(config.baseURL) / \(config.model)")
 
-        let startTime = Date()
+        let startAbsoluteTime = CFAbsoluteTimeGetCurrent()
         let lock = NSLock()
         var isCompleted = false
 
@@ -95,28 +113,102 @@ public final class ThoughtSynthesizer {
 
         // Адаптивный сторож по времени
         let timeoutSec = max(1.5, timeout)
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeoutSec) {
-            lock.lock()
-            let alreadyFinished = isCompleted
-            lock.unlock()
-            if !alreadyFinished {
+        let watchdogTask = Task {
+            try? await Task.sleep(nanoseconds: UInt64(timeoutSec * 1_000_000_000))
+            if !Task.isCancelled {
                 AppLogger.shared.warn("Synthesizer", String(format: "Таймаут синтеза (%.1f с) — откат на этап 1", timeoutSec))
                 safeCompletion(stageOneText, true)
             }
         }
 
-        AIService.shared.chat(messages: messages, using: config) { result in
-            let duration = Date().timeIntervalSince(startTime)
-            switch result {
-            case .success(let rawOutput):
-                AppLogger.shared.info("Synthesizer", String(format: "Ответ получен за %.2f с", duration))
+        Task.detached(priority: .userInitiated) {
+            do {
+                guard let url = URL(string: config.baseURL.hasSuffix("/chat/completions") ? config.baseURL : config.baseURL + "/chat/completions") else {
+                    safeCompletion(stageOneText, true)
+                    return
+                }
 
-                // 1. Вырезаем возможные блоки рассуждений <think>...</think>
-                let cleanContent = Self.stripThinkingTags(from: rawOutput)
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                if !config.apiKey.isEmpty {
+                    request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+                }
+                request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
+                request.setValue("Golosok macOS", forHTTPHeaderField: "X-Title")
 
-                // 2. Детерминированный Grounding Validator
+                var body: [String: Any] = [
+                    "model": config.model,
+                    "messages": messages.map { ["role": $0.role, "content": $0.content] },
+                    "stream": true
+                ]
+
+                let isOpenRouter = config.baseURL.contains("openrouter.ai")
+                if isOpenRouter {
+                    body["reasoning"] = ["effort": "none", "exclude": true]
+                    body["provider"] = ["sort": "latency"]
+                } else {
+                    body["temperature"] = 0.1
+                }
+
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+                let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                    let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+                    AppLogger.shared.warn("Synthesizer", "HTTP ошибка при стриминге: \(code) — откат на этап 1")
+                    safeCompletion(stageOneText, true)
+                    return
+                }
+
+                var firstTokenTime: CFAbsoluteTime?
+                var stripper = StreamingThinkTagStripper()
+                var accumulated = ""
+
+                for try await line in bytes.lines {
+                    if line.hasPrefix("data: ") {
+                        let dataStr = String(line.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+                        if dataStr == "[DONE]" { break }
+                        guard let jsonData = dataStr.data(using: .utf8),
+                              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                              let choices = json["choices"] as? [[String: Any]],
+                              let firstChoice = choices.first,
+                              let delta = firstChoice["delta"] as? [String: Any],
+                              let chunk = delta["content"] as? String else { continue }
+
+                        if firstTokenTime == nil {
+                            firstTokenTime = CFAbsoluteTimeGetCurrent()
+                            let ttft = firstTokenTime! - startAbsoluteTime
+                            AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен (TTFT: %.3f с)", ttft))
+                            if ttft > 1.2 {
+                                AppLogger.shared.warn("Synthesizer", String(format: "Медленный старт генерации модели (TTFT: %.2f с)", ttft))
+                            }
+                        }
+
+                        if let cleanChunk = stripper.feed(chunk) {
+                            accumulated.append(cleanChunk)
+                        }
+                    }
+                }
+
+                if let rest = stripper.finish() {
+                    accumulated.append(rest)
+                }
+
+                watchdogTask.cancel()
+
+                let totalDuration = CFAbsoluteTimeGetCurrent() - startAbsoluteTime
+                AppLogger.shared.info("Synthesizer", String(format: "Стриминг завершен за %.2f с (символов: %d)", totalDuration, accumulated.count))
+
+                let cleanContent = accumulated.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !cleanContent.isEmpty else {
+                    AppLogger.shared.warn("Synthesizer", "Пустой ответ стриминга — откат на этап 1")
+                    safeCompletion(stageOneText, true)
+                    return
+                }
+
+                // Детерминированный Grounding Validator
                 let validation = GroundingValidator.validate(input: stageOneText, output: cleanContent, style: style)
-
                 switch validation {
                 case .valid(let validatedText):
                     AppLogger.shared.info("Synthesizer", "Валидация успешна: мысль готова к вставке")
@@ -127,8 +219,9 @@ public final class ThoughtSynthesizer {
                     safeCompletion(stageOneText, true)
                 }
 
-            case .failure(let error):
-                AppLogger.shared.warn("Synthesizer", "Сбой вызова ИИ: \(error.localizedDescription) — защитный откат на этап 1")
+            } catch {
+                watchdogTask.cancel()
+                AppLogger.shared.warn("Synthesizer", "Ошибка стриминга: \(error.localizedDescription) — откат на этап 1")
                 safeCompletion(stageOneText, true)
             }
         }
