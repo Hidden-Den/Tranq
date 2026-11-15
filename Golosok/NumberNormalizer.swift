@@ -114,17 +114,31 @@ public struct NumberNormalizer {
             }
 
             // 3. Проверяем составное число
-            if isNumberWord(lower) {
+            if let firstRank = getRank(lower) {
                 var numberTokens: [(val: Int, scale: Bool)] = []
                 var j = i
-                while j < tokens.count && isNumberWord(tokens[j].word.lowercased()) {
+                var lastRank = firstRank
+
+                while j < tokens.count {
                     let w = tokens[j].word.lowercased()
+                    guard let rank = getRank(w) else { break }
+
+                    if j > i && !canFollow(prev: lastRank, next: rank) {
+                        break
+                    }
+
                     if let s = scales[w] {
                         numberTokens.append((s, true))
                     } else if let v = valueOfWord(w) {
                         numberTokens.append((v, false))
                     }
+
+                    lastRank = rank
+                    let hasPunct = !tokens[j].trailingPunctuation.isEmpty
                     j += 1
+                    if hasPunct {
+                        break
+                    }
                 }
 
                 if !numberTokens.isEmpty {
@@ -162,6 +176,31 @@ public struct NumberNormalizer {
             }
             return Token(raw: raw, word: cleanWord, trailingPunctuation: punct)
         }
+    }
+
+    private enum NumRank: Int {
+        case unit = 1
+        case teen = 2
+        case ten = 3
+        case hundred = 4
+        case scale = 5
+    }
+
+    private static func getRank(_ word: String) -> NumRank? {
+        if scales[word] != nil { return .scale }
+        if hundreds[word] != nil { return .hundred }
+        if tens[word] != nil { return .ten }
+        if teens[word] != nil { return .teen }
+        if units[word] != nil || ordinals[word] != nil { return .unit }
+        return nil
+    }
+
+    private static func canFollow(prev: NumRank, next: NumRank) -> Bool {
+        if next == .scale { return true }
+        if prev == .scale { return true }
+        if prev == .hundred && (next == .ten || next == .teen || next == .unit) { return true }
+        if prev == .ten && next == .unit { return true }
+        return false
     }
 
     private static func isNumberWord(_ word: String) -> Bool {

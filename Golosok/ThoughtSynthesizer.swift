@@ -89,11 +89,12 @@ public final class ThoughtSynthesizer {
                 )
 
                 let targetModelPath = slmModel.map { SLMModelStore.shared.localFileURL(for: $0).path }
+                let localTimeout = max(6.0, settings.adaptiveTimeoutSeconds)
                 if let synthResult = await LocalSynthServiceClient.shared.synthesize(
                     transcript: stageOneText,
                     stylePrompt: systemPrompt,
                     modelPath: targetModelPath,
-                    timeout: settings.adaptiveTimeoutSeconds
+                    timeout: localTimeout
                 ) {
                     let cleaned = Self.stripThinkingTags(from: synthResult)
                     let customTerms = PersonalizationEngine.shared.allApprovedTerms(additionalTerms: settings.userTerms)

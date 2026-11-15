@@ -221,16 +221,31 @@ public final class LocalSynthServiceClient: ObservableObject {
                     }
 
                     let lines = output.components(separatedBy: .newlines)
-                    var recording = false
+                    let hasInteractivePrompt = lines.contains { $0.hasPrefix("> ") }
                     var resultLines: [String] = []
-                    for line in lines {
-                        if line.hasPrefix("> ") {
-                            recording = true
-                            continue
+
+                    if hasInteractivePrompt {
+                        var recording = false
+                        for line in lines {
+                            if line.hasPrefix("> ") {
+                                recording = true
+                                continue
+                            }
+                            if recording {
+                                if line.hasPrefix("[ Prompt:") || line.hasPrefix("Exiting...") {
+                                    break
+                                }
+                                resultLines.append(line)
+                            }
                         }
-                        if recording {
-                            if line.hasPrefix("[ Prompt:") || line.hasPrefix("Exiting...") {
-                                break
+                    } else {
+                        for line in lines {
+                            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                            if trimmedLine.hasPrefix("[ Prompt:") ||
+                               trimmedLine.hasPrefix("Exiting...") ||
+                               trimmedLine.hasPrefix("system_info:") ||
+                               trimmedLine.hasPrefix("llama_") {
+                                continue
                             }
                             resultLines.append(line)
                         }
@@ -241,8 +256,11 @@ public final class LocalSynthServiceClient: ObservableObject {
                         let parts = cleanResult.components(separatedBy: "</transcript>")
                         cleanResult = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? cleanResult
                     }
-                    if cleanResult.hasPrefix("\"") && cleanResult.hasSuffix("\"") && cleanResult.count >= 2 {
-                        cleanResult = String(cleanResult.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+                    if (cleanResult.hasPrefix("\"") && cleanResult.hasSuffix("\"")) ||
+                       (cleanResult.hasPrefix("«") && cleanResult.hasSuffix("»")) {
+                        if cleanResult.count >= 2 {
+                            cleanResult = String(cleanResult.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
                     }
 
                     if cleanResult.isEmpty {
