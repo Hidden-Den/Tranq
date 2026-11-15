@@ -32,7 +32,7 @@ public final class ThoughtSynthesizer {
         let wordCount = stageOneText.split(whereSeparator: { $0.isWhitespace }).count
         if wordCount <= 3 {
             AppLogger.shared.info("Synthesizer", "Короткая фраза (\(wordCount) сл.) — пропуск LLM, отдан текст этапа 1")
-            completion(stageOneText, false)
+            completion(stageOneText, true)
             return
         }
 
@@ -45,7 +45,7 @@ public final class ThoughtSynthesizer {
             let safety = HardwareWatchdog.evaluateInferenceSafety()
             guard safety == .allowed else {
                 AppLogger.shared.info("Synthesizer", "Air-Gapped: пропуск синтеза по условиям безопасности оборудования")
-                completion(stageOneText, false)
+                completion(stageOneText, true)
                 return
             }
 
@@ -85,7 +85,7 @@ public final class ThoughtSynthesizer {
                     }
                 }
                 DispatchQueue.main.async {
-                    completion(stageOneText, false)
+                    completion(stageOneText, true)
                 }
             }
 
@@ -120,7 +120,9 @@ public final class ThoughtSynthesizer {
     public func prewarmConnection(for engine: VoiceEngine) {
         switch engine {
         case .airGapped:
-            let modelPath = SLMModelStore.shared.localFileURL(for: SLMModelStore.catalog[0]).path
+            let selectedId = VoiceIntelligenceSettings.shared.localModel
+            let model = SLMModelStore.shared.activeDownloadedModel(preferredId: selectedId) ?? SLMModelStore.catalog[0]
+            let modelPath = SLMModelStore.shared.localFileURL(for: model).path
             LocalSynthServiceClient.shared.prewarm(modelPath: modelPath)
 
         case .openRouter:

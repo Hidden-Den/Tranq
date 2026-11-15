@@ -10,9 +10,20 @@ public struct HardwareWatchdog {
     /// Проверка, безопасно ли запускать тяжелый локальный инференс SLM на устройстве
     public static func evaluateInferenceSafety() -> HardwareSafetyDecision {
         let processInfo = ProcessInfo.processInfo
+        return evaluateDecision(
+            thermalState: processInfo.thermalState,
+            isLowPowerMode: processInfo.isLowPowerModeEnabled,
+            freeMB: freeMemoryMB()
+        )
+    }
 
+    /// Детерминированная проверка параметров безопасности (для рабочего цикла и тестирования)
+    public static func evaluateDecision(
+        thermalState: ProcessInfo.ThermalState,
+        isLowPowerMode: Bool,
+        freeMB: Int?
+    ) -> HardwareSafetyDecision {
         // 1. Проверка термального состояния macOS
-        let thermalState = processInfo.thermalState
         if !isThermalStateSafe(state: thermalState) {
             let reason = thermalState == .critical ? "Критический перегрев устройства" : "Повышенная температура устройства"
             AppLogger.shared.warn("HardwareWatchdog", "Инференс пропущен: \(reason)")
@@ -20,15 +31,21 @@ public struct HardwareWatchdog {
         }
 
         // 2. Проверка режима энергосбережения
-        if processInfo.isLowPowerModeEnabled {
+        if isLowPowerMode {
             let reason = "Включен режим энергосбережения"
             AppLogger.shared.info("HardwareWatchdog", "Инференс пропущен: \(reason)")
             return .restricted(reason: reason)
         }
 
         // 3. Проверка доступной физической памяти (порог 1.2 ГБ)
-        if let freeMB = freeMemoryMB(), freeMB < 1200 {
-            let reason = "Недостаточно свободной оперативной памяти: \(freeMB) МБ"
+        guard let free = freeMB else {
+            let reason = "Не удалось определить объем свободной оперативной памяти"
+            AppLogger.shared.warn("HardwareWatchdog", "Инференс пропущен: \(reason)")
+            return .restricted(reason: reason)
+        }
+
+        if free < 1200 {
+            let reason = "Недостаточно свободной оперативной памяти: \(free) МБ"
             AppLogger.shared.warn("HardwareWatchdog", "Инференс пропущен: \(reason)")
             return .restricted(reason: reason)
         }
@@ -44,7 +61,7 @@ public struct HardwareWatchdog {
         case .serious, .critical:
             return false
         @unknown default:
-            return true
+            return false
         }
     }
 
@@ -52,6 +69,7 @@ public struct HardwareWatchdog {
     private static func freeMemoryMB() -> Int? {
         var pageSize: vm_size_t = 0
         let hostPort = mach_host_self()
+        defer { mach_port_deallocate(mach_task_self_, hostPort) }
         var hostSize = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
 
         guard host_page_size(hostPort, &pageSize) == KERN_SUCCESS else { return nil }

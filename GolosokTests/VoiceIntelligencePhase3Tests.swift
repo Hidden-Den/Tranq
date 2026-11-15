@@ -11,16 +11,46 @@ struct VoiceIntelligencePhase3Tests {
 
     // MARK: - HardwareWatchdog
 
-    @Test func hardwareWatchdogEvaluatesNormalState() {
-        let decision = HardwareWatchdog.evaluateInferenceSafety()
-        // На обычной машине при нормальном состоянии инференс должен быть разрешен
-        // либо содержать понятную причину отказа
-        switch decision {
-        case .allowed:
-            #expect(true)
-        case .restricted(let reason):
-            #expect(!reason.isEmpty)
-        }
+    @Test func hardwareWatchdogEvaluatesControlledDecisions() {
+        // Контролируемое нормальное состояние оборудования: инференс разрешен
+        let normalDecision = HardwareWatchdog.evaluateDecision(
+            thermalState: .nominal,
+            isLowPowerMode: false,
+            freeMB: 2048
+        )
+        #expect(normalDecision == .allowed)
+
+        // Контролируемый перегрев устройства: инференс запрещен
+        let overheatDecision = HardwareWatchdog.evaluateDecision(
+            thermalState: .critical,
+            isLowPowerMode: false,
+            freeMB: 2048
+        )
+        #expect(overheatDecision == .restricted(reason: "Критический перегрев устройства"))
+
+        // Контролируемый режим энергосбережения: инференс запрещен
+        let lowPowerDecision = HardwareWatchdog.evaluateDecision(
+            thermalState: .nominal,
+            isLowPowerMode: true,
+            freeMB: 2048
+        )
+        #expect(lowPowerDecision == .restricted(reason: "Включен режим энергосбережения"))
+
+        // Контролируемый дефицит памяти (< 1200 МБ): инференс запрещен
+        let lowMemDecision = HardwareWatchdog.evaluateDecision(
+            thermalState: .nominal,
+            isLowPowerMode: false,
+            freeMB: 512
+        )
+        #expect(lowMemDecision == .restricted(reason: "Недостаточно свободной оперативной памяти: 512 МБ"))
+
+        // Неизвестный объем памяти (сбой системного пробинга): инференс запрещен
+        let unknownMemDecision = HardwareWatchdog.evaluateDecision(
+            thermalState: .nominal,
+            isLowPowerMode: false,
+            freeMB: nil
+        )
+        #expect(unknownMemDecision == .restricted(reason: "Не удалось определить объем свободной оперативной памяти"))
     }
 
     @Test func hardwareWatchdogRejectsCriticalThermalState() {
@@ -61,12 +91,33 @@ struct VoiceIntelligencePhase3Tests {
 
     @Test func localSynthClientFallsBackGracefullyWithoutDaemon() async {
         let client = LocalSynthServiceClient.shared
-        // Запрос к несуществующему демону должен безопасно вернуть ошибку/nil без крэша
-        let result = await client.synthesize(
-            transcript: "Тестовая надиктованная фраза",
-            stylePrompt: "Очисти от мусора"
-        )
-        // Если сервис не запущен, результат nil — и система делает fallback на Этап 1
-        #expect(result == nil || !result!.isEmpty)
+        client.mockService = nil
+
+        // Когда XPC сервис не подключен в системе, synthesize обязан детерминированно возвращать nil
+        if !client.isServiceAvailable {
+            let result = await client.synthesize(
+                transcript: "Тестовая надиктованная фраза",
+                stylePrompt: "Очисти от мусора"
+            )
+            #expect(result == nil, "При отсутствии XPC-демона инференс должен мгновенно возвращать nil для отката на этап 1")
+        }
+
+        // Проверка полного сквозного отката ThoughtSynthesizer на этап 1 в режиме airGapped
+        let settings = VoiceIntelligenceSettings.shared
+        let originalEngine = settings.engine
+        settings.engine = .airGapped
+        defer { settings.engine = originalEngine }
+
+        await withCheckedContinuation { continuation in
+            ThoughtSynthesizer.shared.synthesize(
+                rawText: "эээ ну короче тестирование локального отката",
+                style: .clean
+            ) { finalText, isFallback in
+                #expect(isFallback == true, "При отказе локального демона фреймворк обязан сообщать о fallback")
+                #expect(!finalText.isEmpty)
+                #expect(!finalText.contains("эээ"))
+                continuation.resume()
+            }
+        }
     }
 }

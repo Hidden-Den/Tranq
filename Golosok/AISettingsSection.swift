@@ -338,6 +338,7 @@ struct VoiceIntelligenceSection: View {
                                                     .foregroundColor(.uiMidGray)
                                             }
                                             .buttonStyle(PlainButtonStyle())
+                                            .accessibilityLabel("Удалить термин \(term)")
                                         }
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)

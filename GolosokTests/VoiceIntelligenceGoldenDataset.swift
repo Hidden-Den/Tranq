@@ -130,7 +130,13 @@ public struct VoiceIntelligenceGoldenDataset {
             ("В тесте задействовано 128 потоков", ["128"]),
             ("Объем памяти 16 гигабайт", ["16"]),
             ("Версия протокола 1.16", ["1.16"]),
-            ("Скидка составляет 20 процентов", ["20"])
+            ("Скидка составляет 20 процентов", ["20"]),
+            // Словесные числительные и даты для проверки NumberNormalizer
+            ("Встреча назначена на четырнадцать тридцать", ["14:30"]),
+            ("Переведи двадцать пять рублей на карту", ["25"]),
+            ("Релиз выйдет двадцать шестого мая", ["26 мая"]),
+            ("Температура поднялась до пятидесяти градусов", ["50"]),
+            ("В тесте задействовано двенадцать потоков", ["12"])
         ]
         let intros = [
             "Пожалуйста зафиксируй:",
@@ -255,11 +261,24 @@ public struct VoiceIntelligenceGoldenDataset {
         var index = 1
         for tpl in templates {
             for app in apps {
+                let style: VoiceStyle
+                switch app {
+                case "com.apple.mail":
+                    style = .formal
+                case "md.obsidian":
+                    style = .bullets
+                case "com.microsoft.VSCode":
+                    style = .prompt
+                default:
+                    style = .clean
+                }
+
                 list.append(GoldenSample(
                     id: "compound_\(index)",
                     category: .compoundMixed,
                     rawSpeech: tpl,
                     isQuestion: tpl.contains("?"),
+                    style: style,
                     targetBundleId: app
                 ))
                 index += 1

@@ -89,6 +89,21 @@ public final class SLMModelStore: NSObject, ObservableObject {
         super.init()
     }
 
+    /// Проверка наличия хотя бы одной установленной оффлайн-модели
+    public var hasInstalledModels: Bool {
+        Self.catalog.contains { isModelDownloaded($0) }
+    }
+
+    /// Поиск активной установленной модели с учетом предпочтения пользователя
+    public func activeDownloadedModel(preferredId: String? = nil) -> SLMModel? {
+        if let preferredId = preferredId,
+           let preferred = Self.catalog.first(where: { $0.id == preferredId || $0.fileName == preferredId }),
+           isModelDownloaded(preferred) {
+            return preferred
+        }
+        return Self.catalog.first(where: { isModelDownloaded($0) })
+    }
+
     /// Путь к файлу модели на диске
     public func localFileURL(for model: SLMModel) -> URL {
         modelsDirectory.appendingPathComponent(model.fileName)
@@ -100,11 +115,114 @@ public final class SLMModelStore: NSObject, ObservableObject {
         return FileManager.default.fileExists(atPath: url.path)
     }
 
+    /// Запуск загрузки весов модели из официального репозитория
+    public func startDownload(model: SLMModel) {
+        guard let url = model.downloadURL else { return }
+        cancelDownload()
+
+        let config = URLSessionConfiguration.default
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        self.downloadSession = session
+
+        let task = session.downloadTask(with: url)
+        self.downloadTask = task
+        self.downloadingID = model.id
+        self.downloadProgress = 0.0
+        self.downloadStatus = "Подключение..."
+        self.objectWillChange.send()
+
+        task.resume()
+        AppLogger.shared.info("SLMModelStore", "Начата загрузка модели: \(model.name)")
+    }
+
+    /// Отмена текущей загрузки модели
+    public func cancelDownload() {
+        downloadTask?.cancel()
+        downloadTask = nil
+        downloadSession?.invalidateAndCancel()
+        downloadSession = nil
+        downloadingID = nil
+        downloadProgress = 0.0
+        downloadStatus = ""
+        objectWillChange.send()
+    }
+
     /// Удаление модели для освобождения места на накопителе
     public func delete(model: SLMModel) {
         let url = localFileURL(for: model)
         try? FileManager.default.removeItem(at: url)
         objectWillChange.send()
         AppLogger.shared.info("SLMModelStore", "Модель удалена: \(model.name)")
+    }
+}
+
+// MARK: - URLSessionDownloadDelegate
+
+extension SLMModelStore: URLSessionDownloadDelegate {
+    public func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        guard let modelID = self.downloadingID,
+              let model = Self.catalog.first(where: { $0.id == modelID }) else {
+            return
+        }
+
+        let destination = localFileURL(for: model)
+        do {
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.moveItem(at: location, to: destination)
+            DispatchQueue.main.async {
+                self.downloadingID = nil
+                self.downloadProgress = 1.0
+                self.downloadStatus = "Установлена"
+                self.objectWillChange.send()
+                AppLogger.shared.info("SLMModelStore", "Модель успешно установлена: \(model.name)")
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.downloadingID = nil
+                self.downloadProgress = 0.0
+                self.downloadStatus = "Ошибка сохранения"
+                self.objectWillChange.send()
+                AppLogger.shared.error("SLMModelStore", "Ошибка перемещения модели: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    public func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didWriteData bytesWritten: Int64,
+        totalBytesWritten: Int64,
+        totalBytesExpectedToWrite: Int64
+    ) {
+        guard totalBytesExpectedToWrite > 0 else { return }
+        let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+        DispatchQueue.main.async {
+            self.downloadProgress = progress
+            self.downloadStatus = String(format: "%.0f%%", progress * 100.0)
+        }
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error = error as? URLError, error.code == .cancelled {
+            DispatchQueue.main.async {
+                self.downloadingID = nil
+                self.downloadProgress = 0.0
+                self.downloadStatus = ""
+                self.objectWillChange.send()
+            }
+            return
+        }
+
+        if let error = error {
+            DispatchQueue.main.async {
+                self.downloadingID = nil
+                self.downloadProgress = 0.0
+                self.downloadStatus = "Сбой загрузки"
+                self.objectWillChange.send()
+                AppLogger.shared.error("SLMModelStore", "Ошибка сетевой загрузки модели: \(error.localizedDescription)")
+            }
+        }
     }
 }

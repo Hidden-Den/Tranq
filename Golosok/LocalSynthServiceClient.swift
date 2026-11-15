@@ -3,6 +3,21 @@ import Foundation
 public final class LocalSynthServiceClient: ObservableObject {
     public static let shared = LocalSynthServiceClient()
 
+    /// Мок-сервис для тестирования или встраиваемого инференса
+    public var mockService: GolosokSynthProtocol?
+
+    /// Проверка физического присутствия скомпилированного XPC-демона в бандле приложения
+    public var isServiceAvailable: Bool {
+        if mockService != nil {
+            return true
+        }
+        if let xpcURL = Bundle.main.url(forResource: "com.nuter.Golosok.SynthService", withExtension: "xpc", subdirectory: "XPCServices") {
+            return FileManager.default.fileExists(atPath: xpcURL.path)
+        }
+        let altURL = Bundle.main.bundleURL.appendingPathComponent("Contents/XPCServices/com.nuter.Golosok.SynthService.xpc")
+        return FileManager.default.fileExists(atPath: altURL.path)
+    }
+
     private var connection: NSXPCConnection?
     private let connectionLock = NSLock()
     private var idleTimer: Timer?
@@ -22,9 +37,8 @@ public final class LocalSynthServiceClient: ObservableObject {
             return nil
         }
 
-        let service = getService()
-        guard let service = service else {
-            AppLogger.shared.info("LocalSynthClient", "XPC сервис локального синтеза не подключен — откат на этап 1")
+        guard isServiceAvailable, let service = getService() else {
+            AppLogger.shared.info("LocalSynthClient", "XPC сервис локального синтеза не подключен — мгновенный откат на этап 1")
             return nil
         }
 
@@ -88,6 +102,13 @@ public final class LocalSynthServiceClient: ObservableObject {
     // MARK: - Вспомогательное подключение
 
     private func getService() -> GolosokSynthProtocol? {
+        if let mock = mockService {
+            return mock
+        }
+        guard isServiceAvailable else {
+            return nil
+        }
+
         connectionLock.lock()
         defer { connectionLock.unlock() }
 

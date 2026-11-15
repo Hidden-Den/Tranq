@@ -61,7 +61,7 @@ public struct GroundingValidator {
         let isInputQuestion = trimmedInput.contains("?") || hasQuestionKeyword(trimmedInput)
         if isInputQuestion {
             // Для чистой мысли и делового стиля вопрос обязан оставаться вопросом
-            if (style == .clean || style == .formal) && trimmedInput.contains("?") && !sanitizedOutput.contains("?") {
+            if (style == .clean || style == .formal) && !sanitizedOutput.contains("?") {
                 return .rejected(reason: "Модель ответила на вопрос вместо сохранения вопроса")
             }
             if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
@@ -71,7 +71,7 @@ public struct GroundingValidator {
 
         // 4. Проверка чисел (Strict Numbers Grounding)
         let inputNumbers = extractNumbers(from: trimmedInput)
-        let outputNumbers = extractNumbers(from: sanitizedOutput)
+        let outputNumbers = extractNumbers(from: sanitizedOutput, excludingListIndices: style == .bullets)
 
         // В стилях clean, formal и bullets все исходные числа должны сохраняться
         if style == .clean || style == .formal || style == .bullets {
@@ -92,11 +92,16 @@ public struct GroundingValidator {
         if style != .prompt {
             let inputLatinLower = Set(extractLatinTokens(from: trimmedInput).map { $0.lowercased() })
             let outputLatin = extractLatinTokens(from: sanitizedOutput)
-            let customTermsLower = Set(customTerms.map { $0.lowercased() })
+            var customTermsTokens = Set<String>()
+            for term in customTerms {
+                for tok in extractLatinTokens(from: term) {
+                    customTermsTokens.insert(tok.lowercased())
+                }
+            }
 
             for token in outputLatin {
                 let lowerToken = token.lowercased()
-                if inputLatinLower.contains(lowerToken) || customTermsLower.contains(lowerToken) {
+                if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
                     continue
                 }
                 return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
@@ -105,10 +110,8 @@ public struct GroundingValidator {
 
         // 6. Проверка структуры маркированного списка для стиля «Тезисы»
         if style == .bullets && inputWordCount > 5 {
-            let hasBullets = sanitizedOutput.contains("- ") ||
-                             sanitizedOutput.contains("• ") ||
-                             sanitizedOutput.contains("* ") ||
-                             sanitizedOutput.range(of: #"(?m)^\d+[.)]\s+"#, options: .regularExpression) != nil
+            let bulletRegex = #"(?m)^\s*([-•*]|\d+[.)])\s+"#
+            let hasBullets = sanitizedOutput.range(of: bulletRegex, options: .regularExpression) != nil
             if !hasBullets {
                 return .rejected(reason: "Стиль тезисов требует наличия маркированного списка")
             }
@@ -142,11 +145,17 @@ public struct GroundingValidator {
         return keywords.contains { lower.hasPrefix($0) || lower.contains(" " + $0) }
     }
 
-    private static func extractNumbers(from text: String) -> Set<String> {
+    private static func extractNumbers(from text: String, excludingListIndices: Bool = false) -> Set<String> {
+        var processedText = text
+        if excludingListIndices {
+            // Удаляем структурные маркеры нумерации списков в начале строк (например: "1. ", "2) ")
+            let listIndexPattern = #"(?m)^\s*\d+[.)]\s+"#
+            processedText = processedText.replacingOccurrences(of: listIndexPattern, with: "", options: .regularExpression)
+        }
         let pattern = #"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d.,])"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        let nsString = text as NSString
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+        let nsString = processedText as NSString
+        let matches = regex.matches(in: processedText, options: [], range: NSRange(location: 0, length: nsString.length))
         var numbers = Set<String>()
         for m in matches {
             numbers.insert(nsString.substring(with: m.range))

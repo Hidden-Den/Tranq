@@ -39,7 +39,7 @@ public struct AppProfileRouter {
 
         // Код и терминал
         let codePrefixes = [
-            "vscode", "xcode", "terminal", "iterm", "cursor", "jetbrains", "sublime", "alacritty", "kitty", "warp"
+            "vscode", "xcode", "terminal", "iterm", "cursor", "jetbrains", "sublime", "alacritty", "kitty", "warp", "com.todesktop.230313mzl4w4u92"
         ]
         if codePrefixes.contains(where: { bundleId.contains($0) }) {
             return .codeAndTerminal
