@@ -110,7 +110,6 @@ final class AIProviderStore: ObservableObject {
     @Published var apiKey: String {
         didSet {
             if apiKey != oldValue {
-                _ = KeychainStore.set(apiKey, for: "ai.apiKey")
                 KeyStore.set(apiKey, for: "ai.apiKey")
             }
         }
@@ -151,15 +150,7 @@ final class AIProviderStore: ObservableObject {
         self.providerID = initialID
         self.baseURL = initialBaseURL
         self.model = initialModel
-
-        if let keychainKey = KeychainStore.get("ai.apiKey"), !keychainKey.isEmpty {
-            self.apiKey = keychainKey
-        } else if let legacyKey = KeyStore.get("ai.apiKey"), !legacyKey.isEmpty {
-            _ = KeychainStore.set(legacyKey, for: "ai.apiKey")
-            self.apiKey = legacyKey
-        } else {
-            self.apiKey = ""
-        }
+        self.apiKey = KeyStore.get("ai.apiKey") ?? ""
     }
 
     var currentPreset: AIProviderPreset? {

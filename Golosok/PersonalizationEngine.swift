@@ -8,10 +8,12 @@ public struct CorrectionRule: Codable, Identifiable, Equatable {
     public var count: Int
     public var lastUsed: Date
     public var source: RuleSource
+    public var category: String?
 
     public enum RuleSource: String, Codable {
         case edit
         case manual
+        case builtin
     }
 
     public init(
@@ -20,7 +22,8 @@ public struct CorrectionRule: Codable, Identifiable, Equatable {
         replacement: String,
         count: Int = 1,
         lastUsed: Date = Date(),
-        source: RuleSource = .edit
+        source: RuleSource = .edit,
+        category: String? = nil
     ) {
         self.id = id
         self.pattern = pattern
@@ -28,6 +31,7 @@ public struct CorrectionRule: Codable, Identifiable, Equatable {
         self.count = count
         self.lastUsed = lastUsed
         self.source = source
+        self.category = category
     }
 }
 
@@ -38,12 +42,14 @@ public struct LearnedTerm: Codable, Identifiable, Equatable {
     public var count: Int
     public var lastUsed: Date
     public var isManual: Bool
+    public var category: String?
 
-    public init(term: String, count: Int = 1, lastUsed: Date = Date(), isManual: Bool = false) {
+    public init(term: String, count: Int = 1, lastUsed: Date = Date(), isManual: Bool = false, category: String? = nil) {
         self.term = term
         self.count = count
         self.lastUsed = lastUsed
         self.isManual = isManual
+        self.category = category
     }
 }
 
@@ -301,7 +307,7 @@ public final class PersonalizationEngine: ObservableObject {
 
     // MARK: - Управление памятью
 
-    public func addManualTerm(_ term: String) {
+    public func addManualTerm(_ term: String, category: String? = "custom") {
         let cleaned = Self.cleanWord(term)
         guard !cleaned.isEmpty else { return }
         lock.lock()
@@ -310,8 +316,9 @@ public final class PersonalizationEngine: ObservableObject {
             learnedTerms[idx].term = cleaned
             learnedTerms[idx].isManual = true
             learnedTerms[idx].lastUsed = Date()
+            if let category { learnedTerms[idx].category = category }
         } else {
-            let newTerm = LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true)
+            let newTerm = LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true, category: category)
             learnedTerms.append(newTerm)
         }
         lock.unlock()
@@ -322,7 +329,24 @@ public final class PersonalizationEngine: ObservableObject {
         VoiceIntelligenceSettings.shared.addUserTerm(cleaned)
     }
 
-    public func addManualRule(pattern: String, replacement: String) {
+    public func updateTerm(oldTerm: String, newTerm: String) {
+        let cleaned = Self.cleanWord(newTerm)
+        guard !cleaned.isEmpty else { return }
+        lock.lock()
+        if let idx = learnedTerms.firstIndex(where: { $0.term.lowercased() == oldTerm.lowercased() }) {
+            learnedTerms[idx].term = cleaned
+            learnedTerms[idx].lastUsed = Date()
+        }
+        lock.unlock()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        scheduleSave()
+        VoiceIntelligenceSettings.shared.removeUserTerm(oldTerm)
+        VoiceIntelligenceSettings.shared.addUserTerm(cleaned)
+    }
+
+    public func addManualRule(pattern: String, replacement: String, category: String? = "custom") {
         let pClean = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
         let rClean = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pClean.isEmpty else { return }
@@ -330,9 +354,27 @@ public final class PersonalizationEngine: ObservableObject {
         if let idx = correctionRules.firstIndex(where: { $0.pattern.lowercased() == pClean.lowercased() }) {
             correctionRules[idx].replacement = rClean
             correctionRules[idx].lastUsed = Date()
+            if let category { correctionRules[idx].category = category }
         } else {
-            let rule = CorrectionRule(pattern: pClean, replacement: rClean, count: 5, lastUsed: Date(), source: .manual)
+            let rule = CorrectionRule(pattern: pClean, replacement: rClean, count: 5, lastUsed: Date(), source: .manual, category: category)
             correctionRules.append(rule)
+        }
+        lock.unlock()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        scheduleSave()
+    }
+
+    public func updateRule(id: UUID, pattern: String, replacement: String) {
+        let pClean = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rClean = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !pClean.isEmpty else { return }
+        lock.lock()
+        if let idx = correctionRules.firstIndex(where: { $0.id == id }) {
+            correctionRules[idx].pattern = pClean
+            correctionRules[idx].replacement = rClean
+            correctionRules[idx].lastUsed = Date()
         }
         lock.unlock()
         DispatchQueue.main.async {
@@ -362,17 +404,20 @@ public final class PersonalizationEngine: ObservableObject {
         scheduleSave()
     }
 
-    public func resetMemory() {
+    public func resetMemory(restoreBuiltins: Bool = false) {
         lock.lock()
         correctionRules.removeAll()
         learnedTerms.removeAll()
+        if restoreBuiltins {
+            seedDefaultRules()
+        }
         lock.unlock()
 
         DispatchQueue.main.async {
             self.objectWillChange.send()
         }
         scheduleSave()
-        AppLogger.shared.info("Personalization", "Память адаптивного обучения полностью очищена")
+        AppLogger.shared.info("Personalization", "Память адаптивного обучения очищена (восстановление справочника: \(restoreBuiltins))")
     }
 
     // MARK: - Алгоритмы токенизации и LCS Diff
@@ -408,8 +453,6 @@ public final class PersonalizationEngine: ObservableObject {
                     candidates.append(word)
                 }
             } else if isCyrillicAcronym {
-                candidates.append(word)
-            } else if index > 0 && word.first?.isUppercase == true {
                 candidates.append(word)
             }
         }
@@ -518,24 +561,174 @@ public final class PersonalizationEngine: ObservableObject {
         }
     }
 
+    public static let builtinRules: [(pattern: String, replacement: String, category: String)] = [
+        // IT, DevOps, Cloud & Code
+        ("кубернайт", "Kubernetes", "it"),
+        ("кубере", "Kubernetes", "it"),
+        ("кубер", "Kubernetes", "it"),
+        ("кубернетис", "Kubernetes", "it"),
+        ("кубик", "Kubernetes", "it"),
+        ("докер", "Docker", "it"),
+        ("докера", "Docker", "it"),
+        ("постгрес", "PostgreSQL", "it"),
+        ("постгри", "PostgreSQL", "it"),
+        ("постгре", "PostgreSQL", "it"),
+        ("энджиникс", "nginx", "it"),
+        ("энджин икс", "nginx", "it"),
+        ("нгинкс", "nginx", "it"),
+        ("кафка", "Kafka", "it"),
+        ("кафке", "Kafka", "it"),
+        ("рэббит", "RabbitMQ", "it"),
+        ("рэббит эм кью", "RabbitMQ", "it"),
+        ("редис", "Redis", "it"),
+        ("редисе", "Redis", "it"),
+        ("джейсон", "JSON", "it"),
+        ("джсон", "JSON", "it"),
+        ("no8", "n8n", "it"),
+        ("n8", "n8n", "it"),
+        ("эн восемь", "n8n", "it"),
+        ("гитхаб", "GitHub", "it"),
+        ("гитлаб", "GitLab", "it"),
+        ("джира", "Jira", "it"),
+        ("жира", "Jira", "it"),
+        ("конфлюенс", "Confluence", "it"),
+        ("ношен", "Notion", "it"),
+        ("ноушен", "Notion", "it"),
+        ("пайтон", "Python", "it"),
+        ("питон", "Python", "it"),
+        ("тайпскрипт", "TypeScript", "it"),
+        ("джаваскрипт", "JavaScript", "it"),
+        ("голанг", "Go", "it"),
+        ("свифт", "Swift", "it"),
+        ("свифте", "Swift", "it"),
+        ("хкод", "Xcode", "it"),
+        ("эпл силикон", "Apple Silicon", "it"),
+        ("эппл силикон", "Apple Silicon", "it"),
+        ("си ай си ди", "CI/CD", "it"),
+        ("сиай сиди", "CI/CD", "it"),
+        ("пулреквест", "Pull Request", "it"),
+        ("пулл реквест", "Pull Request", "it"),
+        ("код ревью", "Code Review", "it"),
+        ("хотфикс", "Hotfix", "it"),
+        ("бэклог", "Backlog", "it"),
+        ("деплой", "Deploy", "it"),
+        ("фронтенд", "Frontend", "it"),
+        ("бэкенд", "Backend", "it"),
+        ("фулстек", "Fullstack", "it"),
+        ("микросервисы", "Microservices", "it"),
+        ("опэнроутер", "OpenRouter", "it"),
+        ("опенроутер", "OpenRouter", "it"),
+        ("оллама", "Ollama", "it"),
+
+        // Корпоративный менеджмент & Agile
+        ("окр", "OKR", "management"),
+        ("о кэ эр", "OKR", "management"),
+        ("кпи", "KPI", "management"),
+        ("кэ пэ и", "KPI", "management"),
+        ("ван ту ван", "1:1", "management"),
+        ("ван-он-ван", "1:1", "management"),
+        ("один на один", "1:1", "management"),
+        ("1 на 1", "1:1", "management"),
+        ("дейли", "Daily", "management"),
+        ("стендап", "Standup", "management"),
+        ("стэндап", "Standup", "management"),
+        ("синк", "Sync", "management"),
+        ("ретро", "Retro", "management"),
+        ("ретроспектива", "Retro", "management"),
+        ("тимлид", "Team Lead", "management"),
+        ("техлид", "Tech Lead", "management"),
+        ("продакт", "Product Manager", "management"),
+        ("проджект", "Project Manager", "management"),
+        ("си-левел", "C-level", "management"),
+        ("асап", "ASAP", "management"),
+        ("роадмап", "Roadmap", "management"),
+        ("спринт", "Sprint", "management"),
+        ("спринте", "Sprint", "management"),
+
+        // Бизнес, Продукт, HR & Финансы
+        ("си эр эм", "CRM", "business"),
+        ("срм", "CRM", "business"),
+        ("црм", "CRM", "business"),
+        ("ерп", "ERP", "business"),
+        ("сэ ла", "SLA", "business"),
+        ("сла", "SLA", "business"),
+        ("эндэа", "NDA", "business"),
+        ("нда", "NDA", "business"),
+        ("эм ви пи", "MVP", "business"),
+        ("мвп", "MVP", "business"),
+        ("б2б", "B2B", "business"),
+        ("би ту би", "B2B", "business"),
+        ("б2с", "B2C", "business"),
+        ("би ту си", "B2C", "business"),
+        ("саас", "SaaS", "business"),
+        ("сас", "SaaS", "business"),
+        ("мрр", "MRR", "business"),
+        ("арр", "ARR", "business"),
+        ("лтв", "LTV", "business"),
+        ("нпс", "NPS", "business"),
+        ("рои", "ROI", "business"),
+        ("эйчар", "HR", "business"),
+        ("хр", "HR", "business"),
+        ("онбординг", "Onboarding", "business"),
+        ("оффбординг", "Offboarding", "business"),
+        ("кастдев", "CustDev", "business"),
+        ("питчдек", "Pitch Deck", "business"),
+        ("оффер", "Offer", "business"),
+        ("перформанс ревью", "Performance Review", "business"),
+        ("пнл", "P&L", "business")
+    ]
+
+    public static let builtinTerms: [(term: String, category: String)] = [
+        // IT
+        ("Kubernetes", "it"), ("Docker", "it"), ("PostgreSQL", "it"), ("nginx", "it"),
+        ("Kafka", "it"), ("RabbitMQ", "it"), ("Redis", "it"), ("JSON", "it"),
+        ("n8n", "it"), ("GitHub", "it"), ("GitLab", "it"), ("Jira", "it"),
+        ("Confluence", "it"), ("Notion", "it"), ("Python", "it"), ("TypeScript", "it"),
+        ("JavaScript", "it"), ("Swift", "it"), ("Xcode", "it"), ("Apple Silicon", "it"),
+        ("Metal", "it"), ("CI/CD", "it"), ("Pull Request", "it"), ("Code Review", "it"),
+        ("Hotfix", "it"), ("Backlog", "it"), ("Deploy", "it"), ("Frontend", "it"),
+        ("Backend", "it"), ("Fullstack", "it"), ("Microservices", "it"), ("OpenRouter", "it"),
+        ("Ollama", "it"), ("FastAPI", "it"), ("GraphQL", "it"),
+
+        // Management
+        ("OKR", "management"), ("KPI", "management"), ("1:1", "management"),
+        ("Daily", "management"), ("Standup", "management"), ("Sync", "management"),
+        ("Retro", "management"), ("Team Lead", "management"), ("Tech Lead", "management"),
+        ("Product Manager", "management"), ("Project Manager", "management"),
+        ("C-level", "management"), ("ASAP", "management"), ("Roadmap", "management"),
+        ("Sprint", "management"), ("Scrum", "management"), ("Kanban", "management"),
+
+        // Business & HR
+        ("CRM", "business"), ("ERP", "business"), ("SLA", "business"), ("NDA", "business"),
+        ("MVP", "business"), ("B2B", "business"), ("B2C", "business"), ("SaaS", "business"),
+        ("MRR", "business"), ("ARR", "business"), ("LTV", "business"), ("CAC", "business"),
+        ("NPS", "business"), ("ROI", "business"), ("HR", "business"), ("Onboarding", "business"),
+        ("Offboarding", "business"), ("CustDev", "business"), ("Pitch Deck", "business"),
+        ("Offer", "business"), ("Performance Review", "business"), ("P&L", "business")
+    ]
+
     private func seedDefaultRules() {
-        let defaults: [(pattern: String, replacement: String)] = [
-            ("кубернайт", "Kubernetes"),
-            ("кубере", "Kubernetes"),
-            ("кубер", "Kubernetes"),
-            ("no8", "n8n"),
-            ("n8", "n8n"),
-            ("эн восемь", "n8n"),
-            ("джейсон", "JSON"),
-            ("постгрес", "PostgreSQL"),
-            ("докер", "Docker")
-        ]
-        for item in defaults {
+        for item in Self.builtinRules {
             if !self.correctionRules.contains(where: { $0.pattern.lowercased() == item.pattern.lowercased() }) {
-                self.correctionRules.append(CorrectionRule(pattern: item.pattern, replacement: item.replacement, count: 1, lastUsed: Date(), source: .manual))
+                self.correctionRules.append(CorrectionRule(
+                    pattern: item.pattern,
+                    replacement: item.replacement,
+                    count: 1,
+                    lastUsed: Date(),
+                    source: .builtin,
+                    category: item.category
+                ))
             }
-            if !self.learnedTerms.contains(where: { $0.term.lowercased() == item.replacement.lowercased() }) {
-                self.learnedTerms.append(LearnedTerm(term: item.replacement, count: 2, lastUsed: Date(), isManual: true))
+        }
+        for item in Self.builtinTerms {
+            if !self.learnedTerms.contains(where: { $0.term.lowercased() == item.term.lowercased() }) {
+                self.learnedTerms.append(LearnedTerm(
+                    term: item.term,
+                    count: 3,
+                    lastUsed: Date(),
+                    isManual: true,
+                    category: item.category
+                ))
             }
         }
     }
@@ -556,15 +749,26 @@ public final class PersonalizationEngine: ObservableObject {
             self.lock.lock()
             self.correctionRules = snapshot.rules
             self.learnedTerms = snapshot.terms
-            if self.correctionRules.isEmpty && self.learnedTerms.isEmpty {
-                self.seedDefaultRules()
+
+            // Добавляем отсутствующие встроенные правила и термины
+            self.seedDefaultRules()
+
+            // Очищаем ошибочно изученные обычные кириллические слова с заглавной буквы
+            let cyrillicUpperRegex = try? NSRegularExpression(pattern: #"^[А-ЯЁ]{2,}$"#)
+            self.learnedTerms.removeAll { term in
+                guard !term.isManual else { return false }
+                if Self.isLatinWord(term.term) { return false }
+                let range = NSRange(location: 0, length: (term.term as NSString).length)
+                let isAcronym = cyrillicUpperRegex?.firstMatch(in: term.term, options: [], range: range) != nil
+                return !isAcronym
             }
+
             // Синхронизация с историческими терминами пользователя из настроек
             let userTerms = VoiceIntelligenceSettings.shared.userTerms
             for term in userTerms {
                 let cleaned = Self.cleanWord(term)
                 if !cleaned.isEmpty && !self.learnedTerms.contains(where: { $0.term.lowercased() == cleaned.lowercased() }) {
-                    self.learnedTerms.append(LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true))
+                    self.learnedTerms.append(LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true, category: "custom"))
                 }
             }
             self.lock.unlock()

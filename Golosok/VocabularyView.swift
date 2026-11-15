@@ -24,16 +24,42 @@ enum VocabularyTab: String, CaseIterable, Identifiable {
     }
 }
 
-enum TermFilter: String, CaseIterable {
+enum DomainCategory: String, CaseIterable, Identifiable {
     case all = "all"
-    case manual = "manual"
-    case auto = "auto"
+    case it = "it"
+    case management = "management"
+    case business = "business"
+    case custom = "custom"
+
+    var id: String { rawValue }
 
     var title: String {
         switch self {
         case .all: return String(localized: "Все")
-        case .manual: return String(localized: "Вручную")
-        case .auto: return String(localized: "Изученные")
+        case .it: return String(localized: "IT и разработка")
+        case .management: return String(localized: "Менеджмент")
+        case .business: return String(localized: "Бизнес и HR")
+        case .custom: return String(localized: "Мои")
+        }
+    }
+
+    var badgeTitle: String {
+        switch self {
+        case .all: return ""
+        case .it: return "IT"
+        case .management: return "Менеджмент"
+        case .business: return "Бизнес"
+        case .custom: return "Моё"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .all: return .uiMidGray
+        case .it: return Color(hex: "#3B82F6")
+        case .management: return Color(hex: "#8B5CF6")
+        case .business: return Color(hex: "#F59E0B")
+        case .custom: return Color(hex: "#10B981")
         }
     }
 }
@@ -43,26 +69,34 @@ struct VocabularyView: View {
     @ObservedObject var settings = VoiceIntelligenceSettings.shared
 
     @State private var selectedTab: VocabularyTab = .terms
+    @State private var selectedCategory: DomainCategory = .all
+
     @State private var termSearchQuery: String = ""
-    @State private var termFilter: TermFilter = .all
     @State private var newTermInput: String = ""
+    @State private var editingTermId: String? = nil
+    @State private var editingTermText: String = ""
 
     @State private var ruleSearchQuery: String = ""
     @State private var newRulePattern: String = ""
     @State private var newRuleReplacement: String = ""
+    @State private var editingRuleId: UUID? = nil
+    @State private var editingRulePattern: String = ""
+    @State private var editingRuleReplacement: String = ""
 
     @State private var showingResetAlert: Bool = false
 
     private var filteredTerms: [LearnedTerm] {
         let list = engine.learnedTerms
         return list.filter { item in
-            let matchesFilter: Bool
-            switch termFilter {
-            case .all: matchesFilter = true
-            case .manual: matchesFilter = item.isManual
-            case .auto: matchesFilter = !item.isManual
+            let matchesCategory: Bool
+            switch selectedCategory {
+            case .all: matchesCategory = true
+            case .it: matchesCategory = item.category == "it"
+            case .management: matchesCategory = item.category == "management"
+            case .business: matchesCategory = item.category == "business"
+            case .custom: matchesCategory = item.category == "custom" || item.category == nil
             }
-            guard matchesFilter else { return false }
+            guard matchesCategory else { return false }
             if termSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return true
             }
@@ -76,13 +110,25 @@ struct VocabularyView: View {
 
     private var filteredRules: [CorrectionRule] {
         let list = engine.correctionRules
-        if ruleSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return list.sorted { $0.count > $1.count }
+        return list.filter { rule in
+            let matchesCategory: Bool
+            switch selectedCategory {
+            case .all: matchesCategory = true
+            case .it: matchesCategory = rule.category == "it"
+            case .management: matchesCategory = rule.category == "management"
+            case .business: matchesCategory = rule.category == "business"
+            case .custom: matchesCategory = rule.category == "custom" || rule.category == nil
+            }
+            guard matchesCategory else { return false }
+            if ruleSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return true
+            }
+            return rule.pattern.localizedCaseInsensitiveContains(ruleSearchQuery) ||
+                   rule.replacement.localizedCaseInsensitiveContains(ruleSearchQuery)
+        }.sorted { lhs, rhs in
+            if lhs.count != rhs.count { return lhs.count > rhs.count }
+            return lhs.pattern.localizedCompare(rhs.pattern) == .orderedAscending
         }
-        return list.filter {
-            $0.pattern.localizedCaseInsensitiveContains(ruleSearchQuery) ||
-            $0.replacement.localizedCaseInsensitiveContains(ruleSearchQuery)
-        }.sorted { $0.count > $1.count }
     }
 
     var body: some View {
@@ -96,9 +142,9 @@ struct VocabularyView: View {
         .alert(isPresented: $showingResetAlert) {
             Alert(
                 title: Text("Очистить память обучения"),
-                message: Text("Все автоматически изученные термины и правила правок будут сброшены к начальным значениям."),
+                message: Text("Все изученные термины и правила правок будут сброшены к начальным значениям встроенного справочника."),
                 primaryButton: .destructive(Text("Очистить")) {
-                    engine.resetMemory()
+                    engine.resetMemory(restoreBuiltins: true)
                 },
                 secondaryButton: .cancel(Text("Отмена"))
             )
@@ -113,7 +159,7 @@ struct VocabularyView: View {
                 Text("Словарь и обучение")
                     .font(UIStyleFont.display(size: 18, weight: .bold))
                     .foregroundColor(.uiInk)
-                Text("Справочник терминов, автозамены и промпт модели")
+                Text("Встроенный справочник IT и бизнеса, автозамены речи и системный промпт")
                     .font(UIStyleFont.body(size: 11, weight: .regular))
                     .foregroundColor(.uiMidGray)
             }
@@ -121,7 +167,6 @@ struct VocabularyView: View {
             Spacer()
 
             HStack(spacing: 12) {
-                // Переключатель адаптивного обучения
                 HStack(spacing: 8) {
                     Text("Адаптивное обучение")
                         .font(UIStyleFont.body(size: 12, weight: .medium))
@@ -136,11 +181,10 @@ struct VocabularyView: View {
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
 
-                // Кнопка очистки памяти
                 if !engine.learnedTerms.isEmpty || !engine.correctionRules.isEmpty {
                     Button(action: { showingResetAlert = true }) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 12, weight: .medium))
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.uiMidGray)
                             .frame(width: 30, height: 30)
                             .background(Color.uiPaper)
@@ -148,7 +192,7 @@ struct VocabularyView: View {
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
                     }
                     .buttonStyle(TactileButtonStyle())
-                    .help(String(localized: "Очистить память обучения"))
+                    .help(String(localized: "Сбросить память к заводскому справочнику"))
                 }
             }
         }
@@ -158,7 +202,7 @@ struct VocabularyView: View {
         .overlay(Divider().background(Color.uiHairline), alignment: .bottom)
     }
 
-    // MARK: - Переключатель разделов (Вкладки)
+    // MARK: - Вкладки разделов
 
     private var tabSegmentBar: some View {
         HStack(spacing: 8) {
@@ -167,6 +211,8 @@ struct VocabularyView: View {
                 Button(action: {
                     withAnimation(.easeOut(duration: 0.15)) {
                         selectedTab = tab
+                        editingTermId = nil
+                        editingRuleId = nil
                     }
                 }) {
                     HStack(spacing: 6) {
@@ -175,7 +221,6 @@ struct VocabularyView: View {
                         Text(tab.title)
                             .font(UIStyleFont.body(size: 12, weight: isSelected ? .semibold : .medium))
 
-                        // Счетчик для вкладок
                         if tab == .terms {
                             badgePill(text: "\(engine.learnedTerms.count)", isSelected: isSelected)
                         } else if tab == .rules {
@@ -213,7 +258,7 @@ struct VocabularyView: View {
             .cornerRadius(10)
     }
 
-    // MARK: - Область контента
+    // MARK: - Контент
 
     @ViewBuilder
     private var contentArea: some View {
@@ -227,43 +272,74 @@ struct VocabularyView: View {
         }
     }
 
-    // MARK: - Вкладка 1: Справочник терминов
+    // MARK: - Вкладка 1: Термины
 
     private var termsDirectoryTab: some View {
         VStack(spacing: 12) {
-            // Панель поиска, добавления и фильтров
-            HStack(spacing: 10) {
-                // Поле поиска
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
-                        .foregroundColor(.uiMidGray)
-                    TextField("Поиск терминов", text: $termSearchQuery)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
-                        .foregroundColor(.uiInk)
-                    if !termSearchQuery.isEmpty {
-                        Button(action: { termSearchQuery = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.uiMidGray)
+            // Панель категорий, поиска и добавления
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    // Поиск
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                            .foregroundColor(.uiMidGray)
+                        TextField("Поиск терминов", text: $termSearchQuery)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .foregroundColor(.uiInk)
+                        if !termSearchQuery.isEmpty {
+                            Button(action: { termSearchQuery = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.uiPaper)
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                .frame(maxWidth: 240)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.uiPaper)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .frame(maxWidth: 240)
 
-                // Фильтры
+                    Spacer()
+
+                    // Добавление термина
+                    HStack(spacing: 6) {
+                        TextField("Новый термин", text: $newTermInput)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .foregroundColor(.uiInk)
+                            .frame(width: 140)
+                            .onSubmit { addNewTerm() }
+
+                        Button(action: addNewTerm) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.uiInk)
+                                .frame(width: 26, height: 26)
+                                .background(Color.uiPaper)
+                                .cornerRadius(6)
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                        }
+                        .buttonStyle(TactileButtonStyle())
+                        .disabled(newTermInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.uiPaper)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                }
+
+                // Категории
                 HStack(spacing: 4) {
-                    ForEach(TermFilter.allCases, id: \.self) { f in
-                        let isActive = termFilter == f
-                        Button(action: { termFilter = f }) {
-                            Text(f.title)
+                    ForEach(DomainCategory.allCases) { cat in
+                        let isActive = selectedCategory == cat
+                        Button(action: { selectedCategory = cat }) {
+                            Text(cat.title)
                                 .font(UIStyleFont.body(size: 11, weight: isActive ? .semibold : .regular))
                                 .foregroundColor(isActive ? .uiInk : .uiMidGray)
                                 .padding(.horizontal, 8)
@@ -277,48 +353,20 @@ struct VocabularyView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+                    Spacer()
                 }
-
-                Spacer()
-
-                // Поле быстрого добавления термина
-                HStack(spacing: 6) {
-                    TextField("Новый термин", text: $newTermInput)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
-                        .foregroundColor(.uiInk)
-                        .frame(width: 140)
-                        .onSubmit { addNewTerm() }
-
-                    Button(action: addNewTerm) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.uiInk)
-                            .frame(width: 26, height: 26)
-                            .background(Color.uiPaper)
-                            .cornerRadius(6)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                    }
-                    .buttonStyle(TactileButtonStyle())
-                    .disabled(newTermInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color.uiPaper)
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
 
-            // Список терминов (LazyVStack оптимизирован под 800+ записей)
+            // Список терминов
             ScrollView {
                 if filteredTerms.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "character.book.closed")
                             .font(.system(size: 28))
                             .foregroundColor(.uiMidGray)
-                        Text(termSearchQuery.isEmpty ? "Список терминов пуст" : "Термины не найдены")
+                        Text(termSearchQuery.isEmpty ? "В этой категории нет терминов" : "Термины не найдены")
                             .font(UIStyleFont.body(size: 13, weight: .regular))
                             .foregroundColor(.uiMidGray)
                     }
@@ -327,47 +375,7 @@ struct VocabularyView: View {
                 } else {
                     LazyVStack(spacing: 6) {
                         ForEach(filteredTerms) { item in
-                            HStack(alignment: .center, spacing: 12) {
-                                Text(item.term)
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-
-                                Spacer()
-
-                                if item.isManual {
-                                    Text("Вручную")
-                                        .font(UIStyleFont.body(size: 10, weight: .medium))
-                                        .foregroundColor(.uiMidGray)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 3)
-                                        .background(Color.uiCanvas)
-                                        .cornerRadius(6)
-                                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                                } else {
-                                    Text("Авто • \(item.count)")
-                                        .font(UIStyleFont.body(size: 10, weight: .medium))
-                                        .foregroundColor(Color(hex: "#10B981"))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 3)
-                                        .background(Color(hex: "#10B981").opacity(0.1))
-                                        .cornerRadius(6)
-                                }
-
-                                Button(action: { engine.removeTerm(item.term) }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundColor(.uiMidGray)
-                                        .frame(width: 22, height: 22)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help(String(localized: "Удалить термин"))
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(Color.uiPaper)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                            termRow(item: item)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -377,10 +385,92 @@ struct VocabularyView: View {
         }
     }
 
+    private func termRow(item: LearnedTerm) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            if editingTermId == item.id {
+                TextField("Термин", text: $editingTermText)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .foregroundColor(.uiInk)
+                    .padding(4)
+                    .background(Color.uiCanvas)
+                    .cornerRadius(4)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+                    .onSubmit {
+                        saveEditedTerm(oldTerm: item.term)
+                    }
+
+                Spacer()
+
+                Button(action: { saveEditedTerm(oldTerm: item.term) }) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#10B981"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Сохранить"))
+
+                Button(action: { editingTermId = nil }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Отмена"))
+            } else {
+                Text(item.term)
+                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .foregroundColor(.uiInk)
+
+                Spacer()
+
+                categoryBadge(for: item.category, isManual: item.isManual, count: item.count)
+
+                Button(action: {
+                    editingTermId = item.id
+                    editingTermText = item.term
+                }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Редактировать термин"))
+
+                Button(action: { engine.removeTerm(item.term) }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Удалить термин"))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.uiPaper)
+        .cornerRadius(8)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+    }
+
+    private func saveEditedTerm(oldTerm: String) {
+        let cleaned = editingTermText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleaned.isEmpty {
+            engine.updateTerm(oldTerm: oldTerm, newTerm: cleaned)
+        }
+        editingTermId = nil
+    }
+
     private func addNewTerm() {
         let cleaned = newTermInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { return }
-        engine.addManualTerm(cleaned)
+        engine.addManualTerm(cleaned, category: selectedCategory == .all ? "custom" : selectedCategory.rawValue)
         newTermInput = ""
     }
 
@@ -388,71 +478,94 @@ struct VocabularyView: View {
 
     private var rulesDirectoryTab: some View {
         VStack(spacing: 12) {
-            // Панель поиска и добавления правила
-            HStack(spacing: 10) {
-                // Поиск
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11))
-                        .foregroundColor(.uiMidGray)
-                    TextField("Поиск правил", text: $ruleSearchQuery)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
-                        .foregroundColor(.uiInk)
-                    if !ruleSearchQuery.isEmpty {
-                        Button(action: { ruleSearchQuery = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.uiMidGray)
+            // Поиск, категории и добавление
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                            .foregroundColor(.uiMidGray)
+                        TextField("Поиск правил", text: $ruleSearchQuery)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .foregroundColor(.uiInk)
+                        if !ruleSearchQuery.isEmpty {
+                            Button(action: { ruleSearchQuery = "" }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(Color.uiPaper)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .frame(maxWidth: 200)
+
+                    Spacer()
+
+                    // Добавление правила
+                    HStack(spacing: 6) {
+                        TextField("Слышит", text: $newRulePattern)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .foregroundColor(.uiInk)
+                            .frame(width: 90)
+
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(.uiMidGray)
+
+                        TextField("Заменяет", text: $newRuleReplacement)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .foregroundColor(.uiInk)
+                            .frame(width: 100)
+                            .onSubmit { addNewRule() }
+
+                        Button(action: addNewRule) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.uiInk)
+                                .frame(width: 26, height: 26)
+                                .background(Color.uiPaper)
+                                .cornerRadius(6)
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                        }
+                        .buttonStyle(TactileButtonStyle())
+                        .disabled(newRulePattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.uiPaper)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                }
+
+                // Категории
+                HStack(spacing: 4) {
+                    ForEach(DomainCategory.allCases) { cat in
+                        let isActive = selectedCategory == cat
+                        Button(action: { selectedCategory = cat }) {
+                            Text(cat.title)
+                                .font(UIStyleFont.body(size: 11, weight: isActive ? .semibold : .regular))
+                                .foregroundColor(isActive ? .uiInk : .uiMidGray)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(isActive ? Color.uiPaper : Color.clear)
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(isActive ? Color.uiHairline : Color.clear, lineWidth: 1)
+                                )
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
+                    Spacer()
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(Color.uiPaper)
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                .frame(maxWidth: 200)
-
-                Spacer()
-
-                // Добавление нового правила
-                HStack(spacing: 6) {
-                    TextField("Слышит", text: $newRulePattern)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
-                        .foregroundColor(.uiInk)
-                        .frame(width: 90)
-
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.uiMidGray)
-
-                    TextField("Заменяет", text: $newRuleReplacement)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
-                        .foregroundColor(.uiInk)
-                        .frame(width: 100)
-                        .onSubmit { addNewRule() }
-
-                    Button(action: addNewRule) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.uiInk)
-                            .frame(width: 26, height: 26)
-                            .background(Color.uiPaper)
-                            .cornerRadius(6)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                    }
-                    .buttonStyle(TactileButtonStyle())
-                    .disabled(newRulePattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color.uiPaper)
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
@@ -464,7 +577,7 @@ struct VocabularyView: View {
                         Image(systemName: "arrow.2.squarepath")
                             .font(.system(size: 28))
                             .foregroundColor(.uiMidGray)
-                        Text(ruleSearchQuery.isEmpty ? "Правил автозамены пока нет" : "Правила не найдены")
+                        Text(ruleSearchQuery.isEmpty ? "В этой категории нет правил автозамены" : "Правила не найдены")
                             .font(UIStyleFont.body(size: 13, weight: .regular))
                             .foregroundColor(.uiMidGray)
                     }
@@ -473,45 +586,7 @@ struct VocabularyView: View {
                 } else {
                     LazyVStack(spacing: 6) {
                         ForEach(filteredRules) { rule in
-                            HStack(alignment: .center, spacing: 10) {
-                                Text(rule.pattern)
-                                    .font(UIStyleFont.body(size: 13, weight: .regular))
-                                    .foregroundColor(.uiInk)
-
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.uiMidGray)
-
-                                Text(rule.replacement.isEmpty ? "удаление" : rule.replacement)
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-
-                                Spacer()
-
-                                Text("\(rule.count)")
-                                    .font(UIStyleFont.body(size: 10, weight: .semibold))
-                                    .foregroundColor(.uiMidGray)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.uiCanvas)
-                                    .cornerRadius(6)
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-
-                                Button(action: { engine.removeRule(id: rule.id) }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundColor(.uiMidGray)
-                                        .frame(width: 22, height: 22)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help(String(localized: "Удалить правило"))
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(Color.uiPaper)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                            ruleRow(rule: rule)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -521,13 +596,157 @@ struct VocabularyView: View {
         }
     }
 
+    private func ruleRow(rule: CorrectionRule) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            if editingRuleId == rule.id {
+                TextField("Слышит", text: $editingRulePattern)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                    .foregroundColor(.uiInk)
+                    .frame(width: 110)
+                    .padding(4)
+                    .background(Color.uiCanvas)
+                    .cornerRadius(4)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(.uiMidGray)
+
+                TextField("Заменяет", text: $editingRuleReplacement)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(UIStyleFont.body(size: 12, weight: .medium))
+                    .foregroundColor(.uiInk)
+                    .frame(width: 110)
+                    .padding(4)
+                    .background(Color.uiCanvas)
+                    .cornerRadius(4)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+                    .onSubmit {
+                        saveEditedRule(id: rule.id)
+                    }
+
+                Spacer()
+
+                Button(action: { saveEditedRule(id: rule.id) }) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(hex: "#10B981"))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Сохранить"))
+
+                Button(action: { editingRuleId = nil }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Отмена"))
+            } else {
+                Text(rule.pattern)
+                    .font(UIStyleFont.body(size: 13, weight: .regular))
+                    .foregroundColor(.uiInk)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(.uiMidGray)
+
+                Text(rule.replacement.isEmpty ? "удаление" : rule.replacement)
+                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .foregroundColor(.uiInk)
+
+                Spacer()
+
+                categoryBadge(for: rule.category, isManual: rule.source != .edit, count: rule.count)
+
+                Button(action: {
+                    editingRuleId = rule.id
+                    editingRulePattern = rule.pattern
+                    editingRuleReplacement = rule.replacement
+                }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Редактировать правило"))
+
+                Button(action: { engine.removeRule(id: rule.id) }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.uiMidGray)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(String(localized: "Удалить правило"))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.uiPaper)
+        .cornerRadius(8)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+    }
+
+    private func saveEditedRule(id: UUID) {
+        let p = editingRulePattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        let r = editingRuleReplacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !p.isEmpty {
+            engine.updateRule(id: id, pattern: p, replacement: r)
+        }
+        editingRuleId = nil
+    }
+
     private func addNewRule() {
         let pClean = newRulePattern.trimmingCharacters(in: .whitespacesAndNewlines)
         let rClean = newRuleReplacement.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pClean.isEmpty else { return }
-        engine.addManualRule(pattern: pClean, replacement: rClean)
+        engine.addManualRule(
+            pattern: pClean,
+            replacement: rClean,
+            category: selectedCategory == .all ? "custom" : selectedCategory.rawValue
+        )
         newRulePattern = ""
         newRuleReplacement = ""
+    }
+
+    // MARK: - Вспомогательные элементы
+
+    private func categoryBadge(for category: String?, isManual: Bool, count: Int) -> some View {
+        HStack(spacing: 4) {
+            if let cat = category, let domain = DomainCategory(rawValue: cat), domain != .all {
+                Text(domain.badgeTitle)
+                    .font(UIStyleFont.body(size: 9, weight: .semibold))
+                    .foregroundColor(domain.color)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(domain.color.opacity(0.12))
+                    .cornerRadius(4)
+            } else if !isManual {
+                Text("Авто • \(count)")
+                    .font(UIStyleFont.body(size: 9, weight: .semibold))
+                    .foregroundColor(Color(hex: "#10B981"))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color(hex: "#10B981").opacity(0.12))
+                    .cornerRadius(4)
+            } else {
+                Text("Моё")
+                    .font(UIStyleFont.body(size: 9, weight: .semibold))
+                    .foregroundColor(.uiMidGray)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.uiCanvas)
+                    .cornerRadius(4)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.uiHairline, lineWidth: 1))
+            }
+        }
     }
 
     // MARK: - Вкладка 3: Системный промпт модели
