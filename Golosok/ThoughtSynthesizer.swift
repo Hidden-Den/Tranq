@@ -89,29 +89,13 @@ public final class ThoughtSynthesizer {
                 }
             }
 
-        case .ollama:
-            // Строго локальный адрес Ollama на loopback
-            let modelName = settings.localModel.isEmpty ? "gemma3:1b" : settings.localModel
-            let config = AIProviderConfig(
-                baseURL: "http://localhost:11434/v1",
-                apiKey: "",
-                model: modelName
-            )
-            runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
-
-        case .openRouter:
-            let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeychainStore.get("ai.apiKey") ?? KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
-            guard !apiKey.isEmpty else {
-                AppLogger.shared.info("Synthesizer", "OpenRouter API-ключ не настроен — отдан текст этапа 1")
+        case .external:
+            let config = AIProviderStore.shared.config
+            guard AIProviderStore.shared.isConfigured else {
+                AppLogger.shared.info("Synthesizer", "Внешний ИИ-провайдер не настроен — отдан текст этапа 1")
                 completion(stageOneText, true)
                 return
             }
-            let modelName = settings.openRouterModel.isEmpty ? "anthropic/claude-haiku-5.5" : settings.openRouterModel
-            let config = AIProviderConfig(
-                baseURL: "https://openrouter.ai/api/v1",
-                apiKey: apiKey,
-                model: modelName
-            )
             runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
         }
     }
@@ -125,22 +109,27 @@ public final class ThoughtSynthesizer {
             let modelPath = SLMModelStore.shared.localFileURL(for: model).path
             LocalSynthServiceClient.shared.prewarm(modelPath: modelPath)
 
-        case .openRouter:
-            let apiKey = AIProviderStore.shared.apiKey.isEmpty ? (KeychainStore.get("ai.apiKey") ?? KeyStore.get("ai.apiKey") ?? "") : AIProviderStore.shared.apiKey
-            guard !apiKey.isEmpty else { return }
+        case .external:
+            let config = AIProviderStore.shared.config
+            guard !config.baseURL.isEmpty else { return }
 
             Task.detached(priority: .utility) {
-                guard let url = URL(string: "https://openrouter.ai/api/v1/models") else { return }
+                let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+                guard let url = URL(string: "\(cleanBase)/models") else { return }
                 var request = URLRequest(url: url)
                 request.httpMethod = "HEAD"
-                request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+                if config.isAnthropic {
+                    if !config.apiKey.isEmpty {
+                        request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+                    }
+                    request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+                } else if !config.apiKey.isEmpty {
+                    request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+                }
                 request.timeoutInterval = 2.0
                 _ = try? await URLSession.shared.data(for: request)
-                AppLogger.shared.info("Synthesizer", "TLS сессия к OpenRouter успешно прогрета")
+                AppLogger.shared.info("Synthesizer", "TLS сессия к внешнему провайдеру успешно прогрета", details: config.baseURL)
             }
-
-        case .ollama:
-            break
         }
     }
 
@@ -180,7 +169,15 @@ public final class ThoughtSynthesizer {
 
         Task.detached(priority: .userInitiated) {
             do {
-                guard let url = URL(string: config.baseURL.hasSuffix("/chat/completions") ? config.baseURL : config.baseURL + "/chat/completions") else {
+                let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+                let targetURLString: String
+                if config.isAnthropic {
+                    targetURLString = cleanBase.hasSuffix("/messages") ? cleanBase : cleanBase + "/messages"
+                } else {
+                    targetURLString = cleanBase.hasSuffix("/chat/completions") ? cleanBase : cleanBase + "/chat/completions"
+                }
+
+                guard let url = URL(string: targetURLString) else {
                     safeCompletion(stageOneText, true)
                     return
                 }
@@ -188,24 +185,59 @@ public final class ThoughtSynthesizer {
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                if !config.apiKey.isEmpty {
-                    request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+
+                if config.isAnthropic {
+                    if !config.apiKey.isEmpty {
+                        request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+                    }
+                    request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+                } else {
+                    if !config.apiKey.isEmpty {
+                        request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+                    }
                 }
                 request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
                 request.setValue("Golosok macOS", forHTTPHeaderField: "X-Title")
 
                 var body: [String: Any] = [
                     "model": config.model,
-                    "messages": messages.map { ["role": $0.role, "content": $0.content] },
                     "stream": true
                 ]
 
-                let isOpenRouter = config.baseURL.contains("openrouter.ai")
-                if isOpenRouter {
-                    body["reasoning"] = ["effort": "none", "exclude": true]
-                    body["provider"] = ["sort": "latency"]
-                } else {
+                if config.isAnthropic {
+                    body["max_tokens"] = 1024
                     body["temperature"] = 0.1
+
+                    var systemPrompt: String? = nil
+                    var anthropicMessages: [[String: String]] = []
+                    for msg in messages {
+                        if msg.role == "system" {
+                            if let existing = systemPrompt {
+                                systemPrompt = existing + "\n\n" + msg.content
+                            } else {
+                                systemPrompt = msg.content
+                            }
+                        } else {
+                            anthropicMessages.append(["role": msg.role, "content": msg.content])
+                        }
+                    }
+                    if anthropicMessages.isEmpty, let sp = systemPrompt {
+                        anthropicMessages.append(["role": "user", "content": sp])
+                        systemPrompt = nil
+                    }
+                    body["messages"] = anthropicMessages
+                    if let systemPrompt, !systemPrompt.isEmpty {
+                        body["system"] = systemPrompt
+                    }
+                } else {
+                    body["messages"] = messages.map { ["role": $0.role, "content": $0.content] }
+                    let isOpenRouter = config.baseURL.contains("openrouter.ai")
+                    if isOpenRouter {
+                        body["reasoning"] = ["effort": "none", "exclude": true]
+                        body["provider"] = ["sort": "latency"]
+                    } else {
+                        body["temperature"] = 0.1
+                    }
                 }
 
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -227,11 +259,24 @@ public final class ThoughtSynthesizer {
                         let dataStr = String(line.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
                         if dataStr == "[DONE]" { break }
                         guard let jsonData = dataStr.data(using: .utf8),
-                              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                              let choices = json["choices"] as? [[String: Any]],
-                              let firstChoice = choices.first,
-                              let delta = firstChoice["delta"] as? [String: Any],
-                              let chunk = delta["content"] as? String else { continue }
+                              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else { continue }
+
+                        if let type = json["type"] as? String, type == "message_stop" {
+                            break
+                        }
+
+                        let chunk: String?
+                        if let choices = json["choices"] as? [[String: Any]],
+                           let firstChoice = choices.first,
+                           let delta = firstChoice["delta"] as? [String: Any] {
+                            chunk = delta["content"] as? String
+                        } else if let delta = json["delta"] as? [String: Any] {
+                            chunk = delta["text"] as? String
+                        } else {
+                            chunk = nil
+                        }
+
+                        guard let validChunk = chunk, !validChunk.isEmpty else { continue }
 
                         if firstTokenTime == nil {
                             firstTokenTime = CFAbsoluteTimeGetCurrent()
@@ -242,7 +287,7 @@ public final class ThoughtSynthesizer {
                             }
                         }
 
-                        if let cleanChunk = stripper.feed(chunk) {
+                        if let cleanChunk = stripper.feed(validChunk) {
                             accumulated.append(cleanChunk)
                         }
                     }

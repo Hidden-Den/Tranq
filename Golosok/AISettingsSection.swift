@@ -14,7 +14,7 @@ struct AIProviderSection: View {
                     .tracking(1.0)
                     .foregroundColor(.uiMidGray)
 
-                Text(LocalizedStringKey("BYO-ключ. Транскрипция уходит напрямую в ваш OpenAI-совместимый сервис — Голосок не выступает оператором данных."))
+                Text(LocalizedStringKey("BYO-ключ. Транскрипция уходит напрямую в выбранный вами сервис — Голосок не выступает оператором данных."))
                     .font(UIStyleFont.body(size: 11, weight: .regular))
                     .foregroundColor(.uiMidGray)
                     .lineSpacing(2)
@@ -28,14 +28,9 @@ struct AIProviderSection: View {
                     }
                 }
 
-                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: "https://api.openai.com/v1")
+                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.currentPreset?.baseURL ?? "https://api.openai.com/v1")
                 AIInputField(title: "API-ключ", text: $store.apiKey, placeholder: "sk-…", isSecure: true)
-
-                if store.providerID == "ollama" {
-                    ollamaModelField
-                } else {
-                    AIInputField(title: "Модель", text: $store.model, placeholder: "gpt-4o-mini")
-                }
+                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset?.defaultModel ?? "gpt-4o-mini")
 
                 HStack(spacing: 10) {
                     UIOutlineButton(title: "Проверить") {
@@ -55,53 +50,6 @@ struct AIProviderSection: View {
                     }
                     Spacer()
                 }
-            }
-        }
-    }
-
-    private var ollamaModelField: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Модель")
-                .font(UIStyleFont.body(size: 11, weight: .medium))
-                .foregroundColor(.uiMidGray)
-            HStack(spacing: 8) {
-                UIDropdownPicker(selection: $store.model, options: {
-                    var arr: [UIDropdownOption<String>] = []
-                    if !store.model.isEmpty && !store.installedModels.contains(store.model) {
-                        arr.append(.init(store.model, value: store.model))
-                    }
-                    arr.append(contentsOf: store.installedModels.map { .init($0, value: $0) })
-                    return arr
-                }(), fullWidth: true)
-
-                Button(action: { store.refreshModels() }) {
-                    if store.isLoadingModels {
-                        ProgressView().controlSize(.small)
-                            .frame(width: 28, height: 28)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.uiInk)
-                            .frame(width: 28, height: 28)
-                    }
-                }
-                .buttonStyle(TactileButtonStyle())
-                .background(Color.uiPaper)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.uiHairline, lineWidth: 1))
-                .help(String(localized: "Обновить список моделей"))
-            }
-            if store.installedModels.isEmpty && !store.isLoadingModels {
-                Text("Нет скачанных моделей — запустите Ollama и нажмите ↻")
-                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                    .foregroundColor(.uiMidGray)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .onAppear {
-            if store.installedModels.isEmpty && !store.isLoadingModels {
-                store.refreshModels()
             }
         }
     }
@@ -242,26 +190,6 @@ struct VoiceIntelligenceSection: View {
                         UIDropdownPicker(selection: $settings.engine, options: VoiceEngine.allCases.map { e in
                             .init(LocalizedStringKey(e.title), value: e)
                         }, width: 210)
-                    }
-
-                    if settings.engine == .openRouter {
-                        Divider().background(Color.uiHairline)
-
-                        // Модель OpenRouter
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Модель OpenRouter")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Быстрая модель для синтеза")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            Spacer()
-                            UIDropdownPicker(selection: $settings.openRouterModel, options: OpenRouterCatalogService.shared.models.map { m in
-                                .init(LocalizedStringKey(m.name), value: m.id)
-                            }, width: 210)
-                        }
                     }
 
                     if settings.engine == .airGapped {

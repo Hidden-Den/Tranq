@@ -142,4 +142,77 @@ struct VoiceIntelligencePhase3Tests {
             }
         }
     }
+
+    @Test func aiProviderPresetsContainAnthropicAndNoGroq() {
+        let presets = AIProviderPresets.all
+        let ids = presets.map { $0.id }
+
+        #expect(!ids.contains("groq"), "Groq должен быть удален из пресетов")
+        #expect(ids.contains("anthropic"), "Anthropic должен присутствовать в пресетах")
+        #expect(ids.contains("openrouter"))
+        #expect(ids.contains("openai"))
+        #expect(ids.contains("deepseek"))
+        #expect(ids.contains("ollama"))
+
+        guard let anthropic = AIProviderPresets.preset(id: "anthropic") else {
+            #expect(Bool(false), "Anthropic preset не найден")
+            return
+        }
+        #expect(anthropic.baseURL == "https://api.anthropic.com/v1")
+        #expect(anthropic.needsKey == true)
+        #expect(!anthropic.defaultModel.isEmpty)
+
+        // Проверка правил Minimal Notion Aesthetic (без скобок в названиях и подсказках)
+        for preset in presets {
+            #expect(!preset.name.contains("("))
+            #expect(!preset.name.contains(")"))
+            #expect(!preset.name.contains("["))
+            #expect(!preset.name.contains("]"))
+        }
+    }
+
+    @Test func anthropicConfigDetectionAndMessageFormatting() {
+        let anthropicConfig = AIProviderConfig(
+            baseURL: "https://api.anthropic.com/v1",
+            apiKey: "sk-ant-test-key",
+            model: "claude-3-5-haiku-20241022",
+            providerID: "anthropic"
+        )
+        #expect(anthropicConfig.isAnthropic == true)
+
+        let openAIConfig = AIProviderConfig(
+            baseURL: "https://api.openai.com/v1",
+            apiKey: "sk-test",
+            model: "gpt-4o-mini",
+            providerID: "openai"
+        )
+        #expect(openAIConfig.isAnthropic == false)
+
+        let proxyConfig = AIProviderConfig(
+            baseURL: "https://my-proxy.com/v1",
+            apiKey: "sk-test",
+            model: "claude-3-5-haiku",
+            providerID: "anthropic"
+        )
+        #expect(proxyConfig.isAnthropic == true)
+    }
+
+    @Test func voiceEngineTitlesAndSubtitlesConformToMinimalDesign() {
+        let engines = VoiceEngine.allCases
+        #expect(engines.count == 2)
+        #expect(engines.contains(.airGapped))
+        #expect(engines.contains(.external))
+
+        for engine in engines {
+            #expect(!engine.title.contains("("))
+            #expect(!engine.title.contains(")"))
+            #expect(!engine.subtitle.contains("("))
+            #expect(!engine.subtitle.contains(")"))
+            #expect(!engine.title.isEmpty)
+            #expect(!engine.subtitle.isEmpty)
+        }
+
+        #expect(VoiceEngine.external.title == "Внешний")
+        #expect(VoiceEngine.airGapped.title == "Air-Gapped на устройстве")
+    }
 }

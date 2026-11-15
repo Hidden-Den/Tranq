@@ -28,23 +28,23 @@ enum AIProviderPresets {
         AIProviderPreset(
             id: "openai",
             name: "OpenAI",
-            hint: "gpt-4o-mini, gpt-4o",
+            hint: "ChatGPT, gpt-4o-mini, gpt-4o",
             baseURL: "https://api.openai.com/v1",
             defaultModel: "gpt-4o-mini",
             needsKey: true
         ),
         AIProviderPreset(
-            id: "groq",
-            name: "Groq",
-            hint: "llama-3.3-70b-versatile",
-            baseURL: "https://api.groq.com/openai/v1",
-            defaultModel: "llama-3.3-70b-versatile",
+            id: "anthropic",
+            name: "Anthropic",
+            hint: "claude-3-5-haiku, claude-3-7-sonnet",
+            baseURL: "https://api.anthropic.com/v1",
+            defaultModel: "claude-3-5-haiku-20241022",
             needsKey: true
         ),
         AIProviderPreset(
             id: "deepseek",
             name: "DeepSeek",
-            hint: "deepseek-chat",
+            hint: "deepseek-chat, deepseek-reasoner",
             baseURL: "https://api.deepseek.com/v1",
             defaultModel: "deepseek-chat",
             needsKey: true
@@ -52,9 +52,9 @@ enum AIProviderPresets {
         AIProviderPreset(
             id: "ollama",
             name: "Ollama локально",
-            hint: "LM Studio / локальный сервер",
+            hint: "LM Studio или локальный сервер",
             baseURL: "http://localhost:11434/v1",
-            defaultModel: "gemma3:1b",
+            defaultModel: "llama3.2",
             needsKey: false
         )
     ]
@@ -68,6 +68,11 @@ struct AIProviderConfig {
     let baseURL: String
     let apiKey: String
     let model: String
+    var providerID: String = ""
+
+    var isAnthropic: Bool {
+        baseURL.contains("anthropic.com") || providerID == "anthropic"
+    }
 }
 
 enum AIError: LocalizedError {
@@ -165,7 +170,8 @@ final class AIProviderStore: ObservableObject {
         AIProviderConfig(
             baseURL: baseURL,
             apiKey: apiKey,
-            model: model
+            model: model,
+            providerID: providerID
         )
     }
 
@@ -181,10 +187,6 @@ final class AIProviderStore: ObservableObject {
         model = preset.defaultModel
         testResult = nil
         testOK = false
-        installedModels = []
-        if preset.id == "ollama" {
-            refreshModels()
-        }
         AppLogger.shared.info("AI", "Выбран провайдер \(preset.name)", details: preset.baseURL)
     }
 
@@ -264,6 +266,95 @@ final class AIService {
     }
 
     func chat(messages: [AIChatMessage], using config: AIProviderConfig, completion: @escaping (Result<String, AIError>) -> Void) {
+        if config.isAnthropic {
+            guard let url = url(config.baseURL, path: "messages") else {
+                completion(.failure(.invalidURL))
+                return
+            }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.timeoutInterval = 180
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            if !config.apiKey.isEmpty {
+                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+            }
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+
+            var systemPrompt: String? = nil
+            var anthropicMessages: [[String: String]] = []
+            for msg in messages {
+                if msg.role == "system" {
+                    if let existing = systemPrompt {
+                        systemPrompt = existing + "\n\n" + msg.content
+                    } else {
+                        systemPrompt = msg.content
+                    }
+                } else {
+                    anthropicMessages.append(["role": msg.role, "content": msg.content])
+                }
+            }
+            if anthropicMessages.isEmpty, let sp = systemPrompt {
+                anthropicMessages.append(["role": "user", "content": sp])
+                systemPrompt = nil
+            }
+
+            var bodyDict: [String: Any] = [
+                "model": config.model,
+                "max_tokens": 1024,
+                "messages": anthropicMessages,
+                "temperature": 0.1
+            ]
+            if let systemPrompt, !systemPrompt.isEmpty {
+                bodyDict["system"] = systemPrompt
+            }
+
+            guard let data = try? JSONSerialization.data(withJSONObject: bodyDict) else {
+                completion(.failure(.parse("кодирование запроса")))
+                return
+            }
+            request.httpBody = data
+
+            AppLogger.shared.info("AI", "Запрос к Anthropic", details: "\(config.baseURL) / \(config.model)")
+
+            session.dataTask(with: request) { data, response, error in
+                if let error {
+                    completion(.failure(.network(error.localizedDescription)))
+                    return
+                }
+                guard let http = response as? HTTPURLResponse else {
+                    completion(.failure(.network("нет HTTP-ответа")))
+                    return
+                }
+                guard let data else {
+                    completion(.failure(.emptyResponse))
+                    return
+                }
+                guard (200..<300).contains(http.statusCode) else {
+                    completion(.failure(.http(http.statusCode, Self.extractError(from: data) ?? "HTTP \(http.statusCode)")))
+                    return
+                }
+                guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(.parse("не JSON")))
+                    return
+                }
+                if let contentArray = json["content"] as? [[String: Any]] {
+                    let textParts = contentArray.compactMap { item -> String? in
+                        if (item["type"] as? String) == "text" || item["text"] != nil {
+                            return item["text"] as? String
+                        }
+                        return nil
+                    }
+                    let text = textParts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !text.isEmpty {
+                        completion(.success(text))
+                        return
+                    }
+                }
+                completion(.failure(.emptyResponse))
+            }.resume()
+            return
+        }
+
         guard let url = url(config.baseURL, path: "chat/completions") else {
             completion(.failure(.invalidURL))
             return
@@ -342,8 +433,15 @@ final class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 15
-        if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        if config.isAnthropic {
+            if !config.apiKey.isEmpty {
+                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+            }
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        } else {
+            if !config.apiKey.isEmpty {
+                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+            }
         }
         session.dataTask(with: request) { data, response, error in
             if let error {
@@ -371,8 +469,15 @@ final class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 15
-        if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        if config.isAnthropic {
+            if !config.apiKey.isEmpty {
+                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+            }
+            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        } else {
+            if !config.apiKey.isEmpty {
+                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+            }
         }
         session.dataTask(with: request) { data, response, error in
             if let error {
@@ -399,7 +504,11 @@ final class AIService {
     }
 
     private func url(_ base: String, path: String) -> URL? {
-        URL(string: "\(base.trimmingCharacters(in: CharacterSet(charactersIn: "/ ")))/\(path)")
+        var trimmed = base.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+        if trimmed == "https://api.anthropic.com" || trimmed == "https://api.openai.com" {
+            trimmed += "/v1"
+        }
+        return URL(string: "\(trimmed)/\(path)")
     }
 
     private static func extractError(from data: Data) -> String? {

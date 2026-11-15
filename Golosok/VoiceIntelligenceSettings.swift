@@ -51,26 +51,26 @@ public enum VoiceStyle: String, CaseIterable, Identifiable {
 
 public enum VoiceEngine: String, CaseIterable, Identifiable {
     case airGapped = "airGapped"
-    case openRouter = "openRouter"
-    case ollama = "ollama"
+    case external = "external"
 
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
         case .airGapped: return String(localized: "Air-Gapped на устройстве")
-        case .openRouter: return String(localized: "OpenRouter")
-        case .ollama: return String(localized: "Ollama локально")
+        case .external: return String(localized: "Внешний")
         }
     }
 
     public var subtitle: String {
         switch self {
         case .airGapped: return String(localized: "100% оффлайн на Apple Silicon")
-        case .openRouter: return String(localized: "Быстрые облачные модели по ключу")
-        case .ollama: return String(localized: "Локальный сервер Ollama или LM Studio")
+        case .external: return String(localized: "Сервис по API из блока ИИ-провайдер")
         }
     }
+
+    public static let openRouter: VoiceEngine = .external
+    public static let ollama: VoiceEngine = .external
 }
 
 public final class VoiceIntelligenceSettings: ObservableObject {
@@ -123,7 +123,7 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     public func resetToDefaults() {
         self.mode = .smart
         self.style = .clean
-        self.engine = .openRouter
+        self.engine = .external
         self.openRouterModel = "anthropic/claude-haiku-5.5"
         self.localModel = "vikhr_1.5b"
         self.adaptiveTimeoutSeconds = 3.0
@@ -138,8 +138,12 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         let storedStyle = Self.defaults.string(forKey: "voice.style") ?? VoiceStyle.clean.rawValue
         self.style = VoiceStyle(rawValue: storedStyle) ?? .clean
 
-        let storedEngine = Self.defaults.string(forKey: "voice.engine") ?? VoiceEngine.openRouter.rawValue
-        self.engine = VoiceEngine(rawValue: storedEngine) ?? .openRouter
+        let storedEngine = Self.defaults.string(forKey: "voice.engine") ?? VoiceEngine.external.rawValue
+        if storedEngine == "airGapped" {
+            self.engine = .airGapped
+        } else {
+            self.engine = .external
+        }
 
         self.openRouterModel = Self.defaults.string(forKey: "voice.openRouterModel") ?? "anthropic/claude-haiku-5.5"
         let storedLocal = Self.defaults.string(forKey: "voice.localModel") ?? "vikhr_1.5b"
