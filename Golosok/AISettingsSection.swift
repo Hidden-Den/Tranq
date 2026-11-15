@@ -402,10 +402,11 @@ struct ActiveSLMModelStatusRow: View {
                 if slmStore.downloadingID == model.id {
                     VStack(alignment: .trailing, spacing: 4) {
                         ProgressView(value: slmStore.downloadProgress)
-                            .frame(width: 90)
+                            .frame(width: 140)
                         Text(LocalizedStringKey(slmStore.downloadStatus))
                             .font(UIStyleFont.body(size: 10, weight: .regular))
                             .foregroundColor(.uiMidGray)
+                            .monospacedDigit()
                     }
                     UIOutlineButton(title: "Отмена") {
                         slmStore.cancelDownload()

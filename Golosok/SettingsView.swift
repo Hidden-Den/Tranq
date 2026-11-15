@@ -353,7 +353,7 @@ struct ActiveModelStatusRow: View {
 
     var body: some View {
         if let active = models.model(named: models.activeModelID), !active.isBundled {
-            HStack {
+            HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(LocalizedStringKey(active.name))
                         .font(UIStyleFont.body(size: 13, weight: .medium))
@@ -362,13 +362,16 @@ struct ActiveModelStatusRow: View {
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 if models.downloadingID == active.id {
-                    ProgressView(value: models.downloadProgress)
-                        .frame(width: 90)
-                    Text(LocalizedStringKey(models.downloadStatus))
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
-                        .foregroundColor(.uiMidGray)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        ProgressView(value: models.downloadProgress)
+                            .frame(width: 140)
+                        Text(LocalizedStringKey(models.downloadStatus))
+                            .font(UIStyleFont.body(size: 10, weight: .regular))
+                            .foregroundColor(.uiMidGray)
+                            .monospacedDigit()
+                    }
                     UIOutlineButton(title: "Отмена") { models.cancel() }
                 } else if models.isDownloaded(active.id) {
                     Text(LocalizedStringKey("RecognitionModel.Installed"))

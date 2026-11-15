@@ -56,6 +56,9 @@ final class ModelStore: NSObject, ObservableObject {
 
     private var session: URLSession?
     private var task: URLSessionDownloadTask?
+    private var lastSpeedCheckTime: CFAbsoluteTime = 0
+    private var bytesSinceLastCheck: Int64 = 0
+    private var currentSpeedMBs: Double = 0.0
 
     override init() {
         super.init()
@@ -107,6 +110,9 @@ final class ModelStore: NSObject, ObservableObject {
         downloadStatus = "DownloadStatus.Connecting"
         downloadingID = id
         downloadProgress = 0
+        lastSpeedCheckTime = CFAbsoluteTimeGetCurrent()
+        bytesSinceLastCheck = 0
+        currentSpeedMBs = 0.0
         AppLogger.shared.info("Models", "Начало скачивания модели", details: "\(id) — \(sizeMB(for: model))")
         task = session?.downloadTask(with: url)
         task?.resume()
@@ -119,6 +125,9 @@ final class ModelStore: NSObject, ObservableObject {
         task = nil
         downloadingID = nil
         downloadStatus = ""
+        lastSpeedCheckTime = 0
+        bytesSinceLastCheck = 0
+        currentSpeedMBs = 0.0
     }
 
     func remove(_ id: String) {
@@ -133,12 +142,36 @@ final class ModelStore: NSObject, ObservableObject {
 extension ModelStore: URLSessionDownloadDelegate {
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         guard totalBytesExpectedToWrite > 0 else { return }
+
+        bytesSinceLastCheck += bytesWritten
+        let now = CFAbsoluteTimeGetCurrent()
+        let elapsed = now - lastSpeedCheckTime
+
+        if elapsed >= 0.5 {
+            let bytesPerSec = Double(bytesSinceLastCheck) / elapsed
+            let instantMBs = bytesPerSec / (1024.0 * 1024.0)
+            currentSpeedMBs = currentSpeedMBs == 0 ? instantMBs : (currentSpeedMBs * 0.7 + instantMBs * 0.3)
+            lastSpeedCheckTime = now
+            bytesSinceLastCheck = 0
+        }
+
+        let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+        let mbW = Double(totalBytesWritten) / (1024.0 * 1024.0)
+        let mbT = Double(totalBytesExpectedToWrite) / (1024.0 * 1024.0)
+        let pct = Int(progress * 100.0)
+
+        let speedStr: String
+        if currentSpeedMBs >= 0.1 {
+            speedStr = String(format: " — %.1f МБ/с", currentSpeedMBs)
+        } else {
+            speedStr = ""
+        }
+
+        let statusText = String(format: "%.0f / %.0f МБ — %d%%%@", mbW, mbT, pct, speedStr)
+
         DispatchQueue.main.async {
-            self.downloadProgress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-            let mbW = Double(totalBytesWritten) / (1024.0 * 1024.0)
-            let mbT = Double(totalBytesExpectedToWrite) / (1024.0 * 1024.0)
-            let pct = Int(self.downloadProgress * 100.0)
-            self.downloadStatus = String(format: "%.0f / %.0f МБ (%d%%)", mbW, mbT, pct)
+            self.downloadProgress = progress
+            self.downloadStatus = statusText
         }
     }
 
