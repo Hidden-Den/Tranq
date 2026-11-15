@@ -76,7 +76,17 @@ struct VoiceIntelligencePhase3Tests {
         #expect(catalog.contains { $0.id == "vikhr_0.5b" })
         #expect(catalog.contains { $0.id == "qwen_0.5b" })
         #expect(catalog.contains { $0.id == "llama_3.2_1b" })
-        #expect(catalog.contains { $0.id == "qwen_3.5_1.5b" })
+        #expect(catalog.contains { $0.id == "qwen_1.5b" })
+
+        // Проверка fail-safe наличия нескольких источников у каждой модели
+        for model in catalog {
+            #expect(model.downloadURLs.count >= 2)
+            #expect(model.downloadURL != nil)
+        }
+
+        // Проверка совместимости с legacy ID
+        let legacyModel = SLMModelStore.shared.model(named: "qwen_3.5_1.5b")
+        #expect(legacyModel?.id == "qwen_1.5b")
     }
 
     @Test func slmModelPathCalculationIsClean() {
@@ -85,6 +95,16 @@ struct VoiceIntelligencePhase3Tests {
         #expect(path.path.contains("Golosok"))
         #expect(path.path.contains("models"))
         #expect(path.lastPathComponent == model.fileName)
+    }
+
+    @Test func slmModelStoreSupportsMultiSourceFailSafe() {
+        for model in SLMModelStore.catalog {
+            #expect(model.downloadURLs.count >= 3, "Каждая модель должна иметь как минимум 3 надежных источника")
+            for url in model.downloadURLs {
+                #expect(url.scheme == "https")
+                #expect(url.host?.contains("huggingface.co") == true)
+            }
+        }
     }
 
     // MARK: - LocalSynthServiceClient fallback

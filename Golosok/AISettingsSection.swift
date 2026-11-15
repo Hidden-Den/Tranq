@@ -386,22 +386,27 @@ struct ActiveSLMModelStatusRow: View {
 
     var body: some View {
         if let model = slmStore.model(named: modelID) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(LocalizedStringKey(model.name))
                         .font(UIStyleFont.body(size: 13, weight: .medium))
                         .foregroundColor(.uiInk)
                     Text("\(model.sizeMB) МБ — Apple Metal")
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
-                }
-                Spacer()
-                if slmStore.downloadingID == model.id {
-                    ProgressView(value: slmStore.downloadProgress)
-                        .frame(width: 90)
-                    Text(LocalizedStringKey(slmStore.downloadStatus))
+                    Text(LocalizedStringKey(model.description))
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
+                }
+                Spacer(minLength: 8)
+                if slmStore.downloadingID == model.id {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        ProgressView(value: slmStore.downloadProgress)
+                            .frame(width: 90)
+                        Text(LocalizedStringKey(slmStore.downloadStatus))
+                            .font(UIStyleFont.body(size: 10, weight: .regular))
+                            .foregroundColor(.uiMidGray)
+                    }
                     UIOutlineButton(title: "Отмена") {
                         slmStore.cancelDownload()
                     }
