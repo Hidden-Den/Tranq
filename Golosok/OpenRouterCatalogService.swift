@@ -20,13 +20,14 @@ public final class OpenRouterCatalogService: ObservableObject {
     @Published public private(set) var models: [OpenRouterModelInfo] = []
     @Published public private(set) var isLoading: Bool = false
 
-    /// Проверенные модели с ультранизкой задержкой для голосового ввода
+    /// Проверенные современные модели с ультранизкой задержкой для голосового ввода
     public static let defaultModels: [OpenRouterModelInfo] = [
         OpenRouterModelInfo(id: "anthropic/claude-haiku-5.5", name: "Claude Haiku 5.5", description: "Сверхбыстрый синтез мыслей"),
-        OpenRouterModelInfo(id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", description: "Минимальное время отклика TTFT"),
-        OpenRouterModelInfo(id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", description: "Глубокая семантическая структура"),
-        OpenRouterModelInfo(id: "deepseek/deepseek-chat", name: "DeepSeek V3", description: "Экономичный баланс скорости и качества"),
-        OpenRouterModelInfo(id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B", description: "Точная русская грамматика")
+        OpenRouterModelInfo(id: "google/gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", description: "Минимальное время отклика TTFT"),
+        OpenRouterModelInfo(id: "deepseek/deepseek-v4.1-flash", name: "DeepSeek V4.1 Flash", description: "Высокая скорость генерации и точность"),
+        OpenRouterModelInfo(id: "qwen/qwen-3.8-omni-flash", name: "Qwen 3.8 Omni Flash", description: "Современная русская грамматика"),
+        OpenRouterModelInfo(id: "openai/gpt-6-luna", name: "GPT 6 Luna", description: "Быстрое редактирование текста"),
+        OpenRouterModelInfo(id: "meta-llama/llama-4-scout", name: "Llama 4 Scout", description: "Глубокая смысловая структура")
     ]
 
     private let cacheURL: URL?

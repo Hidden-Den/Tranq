@@ -43,7 +43,10 @@ struct VoiceIntelligencePhase3Tests {
         let catalog = SLMModelStore.catalog
         #expect(!catalog.isEmpty)
         #expect(catalog.contains { $0.id == "vikhr_1.5b" })
+        #expect(catalog.contains { $0.id == "vikhr_0.5b" })
         #expect(catalog.contains { $0.id == "qwen_0.5b" })
+        #expect(catalog.contains { $0.id == "llama_3.2_1b" })
+        #expect(catalog.contains { $0.id == "qwen_3.5_1.5b" })
     }
 
     @Test func slmModelPathCalculationIsClean() {

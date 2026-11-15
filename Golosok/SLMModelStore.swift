@@ -38,12 +38,36 @@ public final class SLMModelStore: NSObject, ObservableObject {
             description: "Оптимизирована для русской речи и очистки от мусора"
         ),
         SLMModel(
+            id: "vikhr_0.5b",
+            name: "Vikhr 0.5B Q4",
+            fileName: "vikhr-qwen-2.5-0.5b-instruct-q4_k_m.gguf",
+            sizeMB: 350,
+            downloadURL: URL(string: "https://huggingface.co/tinyopsec/Vikhr-Qwen-2.5-0.5b-Instruct-GGUF/resolve/main/vikhr-qwen-2.5-0.5b-instruct-q4_k_m.gguf"),
+            description: "Русскоязычный тюнинг в ультракомпактном размере"
+        ),
+        SLMModel(
             id: "qwen_0.5b",
             name: "Qwen 2.5 0.5B Q4",
             fileName: "qwen2.5-0.5b-instruct-q4_k_m.gguf",
             sizeMB: 390,
             downloadURL: URL(string: "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf"),
             description: "Ультралегкая модель для базовых Mac с 8 ГБ памяти"
+        ),
+        SLMModel(
+            id: "llama_3.2_1b",
+            name: "Llama 3.2 1B Q4",
+            fileName: "llama-3.2-1b-instruct-q4_k_m.gguf",
+            sizeMB: 750,
+            downloadURL: URL(string: "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf"),
+            description: "Компактная быстрая мультиязычная модель"
+        ),
+        SLMModel(
+            id: "qwen_3.5_1.5b",
+            name: "Qwen 3.5 1.5B Q4",
+            fileName: "qwen3.5-1.5b-instruct-q4_k_m.gguf",
+            sizeMB: 1100,
+            downloadURL: URL(string: "https://huggingface.co/Qwen/Qwen3.5-1.5B-Instruct-GGUF/resolve/main/qwen3.5-1.5b-instruct-q4_k_m.gguf"),
+            description: "Новейшая архитектура с улучшенным контекстом"
         )
     ]
 
