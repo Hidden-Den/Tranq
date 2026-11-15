@@ -75,6 +75,12 @@ public final class ThoughtSynthesizer {
                 if !settings.userTerms.isEmpty {
                     systemPrompt += "\n\nПользовательские термины: " + settings.userTerms.joined(separator: ", ")
                 }
+                if PersonalizationEngine.shared.isLearningEnabled {
+                    let dynamicContext = PersonalizationEngine.shared.buildPromptContext(for: stageOneText)
+                    if !dynamicContext.isEmpty {
+                        systemPrompt += "\n\n" + dynamicContext
+                    }
+                }
 
                 AppLogger.shared.info(
                     "Pipeline",
@@ -90,11 +96,12 @@ public final class ThoughtSynthesizer {
                     timeout: settings.adaptiveTimeoutSeconds
                 ) {
                     let cleaned = Self.stripThinkingTags(from: synthResult)
+                    let customTerms = PersonalizationEngine.shared.allApprovedTerms(additionalTerms: settings.userTerms)
                     let validation = GroundingValidator.validate(
                         input: stageOneText,
                         output: cleaned,
                         style: style,
-                        customTerms: Set(settings.userTerms)
+                        customTerms: customTerms
                     )
                     switch validation {
                     case .valid(let text):
@@ -354,13 +361,13 @@ public final class ThoughtSynthesizer {
                     return
                 }
 
-                // Детерминированный Grounding Validator с учетом стиля и словаря
-                let userTerms = VoiceIntelligenceSettings.shared.userTerms
+                // Детерминированный Grounding Validator с учетом стиля, словаря и персонализации
+                let customTerms = PersonalizationEngine.shared.allApprovedTerms(additionalTerms: VoiceIntelligenceSettings.shared.userTerms)
                 let validation = GroundingValidator.validate(
                     input: stageOneText,
                     output: cleanContent,
                     style: style,
-                    customTerms: Set(userTerms)
+                    customTerms: customTerms
                 )
                 switch validation {
                 case .valid(let validatedText):
@@ -434,7 +441,14 @@ public final class ThoughtSynthesizer {
         }
 
         if !settings.userTerms.isEmpty {
-            systemPrompt += "\n\nПользовательские термины (сохраняй точное написание): " + settings.userTerms.joined(separator: ", ")
+            systemPrompt += "\n\nПользовательские термины: " + settings.userTerms.joined(separator: ", ")
+        }
+
+        if PersonalizationEngine.shared.isLearningEnabled {
+            let dynamicContext = PersonalizationEngine.shared.buildPromptContext(for: text)
+            if !dynamicContext.isEmpty {
+                systemPrompt += "\n\n" + dynamicContext
+            }
         }
 
         let userPrompt = "<transcript>\(text)</transcript>"

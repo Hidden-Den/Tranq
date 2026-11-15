@@ -633,6 +633,9 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
         if isFileImport { try? FileManager.default.removeItem(at: sourceURL) }
         self.history.insert(newItem, at: 0)
         
+        // Пассивное обучение словаря на речи пользователя
+        PersonalizationEngine.shared.observeSpeech(text: finalText)
+        
         NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: newItem.id)
         
         if isFileImport || !self.autoPasteEnabled {
@@ -691,12 +694,17 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
     func replaceNoteText(id: UUID, text: String) {
         guard let idx = history.firstIndex(where: { $0.id == id }) else { return }
         let item = history[idx]
+        let oldText = item.text
         history[idx] = TranscriptionItem(id: item.id, date: item.date, text: text, duration: item.duration, speedup: item.speedup, isUnread: item.isUnread)
+        if oldText != text {
+            PersonalizationEngine.shared.learnFromEdit(original: oldText, edited: text, noteId: id)
+        }
     }
 
     func replaceRangeInNote(id: UUID, range: NSRange, newText: String) {
         guard let idx = history.firstIndex(where: { $0.id == id }) else { return }
         let item = history[idx]
+        let oldText = item.text
         let nsText = item.text as NSString
         guard range.location != NSNotFound,
               range.location >= 0,
@@ -705,6 +713,9 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
               range.length <= nsText.length - range.location else { return }
         let result = nsText.replacingCharacters(in: range, with: newText)
         history[idx] = TranscriptionItem(id: item.id, date: item.date, text: result, duration: item.duration, speedup: item.speedup, isUnread: item.isUnread)
+        if oldText != result {
+            PersonalizationEngine.shared.learnFromEdit(original: oldText, edited: result, noteId: id)
+        }
     }
 
     @discardableResult
