@@ -301,6 +301,46 @@ public final class PersonalizationEngine: ObservableObject {
 
     // MARK: - Управление памятью
 
+    public func addManualTerm(_ term: String) {
+        let cleaned = Self.cleanWord(term)
+        guard !cleaned.isEmpty else { return }
+        lock.lock()
+        let lower = cleaned.lowercased()
+        if let idx = learnedTerms.firstIndex(where: { $0.term.lowercased() == lower }) {
+            learnedTerms[idx].term = cleaned
+            learnedTerms[idx].isManual = true
+            learnedTerms[idx].lastUsed = Date()
+        } else {
+            let newTerm = LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true)
+            learnedTerms.append(newTerm)
+        }
+        lock.unlock()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        scheduleSave()
+        VoiceIntelligenceSettings.shared.addUserTerm(cleaned)
+    }
+
+    public func addManualRule(pattern: String, replacement: String) {
+        let pClean = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rClean = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !pClean.isEmpty else { return }
+        lock.lock()
+        if let idx = correctionRules.firstIndex(where: { $0.pattern.lowercased() == pClean.lowercased() }) {
+            correctionRules[idx].replacement = rClean
+            correctionRules[idx].lastUsed = Date()
+        } else {
+            let rule = CorrectionRule(pattern: pClean, replacement: rClean, count: 5, lastUsed: Date(), source: .manual)
+            correctionRules.append(rule)
+        }
+        lock.unlock()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+        scheduleSave()
+    }
+
     public func removeTerm(_ term: String) {
         lock.lock()
         learnedTerms.removeAll { $0.term.lowercased() == term.lowercased() }
@@ -309,6 +349,7 @@ public final class PersonalizationEngine: ObservableObject {
             self.objectWillChange.send()
         }
         scheduleSave()
+        VoiceIntelligenceSettings.shared.removeUserTerm(term)
     }
 
     public func removeRule(id: UUID) {
@@ -517,6 +558,14 @@ public final class PersonalizationEngine: ObservableObject {
             self.learnedTerms = snapshot.terms
             if self.correctionRules.isEmpty && self.learnedTerms.isEmpty {
                 self.seedDefaultRules()
+            }
+            // Синхронизация с историческими терминами пользователя из настроек
+            let userTerms = VoiceIntelligenceSettings.shared.userTerms
+            for term in userTerms {
+                let cleaned = Self.cleanWord(term)
+                if !cleaned.isEmpty && !self.learnedTerms.contains(where: { $0.term.lowercased() == cleaned.lowercased() }) {
+                    self.learnedTerms.append(LearnedTerm(term: cleaned, count: 5, lastUsed: Date(), isManual: true))
+                }
             }
             self.lock.unlock()
 

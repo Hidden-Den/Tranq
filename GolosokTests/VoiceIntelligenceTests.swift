@@ -158,7 +158,7 @@ struct VoiceIntelligenceTests {
         #expect(settings.adaptiveTimeoutSeconds == 3.0)
         #expect(VoiceInputMode.smart.title == "Умная речь")
         #expect(VoiceStyle.clean.title == "Чистая мысль")
-        #expect(VoiceEngine.airGapped.title == "Air-Gapped на устройстве")
+        #expect(VoiceEngine.airGapped.title == "Air-Gapped")
         #expect(VoiceEngine.external.title == "Внешний")
     }
 }

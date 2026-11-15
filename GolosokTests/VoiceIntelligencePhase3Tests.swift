@@ -216,6 +216,6 @@ struct VoiceIntelligencePhase3Tests {
         }
 
         #expect(VoiceEngine.external.title == "Внешний")
-        #expect(VoiceEngine.airGapped.title == "Air-Gapped на устройстве")
+        #expect(VoiceEngine.airGapped.title == "Air-Gapped")
     }
 }

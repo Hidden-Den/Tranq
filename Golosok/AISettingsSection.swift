@@ -115,14 +115,6 @@ struct AIInputField: View {
 
 struct VoiceIntelligenceSection: View {
     @ObservedObject var settings = VoiceIntelligenceSettings.shared
-    @State private var newTerm: String = ""
-
-    private func addTerm() {
-        let cleaned = newTerm.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleaned.isEmpty else { return }
-        settings.addUserTerm(cleaned)
-        newTerm = ""
-    }
 
     var body: some View {
         UICard {
@@ -235,107 +227,20 @@ struct VoiceIntelligenceSection: View {
 
                     Divider().background(Color.uiHairline)
 
-                    // Словарь терминов
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Словарь терминов")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Защита специфических слов и имен")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            Spacer()
-                        }
-
-                        HStack(spacing: 8) {
-                            TextField("Новый термин", text: $newTerm)
-                                .textFieldStyle(PlainTextFieldStyle())
-                                .font(UIStyleFont.body(size: 12, weight: .regular))
+                    // Словарь и адаптивное обучение
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Словарь и обучение")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
                                 .foregroundColor(.uiInk)
-                                .padding(6)
-                                .background(Color.uiCanvas)
-                                .cornerRadius(6)
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                                .onSubmit {
-                                    addTerm()
-                                }
-
-                            Button(action: addTerm) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.uiInk)
-                                    .frame(width: 24, height: 24)
-                            }
-                            .buttonStyle(TactileButtonStyle())
-                            .background(Color.uiPaper)
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                            .disabled(newTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            Text("Справочник терминов, автозамены речи и системный промпт")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
                         }
-
-                        if !settings.userTerms.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(settings.userTerms, id: \.self) { term in
-                                        HStack(spacing: 4) {
-                                            Text(term)
-                                                .font(UIStyleFont.body(size: 11, weight: .medium))
-                                                .foregroundColor(.uiInk)
-                                            Button(action: { settings.removeUserTerm(term) }) {
-                                                Image(systemName: "xmark")
-                                                    .font(.system(size: 8, weight: .bold))
-                                                    .foregroundColor(.uiMidGray)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                            .accessibilityLabel("Удалить термин \(term)")
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.uiCanvas)
-                                        .cornerRadius(6)
-                                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                                    }
-                                }
-                            }
-                            .padding(.top, 2)
+                        Spacer()
+                        UIOutlineButton(title: "Открыть словарь") {
+                            NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
                         }
-                    }
-
-                    Divider().background(Color.uiHairline)
-
-                    // Адаптивное обучение
-                    AdaptiveLearningSubSection()
-
-                    Divider().background(Color.uiHairline)
-
-                    // Системный промпт
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Системный промпт")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Инструкция для языковой модели")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            Spacer()
-                            UIOutlineButton(title: "По умолчанию") {
-                                settings.customSystemPrompt = VoiceIntelligenceSettings.defaultCustomPrompt
-                            }
-                        }
-
-                        TextEditor(text: $settings.customSystemPrompt)
-                            .font(.system(size: 11, weight: .regular, design: .monospaced))
-                            .foregroundColor(.uiInk)
-                            .lineSpacing(2)
-                            .padding(6)
-                            .frame(minHeight: 120, maxHeight: 170)
-                            .background(Color.uiCanvas)
-                            .cornerRadius(6)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
                     }
                 }
             }
@@ -423,119 +328,4 @@ struct ActiveSLMModelStatusRow: View {
     }
 }
 
-// MARK: - Подсекция «Адаптивное обучение»
 
-struct AdaptiveLearningSubSection: View {
-    @ObservedObject var engine = PersonalizationEngine.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Адаптивное обучение")
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
-                        .foregroundColor(.uiInk)
-                    Text("Учет манеры речи и правок")
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
-                        .foregroundColor(.uiMidGray)
-                }
-                Spacer()
-                Toggle(String(localized: "Адаптивное обучение"), isOn: $engine.isLearningEnabled)
-                    .labelsHidden()
-                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
-            }
-
-            if engine.isLearningEnabled {
-                HStack(spacing: 8) {
-                    Text("Терминов: \(engine.learnedTerms.count) • Правок: \(engine.correctionRules.count)")
-                        .font(UIStyleFont.body(size: 11, weight: .medium))
-                        .foregroundColor(.uiMidGray)
-
-                    Spacer()
-
-                    if !engine.learnedTerms.isEmpty || !engine.correctionRules.isEmpty {
-                        UIOutlineButton(title: "Очистить память") {
-                            engine.resetMemory()
-                        }
-                    }
-                }
-                .padding(.top, 2)
-
-                if !engine.learnedTerms.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Изученные термины")
-                            .font(UIStyleFont.body(size: 10, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundColor(.uiMidGray)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                ForEach(engine.learnedTerms) { term in
-                                    HStack(spacing: 4) {
-                                        Text(term.term)
-                                            .font(UIStyleFont.body(size: 11, weight: .medium))
-                                            .foregroundColor(.uiInk)
-                                        Text("\(term.count)")
-                                            .font(UIStyleFont.body(size: 9, weight: .semibold))
-                                            .foregroundColor(.uiMidGray)
-                                        Button(action: { engine.removeTerm(term.term) }) {
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 8, weight: .bold))
-                                                .foregroundColor(.uiMidGray)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .accessibilityLabel("Удалить термин \(term.term)")
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.uiCanvas)
-                                    .cornerRadius(6)
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if !engine.correctionRules.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Правила правок")
-                            .font(UIStyleFont.body(size: 10, weight: .bold))
-                            .tracking(0.5)
-                            .foregroundColor(.uiMidGray)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                ForEach(engine.correctionRules) { rule in
-                                    HStack(spacing: 4) {
-                                        Text(rule.pattern)
-                                            .font(UIStyleFont.body(size: 11, weight: .regular))
-                                            .foregroundColor(.uiMidGray)
-                                        Image(systemName: "arrow.right")
-                                            .font(.system(size: 8, weight: .bold))
-                                            .foregroundColor(.uiMidGray)
-                                        Text(rule.replacement.isEmpty ? "удаление" : rule.replacement)
-                                            .font(UIStyleFont.body(size: 11, weight: .medium))
-                                            .foregroundColor(.uiInk)
-                                        Button(action: { engine.removeRule(id: rule.id) }) {
-                                            Image(systemName: "xmark")
-                                                .font(.system(size: 8, weight: .bold))
-                                                .foregroundColor(.uiMidGray)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .accessibilityLabel("Удалить правило \(rule.pattern)")
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.uiCanvas)
-                                    .cornerRadius(6)
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

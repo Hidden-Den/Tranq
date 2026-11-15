@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-enum MainTab { case history, dashboard, settings }
+enum MainTab { case vocabulary, history, dashboard, settings }
 
 struct NoteSelection: Equatable {
     let noteID: UUID
@@ -543,6 +543,7 @@ struct ContentView: View {
     
     private var currentTabTitle: String {
         switch currentTab {
+        case .vocabulary: return String(localized: "Словарь")
         case .history: return String(localized: "История")
         case .dashboard: return String(localized: "Борд")
         case .settings: return String(localized: "Настройки")
@@ -626,6 +627,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
             currentTab = .settings
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
+            currentTab = .vocabulary
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
             toggleSidebar()
         }
@@ -707,6 +711,7 @@ struct ContentView: View {
                 
                 Group {
                     switch currentTab {
+                    case .vocabulary: VocabularyView()
                     case .history: historyDetailView
                     case .dashboard: DashboardView()
                     case .settings: SettingsView()
@@ -760,6 +765,10 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 14) {
             sidebarHeader
             VStack(spacing: 4) {
+                SidebarTabButton(title: "Словарь", icon: "character.book.closed.fill", isActive: currentTab == .vocabulary) {
+                    currentTab = .vocabulary
+                    searchText = ""
+                }
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
                     currentTab = .history
                     selectedItemId = nil

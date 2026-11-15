@@ -35,7 +35,7 @@ public enum VoiceStyle: String, CaseIterable, Identifiable {
         case .clean: return String(localized: "Чистая мысль")
         case .bullets: return String(localized: "Тезисы")
         case .formal: return String(localized: "Деловой стиль")
-        case .prompt: return String(localized: "Промпт")
+        case .prompt: return String(localized: "Промпт для ИИ")
         }
     }
 
@@ -57,7 +57,7 @@ public enum VoiceEngine: String, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .airGapped: return String(localized: "Air-Gapped на устройстве")
+        case .airGapped: return String(localized: "Air-Gapped")
         case .external: return String(localized: "Внешний")
         }
     }

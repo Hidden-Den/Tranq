@@ -113,6 +113,21 @@ final class PersonalizationEngineTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
 
+    func testAddManualTermAndRule() {
+        let engine = PersonalizationEngine.shared
+        engine.addManualTerm("FastAPI")
+        engine.addManualRule(pattern: "фастапи", replacement: "FastAPI")
+
+        XCTAssertTrue(engine.learnedTerms.contains(where: { $0.term == "FastAPI" && $0.isManual }))
+        XCTAssertTrue(engine.correctionRules.contains(where: { $0.pattern == "фастапи" && $0.replacement == "FastAPI" }))
+
+        let approved = engine.allApprovedTerms()
+        XCTAssertTrue(approved.contains("FastAPI"))
+
+        engine.removeTerm("FastAPI")
+        XCTAssertFalse(engine.learnedTerms.contains(where: { $0.term == "FastAPI" }))
+    }
+
     func testResetMemoryClearsEverything() {
         let engine = PersonalizationEngine.shared
         engine.learnFromEdit(original: "тест 1", edited: "тест 2")
