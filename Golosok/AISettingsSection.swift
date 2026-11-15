@@ -319,32 +319,47 @@ struct ActiveSLMModelStatusRow: View {
                     Text(LocalizedStringKey(model.name))
                         .font(UIStyleFont.body(size: 13, weight: .medium))
                         .foregroundColor(.uiInk)
+                        .lineLimit(1)
                     Text("\(model.sizeMB) МБ — Apple Metal")
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
+                        .lineLimit(1)
                     Text(LocalizedStringKey(model.description))
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
+                .layoutPriority(1)
+
                 Spacer(minLength: 8)
+
                 if slmStore.downloadingID == model.id {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        ProgressView(value: slmStore.downloadProgress)
-                            .frame(width: 140)
-                        Text(LocalizedStringKey(slmStore.downloadStatus))
-                            .font(UIStyleFont.body(size: 10, weight: .regular))
-                            .foregroundColor(.uiMidGray)
-                            .monospacedDigit()
-                    }
-                    UIOutlineButton(title: "Отмена") {
-                        slmStore.cancelDownload()
+                    HStack(spacing: 8) {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            ProgressView(value: slmStore.downloadProgress)
+                                .frame(width: 170)
+                            Text(LocalizedStringKey(slmStore.downloadStatus))
+                                .font(UIStyleFont.body(size: 10, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
+                        .frame(width: 170, alignment: .trailing)
+
+                        UIOutlineButton(title: "Отмена") {
+                            slmStore.cancelDownload()
+                        }
                     }
                 } else if slmStore.isModelDownloaded(model) {
-                    Text(LocalizedStringKey("RecognitionModel.Installed"))
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
-                        .foregroundColor(.uiMidGray)
-                    UIOutlineButton(title: "Удалить") {
-                        slmStore.delete(model: model)
+                    HStack(spacing: 8) {
+                        Text(LocalizedStringKey("RecognitionModel.Installed"))
+                            .font(UIStyleFont.body(size: 11, weight: .regular))
+                            .foregroundColor(.uiMidGray)
+                            .lineLimit(1)
+                        UIOutlineButton(title: "Удалить") {
+                            slmStore.delete(model: model)
+                        }
                     }
                 } else {
                     UIOutlineButton(title: "Скачать") {
@@ -352,6 +367,7 @@ struct ActiveSLMModelStatusRow: View {
                     }
                 }
             }
+            .frame(minHeight: 52)
         }
     }
 }

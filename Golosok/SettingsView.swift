@@ -358,30 +358,44 @@ struct ActiveModelStatusRow: View {
                     Text(LocalizedStringKey(active.name))
                         .font(UIStyleFont.body(size: 13, weight: .medium))
                         .foregroundColor(.uiInk)
+                        .lineLimit(1)
                     Text("\(active.sizeMB) МБ — Apple Metal")
                         .font(UIStyleFont.body(size: 11, weight: .regular))
                         .foregroundColor(.uiMidGray)
+                        .lineLimit(1)
                 }
+                .layoutPriority(1)
+
                 Spacer(minLength: 8)
+
                 if models.downloadingID == active.id {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        ProgressView(value: models.downloadProgress)
-                            .frame(width: 140)
-                        Text(LocalizedStringKey(models.downloadStatus))
-                            .font(UIStyleFont.body(size: 10, weight: .regular))
-                            .foregroundColor(.uiMidGray)
-                            .monospacedDigit()
+                    HStack(spacing: 8) {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            ProgressView(value: models.downloadProgress)
+                                .frame(width: 170)
+                            Text(LocalizedStringKey(models.downloadStatus))
+                                .font(UIStyleFont.body(size: 10, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
+                        .frame(width: 170, alignment: .trailing)
+
+                        UIOutlineButton(title: "Отмена") { models.cancel() }
                     }
-                    UIOutlineButton(title: "Отмена") { models.cancel() }
                 } else if models.isDownloaded(active.id) {
-                    Text(LocalizedStringKey("RecognitionModel.Installed"))
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
-                        .foregroundColor(.uiMidGray)
-                    UIOutlineButton(title: "Удалить") { models.remove(active.id) }
+                    HStack(spacing: 8) {
+                        Text(LocalizedStringKey("RecognitionModel.Installed"))
+                            .font(UIStyleFont.body(size: 11, weight: .regular))
+                            .foregroundColor(.uiMidGray)
+                            .lineLimit(1)
+                        UIOutlineButton(title: "Удалить") { models.remove(active.id) }
+                    }
                 } else {
                     UIOutlineButton(title: "Скачать") { models.download(active.id) }
                 }
             }
+            .frame(minHeight: 44)
         }
     }
 }
