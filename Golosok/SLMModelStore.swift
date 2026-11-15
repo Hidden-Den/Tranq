@@ -135,23 +135,32 @@ public final class SLMModelStore: NSObject, ObservableObject {
         AppLogger.shared.info("SLMModelStore", "Начата загрузка модели: \(model.name)")
     }
 
+    /// Поиск модели в каталоге по ID или имени файла
+    public func model(named id: String) -> SLMModel? {
+        Self.catalog.first(where: { $0.id == id || $0.fileName == id })
+    }
+
     /// Отмена текущей загрузки модели
     public func cancelDownload() {
         downloadTask?.cancel()
         downloadTask = nil
         downloadSession?.invalidateAndCancel()
         downloadSession = nil
-        downloadingID = nil
-        downloadProgress = 0.0
-        downloadStatus = ""
-        objectWillChange.send()
+        DispatchQueue.main.async {
+            self.downloadingID = nil
+            self.downloadProgress = 0.0
+            self.downloadStatus = ""
+            self.objectWillChange.send()
+        }
     }
 
     /// Удаление модели для освобождения места на накопителе
     public func delete(model: SLMModel) {
         let url = localFileURL(for: model)
         try? FileManager.default.removeItem(at: url)
-        objectWillChange.send()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
         AppLogger.shared.info("SLMModelStore", "Модель удалена: \(model.name)")
     }
 }

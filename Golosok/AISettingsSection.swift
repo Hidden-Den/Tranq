@@ -264,6 +264,29 @@ struct VoiceIntelligenceSection: View {
                         }
                     }
 
+                    if settings.engine == .airGapped {
+                        Divider().background(Color.uiHairline)
+
+                        // Языковая модель SLM на устройстве
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Языковая модель")
+                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .foregroundColor(.uiInk)
+                                Text("Оффлайн SLM для Apple Silicon")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            Spacer()
+                            UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
+                                .init(LocalizedStringKey(m.name), value: m.id)
+                            }, width: 210)
+                        }
+
+                        ActiveSLMModelStatusRow(modelID: settings.localModel)
+                            .padding(.vertical, 4)
+                    }
+
                     Divider().background(Color.uiHairline)
 
                     // Адаптация под приложения
@@ -350,6 +373,48 @@ struct VoiceIntelligenceSection: View {
                             }
                             .padding(.top, 2)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ActiveSLMModelStatusRow: View {
+    let modelID: String
+    @ObservedObject var slmStore = SLMModelStore.shared
+
+    var body: some View {
+        if let model = slmStore.model(named: modelID) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(model.name))
+                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .foregroundColor(.uiInk)
+                    Text("\(model.sizeMB) МБ — Apple Metal")
+                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                }
+                Spacer()
+                if slmStore.downloadingID == model.id {
+                    ProgressView(value: slmStore.downloadProgress)
+                        .frame(width: 90)
+                    Text(LocalizedStringKey(slmStore.downloadStatus))
+                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                    UIOutlineButton(title: "Отмена") {
+                        slmStore.cancelDownload()
+                    }
+                } else if slmStore.isModelDownloaded(model) {
+                    Text(LocalizedStringKey("RecognitionModel.Installed"))
+                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .foregroundColor(.uiMidGray)
+                    UIOutlineButton(title: "Удалить") {
+                        slmStore.delete(model: model)
+                    }
+                } else {
+                    UIOutlineButton(title: "Скачать") {
+                        slmStore.startDownload(model: model)
                     }
                 }
             }

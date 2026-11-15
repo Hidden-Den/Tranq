@@ -148,6 +148,10 @@ struct VoiceIntelligenceTests {
 
     @Test func defaultSettingsAreCorrect() {
         let settings = VoiceIntelligenceSettings.shared
+        let savedEngine = settings.engine
+        settings.resetToDefaults()
+        defer { settings.engine = savedEngine }
+
         #expect(settings.mode == .smart)
         #expect(settings.style == .clean)
         #expect(settings.engine == .openRouter)

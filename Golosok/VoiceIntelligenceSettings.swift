@@ -120,6 +120,17 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         userTerms.removeAll { $0 == term }
     }
 
+    public func resetToDefaults() {
+        self.mode = .smart
+        self.style = .clean
+        self.engine = .openRouter
+        self.openRouterModel = "anthropic/claude-haiku-5.5"
+        self.localModel = "vikhr_1.5b"
+        self.adaptiveTimeoutSeconds = 3.0
+        self.adaptiveAppProfilesEnabled = true
+        self.userTerms = []
+    }
+
     private init() {
         let storedMode = Self.defaults.string(forKey: "voice.mode") ?? VoiceInputMode.smart.rawValue
         self.mode = VoiceInputMode(rawValue: storedMode) ?? .smart
@@ -131,7 +142,12 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         self.engine = VoiceEngine(rawValue: storedEngine) ?? .openRouter
 
         self.openRouterModel = Self.defaults.string(forKey: "voice.openRouterModel") ?? "anthropic/claude-haiku-5.5"
-        self.localModel = Self.defaults.string(forKey: "voice.localModel") ?? "Vikhr-Qwen-2.5-1.5B"
+        let storedLocal = Self.defaults.string(forKey: "voice.localModel") ?? "vikhr_1.5b"
+        if SLMModelStore.catalog.contains(where: { $0.id == storedLocal }) {
+            self.localModel = storedLocal
+        } else {
+            self.localModel = "vikhr_1.5b"
+        }
         self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : 3.0
         self.adaptiveAppProfilesEnabled = Self.defaults.object(forKey: "voice.adaptiveAppProfiles") != nil ? Self.defaults.bool(forKey: "voice.adaptiveAppProfiles") : true
         self.userTerms = Self.defaults.stringArray(forKey: "voice.userTerms") ?? []
