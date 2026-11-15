@@ -385,14 +385,30 @@ struct ActiveModelStatusRow: View {
                     }
                 } else if models.isDownloaded(active.id) {
                     HStack(spacing: 8) {
-                        Text(LocalizedStringKey("RecognitionModel.Installed"))
-                            .font(UIStyleFont.body(size: 11, weight: .regular))
-                            .foregroundColor(.uiMidGray)
-                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#10B981"))
+                                .frame(width: 6, height: 6)
+                            Text(LocalizedStringKey("RecognitionModel.Installed"))
+                                .font(UIStyleFont.body(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#10B981"))
+                                .lineLimit(1)
+                        }
                         UIOutlineButton(title: "Удалить") { models.remove(active.id) }
                     }
                 } else {
-                    UIOutlineButton(title: "Скачать") { models.download(active.id) }
+                    HStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#F59E0B"))
+                                .frame(width: 6, height: 6)
+                            Text("Не скачана")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .lineLimit(1)
+                        }
+                        UIOutlineButton(title: "Скачать") { models.download(active.id) }
+                    }
                 }
             }
             .frame(minHeight: 44)

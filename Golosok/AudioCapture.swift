@@ -499,6 +499,22 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
             )
 
             if shouldSynthesize {
+                let engine = VoiceIntelligenceSettings.shared.engine
+                let engineDetails: String
+                if engine == .airGapped {
+                    let slmModel = SLMModelStore.shared.activeDownloadedModel()
+                    let slmName = slmModel?.name ?? VoiceIntelligenceSettings.shared.localModel
+                    engineDetails = slmModel != nil ? "Локальная модель: \(slmName)" : "Модель не скачана: \(slmName)"
+                } else {
+                    let cfg = AIProviderStore.shared.config
+                    engineDetails = "Внешний провайдер: \(cfg.baseURL), модель: \(cfg.model)"
+                }
+                AppLogger.shared.info(
+                    "Pipeline",
+                    "Этап 2: Запуск языковой модели — \(engine.title)",
+                    details: "\(engineDetails), стиль: \(VoiceIntelligenceSettings.shared.style.title)"
+                )
+
                 self.isSynthesizingThought = true
                 ThoughtSynthesizer.shared.synthesize(
                     rawText: rawText,
@@ -519,6 +535,13 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                             finish()
                             return
                         }
+
+                        let resultOrigin = isFallback ? "Откат на GigaAM" : "Преобразован языковой моделью"
+                        AppLogger.shared.info(
+                            "Pipeline",
+                            "✔ Пайплайн завершен: \(resultOrigin)",
+                            details: "Финальный текст: «\(resolvedText)»"
+                        )
 
                         TranscriptJournal.shared.updateFinal(
                             id: noteId,
@@ -543,6 +566,11 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                     }
                 }
             } else {
+                AppLogger.shared.info(
+                    "Pipeline",
+                    "Этап 2 пропущен: \(isFileImport ? "импорт файла" : "режим прямого ввода")",
+                    details: "Итог: «\(prettyFormattedText)»"
+                )
                 TranscriptJournal.shared.updateFinal(
                     id: noteId,
                     stageOneText: prettyFormattedText,
@@ -956,26 +984,32 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 AppLogger.shared.error("Recognition", "transcribe-cli или встроенная модель не найдены в бандле")
                 return ("", [])
             }
+            AppLogger.shared.info("Pipeline", "Этап 1: Распознавание аудио через Sber GigaAM v3", details: "Модель: gigaam.gguf")
             let output = runCLIProcess(cliPath, arguments: ["-m", modelPath, "--timestamps", "word", wavURL.path])
             let words = Self.finalizeWords(parseGigaAMTokens(output))
             let lines = output.components(separatedBy: .newlines)
+            var extracted = ""
             if let textLine = lines.first(where: { $0.trimmingCharacters(in: .whitespaces).hasPrefix("text:") }) {
-                let extracted = String(textLine.trimmingCharacters(in: .whitespaces).dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
-                if extracted != "(empty)" { return (extracted, words) }
+                let candidate = String(textLine.trimmingCharacters(in: .whitespaces).dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
+                if candidate != "(empty)" { extracted = candidate }
             }
-            return ("", words)
+            AppLogger.shared.info("Pipeline", "Этап 1 завершен: Sber GigaAM v3", details: "Распознано: «\(extracted)», слов: \(words.count)")
+            return (extracted, words)
         } else {
             guard let cliPath = Bundle.main.path(forResource: "whisper-cli", ofType: nil),
                   let modelPath = store.localModelPath(for: model.id) else {
                 AppLogger.shared.error("Recognition", "whisper-cli или модель \(model.id) не найдены", details: model.id)
                 return ("", [])
             }
+            AppLogger.shared.info("Pipeline", "Этап 1: Распознавание аудио через Whisper", details: "Модель: \(model.name)")
             let output = runCLIProcess(cliPath, arguments: ["-m", modelPath, "-f", wavURL.path, "-l", model.languageCode, "-nt", "-ojf"])
             let parts = output.components(separatedBy: .newlines)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty && !$0.hasPrefix("[") && !$0.lowercased().hasPrefix("whisper") }
             let text = parts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-            return (text, Self.finalizeWords(readWhisperWords(wavURL: wavURL)))
+            let words = Self.finalizeWords(readWhisperWords(wavURL: wavURL))
+            AppLogger.shared.info("Pipeline", "Этап 1 завершен: Whisper", details: "Распознано: «\(text)», слов: \(words.count)")
+            return (text, words)
         }
     }
 

@@ -353,17 +353,33 @@ struct ActiveSLMModelStatusRow: View {
                     }
                 } else if slmStore.isModelDownloaded(model) {
                     HStack(spacing: 8) {
-                        Text(LocalizedStringKey("RecognitionModel.Installed"))
-                            .font(UIStyleFont.body(size: 11, weight: .regular))
-                            .foregroundColor(.uiMidGray)
-                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#10B981"))
+                                .frame(width: 6, height: 6)
+                            Text("Скачана на Mac")
+                                .font(UIStyleFont.body(size: 11, weight: .medium))
+                                .foregroundColor(Color(hex: "#10B981"))
+                                .lineLimit(1)
+                        }
                         UIOutlineButton(title: "Удалить") {
                             slmStore.delete(model: model)
                         }
                     }
                 } else {
-                    UIOutlineButton(title: "Скачать") {
-                        slmStore.startDownload(model: model)
+                    HStack(spacing: 8) {
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(Color(hex: "#F59E0B"))
+                                .frame(width: 6, height: 6)
+                            Text("Не скачана")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                                .lineLimit(1)
+                        }
+                        UIOutlineButton(title: "Скачать") {
+                            slmStore.startDownload(model: model)
+                        }
                     }
                 }
             }

@@ -31,7 +31,7 @@ public final class ThoughtSynthesizer {
         // Если фраза очень короткая (1-3 слова), пропускаем тяжелый синтез
         let wordCount = stageOneText.split(whereSeparator: { $0.isWhitespace }).count
         if wordCount <= 3 {
-            AppLogger.shared.info("Synthesizer", "Короткая фраза (\(wordCount) сл.) — пропуск LLM, отдан текст этапа 1")
+            AppLogger.shared.info("Pipeline", "Этап 2 пропущен: короткая фраза (\(wordCount) сл.)", details: "Фразы до 3 слов не требуют языковой модели. Отдан текст: «\(stageOneText)»")
             completion(stageOneText, true)
             return
         }
@@ -41,10 +41,25 @@ public final class ThoughtSynthesizer {
 
         switch settings.engine {
         case .airGapped:
+            let selectedId = settings.localModel
+            let slmModel = SLMModelStore.shared.model(named: selectedId)
+            let isDownloaded = slmModel != nil && SLMModelStore.shared.isModelDownloaded(slmModel!)
+            let modelName = slmModel?.name ?? selectedId
+
+            if !isDownloaded {
+                AppLogger.shared.warn(
+                    "Pipeline",
+                    "Этап 2: Локальная модель «\(modelName)» не скачана на устройство",
+                    details: "Скачайте модель в Настройках («Голосовой ввод и синтез») или переключите Движок на Внешний. Выполнен откат на распознанный текст GigaAM."
+                )
+                completion(stageOneText, true)
+                return
+            }
+
             // Проверка аппаратных сторожей безопасности (температура, заряд, память)
             let safety = HardwareWatchdog.evaluateInferenceSafety()
             guard safety == .allowed else {
-                AppLogger.shared.info("Synthesizer", "Air-Gapped: пропуск синтеза по условиям безопасности оборудования")
+                AppLogger.shared.warn("Pipeline", "Этап 2: Air-Gapped пропуск синтеза по условиям безопасности оборудования", details: "Откат на текст GigaAM")
                 completion(stageOneText, true)
                 return
             }
@@ -58,8 +73,14 @@ public final class ThoughtSynthesizer {
                     }
                 }
                 if !settings.userTerms.isEmpty {
-                    systemPrompt += "\n\nПользовательские термины (сохраняй точное написание): " + settings.userTerms.joined(separator: ", ")
+                    systemPrompt += "\n\nПользовательские термины: " + settings.userTerms.joined(separator: ", ")
                 }
+
+                AppLogger.shared.info(
+                    "Pipeline",
+                    "Этап 2: Локальная модель готова: \(modelName)",
+                    details: "Размер: \(slmModel?.sizeMB ?? 0) МБ, стиль: \(style.title)"
+                )
 
                 if let synthResult = await LocalSynthServiceClient.shared.synthesize(
                     transcript: stageOneText,
@@ -75,14 +96,27 @@ public final class ThoughtSynthesizer {
                     )
                     switch validation {
                     case .valid(let text):
-                        AppLogger.shared.info("Synthesizer", "Air-Gapped локальный синтез успешно выполнен")
+                        AppLogger.shared.info(
+                            "Pipeline",
+                            "Этап 2 завершен: Локальная модель успешно выполнила синтез мысли",
+                            details: "Итог: «\(text)»"
+                        )
                         DispatchQueue.main.async {
                             completion(text, false)
                         }
                         return
                     case .rejected(let reason):
-                        AppLogger.shared.warn("Synthesizer", "Air-Gapped валидатор отклонил результат (\(reason)) — откат на этап 1")
+                        AppLogger.shared.warn(
+                            "Pipeline",
+                            "Этап 2: Валидатор отклонил результат (\(reason)) — откат на текст GigaAM"
+                        )
                     }
+                } else {
+                    AppLogger.shared.warn(
+                        "Pipeline",
+                        "Этап 2: Локальный инференс не вернул результат (демон XPC в разработке)",
+                        details: "Модель «\(modelName)» загружена на диск, но локальный исполнитель инференса еще не подключен в системе. Безопасный откат на нормализованный текст GigaAM."
+                    )
                 }
                 DispatchQueue.main.async {
                     completion(stageOneText, true)
@@ -92,10 +126,19 @@ public final class ThoughtSynthesizer {
         case .external:
             let config = AIProviderStore.shared.config
             guard AIProviderStore.shared.isConfigured else {
-                AppLogger.shared.info("Synthesizer", "Внешний ИИ-провайдер не настроен — отдан текст этапа 1")
+                AppLogger.shared.warn(
+                    "Pipeline",
+                    "Этап 2: Внешний ИИ-провайдер не настроен",
+                    details: "Заполните ключ, Base URL и модель в секции «ИИ-провайдер». Откат на текст GigaAM."
+                )
                 completion(stageOneText, true)
                 return
             }
+            AppLogger.shared.info(
+                "Pipeline",
+                "Этап 2: Запрос к внешней модели (\(config.model))",
+                details: "Провайдер: \(config.baseURL), стиль: \(style.title)"
+            )
             runAISynthesis(messages: messages, config: config, stageOneText: stageOneText, style: style, timeout: settings.adaptiveTimeoutSeconds, completion: completion)
         }
     }
@@ -320,16 +363,19 @@ public final class ThoughtSynthesizer {
                 switch validation {
                 case .valid(let validatedText):
                     AppLogger.shared.info("Synthesizer", "Валидация успешна: мысль готова к вставке")
+                    AppLogger.shared.info("Pipeline", "Этап 2 завершен: Внешняя модель успешно выполнила синтез", details: "Итог: «\(validatedText)»")
                     safeCompletion(validatedText, false)
 
                 case .rejected(let reason):
                     AppLogger.shared.warn("Synthesizer", "Валидатор отклонил результат (\(reason)) — откат на этап 1")
+                    AppLogger.shared.warn("Pipeline", "Этап 2 отклонен валидатором: \(reason)", details: "Откат на базовый текст GigaAM")
                     safeCompletion(stageOneText, true)
                 }
 
             } catch {
                 watchdogTask.cancel()
                 AppLogger.shared.warn("Synthesizer", "Ошибка стриминга: \(error.localizedDescription) — откат на этап 1")
+                AppLogger.shared.warn("Pipeline", "Этап 2: Ошибка обращения к внешней модели: \(error.localizedDescription)", details: "Откат на базовый текст GigaAM")
                 safeCompletion(stageOneText, true)
             }
         }
