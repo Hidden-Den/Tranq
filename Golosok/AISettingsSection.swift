@@ -302,6 +302,36 @@ struct VoiceIntelligenceSection: View {
                             .padding(.top, 2)
                         }
                     }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Системный промпт
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Системный промпт")
+                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .foregroundColor(.uiInk)
+                                Text("Инструкция для языковой модели")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            Spacer()
+                            UIOutlineButton(title: "По умолчанию") {
+                                settings.customSystemPrompt = VoiceIntelligenceSettings.defaultCustomPrompt
+                            }
+                        }
+
+                        TextEditor(text: $settings.customSystemPrompt)
+                            .font(.system(size: 11, weight: .regular, design: .monospaced))
+                            .foregroundColor(.uiInk)
+                            .lineSpacing(2)
+                            .padding(6)
+                            .frame(minHeight: 120, maxHeight: 170)
+                            .background(Color.uiCanvas)
+                            .cornerRadius(6)
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    }
                 }
             }
         }

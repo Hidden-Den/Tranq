@@ -5,6 +5,7 @@ xcuserdata/
 .DS_Store
 .superpowers/
 Golosok/whisper-cli
+Golosok/llama-cli
 *.pbxproj
 Golosok/ffmpeg
 Golosok.xcodeproj/project.pbxproj
