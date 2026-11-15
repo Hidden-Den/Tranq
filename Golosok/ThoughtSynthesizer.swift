@@ -9,10 +9,12 @@ public final class ThoughtSynthesizer {
     /// - Parameters:
     ///   - rawText: сырой распознанный текст
     ///   - style: целевой стиль мысли
+    ///   - targetBundleId: идентификатор целевого приложения для контекстной адаптации
     ///   - completion: возвращает итоговый текст и флаг, был ли это fallback
     public func synthesize(
         rawText: String,
         style: VoiceStyle,
+        targetBundleId: String? = nil,
         completion: @escaping (_ finalText: String, _ isFallback: Bool) -> Void
     ) {
         let trimmedRaw = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -35,7 +37,7 @@ public final class ThoughtSynthesizer {
         }
 
         let settings = VoiceIntelligenceSettings.shared
-        let messages = buildMessages(for: stageOneText, style: style)
+        let messages = buildMessages(for: stageOneText, style: style, targetBundleId: targetBundleId)
 
         switch settings.engine {
         case .airGapped:
@@ -48,14 +50,29 @@ public final class ThoughtSynthesizer {
             }
 
             Task {
-                let systemPrompt = Self.getSystemPrompt(for: style)
+                var systemPrompt = Self.getSystemPrompt(for: style)
+                if settings.adaptiveAppProfilesEnabled, let bundleId = targetBundleId {
+                    let category = AppProfileRouter.detectCategory(bundleIdentifier: bundleId)
+                    if !category.guidancePrompt.isEmpty {
+                        systemPrompt += "\n\n" + category.guidancePrompt
+                    }
+                }
+                if !settings.userTerms.isEmpty {
+                    systemPrompt += "\n\nПользовательские термины (сохраняй точное написание): " + settings.userTerms.joined(separator: ", ")
+                }
+
                 if let synthResult = await LocalSynthServiceClient.shared.synthesize(
                     transcript: stageOneText,
                     stylePrompt: systemPrompt,
                     timeout: settings.adaptiveTimeoutSeconds
                 ) {
                     let cleaned = Self.stripThinkingTags(from: synthResult)
-                    let validation = GroundingValidator.validate(input: stageOneText, output: cleaned, style: style)
+                    let validation = GroundingValidator.validate(
+                        input: stageOneText,
+                        output: cleaned,
+                        style: style,
+                        customTerms: Set(settings.userTerms)
+                    )
                     switch validation {
                     case .valid(let text):
                         AppLogger.shared.info("Synthesizer", "Air-Gapped локальный синтез успешно выполнен")
@@ -245,8 +262,14 @@ public final class ThoughtSynthesizer {
                     return
                 }
 
-                // Детерминированный Grounding Validator
-                let validation = GroundingValidator.validate(input: stageOneText, output: cleanContent, style: style)
+                // Детерминированный Grounding Validator с учетом стиля и словаря
+                let userTerms = VoiceIntelligenceSettings.shared.userTerms
+                let validation = GroundingValidator.validate(
+                    input: stageOneText,
+                    output: cleanContent,
+                    style: style,
+                    customTerms: Set(userTerms)
+                )
                 switch validation {
                 case .valid(let validatedText):
                     AppLogger.shared.info("Synthesizer", "Валидация успешна: мысль готова к вставке")
@@ -306,8 +329,21 @@ public final class ThoughtSynthesizer {
         }
     }
 
-    private func buildMessages(for text: String, style: VoiceStyle) -> [AIChatMessage] {
-        let systemPrompt = Self.getSystemPrompt(for: style)
+    private func buildMessages(for text: String, style: VoiceStyle, targetBundleId: String?) -> [AIChatMessage] {
+        var systemPrompt = Self.getSystemPrompt(for: style)
+        let settings = VoiceIntelligenceSettings.shared
+
+        if settings.adaptiveAppProfilesEnabled, let bundleId = targetBundleId {
+            let category = AppProfileRouter.detectCategory(bundleIdentifier: bundleId)
+            if !category.guidancePrompt.isEmpty {
+                systemPrompt += "\n\n" + category.guidancePrompt
+            }
+        }
+
+        if !settings.userTerms.isEmpty {
+            systemPrompt += "\n\nПользовательские термины (сохраняй точное написание): " + settings.userTerms.joined(separator: ", ")
+        }
+
         let userPrompt = "<transcript>\(text)</transcript>"
 
         return [

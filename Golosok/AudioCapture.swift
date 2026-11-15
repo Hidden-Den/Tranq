@@ -502,7 +502,8 @@ class AudioCapture: NSObject, ObservableObject, AVAudioRecorderDelegate {
                 self.isSynthesizingThought = true
                 ThoughtSynthesizer.shared.synthesize(
                     rawText: rawText,
-                    style: VoiceIntelligenceSettings.shared.style
+                    style: VoiceIntelligenceSettings.shared.style,
+                    targetBundleId: jobFocusTarget?.bundleIdentifier
                 ) { [weak self] finalText, isFallback in
                     guard let self = self else { return }
                     DispatchQueue.main.async {

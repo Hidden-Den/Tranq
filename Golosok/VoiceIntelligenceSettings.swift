@@ -102,6 +102,24 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         didSet { Self.defaults.set(adaptiveTimeoutSeconds, forKey: "voice.timeout") }
     }
 
+    @Published public var adaptiveAppProfilesEnabled: Bool {
+        didSet { Self.defaults.set(adaptiveAppProfilesEnabled, forKey: "voice.adaptiveAppProfiles") }
+    }
+
+    @Published public var userTerms: [String] {
+        didSet { Self.defaults.set(userTerms, forKey: "voice.userTerms") }
+    }
+
+    public func addUserTerm(_ term: String) {
+        let cleaned = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, !userTerms.contains(cleaned) else { return }
+        userTerms.append(cleaned)
+    }
+
+    public func removeUserTerm(_ term: String) {
+        userTerms.removeAll { $0 == term }
+    }
+
     private init() {
         let storedMode = Self.defaults.string(forKey: "voice.mode") ?? VoiceInputMode.smart.rawValue
         self.mode = VoiceInputMode(rawValue: storedMode) ?? .smart
@@ -115,5 +133,7 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         self.openRouterModel = Self.defaults.string(forKey: "voice.openRouterModel") ?? "anthropic/claude-haiku-5.5"
         self.localModel = Self.defaults.string(forKey: "voice.localModel") ?? "Vikhr-Qwen-2.5-1.5B"
         self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : 3.0
+        self.adaptiveAppProfilesEnabled = Self.defaults.object(forKey: "voice.adaptiveAppProfiles") != nil ? Self.defaults.bool(forKey: "voice.adaptiveAppProfiles") : true
+        self.userTerms = Self.defaults.stringArray(forKey: "voice.userTerms") ?? []
     }
 }

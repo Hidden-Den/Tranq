@@ -167,6 +167,14 @@ struct AIInputField: View {
 
 struct VoiceIntelligenceSection: View {
     @ObservedObject var settings = VoiceIntelligenceSettings.shared
+    @State private var newTerm: String = ""
+
+    private func addTerm() {
+        let cleaned = newTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        settings.addUserTerm(cleaned)
+        newTerm = ""
+    }
 
     var body: some View {
         UICard {
@@ -253,6 +261,93 @@ struct VoiceIntelligenceSection: View {
                             UIDropdownPicker(selection: $settings.openRouterModel, options: OpenRouterCatalogService.shared.models.map { m in
                                 .init(LocalizedStringKey(m.name), value: m.id)
                             }, width: 210)
+                        }
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Адаптация под приложения
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Адаптация под приложения")
+                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Учет контекста активного окна")
+                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        Toggle(String(localized: "Адаптация под приложения"), isOn: $settings.adaptiveAppProfilesEnabled)
+                            .labelsHidden()
+                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Словарь терминов
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Словарь терминов")
+                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .foregroundColor(.uiInk)
+                                Text("Защита специфических слов и имен")
+                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .foregroundColor(.uiMidGray)
+                            }
+                            Spacer()
+                        }
+
+                        HStack(spacing: 8) {
+                            TextField("Новый термин", text: $newTerm)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .font(UIStyleFont.body(size: 12, weight: .regular))
+                                .foregroundColor(.uiInk)
+                                .padding(6)
+                                .background(Color.uiCanvas)
+                                .cornerRadius(6)
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                                .onSubmit {
+                                    addTerm()
+                                }
+
+                            Button(action: addTerm) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.uiInk)
+                                    .frame(width: 24, height: 24)
+                            }
+                            .buttonStyle(TactileButtonStyle())
+                            .background(Color.uiPaper)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                            .disabled(newTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+
+                        if !settings.userTerms.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(settings.userTerms, id: \.self) { term in
+                                        HStack(spacing: 4) {
+                                            Text(term)
+                                                .font(UIStyleFont.body(size: 11, weight: .medium))
+                                                .foregroundColor(.uiInk)
+                                            Button(action: { settings.removeUserTerm(term) }) {
+                                                Image(systemName: "xmark")
+                                                    .font(.system(size: 8, weight: .bold))
+                                                    .foregroundColor(.uiMidGray)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.uiCanvas)
+                                        .cornerRadius(6)
+                                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                                    }
+                                }
+                            }
+                            .padding(.top, 2)
                         }
                     }
                 }
