@@ -256,6 +256,22 @@ public final class LocalSynthServiceClient: ObservableObject {
                         let parts = cleanResult.components(separatedBy: "</transcript>")
                         cleanResult = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? cleanResult
                     }
+
+                    // Извлечение секции «Очищенный текст:» / «Результат:», если модель сначала продублировала «Исходный текст:»
+                    let sectionPatterns = [
+                        #"(?is).*(?:очищенный|исправленный|отредактированный)\s+текст\s*:\s*"#,
+                        #"(?is).*результат\s*:\s*"#
+                    ]
+                    for pattern in sectionPatterns {
+                        if let match = cleanResult.range(of: pattern, options: .regularExpression) {
+                            let extracted = String(cleanResult[match.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !extracted.isEmpty {
+                                cleanResult = extracted
+                                break
+                            }
+                        }
+                    }
+
                     if (cleanResult.hasPrefix("\"") && cleanResult.hasSuffix("\"")) ||
                        (cleanResult.hasPrefix("«") && cleanResult.hasSuffix("»")) {
                         if cleanResult.count >= 2 {

@@ -47,6 +47,31 @@ struct VoiceIntelligencePhase4Tests {
         }
     }
 
+    @Test func subordinateClauseWithQuestionWordIsNotFalselyRejected() {
+        let input = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать про No8M и про Кубернейтс под тем, как эффективно сделать интеграцию с онлайн-университетом для No8."
+        let output = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать о No8M и Кубернейтс, как эффективно интегрировать с онлайн-университетом для No8."
+        let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+        if case .valid(let text) = result {
+            #expect(text.contains("No8M"))
+            #expect(text.contains("2"))
+        } else {
+            Issue.record("Сложное предложение с 'как' не должно отклоняться как вопрос: \(result)")
+        }
+    }
+
+    @Test func modelOutputWithPreambleSectionsIsSanitized() {
+        let input = "Надо подумать о задаче"
+        let output = """
+        Исходный текст:
+        Надо подумать о задаче
+
+        Очищенный текст:
+        Надо подумать о задаче.
+        """
+        let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+        #expect(result == .valid(sanitizedText: "Надо подумать о задаче."))
+    }
+
     @Test func formalStyleAllowsPoliteRestructuringWithinLimits() {
         let input = "Слушай давай созвонимся завтра в 10 утра обсудим контракт"
         let formalOutput = "Коллеги, предлагаю провести встречу завтра в 10 утра для обсуждения контракта."
