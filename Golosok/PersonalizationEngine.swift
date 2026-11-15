@@ -477,19 +477,47 @@ public final class PersonalizationEngine: ObservableObject {
         }
     }
 
+    private func seedDefaultRules() {
+        let defaults: [(pattern: String, replacement: String)] = [
+            ("кубернайт", "Kubernetes"),
+            ("кубере", "Kubernetes"),
+            ("кубер", "Kubernetes"),
+            ("no8", "n8n"),
+            ("n8", "n8n"),
+            ("эн восемь", "n8n"),
+            ("джейсон", "JSON"),
+            ("постгрес", "PostgreSQL"),
+            ("докер", "Docker")
+        ]
+        for item in defaults {
+            if !self.correctionRules.contains(where: { $0.pattern.lowercased() == item.pattern.lowercased() }) {
+                self.correctionRules.append(CorrectionRule(pattern: item.pattern, replacement: item.replacement, count: 1, lastUsed: Date(), source: .manual))
+            }
+            if !self.learnedTerms.contains(where: { $0.term.lowercased() == item.replacement.lowercased() }) {
+                self.learnedTerms.append(LearnedTerm(term: item.replacement, count: 2, lastUsed: Date(), isManual: true))
+            }
+        }
+    }
+
     private func loadFromDisk() {
         queue.async { [weak self] in
-            guard let self = self,
-                  let url = self.storageFileURL,
+            guard let self = self else { return }
+            guard let url = self.storageFileURL,
                   FileManager.default.fileExists(atPath: url.path),
                   let data = try? Data(contentsOf: url),
                   let snapshot = try? JSONDecoder().decode(PersonalizationSnapshot.self, from: data) else {
+                self.lock.lock()
+                self.seedDefaultRules()
+                self.lock.unlock()
                 return
             }
 
             self.lock.lock()
             self.correctionRules = snapshot.rules
             self.learnedTerms = snapshot.terms
+            if self.correctionRules.isEmpty && self.learnedTerms.isEmpty {
+                self.seedDefaultRules()
+            }
             self.lock.unlock()
 
             DispatchQueue.main.async {
