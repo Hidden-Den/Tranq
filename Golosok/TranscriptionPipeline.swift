@@ -247,7 +247,8 @@ final class TranscriptionPipeline {
                 DispatchQueue.main.async {
                     // Повторный проход страхует от вариантов, которые вернула модель
                     var resolved = DictionaryStage.apply(
-                        finalText.trimmingCharacters(in: .whitespacesAndNewlines), noteId: noteId, language: language
+                        finalText.trimmingCharacters(in: .whitespacesAndNewlines), noteId: noteId, language: language,
+                        warnIfNotReady: false
                     ).text
                     if resolved.isEmpty {
                         resolved = dictionary.text.trimmingCharacters(in: .whitespacesAndNewlines)

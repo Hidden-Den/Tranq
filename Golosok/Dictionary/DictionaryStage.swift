@@ -7,14 +7,18 @@ enum DictionaryStage {
 
     /// Заменяет варианты на написания, запоминает замены заметки и отмечает срабатывания.
     /// `fired` — сработавшие написания без повторов, в порядке появления. Можно вызывать с любого потока.
+    /// `warnIfNotReady: false` для повторного прохода той же диктовки, чтобы не дублировать предупреждение.
     static func apply(
         _ text: String,
         noteId: UUID,
         language: DictionaryLanguage,
-        store: DictionaryStore = .shared
+        store: DictionaryStore = .shared,
+        warnIfNotReady: Bool = true
     ) -> (text: String, fired: [String]) {
         guard let index = store.index else {
-            AppLogger.shared.warn(logSource, "Словарь ещё не готов, текст без замен")
+            if warnIfNotReady {
+                AppLogger.shared.warn(logSource, "Словарь ещё не готов, текст без замен")
+            }
             return (text, [])
         }
         let result = index.apply(to: text, language: language)

@@ -27,7 +27,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         hotKey.register()
-        
+
+        // Словарь создаётся на главном потоке при запуске: перенос старых данных и сборка индекса
+        // успевают до первой диктовки, а не выполняются на очереди конвейера посреди неё
+        if !AppEnvironment.isRunningTests {
+            _ = DictionaryStore.shared
+        }
+
         DispatchQueue.main.async {
             if let window = NSApp.windows.first(where: {
                 !($0 is NSPanel) &&

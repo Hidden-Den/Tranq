@@ -89,8 +89,9 @@ final class DictionaryStageTests: XCTestCase {
 
         let hits = DictionaryStage.shadowHits(text, language: .ru, store: store)
         XCTAssertEqual(hits.map(\.spelling), ["Kubernetes"])
+        XCTAssertEqual(store.userEntries.first { $0.id == kubernetes.id }?.hits, 0)
+        XCTAssertNil(store.userEntries.first { $0.id == kubernetes.id }?.lastUsed)
 
-        DictionaryStage.shadowFuzzy(text, language: .ru, store: store)
         let noteId = UUID()
         let applied = DictionaryStage.apply(text, noteId: noteId, language: .ru, store: store)
 
