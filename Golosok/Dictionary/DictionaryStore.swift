@@ -344,9 +344,21 @@ final class DictionaryStore: ObservableObject {
 
     // MARK: - Наборы
 
+    /// Файлы наборов: из подпапки `Dictionaries`, а если Xcode сложил ресурсы плоско, из корня ресурсов по имени `<id>.json`.
+    static func packFileURLs(in bundle: Bundle) -> [URL] {
+        var urls = bundle.urls(forResourcesWithExtension: "json", subdirectory: "Dictionaries") ?? []
+        var seen = Set(urls.map(\.lastPathComponent))
+        for url in bundle.urls(forResourcesWithExtension: "json", subdirectory: nil) ?? [] {
+            guard packOrder.contains(url.deletingPathExtension().lastPathComponent),
+                  seen.insert(url.lastPathComponent).inserted else { continue }
+            urls.append(url)
+        }
+        return urls
+    }
+
     /// Наборы `Dictionaries/*.json` из бандла в порядке `packOrder`; битые файлы пропускаются.
     static func loadPacks(from bundle: Bundle) -> [DictionaryPack] {
-        let urls = bundle.urls(forResourcesWithExtension: "json", subdirectory: "Dictionaries") ?? []
+        let urls = packFileURLs(in: bundle)
         let decoder = JSONDecoder()
         var packs: [DictionaryPack] = []
         var ids = Set<String>()

@@ -324,12 +324,12 @@ extension SharedSettingsSuites {
 
         // MARK: - Наборы
 
-        @Test(.disabled("наборы появятся в Task 9"))
+        @Test
         func packsLoadUnderFiftyMilliseconds() {
             let start = Date()
             let packs = DictionaryStore.loadPacks(from: .main)
             let elapsed = Date().timeIntervalSince(start)
-            #expect(packs.map(\.id) == DictionaryStore.packOrder)
+            #expect(packs.map(\.id) == DictionaryStore.packOrder.filter { PackValidationTests.implementedPackIds.contains($0) })
             #expect(elapsed < 0.05)
         }
     }
