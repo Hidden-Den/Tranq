@@ -119,18 +119,13 @@ struct VoiceIntelligenceTests {
     // MARK: - InsertionService & Pasteboard
 
     @Test func copyToPasteboardSetsTransientTypes() {
-        let pb = NSPasteboard.general
-        let oldString = pb.string(forType: .string)
-        defer {
-            pb.clearContents()
-            if let old = oldString {
-                pb.setString(old, forType: .string)
-            }
-        }
+        // Частный буфер: системный не затрагивается, параллельные тесты не конфликтуют
+        let pb = NSPasteboard(name: NSPasteboard.Name("golosok.tests.\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
 
         let service = InsertionService.shared
         let testString = "Test transient paste"
-        service.copyToPasteboard(text: testString, markTransient: true)
+        service.copyToPasteboard(text: testString, markTransient: true, pasteboard: pb)
         
         let stringVal = pb.string(forType: .string)
         #expect(stringVal == testString)

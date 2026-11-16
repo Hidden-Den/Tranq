@@ -225,19 +225,13 @@ struct VoiceIntelligencePhase5Tests {
             #expect(cat == item.expectedCategory, "Для \(item.bundleId) ожидалась категория \(item.expectedCategory)")
         }
 
-        // Сохраняем и восстанавливаем буфер обмена разработчика во избежание коллизий
-        let pb = NSPasteboard.general
-        let previousString = pb.string(forType: .string)
-        defer {
-            pb.clearContents()
-            if let saved = previousString {
-                pb.setString(saved, forType: .string)
-            }
-        }
+        // Частный буфер: системный не затрагивается, параллельные тесты не конфликтуют
+        let pb = NSPasteboard(name: NSPasteboard.Name("golosok.tests.\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
 
         // Проверка буфера обмена: скрытие из менеджеров истории (Maccy, Paste)
         let insertion = InsertionService.shared
-        insertion.copyToPasteboard(text: "Секретный тестовый токен", markTransient: true)
+        insertion.copyToPasteboard(text: "Секретный тестовый токен", markTransient: true, pasteboard: pb)
 
         let types = pb.types?.map { $0.rawValue } ?? []
         #expect(types.contains("org.nspasteboard.ConcealedType"))
