@@ -58,7 +58,7 @@
       "spelling" : "Docker Compose",
       "variants" : {
         "en" : [
-
+          "docker compose"
         ],
         "ru" : [
           "докер композ",
@@ -513,7 +513,7 @@
       "spelling" : "TypeScript",
       "variants" : {
         "en" : [
-
+          "type script"
         ],
         "ru" : [
           "тайпскрипт",
@@ -893,8 +893,7 @@
 
         ],
         "ru" : [
-          "рест",
-          "рэст"
+
         ]
       }
     },

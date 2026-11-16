@@ -4,138 +4,140 @@ I have been working with kubernetes for two years now.	I have been working with 
 Let me know if k eights fails again tonight.	Let me know if K8s fails again tonight.
 The team chose kay eights over the old setup.	The team chose K8s over the old setup.
 We migrated the service to k8s yesterday and it works fine.	We migrated the service to K8s yesterday and it works fine.
-Can you check the logs in podman, please?	Can you check the logs in Podman, please?
-I have been working with east io for two years now.	I have been working with Istio for two years now.
-Let me know if is tio fails again tonight.	Let me know if Istio fails again tonight.
-The team chose istio over the old setup.	The team chose Istio over the old setup.
-We migrated the service to post gress yesterday and it works fine.	We migrated the service to PostgreSQL yesterday and it works fine.
-Can you check the logs in post gres, please?	Can you check the logs in PostgreSQL, please?
-I have been working with postgresql for two years now.	I have been working with PostgreSQL for two years now.
-Let me know if mongodb fails again tonight.	Let me know if MongoDB fails again tonight.
-The team chose redis over the old setup.	The team chose Redis over the old setup.
-We migrated the service to mem cached yesterday and it works fine.	We migrated the service to Memcached yesterday and it works fine.
-Can you check the logs in mem cash d, please?	Can you check the logs in Memcached, please?
-I have been working with memcached for two years now.	I have been working with Memcached for two years now.
-Let me know if cass andra fails again tonight.	Let me know if Cassandra fails again tonight.
-The team chose cassandra over the old setup.	The team chose Cassandra over the old setup.
-We migrated the service to dyna mo db yesterday and it works fine.	We migrated the service to DynamoDB yesterday and it works fine.
-Can you check the logs in dynamodb, please?	Can you check the logs in DynamoDB, please?
-I have been working with clickhouse for two years now.	I have been working with ClickHouse for two years now.
-Let me know if elasticsearch fails again tonight.	Let me know if Elasticsearch fails again tonight.
-The team chose opensearch over the old setup.	The team chose OpenSearch over the old setup.
-We migrated the service to calf ka yesterday and it works fine.	We migrated the service to Kafka yesterday and it works fine.
-Can you check the logs in kaf ka, please?	Can you check the logs in Kafka, please?
-I have been working with kafka for two years now.	I have been working with Kafka for two years now.
-Let me know if rabbit mq fails again tonight.	Let me know if RabbitMQ fails again tonight.
-The team chose rabbitmq over the old setup.	The team chose RabbitMQ over the old setup.
-We migrated the service to n eight n yesterday and it works fine.	We migrated the service to n8n yesterday and it works fine.
-Can you check the logs in n 8 n, please?	Can you check the logs in n8n, please?
-I have been working with github for two years now.	I have been working with GitHub for two years now.
-Let me know if jira fails again tonight.	Let me know if Jira fails again tonight.
-The team chose j s over the old setup.	The team chose JS over the old setup.
-We migrated the service to js yesterday and it works fine.	We migrated the service to JS yesterday and it works fine.
-Can you check the logs in golang, please?	Can you check the logs in Golang, please?
-I have been working with swiftui for two years now.	I have been working with SwiftUI for two years now.
-Let me know if xcode fails again tonight.	Let me know if Xcode fails again tonight.
-The team chose cot lin over the old setup.	The team chose Kotlin over the old setup.
-We migrated the service to kotlin yesterday and it works fine.	We migrated the service to Kotlin yesterday and it works fine.
-Can you check the logs in p h p, please?	Can you check the logs in PHP, please?
-I have been working with lara vel for two years now.	I have been working with Laravel for two years now.
-Let me know if laravel fails again tonight.	Let me know if Laravel fails again tonight.
-The team chose node js over the old setup.	The team chose Node.js over the old setup.
-We migrated the service to next js yesterday and it works fine.	We migrated the service to Next.js yesterday and it works fine.
-Can you check the logs in django, please?	Can you check the logs in Django, please?
-I have been working with fastapi for two years now.	I have been working with FastAPI for two years now.
-Let me know if graph ql fails again tonight.	Let me know if GraphQL fails again tonight.
-The team chose graphql over the old setup.	The team chose GraphQL over the old setup.
-We migrated the service to g rpc yesterday and it works fine.	We migrated the service to gRPC yesterday and it works fine.
-Can you check the logs in g r p c, please?	Can you check the logs in gRPC, please?
-I have been working with grpc for two years now.	I have been working with gRPC for two years now.
-Let me know if a p i fails again tonight.	Let me know if API fails again tonight.
-The team chose s d k over the old setup.	The team chose SDK over the old setup.
-We migrated the service to sdk yesterday and it works fine.	We migrated the service to SDK yesterday and it works fine.
-Can you check the logs in c l i, please?	Can you check the logs in CLI, please?
-I have been working with i d e for two years now.	I have been working with IDE for two years now.
-Let me know if ide fails again tonight.	Let me know if IDE fails again tonight.
-The team chose s q l over the old setup.	The team chose SQL over the old setup.
-We migrated the service to nosql yesterday and it works fine.	We migrated the service to NoSQL yesterday and it works fine.
-Can you check the logs in j son, please?	Can you check the logs in JSON, please?
-I have been working with y a m l for two years now.	I have been working with YAML for two years now.
-Let me know if x m l fails again tonight.	Let me know if XML fails again tonight.
-The team chose h t m l over the old setup.	The team chose HTML over the old setup.
-We migrated the service to c s s yesterday and it works fine.	We migrated the service to CSS yesterday and it works fine.
-Can you check the logs in h t t p, please?	Can you check the logs in HTTP, please?
-I have been working with h t t p s for two years now.	I have been working with HTTPS for two years now.
-Let me know if o auth fails again tonight.	Let me know if OAuth fails again tonight.
-The team chose oauth over the old setup.	The team chose OAuth over the old setup.
-We migrated the service to j w t yesterday and it works fine.	We migrated the service to JWT yesterday and it works fine.
-Can you check the logs in jwt, please?	Can you check the logs in JWT, please?
-I have been working with s s h for two years now.	I have been working with SSH for two years now.
-Let me know if v p n fails again tonight.	Let me know if VPN fails again tonight.
-The team chose vpn over the old setup.	The team chose VPN over the old setup.
-We migrated the service to d n s yesterday and it works fine.	We migrated the service to DNS yesterday and it works fine.
-Can you check the logs in t c p, please?	Can you check the logs in TCP, please?
-I have been working with u d p for two years now.	I have been working with UDP for two years now.
-Let me know if udp fails again tonight.	Let me know if UDP fails again tonight.
-The team chose c d n over the old setup.	The team chose CDN over the old setup.
-We migrated the service to cdn yesterday and it works fine.	We migrated the service to CDN yesterday and it works fine.
-Can you check the logs in saas, please?	Can you check the logs in SaaS, please?
-I have been working with a w s for two years now.	I have been working with AWS for two years now.
-Let me know if aws fails again tonight.	Let me know if AWS fails again tonight.
-The team chose g c p over the old setup.	The team chose GCP over the old setup.
-We migrated the service to gcp yesterday and it works fine.	We migrated the service to GCP yesterday and it works fine.
-Can you check the logs in a zure, please?	Can you check the logs in Azure, please?
-I have been working with cloudflare for two years now.	I have been working with Cloudflare for two years now.
-Let me know if vercel fails again tonight.	Let me know if Vercel fails again tonight.
-The team chose net lify over the old setup.	The team chose Netlify over the old setup.
-We migrated the service to netlify yesterday and it works fine.	We migrated the service to Netlify yesterday and it works fine.
-Can you check the logs in he roku, please?	Can you check the logs in Heroku, please?
-I have been working with heroku for two years now.	I have been working with Heroku for two years now.
-Let me know if digitalocean fails again tonight.	Let me know if DigitalOcean fails again tonight.
-The team chose supa base over the old setup.	The team chose Supabase over the old setup.
-We migrated the service to supabase yesterday and it works fine.	We migrated the service to Supabase yesterday and it works fine.
-Can you check the logs in ann sible, please?	Can you check the logs in Ansible, please?
-I have been working with ansible for two years now.	I have been working with Ansible for two years now.
-Let me know if jenkins fails again tonight.	Let me know if Jenkins fails again tonight.
-The team chose github actions over the old setup.	The team chose GitHub Actions over the old setup.
-We migrated the service to ci cd yesterday and it works fine.	We migrated the service to CI/CD yesterday and it works fine.
-Can you check the logs in c i c d, please?	Can you check the logs in CI/CD, please?
-I have been working with gra fana for two years now.	I have been working with Grafana for two years now.
-Let me know if grafana fails again tonight.	Let me know if Grafana fails again tonight.
-The team chose prome theus over the old setup.	The team chose Prometheus over the old setup.
-We migrated the service to datadog yesterday and it works fine.	We migrated the service to Datadog yesterday and it works fine.
-Can you check the logs in lin ux, please?	Can you check the logs in Linux, please?
-I have been working with oo boon too for two years now.	I have been working with Ubuntu for two years now.
-Let me know if deb ian fails again tonight.	Let me know if Debian fails again tonight.
-The team chose debian over the old setup.	The team chose Debian over the old setup.
-We migrated the service to mac o s yesterday and it works fine.	We migrated the service to macOS yesterday and it works fine.
-Can you check the logs in macos, please?	Can you check the logs in macOS, please?
-I have been working with i o s for two years now.	I have been working with iOS for two years now.
-Let me know if ios fails again tonight.	Let me know if iOS fails again tonight.
-The team chose v s code over the old setup.	The team chose VS Code over the old setup.
-We migrated the service to neo vim yesterday and it works fine.	We migrated the service to Neovim yesterday and it works fine.
-Can you check the logs in neovim, please?	Can you check the logs in Neovim, please?
-I have been working with intelli j for two years now.	I have been working with IntelliJ for two years now.
-Let me know if intellij fails again tonight.	Let me know if IntelliJ fails again tonight.
-The team chose pycharm over the old setup.	The team chose PyCharm over the old setup.
-We migrated the service to webstorm yesterday and it works fine.	We migrated the service to WebStorm yesterday and it works fine.
-Can you check the logs in swag ger, please?	Can you check the logs in Swagger, please?
-I have been working with openapi for two years now.	I have been working with OpenAPI for two years now.
-Let me know if webpack fails again tonight.	Let me know if Webpack fails again tonight.
-The team chose vite over the old setup.	The team chose Vite over the old setup.
-We migrated the service to n p m yesterday and it works fine.	We migrated the service to npm yesterday and it works fine.
-Can you check the logs in p n p m, please?	Can you check the logs in pnpm, please?
-I have been working with homebrew for two years now.	I have been working with Homebrew for two years now.
-Let me know if z s h fails again tonight.	Let me know if Zsh fails again tonight.
-The team chose powershell over the old setup.	The team chose PowerShell over the old setup.
-We migrated the service to websocket yesterday and it works fine.	We migrated the service to WebSocket yesterday and it works fine.
-Can you check the logs in webassembly, please?	Can you check the logs in WebAssembly, please?
-I have been working with dotnet for two years now.	I have been working with .NET for two years now.
-Let me know if are dweeno fails again tonight.	Let me know if Arduino fails again tonight.
-The team chose arduino over the old setup.	The team chose Arduino over the old setup.
-We migrated the service to jetbrains yesterday and it works fine.	We migrated the service to JetBrains yesterday and it works fine.
-Can you check the logs in openrouter, please?	Can you check the logs in OpenRouter, please?
-I have been working with ollama for two years now.	I have been working with Ollama for two years now.
+Can you check the logs in docker compose, please?	Can you check the logs in Docker Compose, please?
+I have been working with podman for two years now.	I have been working with Podman for two years now.
+Let me know if east io fails again tonight.	Let me know if Istio fails again tonight.
+The team chose is tio over the old setup.	The team chose Istio over the old setup.
+We migrated the service to istio yesterday and it works fine.	We migrated the service to Istio yesterday and it works fine.
+Can you check the logs in post gress, please?	Can you check the logs in PostgreSQL, please?
+I have been working with post gres for two years now.	I have been working with PostgreSQL for two years now.
+Let me know if postgresql fails again tonight.	Let me know if PostgreSQL fails again tonight.
+The team chose mongodb over the old setup.	The team chose MongoDB over the old setup.
+We migrated the service to redis yesterday and it works fine.	We migrated the service to Redis yesterday and it works fine.
+Can you check the logs in mem cached, please?	Can you check the logs in Memcached, please?
+I have been working with mem cash d for two years now.	I have been working with Memcached for two years now.
+Let me know if memcached fails again tonight.	Let me know if Memcached fails again tonight.
+The team chose cass andra over the old setup.	The team chose Cassandra over the old setup.
+We migrated the service to cassandra yesterday and it works fine.	We migrated the service to Cassandra yesterday and it works fine.
+Can you check the logs in dyna mo db, please?	Can you check the logs in DynamoDB, please?
+I have been working with dynamodb for two years now.	I have been working with DynamoDB for two years now.
+Let me know if clickhouse fails again tonight.	Let me know if ClickHouse fails again tonight.
+The team chose elasticsearch over the old setup.	The team chose Elasticsearch over the old setup.
+We migrated the service to opensearch yesterday and it works fine.	We migrated the service to OpenSearch yesterday and it works fine.
+Can you check the logs in calf ka, please?	Can you check the logs in Kafka, please?
+I have been working with kaf ka for two years now.	I have been working with Kafka for two years now.
+Let me know if kafka fails again tonight.	Let me know if Kafka fails again tonight.
+The team chose rabbit mq over the old setup.	The team chose RabbitMQ over the old setup.
+We migrated the service to rabbitmq yesterday and it works fine.	We migrated the service to RabbitMQ yesterday and it works fine.
+Can you check the logs in n eight n, please?	Can you check the logs in n8n, please?
+I have been working with n 8 n for two years now.	I have been working with n8n for two years now.
+Let me know if github fails again tonight.	Let me know if GitHub fails again tonight.
+The team chose jira over the old setup.	The team chose Jira over the old setup.
+We migrated the service to type script yesterday and it works fine.	We migrated the service to TypeScript yesterday and it works fine.
+Can you check the logs in j s, please?	Can you check the logs in JS, please?
+I have been working with js for two years now.	I have been working with JS for two years now.
+Let me know if golang fails again tonight.	Let me know if Golang fails again tonight.
+The team chose swiftui over the old setup.	The team chose SwiftUI over the old setup.
+We migrated the service to xcode yesterday and it works fine.	We migrated the service to Xcode yesterday and it works fine.
+Can you check the logs in cot lin, please?	Can you check the logs in Kotlin, please?
+I have been working with kotlin for two years now.	I have been working with Kotlin for two years now.
+Let me know if p h p fails again tonight.	Let me know if PHP fails again tonight.
+The team chose lara vel over the old setup.	The team chose Laravel over the old setup.
+We migrated the service to laravel yesterday and it works fine.	We migrated the service to Laravel yesterday and it works fine.
+Can you check the logs in node js, please?	Can you check the logs in Node.js, please?
+I have been working with next js for two years now.	I have been working with Next.js for two years now.
+Let me know if django fails again tonight.	Let me know if Django fails again tonight.
+The team chose fastapi over the old setup.	The team chose FastAPI over the old setup.
+We migrated the service to graph ql yesterday and it works fine.	We migrated the service to GraphQL yesterday and it works fine.
+Can you check the logs in graphql, please?	Can you check the logs in GraphQL, please?
+I have been working with g rpc for two years now.	I have been working with gRPC for two years now.
+Let me know if g r p c fails again tonight.	Let me know if gRPC fails again tonight.
+The team chose grpc over the old setup.	The team chose gRPC over the old setup.
+We migrated the service to a p i yesterday and it works fine.	We migrated the service to API yesterday and it works fine.
+Can you check the logs in s d k, please?	Can you check the logs in SDK, please?
+I have been working with sdk for two years now.	I have been working with SDK for two years now.
+Let me know if c l i fails again tonight.	Let me know if CLI fails again tonight.
+The team chose i d e over the old setup.	The team chose IDE over the old setup.
+We migrated the service to ide yesterday and it works fine.	We migrated the service to IDE yesterday and it works fine.
+Can you check the logs in s q l, please?	Can you check the logs in SQL, please?
+I have been working with nosql for two years now.	I have been working with NoSQL for two years now.
+Let me know if j son fails again tonight.	Let me know if JSON fails again tonight.
+The team chose y a m l over the old setup.	The team chose YAML over the old setup.
+We migrated the service to x m l yesterday and it works fine.	We migrated the service to XML yesterday and it works fine.
+Can you check the logs in h t m l, please?	Can you check the logs in HTML, please?
+I have been working with c s s for two years now.	I have been working with CSS for two years now.
+Let me know if h t t p fails again tonight.	Let me know if HTTP fails again tonight.
+The team chose h t t p s over the old setup.	The team chose HTTPS over the old setup.
+We migrated the service to o auth yesterday and it works fine.	We migrated the service to OAuth yesterday and it works fine.
+Can you check the logs in oauth, please?	Can you check the logs in OAuth, please?
+I have been working with j w t for two years now.	I have been working with JWT for two years now.
+Let me know if jwt fails again tonight.	Let me know if JWT fails again tonight.
+The team chose s s h over the old setup.	The team chose SSH over the old setup.
+We migrated the service to v p n yesterday and it works fine.	We migrated the service to VPN yesterday and it works fine.
+Can you check the logs in vpn, please?	Can you check the logs in VPN, please?
+I have been working with d n s for two years now.	I have been working with DNS for two years now.
+Let me know if t c p fails again tonight.	Let me know if TCP fails again tonight.
+The team chose u d p over the old setup.	The team chose UDP over the old setup.
+We migrated the service to udp yesterday and it works fine.	We migrated the service to UDP yesterday and it works fine.
+Can you check the logs in c d n, please?	Can you check the logs in CDN, please?
+I have been working with cdn for two years now.	I have been working with CDN for two years now.
+Let me know if saas fails again tonight.	Let me know if SaaS fails again tonight.
+The team chose a w s over the old setup.	The team chose AWS over the old setup.
+We migrated the service to aws yesterday and it works fine.	We migrated the service to AWS yesterday and it works fine.
+Can you check the logs in g c p, please?	Can you check the logs in GCP, please?
+I have been working with gcp for two years now.	I have been working with GCP for two years now.
+Let me know if a zure fails again tonight.	Let me know if Azure fails again tonight.
+The team chose cloudflare over the old setup.	The team chose Cloudflare over the old setup.
+We migrated the service to vercel yesterday and it works fine.	We migrated the service to Vercel yesterday and it works fine.
+Can you check the logs in net lify, please?	Can you check the logs in Netlify, please?
+I have been working with netlify for two years now.	I have been working with Netlify for two years now.
+Let me know if he roku fails again tonight.	Let me know if Heroku fails again tonight.
+The team chose heroku over the old setup.	The team chose Heroku over the old setup.
+We migrated the service to digitalocean yesterday and it works fine.	We migrated the service to DigitalOcean yesterday and it works fine.
+Can you check the logs in supa base, please?	Can you check the logs in Supabase, please?
+I have been working with supabase for two years now.	I have been working with Supabase for two years now.
+Let me know if ann sible fails again tonight.	Let me know if Ansible fails again tonight.
+The team chose ansible over the old setup.	The team chose Ansible over the old setup.
+We migrated the service to jenkins yesterday and it works fine.	We migrated the service to Jenkins yesterday and it works fine.
+Can you check the logs in github actions, please?	Can you check the logs in GitHub Actions, please?
+I have been working with ci cd for two years now.	I have been working with CI/CD for two years now.
+Let me know if c i c d fails again tonight.	Let me know if CI/CD fails again tonight.
+The team chose gra fana over the old setup.	The team chose Grafana over the old setup.
+We migrated the service to grafana yesterday and it works fine.	We migrated the service to Grafana yesterday and it works fine.
+Can you check the logs in prome theus, please?	Can you check the logs in Prometheus, please?
+I have been working with datadog for two years now.	I have been working with Datadog for two years now.
+Let me know if lin ux fails again tonight.	Let me know if Linux fails again tonight.
+The team chose oo boon too over the old setup.	The team chose Ubuntu over the old setup.
+We migrated the service to deb ian yesterday and it works fine.	We migrated the service to Debian yesterday and it works fine.
+Can you check the logs in debian, please?	Can you check the logs in Debian, please?
+I have been working with mac o s for two years now.	I have been working with macOS for two years now.
+Let me know if macos fails again tonight.	Let me know if macOS fails again tonight.
+The team chose i o s over the old setup.	The team chose iOS over the old setup.
+We migrated the service to ios yesterday and it works fine.	We migrated the service to iOS yesterday and it works fine.
+Can you check the logs in v s code, please?	Can you check the logs in VS Code, please?
+I have been working with neo vim for two years now.	I have been working with Neovim for two years now.
+Let me know if neovim fails again tonight.	Let me know if Neovim fails again tonight.
+The team chose intelli j over the old setup.	The team chose IntelliJ over the old setup.
+We migrated the service to intellij yesterday and it works fine.	We migrated the service to IntelliJ yesterday and it works fine.
+Can you check the logs in pycharm, please?	Can you check the logs in PyCharm, please?
+I have been working with webstorm for two years now.	I have been working with WebStorm for two years now.
+Let me know if swag ger fails again tonight.	Let me know if Swagger fails again tonight.
+The team chose openapi over the old setup.	The team chose OpenAPI over the old setup.
+We migrated the service to webpack yesterday and it works fine.	We migrated the service to Webpack yesterday and it works fine.
+Can you check the logs in vite, please?	Can you check the logs in Vite, please?
+I have been working with n p m for two years now.	I have been working with npm for two years now.
+Let me know if p n p m fails again tonight.	Let me know if pnpm fails again tonight.
+The team chose homebrew over the old setup.	The team chose Homebrew over the old setup.
+We migrated the service to z s h yesterday and it works fine.	We migrated the service to Zsh yesterday and it works fine.
+Can you check the logs in powershell, please?	Can you check the logs in PowerShell, please?
+I have been working with websocket for two years now.	I have been working with WebSocket for two years now.
+Let me know if webassembly fails again tonight.	Let me know if WebAssembly fails again tonight.
+The team chose dotnet over the old setup.	The team chose .NET over the old setup.
+We migrated the service to are dweeno yesterday and it works fine.	We migrated the service to Arduino yesterday and it works fine.
+Can you check the logs in arduino, please?	Can you check the logs in Arduino, please?
+I have been working with jetbrains for two years now.	I have been working with JetBrains for two years now.
+Let me know if openrouter fails again tonight.	Let me know if OpenRouter fails again tonight.
+The team chose ollama over the old setup.	The team chose Ollama over the old setup.
 I think open a i will handle this task better than the rest.	I think OpenAI will handle this task better than the rest.
 We compared the quality of openai on our own data.	We compared the quality of OpenAI on our own data.
 Try chat g p t for the first draft, then we edit it.	Try ChatGPT for the first draft, then we edit it.
@@ -207,57 +209,58 @@ Ping me in whatsapp when you are free.	Ping me in WhatsApp when you are free.
 We agreed to meet in skype at three.	We agreed to meet in Skype at three.
 The document is in viber, I gave you view access.	The document is in Viber, I gave you view access.
 Please install g mail on the new laptop.	Please install Gmail on the new laptop.
-Ping me in microsoft three six five when you are free.	Ping me in Microsoft 365 when you are free.
-We agreed to meet in one drive at three.	We agreed to meet in OneDrive at three.
-The document is in onedrive, I gave you view access.	The document is in OneDrive, I gave you view access.
-Please install sharepoint on the new laptop.	Please install SharePoint on the new laptop.
-Ping me in ever note when you are free.	Ping me in Evernote when you are free.
-We agreed to meet in evernote at three.	We agreed to meet in Evernote at three.
-The document is in airtable, I gave you view access.	The document is in Airtable, I gave you view access.
-Please install trello on the new laptop.	Please install Trello on the new laptop.
-Ping me in clickup when you are free.	Ping me in ClickUp when you are free.
-We agreed to meet in monday dot com at three.	We agreed to meet in Monday.com at three.
-The document is in miro, I gave you view access.	The document is in Miro, I gave you view access.
-Please install figma on the new laptop.	Please install Figma on the new laptop.
-Ping me in canva when you are free.	Ping me in Canva when you are free.
-We agreed to meet in calendly at three.	We agreed to meet in Calendly at three.
-The document is in zapier, I gave you view access.	The document is in Zapier, I gave you view access.
-Please install typeform on the new laptop.	Please install Typeform on the new laptop.
-Ping me in tilda when you are free.	Ping me in Tilda when you are free.
-We agreed to meet in webflow at three.	We agreed to meet in Webflow at three.
-The document is in word press, I gave you view access.	The document is in WordPress, I gave you view access.
-Please install wordpress on the new laptop.	Please install WordPress on the new laptop.
-Ping me in shopify when you are free.	Ping me in Shopify when you are free.
-We agreed to meet in wix at three.	We agreed to meet in Wix at three.
-The document is in todoist, I gave you view access.	The document is in Todoist, I gave you view access.
-Please install bitrix24 on the new laptop.	Please install Bitrix24 on the new laptop.
-Ping me in amocrm when you are free.	Ping me in amoCRM when you are free.
-We agreed to meet in you tube at three.	We agreed to meet in YouTube at three.
-The document is in tiktok, I gave you view access.	The document is in TikTok, I gave you view access.
-Please install linkedin on the new laptop.	Please install LinkedIn on the new laptop.
-Ping me in pinterest when you are free.	Ping me in Pinterest when you are free.
-We agreed to meet in spotify at three.	We agreed to meet in Spotify at three.
-The document is in netflix, I gave you view access.	The document is in Netflix, I gave you view access.
-Please install air b n b on the new laptop.	Please install Airbnb on the new laptop.
-Ping me in airbnb when you are free.	Ping me in Airbnb when you are free.
-We agreed to meet in booking dot com at three.	We agreed to meet in Booking.com at three.
-The document is in paypal, I gave you view access.	The document is in PayPal, I gave you view access.
-Please install i cloud on the new laptop.	Please install iCloud on the new laptop.
-Ping me in icloud when you are free.	Ping me in iCloud when you are free.
-We agreed to meet in i message at three.	We agreed to meet in iMessage at three.
-The document is in imessage, I gave you view access.	The document is in iMessage, I gave you view access.
-Please install facetime on the new laptop.	Please install FaceTime on the new laptop.
-Ping me in firefox when you are free.	Ping me in Firefox when you are free.
-We agreed to meet in 1password at three.	We agreed to meet in 1Password at three.
-The document is in bit warden, I gave you view access.	The document is in Bitwarden, I gave you view access.
-Please install bitwarden on the new laptop.	Please install Bitwarden on the new laptop.
-Ping me in ray cast when you are free.	Ping me in Raycast when you are free.
-We agreed to meet in raycast at three.	We agreed to meet in Raycast at three.
-The document is in v k, I gave you view access.	The document is in VK, I gave you view access.
-Please install vk on the new laptop.	Please install VK on the new laptop.
-Ping me in rutube when you are free.	Ping me in Rutube when you are free.
-We agreed to meet in zoho at three.	We agreed to meet in Zoho at three.
-The document is in mailchimp, I gave you view access.	The document is in Mailchimp, I gave you view access.
+Ping me in google docs when you are free.	Ping me in Google Docs when you are free.
+We agreed to meet in microsoft three six five at three.	We agreed to meet in Microsoft 365 at three.
+The document is in one drive, I gave you view access.	The document is in OneDrive, I gave you view access.
+Please install onedrive on the new laptop.	Please install OneDrive on the new laptop.
+Ping me in sharepoint when you are free.	Ping me in SharePoint when you are free.
+We agreed to meet in ever note at three.	We agreed to meet in Evernote at three.
+The document is in evernote, I gave you view access.	The document is in Evernote, I gave you view access.
+Please install airtable on the new laptop.	Please install Airtable on the new laptop.
+Ping me in trello when you are free.	Ping me in Trello when you are free.
+We agreed to meet in clickup at three.	We agreed to meet in ClickUp at three.
+The document is in monday dot com, I gave you view access.	The document is in Monday.com, I gave you view access.
+Please install miro on the new laptop.	Please install Miro on the new laptop.
+Ping me in figma when you are free.	Ping me in Figma when you are free.
+We agreed to meet in canva at three.	We agreed to meet in Canva at three.
+The document is in calendly, I gave you view access.	The document is in Calendly, I gave you view access.
+Please install zapier on the new laptop.	Please install Zapier on the new laptop.
+Ping me in typeform when you are free.	Ping me in Typeform when you are free.
+We agreed to meet in tilda at three.	We agreed to meet in Tilda at three.
+The document is in webflow, I gave you view access.	The document is in Webflow, I gave you view access.
+Please install word press on the new laptop.	Please install WordPress on the new laptop.
+Ping me in wordpress when you are free.	Ping me in WordPress when you are free.
+We agreed to meet in shopify at three.	We agreed to meet in Shopify at three.
+The document is in wix, I gave you view access.	The document is in Wix, I gave you view access.
+Please install todoist on the new laptop.	Please install Todoist on the new laptop.
+Ping me in bitrix24 when you are free.	Ping me in Bitrix24 when you are free.
+We agreed to meet in amocrm at three.	We agreed to meet in amoCRM at three.
+The document is in you tube, I gave you view access.	The document is in YouTube, I gave you view access.
+Please install tiktok on the new laptop.	Please install TikTok on the new laptop.
+Ping me in linkedin when you are free.	Ping me in LinkedIn when you are free.
+We agreed to meet in pinterest at three.	We agreed to meet in Pinterest at three.
+The document is in spotify, I gave you view access.	The document is in Spotify, I gave you view access.
+Please install netflix on the new laptop.	Please install Netflix on the new laptop.
+Ping me in air b n b when you are free.	Ping me in Airbnb when you are free.
+We agreed to meet in airbnb at three.	We agreed to meet in Airbnb at three.
+The document is in booking dot com, I gave you view access.	The document is in Booking.com, I gave you view access.
+Please install paypal on the new laptop.	Please install PayPal on the new laptop.
+Ping me in i cloud when you are free.	Ping me in iCloud when you are free.
+We agreed to meet in icloud at three.	We agreed to meet in iCloud at three.
+The document is in i message, I gave you view access.	The document is in iMessage, I gave you view access.
+Please install imessage on the new laptop.	Please install iMessage on the new laptop.
+Ping me in facetime when you are free.	Ping me in FaceTime when you are free.
+We agreed to meet in firefox at three.	We agreed to meet in Firefox at three.
+The document is in 1password, I gave you view access.	The document is in 1Password, I gave you view access.
+Please install bit warden on the new laptop.	Please install Bitwarden on the new laptop.
+Ping me in bitwarden when you are free.	Ping me in Bitwarden when you are free.
+We agreed to meet in ray cast at three.	We agreed to meet in Raycast at three.
+The document is in raycast, I gave you view access.	The document is in Raycast, I gave you view access.
+Please install v k on the new laptop.	Please install VK on the new laptop.
+Ping me in vk when you are free.	Ping me in VK when you are free.
+We agreed to meet in rutube at three.	We agreed to meet in Rutube at three.
+The document is in zoho, I gave you view access.	The document is in Zoho, I gave you view access.
+Please install mailchimp on the new laptop.	Please install Mailchimp on the new laptop.
 We discussed o k r at the planning meeting.	We discussed OKR at the planning meeting.
 I want to introduce o k r s for the next quarter.	I want to introduce OKR for the next quarter.
 Please update the okr before Friday.	Please update the OKR before Friday.
@@ -301,18 +304,17 @@ Our managers rely on adr every week.	Our managers rely on ADR every week.
 We discussed s l a at the planning meeting.	We discussed SLA at the planning meeting.
 I want to introduce sla for the next quarter.	I want to introduce SLA for the next quarter.
 Please update the s l o before Friday.	Please update the SLO before Friday.
-Our managers rely on one on one every week.	Our managers rely on 1-on-1 every week.
-We discussed youtrack at the planning meeting.	We discussed YouTrack at the planning meeting.
-I want to introduce redmine for the next quarter.	I want to introduce Redmine for the next quarter.
-Please update the wrike before Friday.	Please update the Wrike before Friday.
-Our managers rely on smartsheet every week.	Our managers rely on Smartsheet every week.
-We discussed productboard at the planning meeting.	We discussed Productboard at the planning meeting.
-I want to introduce fig jam for the next quarter.	I want to introduce FigJam for the next quarter.
-Please update the figjam before Friday.	Please update the FigJam before Friday.
-Our managers rely on lucid chart every week.	Our managers rely on Lucidchart every week.
-We discussed lucidchart at the planning meeting.	We discussed Lucidchart at the planning meeting.
-I want to introduce bitrix for the next quarter.	I want to introduce Bitrix for the next quarter.
-Please update the megaplan before Friday.	Please update the Megaplan before Friday.
+Our managers rely on youtrack every week.	Our managers rely on YouTrack every week.
+We discussed redmine at the planning meeting.	We discussed Redmine at the planning meeting.
+I want to introduce wrike for the next quarter.	I want to introduce Wrike for the next quarter.
+Please update the smartsheet before Friday.	Please update the Smartsheet before Friday.
+Our managers rely on productboard every week.	Our managers rely on Productboard every week.
+We discussed fig jam at the planning meeting.	We discussed FigJam at the planning meeting.
+I want to introduce figjam for the next quarter.	I want to introduce FigJam for the next quarter.
+Please update the lucid chart before Friday.	Please update the Lucidchart before Friday.
+Our managers rely on lucidchart every week.	Our managers rely on Lucidchart every week.
+We discussed bitrix at the planning meeting.	We discussed Bitrix at the planning meeting.
+I want to introduce megaplan for the next quarter.	I want to introduce Megaplan for the next quarter.
 The director asked about b two b and I did not have a number.	The director asked about B2B and I did not have a number.
 Let us look at b2b month by month.	Let us look at B2B month by month.
 We should calculate b two c again next week.	We should calculate B2C again next week.
@@ -617,3 +619,44 @@ Exporting from freepik takes too long.	Exporting from Freepik takes too long.
 Open excalidraw and I will show you the spacing issue.	Open Excalidraw and I will show you the spacing issue.
 We keep all components in penpot.	We keep all components in Penpot.
 The designer made the layout in v zero, take a look.	The designer made the layout in v0, take a look.
+# independent
+Push the branch to github and open a pull request.	Push the branch to GitHub and open a pull request.
+We run everything on kubernetes now.	We run everything on Kubernetes now.
+The data lives in post gress on a separate server.	The data lives in PostgreSQL on a separate server.
+Ask chat gpt to summarize the thread.	Ask ChatGPT to summarize the thread.
+Open a i released a new model this week.	OpenAI released a new model this week.
+Send me the j son file when you can.	Send me the JSON file when you can.
+The a p i returns an error after midnight.	The API returns an error after midnight.
+Our k p i for this quarter is retention.	Our KPI for this quarter is retention.
+Please sign the n d a before the call.	Please sign the NDA before the call.
+We deploy everything on a w s these days.	We deploy everything on AWS these days.
+Check the logs in grafana, the spike is obvious.	Check the logs in Grafana, the spike is obvious.
+He wrote the service in type script last year.	He wrote the service in TypeScript last year.
+I use v s code for most projects.	I use VS Code for most projects.
+Install node js and npm first.	Install Node.js and npm first.
+Create the ticket in jira and assign it to me.	Create the ticket in Jira and assign it to me.
+Message me on whatsapp later tonight.	Message me on WhatsApp later tonight.
+The designer shared the file in figma yesterday.	The designer shared the file in Figma yesterday.
+Our m r r grew ten percent in May.	Our MRR grew ten percent in May.
+The c e o approved the plan this morning.	The CEO approved the plan this morning.
+She is the new c t o of the company.	She is the new CTO of the company.
+Our o k r for the third quarter is simple.	Our OKR for the third quarter is simple.
+The g d p r requires clear consent from users.	The GDPR requires clear consent from users.
+Is the s l a signed already?	Is the SLA signed already?
+The p d f is attached to this email.	The PDF is attached to this email.
+Export the logo as an s v g file.	Export the logo as an SVG file.
+I asked deep seek about it and got a short answer.	I asked DeepSeek about it and got a short answer.
+Try mid journey for the poster draft.	Try Midjourney for the poster draft.
+Run it with pie torch on the g p u.	Run it with PyTorch on the GPU.
+He uses neo vim all day long.	He uses Neovim all day long.
+Our c r m is very slow in the mornings.	Our CRM is very slow in the mornings.
+Put the check into the c i c d pipeline.	Put the check into the CI/CD pipeline.
+Open the project in xcode and press run.	Open the project in Xcode and press run.
+The app is built with swiftui and runs on every Mac.	The app is built with SwiftUI and runs on every Mac.
+Call the a p i again after the token refresh.	Call the API again after the token refresh.
+Please connect the s s h key to your account.	Please connect the SSH key to your account.
+The project runs on docker compose locally.	The project runs on Docker Compose locally.
+We are moving the queue from rabbit mq to kafka.	We are moving the queue from RabbitMQ to Kafka.
+My cousin works at nvidia now.	My cousin works at NVIDIA now.
+Share the doc in google docs and give me access.	Share the doc in Google Docs and give me access.
+The loop runs on the g c p cluster overnight.	The loop runs on the GCP cluster overnight.

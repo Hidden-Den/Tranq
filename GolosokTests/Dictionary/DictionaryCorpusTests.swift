@@ -22,11 +22,13 @@ final class DictionaryCorpusTests: XCTestCase {
 
     // MARK: - Resources
 
+    /// Отсутствующий корпус обязан валить тест, а не пропускать его: иначе защита от порчи речи молча исчезает.
     private func resourceURL(_ name: String, _ ext: String) throws -> URL {
         let bundle = Bundle(for: Self.self)
         if let url = bundle.url(forResource: name, withExtension: ext, subdirectory: "DictionaryCorpus") { return url }
         if let url = bundle.url(forResource: name, withExtension: ext) { return url }
-        throw XCTSkip("Нет ресурса \(name).\(ext)")
+        XCTFail("Нет ресурса \(name).\(ext) в тестовом бандле")
+        throw CocoaError(.fileNoSuchFile)
     }
 
     private func lines(_ name: String) throws -> [String] {
@@ -34,13 +36,30 @@ final class DictionaryCorpusTests: XCTestCase {
         return text.components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
-    private func pairs(_ name: String) throws -> [(input: String, expected: String)] {
+    private struct Row {
+        let input: String
+        let expected: String
+        /// Строка из блока после маркера `# independent`: написана без оглядки на списки вариантов.
+        let independent: Bool
+    }
+
+    /// Строки `вход<TAB>ожидаемо`. Пустые строки пропускаются, `# independent` открывает независимый блок.
+    /// Любая другая строка, где не ровно две непустые колонки, считается ошибкой корпуса.
+    private func pairs(_ name: String) throws -> [Row] {
         let text = try String(contentsOf: resourceURL(name, "tsv"), encoding: .utf8)
-        return text.components(separatedBy: "\n").compactMap { line in
+        var independent = false
+        var rows: [Row] = []
+        for (number, line) in text.components(separatedBy: "\n").enumerated() {
+            if line.trimmingCharacters(in: .whitespaces).isEmpty { continue }
+            if line == "# independent" { independent = true; continue }
             let parts = line.components(separatedBy: "\t")
-            guard parts.count == 2, !parts[0].isEmpty else { return nil }
-            return (parts[0], parts[1])
+            guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else {
+                XCTFail("\(name).tsv:\(number + 1): строка не из двух непустых колонок: \(line)")
+                continue
+            }
+            rows.append(Row(input: parts[0], expected: parts[1], independent: independent))
         }
+        return rows
     }
 
     /// Печатает итог и дублирует его именем действия, чтобы строка попала в отчёт xcresult.
@@ -78,14 +97,22 @@ final class DictionaryCorpusTests: XCTestCase {
     private func assertShouldFix(_ name: String, _ language: DictionaryLanguage) throws {
         let corpus = try pairs(name)
         XCTAssertGreaterThanOrEqual(corpus.count, 150, "Корпус слишком мал")
+        XCTAssertGreaterThanOrEqual(corpus.filter(\.independent).count, 40, "Независимых строк меньше 40")
         var failures: [String] = []
-        for pair in corpus {
-            let result = index.apply(to: pair.input, language: language).text
-            if result != pair.expected { failures.append("\(pair.input)\n   ждали: \(pair.expected)\n   вышло: \(result)") }
+        var independentFailures = 0
+        for row in corpus {
+            let result = index.apply(to: row.input, language: language).text
+            if result != row.expected {
+                failures.append("\(row.independent ? "[independent] " : "")\(row.input)\n   ждали: \(row.expected)\n   вышло: \(result)")
+                if row.independent { independentFailures += 1 }
+            }
         }
         let rate = Double(corpus.count - failures.count) / Double(max(corpus.count, 1))
-        report("SHOULD-FIX \(name): \(corpus.count - failures.count)/\(corpus.count) = \(String(format: "%.1f", rate * 100))%")
-        for failure in failures.prefix(20) { report("SHOULD-FIX miss: " + failure.replacingOccurrences(of: "\n", with: " | ")) }
+        let independentTotal = corpus.filter(\.independent).count
+        func percent(_ ok: Int, _ total: Int) -> String { String(format: "%.1f", Double(ok) / Double(max(total, 1)) * 100) }
+        report("SHOULD-FIX \(name): \(corpus.count - failures.count)/\(corpus.count) = \(percent(corpus.count - failures.count, corpus.count))%")
+        report("SHOULD-FIX independent \(name): \(independentTotal - independentFailures)/\(independentTotal) = \(percent(independentTotal - independentFailures, independentTotal))%")
+        for failure in failures.prefix(40) { report("SHOULD-FIX miss: " + failure.replacingOccurrences(of: "\n", with: " | ")) }
         XCTAssertGreaterThanOrEqual(
             rate, 0.95,
             "Исправлено \(String(format: "%.1f", rate * 100))%. Первые 20 провалов:\n" + failures.prefix(20).joined(separator: "\n")
