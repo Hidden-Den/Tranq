@@ -227,20 +227,47 @@ struct VoiceIntelligenceSection: View {
 
                     Divider().background(Color.uiHairline)
 
-                    // Словарь и адаптивное обучение
+                    // Словарь
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Словарь и обучение")
+                            Text("Словарь")
                                 .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
-                            Text("Справочник терминов, автозамены речи и системный промпт")
+                            Text("Свои слова и наборы терминов")
                                 .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
-                        UIOutlineButton(title: "Открыть словарь") {
+                        UIOutlineButton(title: "Открыть") {
                             NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
                         }
+                    }
+
+                    Divider().background(Color.uiHairline)
+
+                    // Инструкция модели
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .center) {
+                            Text("Инструкция модели")
+                                .font(.ui(.body, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Spacer()
+                            UIOutlineButton(title: "По умолчанию") {
+                                settings.customSystemPrompt = VoiceIntelligenceSettings.defaultCustomPrompt
+                            }
+                            .disabled(settings.customSystemPrompt == VoiceIntelligenceSettings.defaultCustomPrompt)
+                        }
+                        TextEditor(text: $settings.customSystemPrompt)
+                            .font(.ui(.footnote, design: .monospaced))
+                            .foregroundColor(.uiInk)
+                            .lineSpacing(3)
+                            .scrollContentBackground(.hidden)
+                            .padding(10)
+                            .frame(height: 160)
+                            .background(Color.uiCanvas)
+                            .cornerRadius(UIRadius.sm)
+                            .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
+                            .accessibilityLabel(Text("Инструкция модели"))
                     }
                 }
             }
