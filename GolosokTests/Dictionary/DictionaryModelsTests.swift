@@ -30,6 +30,24 @@ final class DictionaryModelsTests: XCTestCase {
         XCTAssertFalse(c.isCommonWord("github", language: .en))
     }
 
+    func testSpellCheckerGivesSameAnswersFromManyThreads() {
+        let c = SpellCommonWordChecker()
+        let words: [(String, DictionaryLanguage, Bool)] = [
+            ("питон", .ru, true), ("кубер", .ru, false), ("slack", .en, true), ("github", .en, false),
+        ]
+        let mismatches = NSLock()
+        var wrong = 0
+        DispatchQueue.concurrentPerform(iterations: 200) { i in
+            let (word, language, expected) = words[i % words.count]
+            if c.isCommonWord(word, language: language) != expected {
+                mismatches.lock()
+                wrong += 1
+                mismatches.unlock()
+            }
+        }
+        XCTAssertEqual(wrong, 0)
+    }
+
     func testSetCheckerIsCaseInsensitive() {
         let c = SetCommonWordChecker([.en: ["slack"]])
         XCTAssertTrue(c.isCommonWord("Slack", language: .en))

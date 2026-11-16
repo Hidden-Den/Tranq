@@ -5,8 +5,12 @@ protocol CommonWordChecking {
 }
 
 /// Словарное слово по `NSSpellChecker`. Результаты кэшируются.
+/// Индекс словаря строится на фоновой очереди, поэтому вызовы `NSSpellChecker` идут строго по одному.
 final class SpellCommonWordChecker: CommonWordChecking {
     static let shared = SpellCommonWordChecker()
+
+    /// Общий для всех экземпляров: `NSSpellChecker.shared` один на процесс.
+    private static let spellLock = NSLock()
 
     private let lock = NSLock()
     private var cache: [String: Bool] = [:]
@@ -20,7 +24,8 @@ final class SpellCommonWordChecker: CommonWordChecking {
         }
         lock.unlock()
 
-        let result = Self.check(word.lowercased(), language: language)
+        // Недоступный язык не кэшируется: словарь может появиться позже.
+        guard let result = Self.check(word.lowercased(), language: language) else { return false }
 
         lock.lock()
         cache[key] = result
@@ -28,11 +33,14 @@ final class SpellCommonWordChecker: CommonWordChecking {
         return result
     }
 
-    private static func check(_ word: String, language: DictionaryLanguage) -> Bool {
+    /// `nil`, если язык недоступен в системе.
+    private static func check(_ word: String, language: DictionaryLanguage) -> Bool? {
         guard !word.isEmpty else { return false }
+        spellLock.lock()
+        defer { spellLock.unlock() }
         let checker = NSSpellChecker.shared
         guard let code = checker.availableLanguages.first(where: { $0.hasPrefix(language.rawValue) }) else {
-            return false
+            return nil
         }
         let range = checker.checkSpelling(
             of: word, startingAt: 0, language: code, wrap: false,
