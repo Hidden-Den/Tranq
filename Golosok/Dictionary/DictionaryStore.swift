@@ -8,12 +8,23 @@ import Combine
 /// Индекс пересобирается на фоновой очереди и подменяется целиком. `index`, `promptHint`,
 /// `recordReplacements`, `replacements(for:)` и `registerHits` можно вызывать с любого потока.
 final class DictionaryStore: ObservableObject {
-    static let shared = DictionaryStore(
-        directory: AppEnvironment.dataDirectory,
-        defaults: AppEnvironment.defaults,
-        packsBundle: .main,
-        checker: SpellCommonWordChecker.shared
-    )
+    static let shared: DictionaryStore = {
+        let store = DictionaryStore(
+            directory: AppEnvironment.dataDirectory,
+            defaults: AppEnvironment.defaults,
+            packsBundle: .main,
+            checker: SpellCommonWordChecker.shared
+        )
+        // Перенос идёт на главном потоке. Из другого потока он ставится в очередь без ожидания:
+        // синхронный переход на главный из инициализатора `static let` мог бы заблокироваться.
+        let migrate = {
+            DictionaryMigration.runIfNeeded(
+                store: store, directory: AppEnvironment.dataDirectory, defaults: AppEnvironment.defaults
+            )
+        }
+        if Thread.isMainThread { migrate() } else { DispatchQueue.main.async(execute: migrate) }
+        return store
+    }()
 
     /// Порядок наборов на экране и в индексе.
     static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design"]
@@ -21,6 +32,7 @@ final class DictionaryStore: ObservableObject {
     static let schemaVersion = 1
     static let fileName = "dictionary.json"
     static let backupFileName = "dictionary.backup.json"
+    static let corruptFileName = "dictionary.corrupt.json"
 
     private enum Keys {
         static let learningEnabled = "dictionary.learningEnabled"
@@ -91,7 +103,7 @@ final class DictionaryStore: ObservableObject {
         disabledPackVariants = Set(defaults.stringArray(forKey: Keys.disabledPackVariants) ?? [])
         self.packs = packs ?? Self.loadPacks(from: packsBundle)
 
-        let loaded = Self.loadEntries(main: mainURL, backup: backupURL)
+        let loaded = Self.loadEntries(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
         let cutoff = now().addingTimeInterval(-Self.learnedLifetime)
         let kept = loaded.filter { $0.source != .learned || ($0.lastUsed ?? $0.createdAt) >= cutoff }
         userEntries = kept
@@ -450,8 +462,18 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
-    private static func loadEntries(main: URL, backup: URL) -> [DictionaryEntry] {
+    /// Нечитаемый основной файл переносится в `dictionary.corrupt.json`, прежняя испорченная копия затирается:
+    /// иначе следующая запись заменила бы его и данные пропали бы безвозвратно.
+    private static func loadEntries(main: URL, backup: URL, corrupt: URL) -> [DictionaryEntry] {
         if let entries = readEntries(at: main) { return entries }
+        if FileManager.default.fileExists(atPath: main.path) {
+            try? FileManager.default.removeItem(at: corrupt)
+            do {
+                try FileManager.default.moveItem(at: main, to: corrupt)
+            } catch {
+                AppLogger.shared.warn("Dictionary", "Испорченный файл словаря не перенесён", details: error.localizedDescription)
+            }
+        }
         if let entries = readEntries(at: backup) {
             if FileManager.default.fileExists(atPath: main.path) {
                 AppLogger.shared.warn("Dictionary", "Словарь загружен из резервной копии")

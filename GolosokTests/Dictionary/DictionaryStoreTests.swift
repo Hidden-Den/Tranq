@@ -176,6 +176,22 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.map(\.spelling) == ["Kubernetes"])
         }
 
+        @Test func corruptMainFileIsMovedAsideAndOverwritesPreviousCorruptCopy() throws {
+            let corruptURL = directory.appendingPathComponent("dictionary.corrupt.json")
+            try Data("старый мусор".utf8).write(to: corruptURL)
+            try Data("{не json".utf8).write(to: mainURL)
+
+            let store = makeStore()
+            #expect(store.userEntries.isEmpty)
+            #expect(try String(contentsOf: corruptURL, encoding: .utf8) == "{не json")
+            #expect(!FileManager.default.fileExists(atPath: mainURL.path))
+
+            store.addEntry(spelling: "GitHub", variants: [.ru: ["гитхаб"]], source: .manual)
+            store.flush()
+            #expect(try String(contentsOf: corruptURL, encoding: .utf8) == "{не json")
+            #expect(try savedSpellings(mainURL) == ["GitHub"])
+        }
+
         @Test func corruptBothFilesGivesEmptyButPacksWork() throws {
             try Data("мусор".utf8).write(to: mainURL)
             try Data("ещё мусор".utf8).write(to: backupURL)
