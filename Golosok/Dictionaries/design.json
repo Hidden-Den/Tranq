@@ -21,7 +21,7 @@
       "spelling" : "InDesign",
       "variants" : {
         "en" : [
-          "in design"
+
         ],
         "ru" : [
           "индизайн",
@@ -65,7 +65,7 @@
       "spelling" : "Lightroom",
       "variants" : {
         "en" : [
-          "light room"
+
         ],
         "ru" : [
           "лайтрум",
@@ -212,7 +212,7 @@
 
         ],
         "ru" : [
-          "лотти"
+
         ]
       }
     },
@@ -223,7 +223,7 @@
       "spelling" : "Storybook",
       "variants" : {
         "en" : [
-          "story book"
+
         ],
         "ru" : [
           "сторибук",
@@ -241,7 +241,6 @@
 
         ],
         "ru" : [
-          "дрибл",
           "дриббл"
         ]
       }
@@ -522,7 +521,7 @@
       "spelling" : "Tailwind",
       "variants" : {
         "en" : [
-          "tail wind"
+
         ],
         "ru" : [
           "тейлвинд",
@@ -597,7 +596,6 @@
 
         ],
         "ru" : [
-          "хироуикон",
           "хиро айконс"
         ]
       }
@@ -626,7 +624,6 @@
           "un splash"
         ],
         "ru" : [
-          "анспласт",
           "ансплэш"
         ]
       }
@@ -638,7 +635,7 @@
       "spelling" : "Freepik",
       "variants" : {
         "en" : [
-          "free pic"
+
         ],
         "ru" : [
           "фрипик",
@@ -670,8 +667,7 @@
 
         ],
         "ru" : [
-          "эксклидро",
-          "эксалидро"
+
         ]
       }
     },
@@ -682,7 +678,7 @@
       "spelling" : "Penpot",
       "variants" : {
         "en" : [
-          "pen pot"
+
         ],
         "ru" : [
           "пенпот",

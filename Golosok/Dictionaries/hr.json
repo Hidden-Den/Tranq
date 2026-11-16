@@ -10,8 +10,7 @@
           "h r"
         ],
         "ru" : [
-          "эйч эр",
-          "ашар"
+          "эйч эр"
         ]
       }
     },
@@ -124,8 +123,7 @@
 
         ],
         "ru" : [
-          "тэлент экизишн",
-          "талент акйизишн"
+          "тэлент экизишн"
         ]
       }
     },
@@ -167,7 +165,7 @@
 
         ],
         "ru" : [
-          "пип план"
+
         ]
       }
     },
@@ -235,7 +233,7 @@
       "spelling" : "HeadHunter",
       "variants" : {
         "en" : [
-          "head hunter"
+
         ],
         "ru" : [
           "хедхантер",
@@ -280,7 +278,7 @@
       "spelling" : "Workday",
       "variants" : {
         "en" : [
-          "work day"
+
         ],
         "ru" : [
           "воркдей",
@@ -378,13 +376,13 @@
       "commonIn" : [
 
       ],
-      "spelling" : "TeamTailor",
+      "spelling" : "Teamtailor",
       "variants" : {
         "en" : [
-          "team tailor"
+
         ],
         "ru" : [
-          "тим тейлор"
+
         ]
       }
     },
@@ -525,7 +523,7 @@
       "spelling" : "SuccessFactors",
       "variants" : {
         "en" : [
-          "success factors"
+
         ],
         "ru" : [
           "саксесс фэкторс",

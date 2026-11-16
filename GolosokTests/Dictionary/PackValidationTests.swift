@@ -131,11 +131,34 @@ struct PackValidationTests {
     static let deniedVariants: Set<String> = [
         "кубик", "питон", "свифт", "сас", "рои", "сла", "хр",
         "jason", "джейсон", "джанго", "no js", "view js", "sas",
+        // Отзыв по задаче 10: обычные строки, имена и естественные английские фразы.
+        "дал и", "а о", "о о о", "сок два", "смарт цели", "лин менеджмент", "москов приоритизация", "райс приоритизация", "пип план", "фрэнд лицензии", "мау юзеры", "дау юзеры", "вау юзеры", "продакт оунер", "стабильная диффузия", "диаграмма ганта", "клод", "джемма", "лотти", "кими", "тим тейлор", "асана", "мурал", "роми", "гант", "ашар", "дрибл", "бик", "вк", "чёрн", "черн", "ванг драйв", "base camp", "sales force", "head hunter", "work day", "success factors", "in design", "light room", "story book", "tail wind", "power point", "tick tock", "linked in", "one password", "face time", "drop box", "share point", "air table", "click up", "web flow", "pine cone", "cloud code", "lead pages", "link tree", "melt water", "red mine", "you track", "smart sheet", "product board", "brand watch", "hot jar", "mix panel", "sub stack", "tech stars", "fresh desk", "type form", "fire fox", "quick books", "deep mind", "free pic", "pen pot", "wind surf", "талент акйизишн", "гугл календар", "гугл мийт", "тексторс", "анспласт", "эксклидро", "эксалидро", "хироуикон", "team tailor", "юпитер ноутбук", "хром браузер",
     ]
 
     @Test func testNoDeniedVariants() {
         for item in allVariants {
             #expect(!Self.deniedVariants.contains(item.variant.lowercased()), "\(item.pack)/\(item.spelling): запрещённый вариант «\(item.variant)»")
+        }
+    }
+
+    /// Обычные русские слова, которые нельзя ставить последним словом варианта для написания из одного слова:
+    /// замена проглотила бы слово, например «смарт цели» вместо «SMART цели». Явный список выбран вместо проверки
+    /// по словарю: словарь помечает и законные части произношения вроде «дроп бокс» или «эс».
+    static let ordinaryTrailingWords: Set<String> = [
+        "цели", "менеджмент", "приоритизация", "план", "лицензии", "юзеры", "диаграмма", "ноутбук", "браузер",
+        "мессенджер", "рекрутинг", "презентации", "оптимизация", "платежи", "трансфер", "реклама", "тест",
+        "квалификация", "музыка", "диск", "лицензия", "методология", "фреймворк", "матрица",
+    ]
+
+    @Test func testNoMultiWordRuVariantEndsWithOrdinaryWord() {
+        for pack in packs {
+            for entry in pack.entries where entry.spelling.split(whereSeparator: \.isWhitespace).count == 1 {
+                for variant in entry.variants[.ru] ?? [] {
+                    let words = variant.split(whereSeparator: \.isWhitespace)
+                    guard words.count > 1, let last = words.last else { continue }
+                    #expect(!Self.ordinaryTrailingWords.contains(String(last)), "\(pack.id)/\(entry.spelling): «\(variant)» оканчивается обычным словом «\(last)»")
+                }
+            }
         }
     }
 

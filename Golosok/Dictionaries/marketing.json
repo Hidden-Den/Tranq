@@ -166,7 +166,7 @@
 
         ],
         "ru" : [
-          "роми"
+
         ]
       }
     },
@@ -482,7 +482,7 @@
       "spelling" : "Hotjar",
       "variants" : {
         "en" : [
-          "hot jar"
+
         ],
         "ru" : [
           "хотджар",
@@ -497,7 +497,7 @@
       "spelling" : "Mixpanel",
       "variants" : {
         "en" : [
-          "mix panel"
+
         ],
         "ru" : [
           "микспанел",
@@ -538,7 +538,7 @@
       "commonIn" : [
 
       ],
-      "spelling" : "Buzzsumo",
+      "spelling" : "BuzzSumo",
       "variants" : {
         "en" : [
           "buzz sumo"
@@ -669,7 +669,7 @@
       "spelling" : "Linktree",
       "variants" : {
         "en" : [
-          "link tree"
+
         ],
         "ru" : [
           "линктри",
@@ -713,7 +713,7 @@
       "spelling" : "Substack",
       "variants" : {
         "en" : [
-          "sub stack"
+
         ],
         "ru" : [
           "субстэк",
@@ -757,7 +757,7 @@
       "spelling" : "Leadpages",
       "variants" : {
         "en" : [
-          "lead pages"
+
         ],
         "ru" : [
           "лидпейджес",
@@ -798,7 +798,7 @@
       "commonIn" : [
 
       ],
-      "spelling" : "Phantombuster",
+      "spelling" : "PhantomBuster",
       "variants" : {
         "en" : [
           "phantom buster"
@@ -830,7 +830,7 @@
       "spelling" : "Brandwatch",
       "variants" : {
         "en" : [
-          "brand watch"
+
         ],
         "ru" : [
           "брендвотч",
@@ -845,7 +845,7 @@
       "spelling" : "Meltwater",
       "variants" : {
         "en" : [
-          "melt water"
+
         ],
         "ru" : [
           "мелтвотер",

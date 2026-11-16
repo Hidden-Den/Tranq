@@ -83,8 +83,7 @@
 
         ],
         "ru" : [
-          "гугл мит",
-          "гугл мийт"
+          "гугл мит"
         ]
       }
     },
@@ -214,8 +213,7 @@
 
         ],
         "ru" : [
-          "гугл календарь",
-          "гугл календар"
+          "гугл календарь"
         ]
       }
     },
@@ -269,7 +267,7 @@
       "spelling" : "PowerPoint",
       "variants" : {
         "en" : [
-          "power point"
+
         ],
         "ru" : [
           "пауэрпоинт",
@@ -288,8 +286,7 @@
           "one drive"
         ],
         "ru" : [
-          "ван драйв",
-          "ванг драйв"
+          "ван драйв"
         ]
       }
     },
@@ -300,7 +297,7 @@
       "spelling" : "SharePoint",
       "variants" : {
         "en" : [
-          "share point"
+
         ],
         "ru" : [
           "шерпоинт",
@@ -315,7 +312,7 @@
       "spelling" : "Dropbox",
       "variants" : {
         "en" : [
-          "drop box"
+
         ],
         "ru" : [
           "дроп бокс"
@@ -358,7 +355,7 @@
       "spelling" : "Airtable",
       "variants" : {
         "en" : [
-          "air table"
+
         ],
         "ru" : [
           "эйртейбл",
@@ -390,7 +387,7 @@
 
         ],
         "ru" : [
-          "асана"
+
         ]
       }
     },
@@ -401,7 +398,7 @@
       "spelling" : "ClickUp",
       "variants" : {
         "en" : [
-          "click up"
+
         ],
         "ru" : [
           "кликап",
@@ -517,7 +514,7 @@
       "spelling" : "Typeform",
       "variants" : {
         "en" : [
-          "type form"
+
         ],
         "ru" : [
           "тайпформ",
@@ -546,7 +543,7 @@
       "spelling" : "Webflow",
       "variants" : {
         "en" : [
-          "web flow"
+
         ],
         "ru" : [
           "вебфлоу",
@@ -677,7 +674,7 @@
       "spelling" : "TikTok",
       "variants" : {
         "en" : [
-          "tick tock"
+
         ],
         "ru" : [
           "тикток",
@@ -692,7 +689,7 @@
       "spelling" : "LinkedIn",
       "variants" : {
         "en" : [
-          "linked in"
+
         ],
         "ru" : [
           "линкедин",
@@ -909,7 +906,7 @@
           "i message"
         ],
         "ru" : [
-          "айметсадж",
+          "аймессадж",
           "ай мессадж"
         ]
       }
@@ -921,7 +918,7 @@
       "spelling" : "FaceTime",
       "variants" : {
         "en" : [
-          "face time"
+
         ],
         "ru" : [
           "фейс тайм"
@@ -952,7 +949,7 @@
 
         ],
         "ru" : [
-          "хром браузер"
+
         ]
       }
     },
@@ -963,7 +960,7 @@
       "spelling" : "Firefox",
       "variants" : {
         "en" : [
-          "fire fox"
+
         ],
         "ru" : [
           "файрфокс",
@@ -978,7 +975,7 @@
       "spelling" : "1Password",
       "variants" : {
         "en" : [
-          "one password"
+
         ],
         "ru" : [
           "ван пассворд",
@@ -1026,7 +1023,6 @@
           "v k"
         ],
         "ru" : [
-          "вк",
           "вэ ка"
         ]
       }

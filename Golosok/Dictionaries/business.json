@@ -223,7 +223,7 @@
 
         ],
         "ru" : [
-          "мау юзеры"
+
         ]
       }
     },
@@ -237,7 +237,7 @@
 
         ],
         "ru" : [
-          "дау юзеры"
+
         ]
       }
     },
@@ -251,7 +251,7 @@
 
         ],
         "ru" : [
-          "вау юзеры"
+
         ]
       }
     },
@@ -265,8 +265,7 @@
 
         ],
         "ru" : [
-          "чёрн",
-          "черн"
+
         ]
       }
     },
@@ -591,10 +590,9 @@
       "spelling" : "Techstars",
       "variants" : {
         "en" : [
-          "tech stars"
+
         ],
         "ru" : [
-          "тексторс",
           "тек старс"
         ]
       }
@@ -659,29 +657,15 @@
     },
     {
       "commonIn" : [
-
+        "en"
       ],
-      "spelling" : "ProductHunt",
+      "spelling" : "Product Hunt",
       "variants" : {
         "en" : [
-          "product hunt"
+
         ],
         "ru" : [
           "продакт хант"
-        ]
-      }
-    },
-    {
-      "commonIn" : [
-
-      ],
-      "spelling" : "Skolkovo",
-      "variants" : {
-        "en" : [
-
-        ],
-        "ru" : [
-          "сколково"
         ]
       }
     },
@@ -706,7 +690,7 @@
       "spelling" : "Salesforce",
       "variants" : {
         "en" : [
-          "sales force"
+
         ],
         "ru" : [
           "сейлзфорс",
@@ -780,7 +764,7 @@
       "spelling" : "Freshdesk",
       "variants" : {
         "en" : [
-          "fresh desk"
+
         ],
         "ru" : [
           "фрешдеск",
