@@ -133,6 +133,8 @@ struct PackValidationTests {
         "jason", "джейсон", "джанго", "no js", "view js", "sas",
         // Отзыв по задаче 10: обычные строки, имена и естественные английские фразы.
         "дал и", "а о", "о о о", "сок два", "смарт цели", "лин менеджмент", "москов приоритизация", "райс приоритизация", "пип план", "фрэнд лицензии", "мау юзеры", "дау юзеры", "вау юзеры", "продакт оунер", "стабильная диффузия", "диаграмма ганта", "клод", "джемма", "лотти", "кими", "тим тейлор", "асана", "мурал", "роми", "гант", "ашар", "дрибл", "бик", "вк", "чёрн", "черн", "ванг драйв", "base camp", "sales force", "head hunter", "work day", "success factors", "in design", "light room", "story book", "tail wind", "power point", "tick tock", "linked in", "one password", "face time", "drop box", "share point", "air table", "click up", "web flow", "pine cone", "cloud code", "lead pages", "link tree", "melt water", "red mine", "you track", "smart sheet", "product board", "brand watch", "hot jar", "mix panel", "sub stack", "tech stars", "fresh desk", "type form", "fire fox", "quick books", "deep mind", "free pic", "pen pot", "wind surf", "талент акйизишн", "гугл календар", "гугл мийт", "тексторс", "анспласт", "эксклидро", "эксалидро", "хироуикон", "team tailor", "юпитер ноутбук", "хром браузер",
+        // Корпус «не навреди»: естественные английские фразы.
+        "zen desk", "pro create", "hub spot", "pay pal", "mail chimp",
     ]
 
     @Test func testNoDeniedVariants() {

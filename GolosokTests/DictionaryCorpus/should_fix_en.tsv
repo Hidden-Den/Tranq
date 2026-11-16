@@ -1,0 +1,619 @@
+We migrated the service to cooper netties yesterday and it works fine.	We migrated the service to Kubernetes yesterday and it works fine.
+Can you check the logs in kuber netties, please?	Can you check the logs in Kubernetes, please?
+I have been working with kubernetes for two years now.	I have been working with Kubernetes for two years now.
+Let me know if k eights fails again tonight.	Let me know if K8s fails again tonight.
+The team chose kay eights over the old setup.	The team chose K8s over the old setup.
+We migrated the service to k8s yesterday and it works fine.	We migrated the service to K8s yesterday and it works fine.
+Can you check the logs in podman, please?	Can you check the logs in Podman, please?
+I have been working with east io for two years now.	I have been working with Istio for two years now.
+Let me know if is tio fails again tonight.	Let me know if Istio fails again tonight.
+The team chose istio over the old setup.	The team chose Istio over the old setup.
+We migrated the service to post gress yesterday and it works fine.	We migrated the service to PostgreSQL yesterday and it works fine.
+Can you check the logs in post gres, please?	Can you check the logs in PostgreSQL, please?
+I have been working with postgresql for two years now.	I have been working with PostgreSQL for two years now.
+Let me know if mongodb fails again tonight.	Let me know if MongoDB fails again tonight.
+The team chose redis over the old setup.	The team chose Redis over the old setup.
+We migrated the service to mem cached yesterday and it works fine.	We migrated the service to Memcached yesterday and it works fine.
+Can you check the logs in mem cash d, please?	Can you check the logs in Memcached, please?
+I have been working with memcached for two years now.	I have been working with Memcached for two years now.
+Let me know if cass andra fails again tonight.	Let me know if Cassandra fails again tonight.
+The team chose cassandra over the old setup.	The team chose Cassandra over the old setup.
+We migrated the service to dyna mo db yesterday and it works fine.	We migrated the service to DynamoDB yesterday and it works fine.
+Can you check the logs in dynamodb, please?	Can you check the logs in DynamoDB, please?
+I have been working with clickhouse for two years now.	I have been working with ClickHouse for two years now.
+Let me know if elasticsearch fails again tonight.	Let me know if Elasticsearch fails again tonight.
+The team chose opensearch over the old setup.	The team chose OpenSearch over the old setup.
+We migrated the service to calf ka yesterday and it works fine.	We migrated the service to Kafka yesterday and it works fine.
+Can you check the logs in kaf ka, please?	Can you check the logs in Kafka, please?
+I have been working with kafka for two years now.	I have been working with Kafka for two years now.
+Let me know if rabbit mq fails again tonight.	Let me know if RabbitMQ fails again tonight.
+The team chose rabbitmq over the old setup.	The team chose RabbitMQ over the old setup.
+We migrated the service to n eight n yesterday and it works fine.	We migrated the service to n8n yesterday and it works fine.
+Can you check the logs in n 8 n, please?	Can you check the logs in n8n, please?
+I have been working with github for two years now.	I have been working with GitHub for two years now.
+Let me know if jira fails again tonight.	Let me know if Jira fails again tonight.
+The team chose j s over the old setup.	The team chose JS over the old setup.
+We migrated the service to js yesterday and it works fine.	We migrated the service to JS yesterday and it works fine.
+Can you check the logs in golang, please?	Can you check the logs in Golang, please?
+I have been working with swiftui for two years now.	I have been working with SwiftUI for two years now.
+Let me know if xcode fails again tonight.	Let me know if Xcode fails again tonight.
+The team chose cot lin over the old setup.	The team chose Kotlin over the old setup.
+We migrated the service to kotlin yesterday and it works fine.	We migrated the service to Kotlin yesterday and it works fine.
+Can you check the logs in p h p, please?	Can you check the logs in PHP, please?
+I have been working with lara vel for two years now.	I have been working with Laravel for two years now.
+Let me know if laravel fails again tonight.	Let me know if Laravel fails again tonight.
+The team chose node js over the old setup.	The team chose Node.js over the old setup.
+We migrated the service to next js yesterday and it works fine.	We migrated the service to Next.js yesterday and it works fine.
+Can you check the logs in django, please?	Can you check the logs in Django, please?
+I have been working with fastapi for two years now.	I have been working with FastAPI for two years now.
+Let me know if graph ql fails again tonight.	Let me know if GraphQL fails again tonight.
+The team chose graphql over the old setup.	The team chose GraphQL over the old setup.
+We migrated the service to g rpc yesterday and it works fine.	We migrated the service to gRPC yesterday and it works fine.
+Can you check the logs in g r p c, please?	Can you check the logs in gRPC, please?
+I have been working with grpc for two years now.	I have been working with gRPC for two years now.
+Let me know if a p i fails again tonight.	Let me know if API fails again tonight.
+The team chose s d k over the old setup.	The team chose SDK over the old setup.
+We migrated the service to sdk yesterday and it works fine.	We migrated the service to SDK yesterday and it works fine.
+Can you check the logs in c l i, please?	Can you check the logs in CLI, please?
+I have been working with i d e for two years now.	I have been working with IDE for two years now.
+Let me know if ide fails again tonight.	Let me know if IDE fails again tonight.
+The team chose s q l over the old setup.	The team chose SQL over the old setup.
+We migrated the service to nosql yesterday and it works fine.	We migrated the service to NoSQL yesterday and it works fine.
+Can you check the logs in j son, please?	Can you check the logs in JSON, please?
+I have been working with y a m l for two years now.	I have been working with YAML for two years now.
+Let me know if x m l fails again tonight.	Let me know if XML fails again tonight.
+The team chose h t m l over the old setup.	The team chose HTML over the old setup.
+We migrated the service to c s s yesterday and it works fine.	We migrated the service to CSS yesterday and it works fine.
+Can you check the logs in h t t p, please?	Can you check the logs in HTTP, please?
+I have been working with h t t p s for two years now.	I have been working with HTTPS for two years now.
+Let me know if o auth fails again tonight.	Let me know if OAuth fails again tonight.
+The team chose oauth over the old setup.	The team chose OAuth over the old setup.
+We migrated the service to j w t yesterday and it works fine.	We migrated the service to JWT yesterday and it works fine.
+Can you check the logs in jwt, please?	Can you check the logs in JWT, please?
+I have been working with s s h for two years now.	I have been working with SSH for two years now.
+Let me know if v p n fails again tonight.	Let me know if VPN fails again tonight.
+The team chose vpn over the old setup.	The team chose VPN over the old setup.
+We migrated the service to d n s yesterday and it works fine.	We migrated the service to DNS yesterday and it works fine.
+Can you check the logs in t c p, please?	Can you check the logs in TCP, please?
+I have been working with u d p for two years now.	I have been working with UDP for two years now.
+Let me know if udp fails again tonight.	Let me know if UDP fails again tonight.
+The team chose c d n over the old setup.	The team chose CDN over the old setup.
+We migrated the service to cdn yesterday and it works fine.	We migrated the service to CDN yesterday and it works fine.
+Can you check the logs in saas, please?	Can you check the logs in SaaS, please?
+I have been working with a w s for two years now.	I have been working with AWS for two years now.
+Let me know if aws fails again tonight.	Let me know if AWS fails again tonight.
+The team chose g c p over the old setup.	The team chose GCP over the old setup.
+We migrated the service to gcp yesterday and it works fine.	We migrated the service to GCP yesterday and it works fine.
+Can you check the logs in a zure, please?	Can you check the logs in Azure, please?
+I have been working with cloudflare for two years now.	I have been working with Cloudflare for two years now.
+Let me know if vercel fails again tonight.	Let me know if Vercel fails again tonight.
+The team chose net lify over the old setup.	The team chose Netlify over the old setup.
+We migrated the service to netlify yesterday and it works fine.	We migrated the service to Netlify yesterday and it works fine.
+Can you check the logs in he roku, please?	Can you check the logs in Heroku, please?
+I have been working with heroku for two years now.	I have been working with Heroku for two years now.
+Let me know if digitalocean fails again tonight.	Let me know if DigitalOcean fails again tonight.
+The team chose supa base over the old setup.	The team chose Supabase over the old setup.
+We migrated the service to supabase yesterday and it works fine.	We migrated the service to Supabase yesterday and it works fine.
+Can you check the logs in ann sible, please?	Can you check the logs in Ansible, please?
+I have been working with ansible for two years now.	I have been working with Ansible for two years now.
+Let me know if jenkins fails again tonight.	Let me know if Jenkins fails again tonight.
+The team chose github actions over the old setup.	The team chose GitHub Actions over the old setup.
+We migrated the service to ci cd yesterday and it works fine.	We migrated the service to CI/CD yesterday and it works fine.
+Can you check the logs in c i c d, please?	Can you check the logs in CI/CD, please?
+I have been working with gra fana for two years now.	I have been working with Grafana for two years now.
+Let me know if grafana fails again tonight.	Let me know if Grafana fails again tonight.
+The team chose prome theus over the old setup.	The team chose Prometheus over the old setup.
+We migrated the service to datadog yesterday and it works fine.	We migrated the service to Datadog yesterday and it works fine.
+Can you check the logs in lin ux, please?	Can you check the logs in Linux, please?
+I have been working with oo boon too for two years now.	I have been working with Ubuntu for two years now.
+Let me know if deb ian fails again tonight.	Let me know if Debian fails again tonight.
+The team chose debian over the old setup.	The team chose Debian over the old setup.
+We migrated the service to mac o s yesterday and it works fine.	We migrated the service to macOS yesterday and it works fine.
+Can you check the logs in macos, please?	Can you check the logs in macOS, please?
+I have been working with i o s for two years now.	I have been working with iOS for two years now.
+Let me know if ios fails again tonight.	Let me know if iOS fails again tonight.
+The team chose v s code over the old setup.	The team chose VS Code over the old setup.
+We migrated the service to neo vim yesterday and it works fine.	We migrated the service to Neovim yesterday and it works fine.
+Can you check the logs in neovim, please?	Can you check the logs in Neovim, please?
+I have been working with intelli j for two years now.	I have been working with IntelliJ for two years now.
+Let me know if intellij fails again tonight.	Let me know if IntelliJ fails again tonight.
+The team chose pycharm over the old setup.	The team chose PyCharm over the old setup.
+We migrated the service to webstorm yesterday and it works fine.	We migrated the service to WebStorm yesterday and it works fine.
+Can you check the logs in swag ger, please?	Can you check the logs in Swagger, please?
+I have been working with openapi for two years now.	I have been working with OpenAPI for two years now.
+Let me know if webpack fails again tonight.	Let me know if Webpack fails again tonight.
+The team chose vite over the old setup.	The team chose Vite over the old setup.
+We migrated the service to n p m yesterday and it works fine.	We migrated the service to npm yesterday and it works fine.
+Can you check the logs in p n p m, please?	Can you check the logs in pnpm, please?
+I have been working with homebrew for two years now.	I have been working with Homebrew for two years now.
+Let me know if z s h fails again tonight.	Let me know if Zsh fails again tonight.
+The team chose powershell over the old setup.	The team chose PowerShell over the old setup.
+We migrated the service to websocket yesterday and it works fine.	We migrated the service to WebSocket yesterday and it works fine.
+Can you check the logs in webassembly, please?	Can you check the logs in WebAssembly, please?
+I have been working with dotnet for two years now.	I have been working with .NET for two years now.
+Let me know if are dweeno fails again tonight.	Let me know if Arduino fails again tonight.
+The team chose arduino over the old setup.	The team chose Arduino over the old setup.
+We migrated the service to jetbrains yesterday and it works fine.	We migrated the service to JetBrains yesterday and it works fine.
+Can you check the logs in openrouter, please?	Can you check the logs in OpenRouter, please?
+I have been working with ollama for two years now.	I have been working with Ollama for two years now.
+I think open a i will handle this task better than the rest.	I think OpenAI will handle this task better than the rest.
+We compared the quality of openai on our own data.	We compared the quality of OpenAI on our own data.
+Try chat g p t for the first draft, then we edit it.	Try ChatGPT for the first draft, then we edit it.
+It took a week to get used to chat gpt, honestly.	It took a week to get used to ChatGPT, honestly.
+I think chatgpt will handle this task better than the rest.	I think ChatGPT will handle this task better than the rest.
+We compared the quality of g p t on our own data.	We compared the quality of GPT on our own data.
+Try gpt for the first draft, then we edit it.	Try GPT for the first draft, then we edit it.
+It took a week to get used to g p t four, honestly.	It took a week to get used to GPT-4, honestly.
+I think g p t five will handle this task better than the rest.	I think GPT-5 will handle this task better than the rest.
+We compared the quality of deepmind on our own data.	We compared the quality of DeepMind on our own data.
+Try deep seek for the first draft, then we edit it.	Try DeepSeek for the first draft, then we edit it.
+It took a week to get used to deepseek, honestly.	It took a week to get used to DeepSeek, honestly.
+I think qwen will handle this task better than the rest.	I think Qwen will handle this task better than the rest.
+We compared the quality of x a i on our own data.	We compared the quality of xAI on our own data.
+Try xai for the first draft, then we edit it.	Try xAI for the first draft, then we edit it.
+It took a week to get used to mid journey, honestly.	It took a week to get used to Midjourney, honestly.
+I think midjourney will handle this task better than the rest.	I think Midjourney will handle this task better than the rest.
+We compared the quality of sora on our own data.	We compared the quality of Sora on our own data.
+Try gigachat for the first draft, then we edit it.	Try GigaChat for the first draft, then we edit it.
+It took a week to get used to yandexgpt, honestly.	It took a week to get used to YandexGPT, honestly.
+I think pie torch will handle this task better than the rest.	I think PyTorch will handle this task better than the rest.
+We compared the quality of pytorch on our own data.	We compared the quality of PyTorch on our own data.
+Try tensorflow for the first draft, then we edit it.	Try TensorFlow for the first draft, then we edit it.
+It took a week to get used to keras, honestly.	It took a week to get used to Keras, honestly.
+I think num pie will handle this task better than the rest.	I think NumPy will handle this task better than the rest.
+We compared the quality of numpy on our own data.	We compared the quality of NumPy on our own data.
+Try jupyter for the first draft, then we edit it.	Try Jupyter for the first draft, then we edit it.
+It took a week to get used to lang chain, honestly.	It took a week to get used to LangChain, honestly.
+I think langchain will handle this task better than the rest.	I think LangChain will handle this task better than the rest.
+We compared the quality of llama index on our own data.	We compared the quality of LlamaIndex on our own data.
+Try llamaindex for the first draft, then we edit it.	Try LlamaIndex for the first draft, then we edit it.
+It took a week to get used to r a g, honestly.	It took a week to get used to RAG, honestly.
+I think l l m will handle this task better than the rest.	I think LLM will handle this task better than the rest.
+We compared the quality of n l p on our own data.	We compared the quality of NLP on our own data.
+Try g p u for the first draft, then we edit it.	Try GPU for the first draft, then we edit it.
+It took a week to get used to cuda, honestly.	It took a week to get used to CUDA, honestly.
+I think in video a will handle this task better than the rest.	I think NVIDIA will handle this task better than the rest.
+We compared the quality of nvidia on our own data.	We compared the quality of NVIDIA on our own data.
+Try t p u for the first draft, then we edit it.	Try TPU for the first draft, then we edit it.
+It took a week to get used to tpu, honestly.	It took a week to get used to TPU, honestly.
+I think m c p will handle this task better than the rest.	I think MCP will handle this task better than the rest.
+We compared the quality of mcp on our own data.	We compared the quality of MCP on our own data.
+Try co pilot for the first draft, then we edit it.	Try Copilot for the first draft, then we edit it.
+It took a week to get used to replit, honestly.	It took a week to get used to Replit, honestly.
+I think eleven labs will handle this task better than the rest.	I think ElevenLabs will handle this task better than the rest.
+We compared the quality of elevenlabs on our own data.	We compared the quality of ElevenLabs on our own data.
+Try suno for the first draft, then we edit it.	Try Suno for the first draft, then we edit it.
+It took a week to get used to r l h f, honestly.	It took a week to get used to RLHF, honestly.
+I think rlhf will handle this task better than the rest.	I think RLHF will handle this task better than the rest.
+We compared the quality of a g i on our own data.	We compared the quality of AGI on our own data.
+Try agi for the first draft, then we edit it.	Try AGI for the first draft, then we edit it.
+It took a week to get used to a s r, honestly.	It took a week to get used to ASR, honestly.
+I think asr will handle this task better than the rest.	I think ASR will handle this task better than the rest.
+We compared the quality of t t s on our own data.	We compared the quality of TTS on our own data.
+Try o c r for the first draft, then we edit it.	Try OCR for the first draft, then we edit it.
+It took a week to get used to ocr, honestly.	It took a week to get used to OCR, honestly.
+I think c n n will handle this task better than the rest.	I think CNN will handle this task better than the rest.
+We compared the quality of cnn on our own data.	We compared the quality of CNN on our own data.
+Try kaggle for the first draft, then we edit it.	Try Kaggle for the first draft, then we edit it.
+It took a week to get used to google collab, honestly.	It took a week to get used to Google Colab, honestly.
+I think qdrant will handle this task better than the rest.	I think Qdrant will handle this task better than the rest.
+We compared the quality of weaviate on our own data.	We compared the quality of Weaviate on our own data.
+Try v l l m for the first draft, then we edit it.	Try vLLM for the first draft, then we edit it.
+It took a week to get used to o n n x, honestly.	It took a week to get used to ONNX, honestly.
+I think onnx will handle this task better than the rest.	I think ONNX will handle this task better than the rest.
+We compared the quality of gemma on our own data.	We compared the quality of Gemma on our own data.
+Try kimi for the first draft, then we edit it.	Try Kimi for the first draft, then we edit it.
+Ping me in whatsapp when you are free.	Ping me in WhatsApp when you are free.
+We agreed to meet in skype at three.	We agreed to meet in Skype at three.
+The document is in viber, I gave you view access.	The document is in Viber, I gave you view access.
+Please install g mail on the new laptop.	Please install Gmail on the new laptop.
+Ping me in microsoft three six five when you are free.	Ping me in Microsoft 365 when you are free.
+We agreed to meet in one drive at three.	We agreed to meet in OneDrive at three.
+The document is in onedrive, I gave you view access.	The document is in OneDrive, I gave you view access.
+Please install sharepoint on the new laptop.	Please install SharePoint on the new laptop.
+Ping me in ever note when you are free.	Ping me in Evernote when you are free.
+We agreed to meet in evernote at three.	We agreed to meet in Evernote at three.
+The document is in airtable, I gave you view access.	The document is in Airtable, I gave you view access.
+Please install trello on the new laptop.	Please install Trello on the new laptop.
+Ping me in clickup when you are free.	Ping me in ClickUp when you are free.
+We agreed to meet in monday dot com at three.	We agreed to meet in Monday.com at three.
+The document is in miro, I gave you view access.	The document is in Miro, I gave you view access.
+Please install figma on the new laptop.	Please install Figma on the new laptop.
+Ping me in canva when you are free.	Ping me in Canva when you are free.
+We agreed to meet in calendly at three.	We agreed to meet in Calendly at three.
+The document is in zapier, I gave you view access.	The document is in Zapier, I gave you view access.
+Please install typeform on the new laptop.	Please install Typeform on the new laptop.
+Ping me in tilda when you are free.	Ping me in Tilda when you are free.
+We agreed to meet in webflow at three.	We agreed to meet in Webflow at three.
+The document is in word press, I gave you view access.	The document is in WordPress, I gave you view access.
+Please install wordpress on the new laptop.	Please install WordPress on the new laptop.
+Ping me in shopify when you are free.	Ping me in Shopify when you are free.
+We agreed to meet in wix at three.	We agreed to meet in Wix at three.
+The document is in todoist, I gave you view access.	The document is in Todoist, I gave you view access.
+Please install bitrix24 on the new laptop.	Please install Bitrix24 on the new laptop.
+Ping me in amocrm when you are free.	Ping me in amoCRM when you are free.
+We agreed to meet in you tube at three.	We agreed to meet in YouTube at three.
+The document is in tiktok, I gave you view access.	The document is in TikTok, I gave you view access.
+Please install linkedin on the new laptop.	Please install LinkedIn on the new laptop.
+Ping me in pinterest when you are free.	Ping me in Pinterest when you are free.
+We agreed to meet in spotify at three.	We agreed to meet in Spotify at three.
+The document is in netflix, I gave you view access.	The document is in Netflix, I gave you view access.
+Please install air b n b on the new laptop.	Please install Airbnb on the new laptop.
+Ping me in airbnb when you are free.	Ping me in Airbnb when you are free.
+We agreed to meet in booking dot com at three.	We agreed to meet in Booking.com at three.
+The document is in paypal, I gave you view access.	The document is in PayPal, I gave you view access.
+Please install i cloud on the new laptop.	Please install iCloud on the new laptop.
+Ping me in icloud when you are free.	Ping me in iCloud when you are free.
+We agreed to meet in i message at three.	We agreed to meet in iMessage at three.
+The document is in imessage, I gave you view access.	The document is in iMessage, I gave you view access.
+Please install facetime on the new laptop.	Please install FaceTime on the new laptop.
+Ping me in firefox when you are free.	Ping me in Firefox when you are free.
+We agreed to meet in 1password at three.	We agreed to meet in 1Password at three.
+The document is in bit warden, I gave you view access.	The document is in Bitwarden, I gave you view access.
+Please install bitwarden on the new laptop.	Please install Bitwarden on the new laptop.
+Ping me in ray cast when you are free.	Ping me in Raycast when you are free.
+We agreed to meet in raycast at three.	We agreed to meet in Raycast at three.
+The document is in v k, I gave you view access.	The document is in VK, I gave you view access.
+Please install vk on the new laptop.	Please install VK on the new laptop.
+Ping me in rutube when you are free.	Ping me in Rutube when you are free.
+We agreed to meet in zoho at three.	We agreed to meet in Zoho at three.
+The document is in mailchimp, I gave you view access.	The document is in Mailchimp, I gave you view access.
+We discussed o k r at the planning meeting.	We discussed OKR at the planning meeting.
+I want to introduce o k r s for the next quarter.	I want to introduce OKR for the next quarter.
+Please update the okr before Friday.	Please update the OKR before Friday.
+Our managers rely on k p i every week.	Our managers rely on KPI every week.
+We discussed kpi at the planning meeting.	We discussed KPI at the planning meeting.
+I want to introduce k p i s for the next quarter.	I want to introduce KPIs for the next quarter.
+Please update the kpis before Friday.	Please update the KPIs before Friday.
+Our managers rely on a jile every week.	Our managers rely on Agile every week.
+We discussed can ban at the planning meeting.	We discussed Kanban at the planning meeting.
+I want to introduce kanban for the next quarter.	I want to introduce Kanban for the next quarter.
+Please update the pmbok before Friday.	Please update the PMBOK before Friday.
+Our managers rely on p m p every week.	Our managers rely on PMP every week.
+We discussed pmp at the planning meeting.	We discussed PMP at the planning meeting.
+I want to introduce prince two for the next quarter.	I want to introduce PRINCE2 for the next quarter.
+Please update the prince2 before Friday.	Please update the PRINCE2 before Friday.
+Our managers rely on raci every week.	Our managers rely on RACI every week.
+We discussed moscow at the planning meeting.	We discussed MoSCoW at the planning meeting.
+I want to introduce w b s for the next quarter.	I want to introduce WBS for the next quarter.
+Please update the wbs before Friday.	Please update the WBS before Friday.
+Our managers rely on m v p every week.	Our managers rely on MVP every week.
+We discussed mvp at the planning meeting.	We discussed MVP at the planning meeting.
+I want to introduce p m o for the next quarter.	I want to introduce PMO for the next quarter.
+Please update the pmo before Friday.	Please update the PMO before Friday.
+Our managers rely on c t o every week.	Our managers rely on CTO every week.
+We discussed cto at the planning meeting.	We discussed CTO at the planning meeting.
+I want to introduce c e o for the next quarter.	I want to introduce CEO for the next quarter.
+Please update the ceo before Friday.	Please update the CEO before Friday.
+Our managers rely on c o o every week.	Our managers rely on COO every week.
+We discussed c f o at the planning meeting.	We discussed CFO at the planning meeting.
+I want to introduce cfo for the next quarter.	I want to introduce CFO for the next quarter.
+Please update the c m o before Friday.	Please update the CMO before Friday.
+Our managers rely on cmo every week.	Our managers rely on CMO every week.
+We discussed c p o at the planning meeting.	We discussed CPO at the planning meeting.
+I want to introduce cpo for the next quarter.	I want to introduce CPO for the next quarter.
+Please update the c i o before Friday.	Please update the CIO before Friday.
+Our managers rely on cio every week.	Our managers rely on CIO every week.
+We discussed r f c at the planning meeting.	We discussed RFC at the planning meeting.
+I want to introduce rfc for the next quarter.	I want to introduce RFC for the next quarter.
+Please update the a d r before Friday.	Please update the ADR before Friday.
+Our managers rely on adr every week.	Our managers rely on ADR every week.
+We discussed s l a at the planning meeting.	We discussed SLA at the planning meeting.
+I want to introduce sla for the next quarter.	I want to introduce SLA for the next quarter.
+Please update the s l o before Friday.	Please update the SLO before Friday.
+Our managers rely on one on one every week.	Our managers rely on 1-on-1 every week.
+We discussed youtrack at the planning meeting.	We discussed YouTrack at the planning meeting.
+I want to introduce redmine for the next quarter.	I want to introduce Redmine for the next quarter.
+Please update the wrike before Friday.	Please update the Wrike before Friday.
+Our managers rely on smartsheet every week.	Our managers rely on Smartsheet every week.
+We discussed productboard at the planning meeting.	We discussed Productboard at the planning meeting.
+I want to introduce fig jam for the next quarter.	I want to introduce FigJam for the next quarter.
+Please update the figjam before Friday.	Please update the FigJam before Friday.
+Our managers rely on lucid chart every week.	Our managers rely on Lucidchart every week.
+We discussed lucidchart at the planning meeting.	We discussed Lucidchart at the planning meeting.
+I want to introduce bitrix for the next quarter.	I want to introduce Bitrix for the next quarter.
+Please update the megaplan before Friday.	Please update the Megaplan before Friday.
+The director asked about b two b and I did not have a number.	The director asked about B2B and I did not have a number.
+Let us look at b2b month by month.	Let us look at B2B month by month.
+We should calculate b two c again next week.	We should calculate B2C again next week.
+Growth in b2c was six percent this quarter.	Growth in B2C was six percent this quarter.
+The director asked about b2g and I did not have a number.	The director asked about B2G and I did not have a number.
+Let us look at d2c month by month.	Let us look at D2C month by month.
+We should calculate p2p again next week.	We should calculate P2P again next week.
+Growth in paas was six percent this quarter.	Growth in PaaS was six percent this quarter.
+The director asked about iaas and I did not have a number.	The director asked about IaaS and I did not have a number.
+Let us look at pestel month by month.	Let us look at PESTEL month by month.
+We should calculate c a c again next week.	We should calculate CAC again next week.
+Growth in cac was six percent this quarter.	Growth in CAC was six percent this quarter.
+The director asked about l t v and I did not have a number.	The director asked about LTV and I did not have a number.
+Let us look at ltv month by month.	Let us look at LTV month by month.
+We should calculate arpu again next week.	We should calculate ARPU again next week.
+Growth in arppu was six percent this quarter.	Growth in ARPPU was six percent this quarter.
+The director asked about m r r and I did not have a number.	The director asked about MRR and I did not have a number.
+Let us look at mrr month by month.	Let us look at MRR month by month.
+We should calculate a r r again next week.	We should calculate ARR again next week.
+Growth in arr was six percent this quarter.	Growth in ARR was six percent this quarter.
+The director asked about mau and I did not have a number.	The director asked about MAU and I did not have a number.
+Let us look at dau month by month.	Let us look at DAU month by month.
+We should calculate wau again next week.	We should calculate WAU again next week.
+Growth in cjm was six percent this quarter.	Growth in CJM was six percent this quarter.
+The director asked about j t b d and I did not have a number.	The director asked about JTBD and I did not have a number.
+Let us look at jtbd month by month.	Let us look at JTBD month by month.
+We should calculate g t m again next week.	We should calculate GTM again next week.
+Growth in gtm was six percent this quarter.	Growth in GTM was six percent this quarter.
+The director asked about u s p and I did not have a number.	The director asked about USP and I did not have a number.
+Let us look at usp month by month.	Let us look at USP month by month.
+We should calculate u v p again next week.	We should calculate UVP again next week.
+Growth in uvp was six percent this quarter.	Growth in UVP was six percent this quarter.
+The director asked about p m f and I did not have a number.	The director asked about PMF and I did not have a number.
+Let us look at pmf month by month.	Let us look at PMF month by month.
+We should calculate i c p again next week.	We should calculate ICP again next week.
+Growth in icp was six percent this quarter.	Growth in ICP was six percent this quarter.
+The director asked about n p s and I did not have a number.	The director asked about NPS and I did not have a number.
+Let us look at nps month by month.	Let us look at NPS month by month.
+We should calculate csat again next week.	We should calculate CSAT again next week.
+Growth in c r m was six percent this quarter.	Growth in CRM was six percent this quarter.
+The director asked about crm and I did not have a number.	The director asked about CRM and I did not have a number.
+Let us look at e r p month by month.	Let us look at ERP month by month.
+We should calculate erp again next week.	We should calculate ERP again next week.
+Growth in b p m was six percent this quarter.	Growth in BPM was six percent this quarter.
+The director asked about b p m n and I did not have a number.	The director asked about BPMN and I did not have a number.
+Let us look at bpmn month by month.	Let us look at BPMN month by month.
+We should calculate ebitda again next week.	We should calculate EBITDA again next week.
+Growth in capex was six percent this quarter.	Growth in CAPEX was six percent this quarter.
+The director asked about opex and I did not have a number.	The director asked about OPEX and I did not have a number.
+Let us look at i p o month by month.	Let us look at IPO month by month.
+We should calculate ipo again next week.	We should calculate IPO again next week.
+Growth in m and a was six percent this quarter.	Growth in M&A was six percent this quarter.
+The director asked about v c and I did not have a number.	The director asked about VC and I did not have a number.
+Let us look at s p v month by month.	Let us look at SPV month by month.
+We should calculate spv again next week.	We should calculate SPV again next week.
+Growth in why combinator was six percent this quarter.	Growth in Y Combinator was six percent this quarter.
+The director asked about techstars and I did not have a number.	The director asked about Techstars and I did not have a number.
+Let us look at crunch base month by month.	Let us look at Crunchbase month by month.
+We should calculate crunchbase again next week.	We should calculate Crunchbase again next week.
+Growth in batna was six percent this quarter.	Growth in BATNA was six percent this quarter.
+The director asked about hubspot and I did not have a number.	The director asked about HubSpot and I did not have a number.
+Let us look at pipe drive month by month.	Let us look at Pipedrive month by month.
+We should calculate pipedrive again next week.	We should calculate Pipedrive again next week.
+Growth in zendesk was six percent this quarter.	Growth in Zendesk was six percent this quarter.
+The director asked about freshdesk and I did not have a number.	The director asked about Freshdesk and I did not have a number.
+Let us look at docu sign month by month.	Let us look at DocuSign month by month.
+We should calculate docusign again next week.	We should calculate DocuSign again next week.
+Let us talk about h r at the meeting on Thursday.	Let us talk about HR at the meeting on Thursday.
+Please add the candidate to h r b p today.	Please add the candidate to HRBP today.
+We have used hrbp for two years already.	We have used HRBP for two years already.
+The results of h r d look better than last year.	The results of HRD look better than last year.
+Let us talk about hrd at the meeting on Thursday.	Let us talk about HRD at the meeting on Thursday.
+Please add the candidate to l and d today.	Please add the candidate to L&D today.
+We have used a t s for two years already.	We have used ATS for two years already.
+The results of ats look better than last year.	The results of ATS look better than last year.
+Let us talk about hris at the meeting on Thursday.	Let us talk about HRIS at the meeting on Thursday.
+Please add the candidate to hrm today.	Please add the candidate to HRM today.
+We have used e n p s for two years already.	We have used eNPS for two years already.
+The results of enps look better than last year.	The results of eNPS look better than last year.
+Let us talk about e v p at the meeting on Thursday.	Let us talk about EVP at the meeting on Thursday.
+Please add the candidate to evp today.	Please add the candidate to EVP today.
+We have used d e i for two years already.	We have used DEI for two years already.
+The results of dei look better than last year.	The results of DEI look better than last year.
+Let us talk about i d p at the meeting on Thursday.	Let us talk about IDP at the meeting on Thursday.
+Please add the candidate to idp today.	Please add the candidate to IDP today.
+We have used p t o for two years already.	We have used PTO for two years already.
+The results of pto look better than last year.	The results of PTO look better than last year.
+Let us talk about f t e at the meeting on Thursday.	Let us talk about FTE at the meeting on Thursday.
+Please add the candidate to fte today.	Please add the candidate to FTE today.
+We have used h h dot r u for two years already.	We have used hh.ru for two years already.
+The results of hunt flow look better than last year.	The results of Huntflow look better than last year.
+Let us talk about huntflow at the meeting on Thursday.	Let us talk about Huntflow at the meeting on Thursday.
+Please add the candidate to talantix today.	Please add the candidate to Talantix today.
+We have used bamboohr for two years already.	We have used BambooHR for two years already.
+The results of superjob look better than last year.	The results of Superjob look better than last year.
+Let us talk about 15five at the meeting on Thursday.	Let us talk about 15Five at the meeting on Thursday.
+Please add the candidate to teamtailor today.	Please add the candidate to Teamtailor today.
+We have used personio for two years already.	We have used Personio for two years already.
+The results of m b t i look better than last year.	The results of MBTI look better than last year.
+Let us talk about mbti at the meeting on Thursday.	Let us talk about MBTI at the meeting on Thursday.
+Please add the candidate to coursera today.	Please add the candidate to Coursera today.
+We have used you demi for two years already.	We have used Udemy for two years already.
+The results of udemy look better than last year.	The results of Udemy look better than last year.
+Let us talk about skillbox at the meeting on Thursday.	Let us talk about Skillbox at the meeting on Thursday.
+Please add the candidate to stepik today.	Please add the candidate to Stepik today.
+We have used successfactors for two years already.	We have used SuccessFactors for two years already.
+The results of mentimeter look better than last year.	The results of Mentimeter look better than last year.
+Let us talk about slido at the meeting on Thursday.	Let us talk about Slido at the meeting on Thursday.
+Please check i f r s before we file the report.	Please check IFRS before we file the report.
+The accountant reminded me about ifrs again.	The accountant reminded me about IFRS again.
+We have not calculated g a a p for this quarter yet.	We have not calculated GAAP for this quarter yet.
+Send me gaap, I want to verify the figures.	Send me GAAP, I want to verify the figures.
+Please check p and l before we file the report.	Please check P&L before we file the report.
+The accountant reminded me about r o i again.	The accountant reminded me about ROI again.
+We have not calculated roi for this quarter yet.	We have not calculated ROI for this quarter yet.
+Send me r o e, I want to verify the figures.	Send me ROE, I want to verify the figures.
+Please check r o a before we file the report.	Please check ROA before we file the report.
+The accountant reminded me about roa again.	The accountant reminded me about ROA again.
+We have not calculated i r r for this quarter yet.	We have not calculated IRR for this quarter yet.
+Send me irr, I want to verify the figures.	Send me IRR, I want to verify the figures.
+Please check n p v before we file the report.	Please check NPV before we file the report.
+The accountant reminded me about npv again.	The accountant reminded me about NPV again.
+We have not calculated d c f for this quarter yet.	We have not calculated DCF for this quarter yet.
+Send me dcf, I want to verify the figures.	Send me DCF, I want to verify the figures.
+Please check wacc before we file the report.	Please check WACC before we file the report.
+The accountant reminded me about ebit again.	The accountant reminded me about EBIT again.
+We have not calculated e p s for this quarter yet.	We have not calculated EPS for this quarter yet.
+Send me p e ratio, I want to verify the figures.	Send me P/E, I want to verify the figures.
+Please check f c f before we file the report.	Please check FCF before we file the report.
+The accountant reminded me about fcf again.	The accountant reminded me about FCF again.
+We have not calculated sepa for this quarter yet.	We have not calculated SEPA for this quarter yet.
+Send me iban, I want to verify the figures.	Send me IBAN, I want to verify the figures.
+Please check bic before we file the report.	Please check BIC before we file the report.
+The accountant reminded me about k y c again.	The accountant reminded me about KYC again.
+We have not calculated kyc for this quarter yet.	We have not calculated KYC for this quarter yet.
+Send me a m l, I want to verify the figures.	Send me AML, I want to verify the figures.
+Please check aml before we file the report.	Please check AML before we file the report.
+The accountant reminded me about fatca again.	The accountant reminded me about FATCA again.
+We have not calculated e t f for this quarter yet.	We have not calculated ETF for this quarter yet.
+Send me etf, I want to verify the figures.	Send me ETF, I want to verify the figures.
+Please check s and p five hundred before we file the report.	Please check S&P 500 before we file the report.
+The accountant reminded me about revolut again.	The accountant reminded me about Revolut again.
+We have not calculated binance for this quarter yet.	We have not calculated Binance for this quarter yet.
+Send me coin base, I want to verify the figures.	Send me Coinbase, I want to verify the figures.
+Please check coinbase before we file the report.	Please check Coinbase before we file the report.
+The accountant reminded me about bit coin again.	The accountant reminded me about Bitcoin again.
+We have not calculated ethereum for this quarter yet.	We have not calculated Ethereum for this quarter yet.
+Send me usdt, I want to verify the figures.	Send me USDT, I want to verify the figures.
+The analyst sent a report on s e o, the numbers look good.	The analyst sent a report on SEO, the numbers look good.
+Please connect seo before the campaign launches.	Please connect SEO before the campaign launches.
+Cost of s e m went up after we changed the creative.	Cost of SEM went up after we changed the creative.
+We rely on sem to track every channel.	We rely on SEM to track every channel.
+The analyst sent a report on s m m, the numbers look good.	The analyst sent a report on SMM, the numbers look good.
+Please connect smm before the campaign launches.	Please connect SMM before the campaign launches.
+Cost of p p c went up after we changed the creative.	Cost of PPC went up after we changed the creative.
+We rely on c p c to track every channel.	We rely on CPC to track every channel.
+The analyst sent a report on cpc, the numbers look good.	The analyst sent a report on CPC, the numbers look good.
+Please connect c p m before the campaign launches.	Please connect CPM before the campaign launches.
+Cost of c p a went up after we changed the creative.	Cost of CPA went up after we changed the creative.
+We rely on cpa to track every channel.	We rely on CPA to track every channel.
+The analyst sent a report on c p l, the numbers look good.	The analyst sent a report on CPL, the numbers look good.
+Please connect cpl before the campaign launches.	Please connect CPL before the campaign launches.
+Cost of c t r went up after we changed the creative.	Cost of CTR went up after we changed the creative.
+We rely on ctr to track every channel.	We rely on CTR to track every channel.
+The analyst sent a report on c r o, the numbers look good.	The analyst sent a report on CRO, the numbers look good.
+Please connect cro before the campaign launches.	Please connect CRO before the campaign launches.
+Cost of r o a s went up after we changed the creative.	Cost of ROAS went up after we changed the creative.
+We rely on roas to track every channel.	We rely on ROAS to track every channel.
+The analyst sent a report on romi, the numbers look good.	The analyst sent a report on ROMI, the numbers look good.
+Please connect u t m before the campaign launches.	Please connect UTM before the campaign launches.
+Cost of utm went up after we changed the creative.	Cost of UTM went up after we changed the creative.
+We rely on u g c to track every channel.	We rely on UGC to track every channel.
+The analyst sent a report on ugc, the numbers look good.	The analyst sent a report on UGC, the numbers look good.
+Please connect g a four before the campaign launches.	Please connect GA4 before the campaign launches.
+Cost of ga4 went up after we changed the creative.	Cost of GA4 went up after we changed the creative.
+We rely on ahrefs to track every channel.	We rely on Ahrefs to track every channel.
+The analyst sent a report on sem rush, the numbers look good.	The analyst sent a report on Semrush, the numbers look good.
+Please connect semrush before the campaign launches.	Please connect Semrush before the campaign launches.
+Cost of serpstat went up after we changed the creative.	Cost of Serpstat went up after we changed the creative.
+We rely on topvisor to track every channel.	We rely on Topvisor to track every channel.
+The analyst sent a report on uni sender, the numbers look good.	The analyst sent a report on UniSender, the numbers look good.
+Please connect unisender before the campaign launches.	Please connect UniSender before the campaign launches.
+Cost of send pulse went up after we changed the creative.	Cost of SendPulse went up after we changed the creative.
+We rely on sendpulse to track every channel.	We rely on SendPulse to track every channel.
+The analyst sent a report on get response, the numbers look good.	The analyst sent a report on GetResponse, the numbers look good.
+Please connect getresponse before the campaign launches.	Please connect GetResponse before the campaign launches.
+Cost of klaviyo went up after we changed the creative.	Cost of Klaviyo went up after we changed the creative.
+We rely on mail gun to track every channel.	We rely on Mailgun to track every channel.
+The analyst sent a report on mailgun, the numbers look good.	The analyst sent a report on Mailgun, the numbers look good.
+Please connect hoot suite before the campaign launches.	Please connect Hootsuite before the campaign launches.
+Cost of hootsuite went up after we changed the creative.	Cost of Hootsuite went up after we changed the creative.
+We rely on hotjar to track every channel.	We rely on Hotjar to track every channel.
+The analyst sent a report on mixpanel, the numbers look good.	The analyst sent a report on Mixpanel, the numbers look good.
+Please connect appsflyer before the campaign launches.	Please connect AppsFlyer before the campaign launches.
+Cost of buzz sumo went up after we changed the creative.	Cost of BuzzSumo went up after we changed the creative.
+We rely on buzzsumo to track every channel.	We rely on BuzzSumo to track every channel.
+The analyst sent a report on c m s, the numbers look good.	The analyst sent a report on CMS, the numbers look good.
+Please connect cms before the campaign launches.	Please connect CMS before the campaign launches.
+Cost of c t a went up after we changed the creative.	Cost of CTA went up after we changed the creative.
+We rely on cta to track every channel.	We rely on CTA to track every channel.
+The analyst sent a report on d s p, the numbers look good.	The analyst sent a report on DSP, the numbers look good.
+Please connect dsp before the campaign launches.	Please connect DSP before the campaign launches.
+Cost of s s p went up after we changed the creative.	Cost of SSP went up after we changed the creative.
+We rely on ssp to track every channel.	We rely on SSP to track every channel.
+The analyst sent a report on r t b, the numbers look good.	The analyst sent a report on RTB, the numbers look good.
+Please connect rtb before the campaign launches.	Please connect RTB before the campaign launches.
+Cost of yoast went up after we changed the creative.	Cost of Yoast went up after we changed the creative.
+We rely on linktree to track every channel.	We rely on Linktree to track every channel.
+The analyst sent a report on bitly, the numbers look good.	The analyst sent a report on Bitly, the numbers look good.
+Please connect beehiiv before the campaign launches.	Please connect Beehiiv before the campaign launches.
+Cost of substack went up after we changed the creative.	Cost of Substack went up after we changed the creative.
+We rely on taplink to track every channel.	We rely on Taplink to track every channel.
+The analyst sent a report on unbounce, the numbers look good.	The analyst sent a report on Unbounce, the numbers look good.
+Please connect leadpages before the campaign launches.	Please connect Leadpages before the campaign launches.
+Cost of optimizely went up after we changed the creative.	Cost of Optimizely went up after we changed the creative.
+We rely on lemlist to track every channel.	We rely on Lemlist to track every channel.
+The analyst sent a report on phantom buster, the numbers look good.	The analyst sent a report on PhantomBuster, the numbers look good.
+Please connect phantombuster before the campaign launches.	Please connect PhantomBuster before the campaign launches.
+Cost of similar web went up after we changed the creative.	Cost of Similarweb went up after we changed the creative.
+We rely on similarweb to track every channel.	We rely on Similarweb to track every channel.
+The analyst sent a report on brandwatch, the numbers look good.	The analyst sent a report on Brandwatch, the numbers look good.
+Please connect calltouch before the campaign launches.	Please connect Calltouch before the campaign launches.
+Cost of roistat went up after we changed the creative.	Cost of Roistat went up after we changed the creative.
+We rely on albato to track every channel.	We rely on Albato to track every channel.
+The lawyer asked us to sign the n d a by the end of the week.	The lawyer asked us to sign the NDA by the end of the week.
+We still have questions about the nda terms.	We still have questions about the NDA terms.
+Send the m s a to the counterparty for review.	Send the MSA to the counterparty for review.
+Please check the msa clause before signing.	Please check the MSA clause before signing.
+The lawyer asked us to sign the s o w by the end of the week.	The lawyer asked us to sign the SOW by the end of the week.
+We still have questions about the l o i terms.	We still have questions about the LOI terms.
+Send the loi to the counterparty for review.	Send the LOI to the counterparty for review.
+Please check the m o u clause before signing.	Please check the MOU clause before signing.
+The lawyer asked us to sign the mou by the end of the week.	The lawyer asked us to sign the MOU by the end of the week.
+We still have questions about the g d p r terms.	We still have questions about the GDPR terms.
+Send the gdpr to the counterparty for review.	Send the GDPR to the counterparty for review.
+Please check the c c p a clause before signing.	Please check the CCPA clause before signing.
+The lawyer asked us to sign the ccpa by the end of the week.	The lawyer asked us to sign the CCPA by the end of the week.
+We still have questions about the hipaa terms.	We still have questions about the HIPAA terms.
+Send the p c i d s s to the counterparty for review.	Send the PCI DSS to the counterparty for review.
+Please check the d p a clause before signing.	Please check the DPA clause before signing.
+The lawyer asked us to sign the dpa by the end of the week.	The lawyer asked us to sign the DPA by the end of the week.
+We still have questions about the d p o terms.	We still have questions about the DPO terms.
+Send the dpo to the counterparty for review.	Send the DPO to the counterparty for review.
+Please check the eula clause before signing.	Please check the EULA clause before signing.
+The lawyer asked us to sign the g p l by the end of the week.	The lawyer asked us to sign the GPL by the end of the week.
+We still have questions about the gpl terms.	We still have questions about the GPL terms.
+Send the l l c to the counterparty for review.	Send the LLC to the counterparty for review.
+Please check the gmbh clause before signing.	Please check the GmbH clause before signing.
+The lawyer asked us to sign the difc by the end of the week.	The lawyer asked us to sign the DIFC by the end of the week.
+We still have questions about the adgm terms.	We still have questions about the ADGM terms.
+Send the west law to the counterparty for review.	Send the Westlaw to the counterparty for review.
+Please check the westlaw clause before signing.	Please check the Westlaw clause before signing.
+The lawyer asked us to sign the lexis nexis by the end of the week.	The lawyer asked us to sign the LexisNexis by the end of the week.
+We still have questions about the lexisnexis terms.	We still have questions about the LexisNexis terms.
+Send the panda doc to the counterparty for review.	Send the PandaDoc to the counterparty for review.
+Please check the pandadoc clause before signing.	Please check the PandaDoc clause before signing.
+The lawyer asked us to sign the c l m by the end of the week.	The lawyer asked us to sign the CLM by the end of the week.
+We still have questions about the u b o terms.	We still have questions about the UBO terms.
+Send the ubo to the counterparty for review.	Send the UBO to the counterparty for review.
+Please check the eidas clause before signing.	Please check the eIDAS clause before signing.
+The lawyer asked us to sign the d m c a by the end of the week.	The lawyer asked us to sign the DMCA by the end of the week.
+We still have questions about the dmca terms.	We still have questions about the DMCA terms.
+Send the coppa to the counterparty for review.	Send the COPPA to the counterparty for review.
+Please check the lgpd clause before signing.	Please check the LGPD clause before signing.
+The lawyer asked us to sign the frand by the end of the week.	The lawyer asked us to sign the FRAND by the end of the week.
+We still have questions about the k y b terms.	We still have questions about the KYB terms.
+Send the kyb to the counterparty for review.	Send the KYB to the counterparty for review.
+The designer made the layout in premier pro, take a look.	The designer made the layout in Premiere Pro, take a look.
+Exporting from lightroom takes too long.	Exporting from Lightroom takes too long.
+Open proto pie and I will show you the spacing issue.	Open ProtoPie and I will show you the spacing issue.
+We keep all components in protopie.	We keep all components in ProtoPie.
+The designer made the layout in balsamiq, take a look.	The designer made the layout in Balsamiq, take a look.
+Exporting from zeplin takes too long.	Exporting from Zeplin takes too long.
+Open in vision and I will show you the spacing issue.	Open InVision and I will show you the spacing issue.
+We keep all components in invision.	We keep all components in InVision.
+The designer made the layout in lottie, take a look.	The designer made the layout in Lottie, take a look.
+Exporting from dribbble takes too long.	Exporting from Dribbble takes too long.
+Open behance and I will show you the spacing issue.	Open Behance and I will show you the spacing issue.
+We keep all components in awwwards.	We keep all components in Awwwards.
+The designer made the layout in u x, take a look.	The designer made the layout in UX, take a look.
+Exporting from ux takes too long.	Exporting from UX takes too long.
+Open u i and I will show you the spacing issue.	Open UI and I will show you the spacing issue.
+We keep all components in u x u i.	We keep all components in UX/UI.
+The designer made the layout in w c a g, take a look.	The designer made the layout in WCAG, take a look.
+Exporting from wcag takes too long.	Exporting from WCAG takes too long.
+Open s v g and I will show you the spacing issue.	Open SVG and I will show you the spacing issue.
+We keep all components in svg.	We keep all components in SVG.
+The designer made the layout in p n g, take a look.	The designer made the layout in PNG, take a look.
+Exporting from webp takes too long.	Exporting from WebP takes too long.
+Open p d f and I will show you the spacing issue.	Open PDF and I will show you the spacing issue.
+We keep all components in r g b.	We keep all components in RGB.
+The designer made the layout in rgb, take a look.	The designer made the layout in RGB, take a look.
+Exporting from c m y k takes too long.	Exporting from CMYK takes too long.
+Open cmyk and I will show you the spacing issue.	Open CMYK and I will show you the spacing issue.
+We keep all components in pantone.	We keep all components in Pantone.
+The designer made the layout in helvetica, take a look.	The designer made the layout in Helvetica, take a look.
+Exporting from roboto takes too long.	Exporting from Roboto takes too long.
+Open heroicons and I will show you the spacing issue.	Open Heroicons and I will show you the spacing issue.
+We keep all components in un splash.	We keep all components in Unsplash.
+The designer made the layout in unsplash, take a look.	The designer made the layout in Unsplash, take a look.
+Exporting from freepik takes too long.	Exporting from Freepik takes too long.
+Open excalidraw and I will show you the spacing issue.	Open Excalidraw and I will show you the spacing issue.
+We keep all components in penpot.	We keep all components in Penpot.
+The designer made the layout in v zero, take a look.	The designer made the layout in v0, take a look.
