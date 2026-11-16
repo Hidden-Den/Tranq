@@ -21,4 +21,15 @@ final class PhoneticsTests: XCTestCase {
         XCTAssertEqual(Phonetics.normalizedDistance("", ""), 0)
         XCTAssertEqual(Phonetics.normalizedDistance("abc", ""), 1)
     }
+
+    func testEnglishKeyDoesNotMergeConsonantsSplitByVowel() {
+        XCTAssertNotEqual(Phonetics.englishKey("banana"), Phonetics.englishKey("bin"))
+    }
+
+    func testSimilarityIsZeroWhenKeyIsEmpty() {
+        XCTAssertEqual(Phonetics.similarity(token: "кубернетес", spelling: "1С", language: .ru), 0)
+        XCTAssertEqual(Phonetics.similarity(token: "яндекс", spelling: "Яндекс", language: .ru), 0)
+        XCTAssertEqual(Phonetics.similarity(token: "кубернетес", spelling: "Kubernetes", language: .en), 0)
+        XCTAssertEqual(Phonetics.similarity(token: "kubernetes", spelling: "1С", language: .en), 0)
+    }
 }

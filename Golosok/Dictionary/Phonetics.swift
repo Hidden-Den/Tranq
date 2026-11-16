@@ -36,18 +36,20 @@ enum Phonetics {
         return collapseDoubles(result)
     }
 
-    /// Simplified Metaphone: only a leading vowel survives, common digraphs unified, doubles collapsed.
+    /// Simplified Metaphone: doubles collapsed, then only a leading vowel survives, common digraphs unified.
     static func englishKey(_ word: String) -> String {
         var s = word.lowercased().filter { $0.isLetter && $0.isASCII }
         for (from, to) in [("ph", "f"), ("ck", "k"), ("c", "k"), ("q", "k"), ("x", "ks"), ("z", "s")] {
             s = s.replacingOccurrences(of: from, with: to)
         }
+        // Doubles collapse first, so consonants split by a vowel never merge: "banana" stays apart from "bin".
+        let collapsed = Array(collapseDoubles(Array(s)))
         let vowels: Set<Character> = ["a", "e", "i", "o", "u", "y"]
         var out: [Character] = []
-        for (index, ch) in s.enumerated() where index == 0 || !vowels.contains(ch) {
+        for (index, ch) in collapsed.enumerated() where index == 0 || !vowels.contains(ch) {
             out.append(ch)
         }
-        return collapseDoubles(out)
+        return String(out)
     }
 
     /// Levenshtein distance over Characters divided by the longer length. Empty pair gives 0.
@@ -69,12 +71,17 @@ enum Phonetics {
     }
 
     static func similarity(token: String, spelling: String, language: DictionaryLanguage) -> Double {
+        let lhs: String, rhs: String
         switch language {
         case .ru:
-            return 1 - normalizedDistance(token.lowercased(), transliterateToCyrillic(spelling))
+            lhs = token.lowercased()
+            rhs = transliterateToCyrillic(spelling)
         case .en:
-            return 1 - normalizedDistance(englishKey(token), englishKey(spelling))
+            lhs = englishKey(token)
+            rhs = englishKey(spelling)
         }
+        guard !lhs.isEmpty, !rhs.isEmpty else { return 0 }
+        return 1 - normalizedDistance(lhs, rhs)
     }
 
     private static func collapseDoubles(_ chars: [Character]) -> String {
