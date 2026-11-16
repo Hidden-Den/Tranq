@@ -19,7 +19,7 @@ struct AboutView: View {
                     .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
                 
                 Text("Голосок")
-                    .font(UIStyleFont.display(size: 20, weight: .bold))
+                    .font(.ui(.title, weight: .bold))
                     .foregroundColor(.uiInk)
                 
                 UIBadge(text: currentVersionStr)
@@ -27,7 +27,7 @@ struct AboutView: View {
             
             // 2. ОПИСАНИЕ
             Text("Автоматический ввод надиктованного текста и расшифровка аудиофайлов. Локальная обработка речи без передачи данных посторонним.")
-                .font(UIStyleFont.body(size: 12, weight: .regular))
+                .font(.ui(.footnote))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.uiMidGray)
                 .fixedSize(horizontal: false, vertical: true)
@@ -82,12 +82,12 @@ struct TechBadge: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(size: 9, weight: .bold, design: .monospaced))
+            .font(.ui(.micro, weight: .bold, design: .monospaced))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color.uiCanvas)
-            .cornerRadius(6)
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.sm)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
             .foregroundColor(.uiInk)
     }
 }
@@ -104,16 +104,16 @@ struct AboutLinkButton: View {
         }) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.ui(.caption, weight: .medium))
                 Text(title)
-                    .font(UIStyleFont.body(size: 12, weight: .medium))
+                    .font(.ui(.footnote, weight: .medium))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 7)
             .background(Color.uiCanvas)
-            .cornerRadius(12)
+            .cornerRadius(UIRadius.md)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: UIRadius.md)
                     .stroke(isEnabled ? Color.uiHairline : Color.uiHairline.opacity(0.35), lineWidth: 1)
             )
             .foregroundColor(isEnabled ? .uiInk : .uiMidGray)

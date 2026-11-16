@@ -81,17 +81,55 @@ extension Color {
     
     static let uiInverseBlock = dynamic(light: "#0a0a0a", dark: "#18181b")
     static let uiInverseBorder = dynamic(light: "#0a0a0a", dark: "#27272a")
+
+    // MARK: - Семантические цвета состояний
+    // Акценты используются точечно: успех, предупреждение, работа ИИ, обработка, ссылки.
+    static let uiSuccess = Color(hex: "#10B981")
+    static let uiSuccessLight = Color(hex: "#34D399")
+    static let uiSuccessPale = Color(hex: "#A7F3D0")
+    static let uiSuccessDeep = Color(hex: "#059669")
+    static let uiSuccessShade = Color(hex: "#064E3B")
+    static let uiSuccessText = dynamic(light: "#047857", dark: "#10B981")
+    static let uiAmber = Color(hex: "#F59E0B")
+    static let uiAI = Color(hex: "#C084FC")
+    static let uiAIDeep = Color(hex: "#8B5CF6")
+    static let uiProcessing = Color(hex: "#6366F1")
+    static let uiInfo = Color(hex: "#3B82F6")
+    static let uiInfoLight = Color(hex: "#38BDF8")
 }
 
-// MARK: - Typography & Fonts
-struct UIStyleFont {
-    static func body(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        return Font.system(size: size, weight: weight, design: .default)
+// MARK: - Шкала шрифтов
+/// Девять ступеней вместо произвольных размеров. Минимум 10 pt.
+enum UITextSize: CGFloat {
+    case micro = 10
+    case caption = 11
+    case footnote = 12
+    case body = 13
+    case callout = 15
+    case headline = 17
+    case title = 20
+    case largeTitle = 26
+    case display = 30
+}
+
+extension Font {
+    static func ui(_ size: UITextSize, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(size: size.rawValue, weight: weight, design: design)
     }
-    
-    static func display(size: CGFloat, weight: Font.Weight = .semibold) -> Font {
-        return Font.system(size: size, weight: weight, design: .default)
-    }
+}
+
+// MARK: - Шкала скруглений
+enum UIRadius {
+    /// Мелкие плашки, бейджи, полосы индикаторов
+    static let xs: CGFloat = 4
+    /// Кнопки, поля ввода, пункты меню
+    static let sm: CGFloat = 8
+    /// Блоки внутри карточек, поповеры
+    static let md: CGFloat = 12
+    /// Крупные кнопки-пилюли, панели
+    static let lg: CGFloat = 18
+    /// Карточки и модальные окна
+    static let xl: CGFloat = 24
 }
 
 // MARK: - Базовые ТАКТИЛЬНЫЕ UI Компоненты
@@ -102,8 +140,8 @@ struct UICard<Content: View>: View {
     var body: some View {
         content
             .padding(20)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(Color.uiPaper))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.uiHairline, lineWidth: 1))
+            .background(RoundedRectangle(cornerRadius: UIRadius.xl, style: .continuous).fill(Color.uiPaper))
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.xl, style: .continuous).stroke(Color.uiHairline, lineWidth: 1))
     }
 }
 
@@ -113,13 +151,13 @@ struct UIOutlineButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(UIStyleFont.body(size: 13, weight: .medium))
+                .font(.ui(.body, weight: .medium))
                 .foregroundColor(.uiInk)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 14)
                 .background(Color.uiPaper)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.lg)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle()) // ТАКТИЛЬНЫЙ СТИЛЬ
     }
@@ -131,13 +169,13 @@ struct UIDestructiveButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(UIStyleFont.body(size: 13, weight: .medium))
+                .font(.ui(.body, weight: .medium))
                 .foregroundColor(.uiEmber)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 14)
                 .background(Color.uiEmber.opacity(0.1))
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiEmber.opacity(0.2), lineWidth: 1))
+                .cornerRadius(UIRadius.lg)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiEmber.opacity(0.2), lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle()) // ТАКТИЛЬНЫЙ СТИЛЬ
     }
@@ -149,12 +187,12 @@ struct UIPrimaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(UIStyleFont.body(size: 13, weight: .medium))
+                .font(.ui(.body, weight: .medium))
                 .foregroundColor(Color.dynamic(light: "#ffffff", dark: "#000000"))
                 .padding(.vertical, 8)
                 .padding(.horizontal, 16)
                 .background(Color.uiInk)
-                .cornerRadius(18)
+                .cornerRadius(UIRadius.lg)
         }
         .buttonStyle(TactileButtonStyle()) // ТАКТИЛЬНЫЙ СТИЛЬ
     }
@@ -164,14 +202,14 @@ struct UIBadge: View {
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(UIStyleFont.body(size: 10, weight: .semibold))
+            .font(.ui(.micro, weight: .semibold))
             .tracking(0.5)
             .foregroundColor(.uiMidGray)
             .padding(.vertical, 4)
             .padding(.horizontal, 10)
             .background(Color.uiCanvas)
-            .cornerRadius(18)
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
     }
 }
 

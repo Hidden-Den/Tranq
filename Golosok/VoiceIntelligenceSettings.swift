@@ -76,7 +76,7 @@ public enum VoiceEngine: String, CaseIterable, Identifiable {
 public final class VoiceIntelligenceSettings: ObservableObject {
     public static let shared = VoiceIntelligenceSettings()
 
-    private static let defaults = UserDefaults.standard
+    private static let defaults = AppEnvironment.defaults
 
     @Published public var mode: VoiceInputMode {
         didSet { Self.defaults.set(mode.rawValue, forKey: "voice.mode") }

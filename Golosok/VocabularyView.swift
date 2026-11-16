@@ -56,10 +56,10 @@ enum DomainCategory: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .all: return .uiMidGray
-        case .it: return Color(hex: "#3B82F6")
-        case .management: return Color(hex: "#8B5CF6")
-        case .business: return Color(hex: "#F59E0B")
-        case .custom: return Color(hex: "#10B981")
+        case .it: return Color.uiInfo
+        case .management: return Color.uiAIDeep
+        case .business: return Color.uiAmber
+        case .custom: return Color.uiSuccess
         }
     }
 }
@@ -157,10 +157,10 @@ struct VocabularyView: View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Словарь и обучение")
-                    .font(UIStyleFont.display(size: 18, weight: .bold))
+                    .font(.ui(.headline, weight: .bold))
                     .foregroundColor(.uiInk)
                 Text("Встроенный справочник IT и бизнеса, автозамены речи и системный промпт")
-                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                    .font(.ui(.caption))
                     .foregroundColor(.uiMidGray)
             }
 
@@ -169,27 +169,27 @@ struct VocabularyView: View {
             HStack(spacing: 12) {
                 HStack(spacing: 8) {
                     Text("Адаптивное обучение")
-                        .font(UIStyleFont.body(size: 12, weight: .medium))
+                        .font(.ui(.footnote, weight: .medium))
                         .foregroundColor(.uiInk)
                     Toggle(String(localized: "Адаптивное обучение"), isOn: $engine.isLearningEnabled)
                         .labelsHidden()
-                        .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(Color.uiPaper)
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.sm)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
 
                 if !engine.learnedTerms.isEmpty || !engine.correctionRules.isEmpty {
                     Button(action: { showingResetAlert = true }) {
                         Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.ui(.caption, weight: .medium))
                             .foregroundColor(.uiMidGray)
                             .frame(width: 30, height: 30)
                             .background(Color.uiPaper)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                            .cornerRadius(UIRadius.sm)
+                            .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                     }
                     .buttonStyle(TactileButtonStyle())
                     .help(String(localized: "Сбросить память к заводскому справочнику"))
@@ -217,9 +217,9 @@ struct VocabularyView: View {
                 }) {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(.ui(.caption, weight: .semibold))
                         Text(tab.title)
-                            .font(UIStyleFont.body(size: 12, weight: isSelected ? .semibold : .medium))
+                            .font(.ui(.footnote, weight: isSelected ? .semibold : .medium))
 
                         if tab == .terms {
                             badgePill(text: "\(engine.learnedTerms.count)", isSelected: isSelected)
@@ -231,9 +231,9 @@ struct VocabularyView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(isSelected ? Color.uiPaper : Color.clear)
-                    .cornerRadius(8)
+                    .cornerRadius(UIRadius.sm)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: UIRadius.sm)
                             .stroke(isSelected ? Color.uiHairline : Color.clear, lineWidth: 1)
                     )
                 }
@@ -250,12 +250,12 @@ struct VocabularyView: View {
 
     private func badgePill(text: String, isSelected: Bool) -> some View {
         Text(text)
-            .font(UIStyleFont.body(size: 10, weight: .semibold))
+            .font(.ui(.micro, weight: .semibold))
             .foregroundColor(isSelected ? .uiInk : .uiMidGray)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
             .background(isSelected ? Color.uiCanvas : Color.uiPaper)
-            .cornerRadius(10)
+            .cornerRadius(UIRadius.md)
     }
 
     // MARK: - Контент
@@ -282,16 +282,16 @@ struct VocabularyView: View {
                     // Поиск
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
+                            .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                         TextField("Поиск терминов", text: $termSearchQuery)
                             .textFieldStyle(PlainTextFieldStyle())
-                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .font(.ui(.footnote))
                             .foregroundColor(.uiInk)
                         if !termSearchQuery.isEmpty {
                             Button(action: { termSearchQuery = "" }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 10))
+                                    .font(.ui(.micro))
                                     .foregroundColor(.uiMidGray)
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -300,8 +300,8 @@ struct VocabularyView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
                     .background(Color.uiPaper)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                     .frame(maxWidth: 240)
 
                     Spacer()
@@ -310,19 +310,19 @@ struct VocabularyView: View {
                     HStack(spacing: 6) {
                         TextField("Новый термин", text: $newTermInput)
                             .textFieldStyle(PlainTextFieldStyle())
-                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .font(.ui(.footnote))
                             .foregroundColor(.uiInk)
                             .frame(width: 140)
                             .onSubmit { addNewTerm() }
 
                         Button(action: addNewTerm) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.ui(.caption, weight: .bold))
                                 .foregroundColor(.uiInk)
                                 .frame(width: 26, height: 26)
                                 .background(Color.uiPaper)
-                                .cornerRadius(6)
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                                .cornerRadius(UIRadius.sm)
+                                .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                         }
                         .buttonStyle(TactileButtonStyle())
                         .disabled(newTermInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -330,8 +330,8 @@ struct VocabularyView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(Color.uiPaper)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                 }
 
                 // Категории
@@ -340,14 +340,14 @@ struct VocabularyView: View {
                         let isActive = selectedCategory == cat
                         Button(action: { selectedCategory = cat }) {
                             Text(cat.title)
-                                .font(UIStyleFont.body(size: 11, weight: isActive ? .semibold : .regular))
+                                .font(.ui(.caption, weight: isActive ? .semibold : .regular))
                                 .foregroundColor(isActive ? .uiInk : .uiMidGray)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(isActive ? Color.uiPaper : Color.clear)
-                                .cornerRadius(6)
+                                .cornerRadius(UIRadius.sm)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: UIRadius.sm)
                                         .stroke(isActive ? Color.uiHairline : Color.clear, lineWidth: 1)
                                 )
                         }
@@ -364,10 +364,10 @@ struct VocabularyView: View {
                 if filteredTerms.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "character.book.closed")
-                            .font(.system(size: 28))
+                            .font(.ui(.display))
                             .foregroundColor(.uiMidGray)
                         Text(termSearchQuery.isEmpty ? "В этой категории нет терминов" : "Термины не найдены")
-                            .font(UIStyleFont.body(size: 13, weight: .regular))
+                            .font(.ui(.body))
                             .foregroundColor(.uiMidGray)
                     }
                     .frame(maxWidth: .infinity)
@@ -390,12 +390,12 @@ struct VocabularyView: View {
             if editingTermId == item.id {
                 TextField("Термин", text: $editingTermText)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .font(.ui(.body, weight: .medium))
                     .foregroundColor(.uiInk)
                     .padding(4)
                     .background(Color.uiCanvas)
-                    .cornerRadius(4)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+                    .cornerRadius(UIRadius.xs)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.xs).stroke(Color.uiInfo, lineWidth: 1))
                     .onSubmit {
                         saveEditedTerm(oldTerm: item.term)
                     }
@@ -404,8 +404,8 @@ struct VocabularyView: View {
 
                 Button(action: { saveEditedTerm(oldTerm: item.term) }) {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(Color(hex: "#10B981"))
+                        .font(.ui(.micro, weight: .bold))
+                        .foregroundColor(Color.uiSuccess)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -413,7 +413,7 @@ struct VocabularyView: View {
 
                 Button(action: { editingTermId = nil }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.ui(.micro, weight: .bold))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 24, height: 24)
                 }
@@ -421,7 +421,7 @@ struct VocabularyView: View {
                 .help(String(localized: "Отмена"))
             } else {
                 Text(item.term)
-                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .font(.ui(.body, weight: .medium))
                     .foregroundColor(.uiInk)
 
                 Spacer()
@@ -433,7 +433,7 @@ struct VocabularyView: View {
                     editingTermText = item.term
                 }) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
@@ -443,7 +443,7 @@ struct VocabularyView: View {
 
                 Button(action: { engine.removeTerm(item.term) }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
@@ -455,8 +455,8 @@ struct VocabularyView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(Color.uiPaper)
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+        .cornerRadius(UIRadius.sm)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
     }
 
     private func saveEditedTerm(oldTerm: String) {
@@ -483,16 +483,16 @@ struct VocabularyView: View {
                 HStack(spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 11))
+                            .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                         TextField("Поиск правил", text: $ruleSearchQuery)
                             .textFieldStyle(PlainTextFieldStyle())
-                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .font(.ui(.footnote))
                             .foregroundColor(.uiInk)
                         if !ruleSearchQuery.isEmpty {
                             Button(action: { ruleSearchQuery = "" }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 10))
+                                    .font(.ui(.micro))
                                     .foregroundColor(.uiMidGray)
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -501,8 +501,8 @@ struct VocabularyView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
                     .background(Color.uiPaper)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                     .frame(maxWidth: 200)
 
                     Spacer()
@@ -511,29 +511,29 @@ struct VocabularyView: View {
                     HStack(spacing: 6) {
                         TextField("Слышит", text: $newRulePattern)
                             .textFieldStyle(PlainTextFieldStyle())
-                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .font(.ui(.footnote))
                             .foregroundColor(.uiInk)
                             .frame(width: 90)
 
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.ui(.micro, weight: .semibold))
                             .foregroundColor(.uiMidGray)
 
                         TextField("Заменяет", text: $newRuleReplacement)
                             .textFieldStyle(PlainTextFieldStyle())
-                            .font(UIStyleFont.body(size: 12, weight: .regular))
+                            .font(.ui(.footnote))
                             .foregroundColor(.uiInk)
                             .frame(width: 100)
                             .onSubmit { addNewRule() }
 
                         Button(action: addNewRule) {
                             Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.ui(.caption, weight: .bold))
                                 .foregroundColor(.uiInk)
                                 .frame(width: 26, height: 26)
                                 .background(Color.uiPaper)
-                                .cornerRadius(6)
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                                .cornerRadius(UIRadius.sm)
+                                .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                         }
                         .buttonStyle(TactileButtonStyle())
                         .disabled(newRulePattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -541,8 +541,8 @@ struct VocabularyView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(Color.uiPaper)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                 }
 
                 // Категории
@@ -551,14 +551,14 @@ struct VocabularyView: View {
                         let isActive = selectedCategory == cat
                         Button(action: { selectedCategory = cat }) {
                             Text(cat.title)
-                                .font(UIStyleFont.body(size: 11, weight: isActive ? .semibold : .regular))
+                                .font(.ui(.caption, weight: isActive ? .semibold : .regular))
                                 .foregroundColor(isActive ? .uiInk : .uiMidGray)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(isActive ? Color.uiPaper : Color.clear)
-                                .cornerRadius(6)
+                                .cornerRadius(UIRadius.sm)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: UIRadius.sm)
                                         .stroke(isActive ? Color.uiHairline : Color.clear, lineWidth: 1)
                                 )
                         }
@@ -575,10 +575,10 @@ struct VocabularyView: View {
                 if filteredRules.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "arrow.2.squarepath")
-                            .font(.system(size: 28))
+                            .font(.ui(.display))
                             .foregroundColor(.uiMidGray)
                         Text(ruleSearchQuery.isEmpty ? "В этой категории нет правил автозамены" : "Правила не найдены")
-                            .font(UIStyleFont.body(size: 13, weight: .regular))
+                            .font(.ui(.body))
                             .foregroundColor(.uiMidGray)
                     }
                     .frame(maxWidth: .infinity)
@@ -601,27 +601,27 @@ struct VocabularyView: View {
             if editingRuleId == rule.id {
                 TextField("Слышит", text: $editingRulePattern)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                    .font(.ui(.footnote))
                     .foregroundColor(.uiInk)
                     .frame(width: 110)
                     .padding(4)
                     .background(Color.uiCanvas)
-                    .cornerRadius(4)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+                    .cornerRadius(UIRadius.xs)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.xs).stroke(Color.uiInfo, lineWidth: 1))
 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.ui(.micro, weight: .semibold))
                     .foregroundColor(.uiMidGray)
 
                 TextField("Заменяет", text: $editingRuleReplacement)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .font(UIStyleFont.body(size: 12, weight: .medium))
+                    .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(.uiInk)
                     .frame(width: 110)
                     .padding(4)
                     .background(Color.uiCanvas)
-                    .cornerRadius(4)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(hex: "#3B82F6"), lineWidth: 1))
+                    .cornerRadius(UIRadius.xs)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.xs).stroke(Color.uiInfo, lineWidth: 1))
                     .onSubmit {
                         saveEditedRule(id: rule.id)
                     }
@@ -630,8 +630,8 @@ struct VocabularyView: View {
 
                 Button(action: { saveEditedRule(id: rule.id) }) {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(Color(hex: "#10B981"))
+                        .font(.ui(.micro, weight: .bold))
+                        .foregroundColor(Color.uiSuccess)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -639,7 +639,7 @@ struct VocabularyView: View {
 
                 Button(action: { editingRuleId = nil }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.ui(.micro, weight: .bold))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 24, height: 24)
                 }
@@ -647,15 +647,15 @@ struct VocabularyView: View {
                 .help(String(localized: "Отмена"))
             } else {
                 Text(rule.pattern)
-                    .font(UIStyleFont.body(size: 13, weight: .regular))
+                    .font(.ui(.body))
                     .foregroundColor(.uiInk)
 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.ui(.micro, weight: .semibold))
                     .foregroundColor(.uiMidGray)
 
                 Text(rule.replacement.isEmpty ? "удаление" : rule.replacement)
-                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .font(.ui(.body, weight: .medium))
                     .foregroundColor(.uiInk)
 
                 Spacer()
@@ -668,7 +668,7 @@ struct VocabularyView: View {
                     editingRuleReplacement = rule.replacement
                 }) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
@@ -678,7 +678,7 @@ struct VocabularyView: View {
 
                 Button(action: { engine.removeRule(id: rule.id) }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
@@ -690,8 +690,8 @@ struct VocabularyView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(Color.uiPaper)
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+        .cornerRadius(UIRadius.sm)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
     }
 
     private func saveEditedRule(id: UUID) {
@@ -722,29 +722,29 @@ struct VocabularyView: View {
         HStack(spacing: 4) {
             if let cat = category, let domain = DomainCategory(rawValue: cat), domain != .all {
                 Text(domain.badgeTitle)
-                    .font(UIStyleFont.body(size: 9, weight: .semibold))
+                    .font(.ui(.micro, weight: .semibold))
                     .foregroundColor(domain.color)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(domain.color.opacity(0.12))
-                    .cornerRadius(4)
+                    .cornerRadius(UIRadius.xs)
             } else if !isManual {
                 Text("Авто • \(count)")
-                    .font(UIStyleFont.body(size: 9, weight: .semibold))
-                    .foregroundColor(Color(hex: "#10B981"))
+                    .font(.ui(.micro, weight: .semibold))
+                    .foregroundColor(Color.uiSuccess)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color(hex: "#10B981").opacity(0.12))
-                    .cornerRadius(4)
+                    .background(Color.uiSuccess.opacity(0.12))
+                    .cornerRadius(UIRadius.xs)
             } else {
                 Text("Моё")
-                    .font(UIStyleFont.body(size: 9, weight: .semibold))
+                    .font(.ui(.micro, weight: .semibold))
                     .foregroundColor(.uiMidGray)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.uiCanvas)
-                    .cornerRadius(4)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.xs)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.xs).stroke(Color.uiHairline, lineWidth: 1))
             }
         }
     }
@@ -756,10 +756,10 @@ struct VocabularyView: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Инструкция для языковой модели")
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiInk)
                     Text("Системный контекст, используемый при синтезе чистой мысли")
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                 }
 
@@ -771,13 +771,13 @@ struct VocabularyView: View {
             }
 
             TextEditor(text: $settings.customSystemPrompt)
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .font(.ui(.footnote, design: .monospaced))
                 .foregroundColor(.uiInk)
                 .lineSpacing(3)
                 .padding(10)
                 .background(Color.uiPaper)
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.sm)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
 
             Spacer()
         }

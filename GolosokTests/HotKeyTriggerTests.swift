@@ -100,8 +100,8 @@ struct HotKeyTriggerTests {
         let original = manager.trigger
         defer { manager.trigger = original }
 
-        UserDefaults.standard.set("modifier", forKey: "hotkey.type")
-        UserDefaults.standard.set(57, forKey: "hotkey.modifierKeyCode") // Legacy Caps Lock code
+        AppEnvironment.defaults.set("modifier", forKey: "hotkey.type")
+        AppEnvironment.defaults.set(57, forKey: "hotkey.modifierKeyCode") // Legacy Caps Lock code
 
         #expect(manager.trigger == .none)
         #expect(manager.displayName() == "Не назначено")

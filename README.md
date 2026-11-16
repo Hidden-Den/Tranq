@@ -94,18 +94,22 @@ xattr -cr /Applications/Golosok.app
 git clone https://github.com/Nuteres/Golosok.git
 cd Golosok
 
-# 2. Download GigaAM model weights
-curl -L -o Golosok/gigaam.gguf https://huggingface.co/memoravox/gigaam-v3-e2e-rnnt-gguf/resolve/main/gigaam-v3-e2e-rnnt-Q8_0.gguf
+# 2. Fetch the GigaAM model and llama-server; versions and SHA-256 checksums are pinned in the script
+scripts/fetch-deps.sh
 
-# 3. Open project in Xcode
+# 3. Open the project in Xcode
 open Golosok.xcodeproj
 ```
 
-Press `⌘ + R` in Xcode to build and run, or build via command line:
+Press `⌘ + R` in Xcode to build and run. Xcode downloads the transcribe.cpp engine on its own as a Swift package.
+
+Release DMG, ad-hoc signed with hardened runtime:
 
 ```bash
-xcodebuild -project Golosok.xcodeproj -target Golosok -configuration Release build
+scripts/build-dmg.sh
 ```
+
+Unit tests also run in GitHub Actions on every push to `main` and on pull requests. They do not need models or binaries.
 
 ---
 

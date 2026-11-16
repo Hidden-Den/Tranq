@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @ObservedObject var audioCapture = AudioCapture.shared
+    @ObservedObject var preferences = AppPreferences.shared
     @ObservedObject var permissions = PermissionManager.shared
     @ObservedObject var language = LanguageSettings.shared
     @ObservedObject var theme = ThemeSettings.shared
@@ -21,10 +21,10 @@ struct SettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Язык приложения")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text("Приложение перезапустится автоматически")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -44,10 +44,10 @@ struct SettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Цвет интерфейса")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text("Тёмная, светлая или системная тема")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -66,7 +66,7 @@ struct SettingsView: View {
                 UICard {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("ОСНОВНЫЕ")
-                            .font(UIStyleFont.body(size: 11, weight: .bold))
+                            .font(.ui(.caption, weight: .bold))
                             .tracking(1.0)
                             .foregroundColor(.uiMidGray)
                         
@@ -74,16 +74,16 @@ struct SettingsView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Запуск при входе")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Автоматический запуск при старте системы")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            Toggle("", isOn: $audioCapture.launchAtLoginEnabled)
+                            Toggle("", isOn: $preferences.launchAtLoginEnabled)
                                 .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                         }
                         
                         Divider().background(Color.uiHairline)
@@ -92,16 +92,16 @@ struct SettingsView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Скрыть в Dock")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Работа в фоне без значка в Dock")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            Toggle("Скрыть в Dock", isOn: $audioCapture.hideInDock)
+                            Toggle("Скрыть в Dock", isOn: $preferences.hideInDock)
                                 .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                         }
                         
                         Divider().background(Color.uiHairline)
@@ -111,12 +111,12 @@ struct SettingsView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text("Авто-вставка текста")
-                                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                                        .font(.ui(.body, weight: .medium))
                                         .foregroundColor(.uiInk)
                                     
                                     if !permissions.isAccessibilityGranted {
                                         Text("Разрешите доступ")
-                                            .font(UIStyleFont.body(size: 10, weight: .bold))
+                                            .font(.ui(.micro, weight: .bold))
                                             .foregroundColor(.uiWarn)
                                     }
                                 }
@@ -124,15 +124,15 @@ struct SettingsView: View {
                                 Text(permissions.isAccessibilityGranted ?
                                      LocalizedStringKey("Печатать расшифровку прямо в место курсора") :
                                      LocalizedStringKey("Выдайте доступ в Универсальном доступе macOS"))
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
                             
                             if permissions.isAccessibilityGranted {
-                                Toggle("", isOn: $audioCapture.autoPasteEnabled)
+                                Toggle("", isOn: $preferences.autoPasteEnabled)
                                     .labelsHidden()
-                                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                             } else {
                                 UIOutlineButton(title: "Настройки") {
                                     permissions.requestAccessibilityPermission()
@@ -145,16 +145,16 @@ struct SettingsView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Сразу открывать в истории")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Автоматически открывать свежую заметку по завершении расшифровки")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            Toggle("", isOn: $audioCapture.autoOpenNoteEnabled)
+                            Toggle("", isOn: $preferences.autoOpenNoteEnabled)
                                 .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                         }
                         
                         Divider().background(Color.uiHairline)
@@ -163,16 +163,16 @@ struct SettingsView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Системные звуки")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Акустический отклик при активации, копировании и ошибках")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
-                            Toggle("", isOn: $audioCapture.soundEnabled)
+                            Toggle("", isOn: $preferences.soundEnabled)
                                 .labelsHidden()
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                         }
                     }
                 }
@@ -181,30 +181,30 @@ struct SettingsView: View {
                 UICard {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("УПРАВЛЕНИЕ")
-                            .font(UIStyleFont.body(size: 11, weight: .bold))
+                            .font(.ui(.caption, weight: .bold))
                             .tracking(1.0)
                             .foregroundColor(.uiMidGray)
                         
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Горячая клавиша")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 if let warning = hotKey.warningMessage {
                                     Text(warning)
-                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .font(.ui(.caption))
                                         .foregroundColor(.uiWarn)
                                 } else if hotKey.isCapturing {
                                     Text(LocalizedStringKey("HotKey.Capture"))
-                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .font(.ui(.caption))
                                         .foregroundColor(.uiMidGray)
                                 } else if hotKey.isTaken {
                                     Text(LocalizedStringKey("HotKey.Taken"))
-                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .font(.ui(.caption))
                                         .foregroundColor(.uiWarn)
                                 } else if !hotKey.isConfigured {
                                     Text("Клавиша не назначена")
-                                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                                        .font(.ui(.caption))
                                         .foregroundColor(.uiMidGray)
                                 }
                             }
@@ -228,7 +228,7 @@ struct SettingsView: View {
                         
                         HStack {
                             Text("Режим диктовки")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             UIDropdownPicker(selection: $hotKey.mode, options: [
@@ -241,7 +241,7 @@ struct SettingsView: View {
                         
                         HStack {
                             Text("Отмена записи")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             UIBadge(text: "ESC")
@@ -253,13 +253,13 @@ struct SettingsView: View {
                 UICard {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("ДВИЖОК И УСКОРЕНИЕ")
-                            .font(UIStyleFont.body(size: 11, weight: .bold))
+                            .font(.ui(.caption, weight: .bold))
                             .tracking(1.0)
                             .foregroundColor(.uiMidGray)
                         
 HStack {
                             Text("Языковая модель")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             UIDropdownPicker(selection: Binding(
@@ -277,11 +277,11 @@ HStack {
 
                         HStack {
                             Text("Аппаратное ускорение")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             Text("Apple Metal")
-                                .font(UIStyleFont.body(size: 12, weight: .regular))
+                                .font(.ui(.footnote))
                                 .foregroundColor(.uiMidGray)
                         }
                         
@@ -289,7 +289,7 @@ HStack {
 
                         HStack {
                             Text("О программе Golosok")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             UIOutlineButton(title: "Открыть") {
@@ -304,7 +304,7 @@ HStack {
 
                         HStack {
                             Text("Логи приложения")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Spacer()
                             UIOutlineButton(title: "Открыть") {
@@ -328,10 +328,10 @@ HStack {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Стереть историю")
-                                .font(UIStyleFont.body(size: 13, weight: .bold))
+                                .font(.ui(.body, weight: .bold))
                                 .foregroundColor(.uiEmber)
                             Text("Безвозвратное удаление ВСЕХ заметок на устройстве")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -350,7 +350,8 @@ HStack {
         .alert("Стереть всю историю?", isPresented: $showingClearHistoryAlert) {
             Button("Отмена", role: .cancel) { }
             Button("Стереть", role: .destructive) {
-                audioCapture.clearAllHistory()
+                PlaybackController.shared.stopSyncedPlayback()
+                HistoryStore.shared.clearAll()
             }
         } message: { Text("Все сохраненные транскрипции будут удалены безвозвратно. Это действие нельзя отменить.") }
         }
@@ -365,11 +366,11 @@ struct ActiveModelStatusRow: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(LocalizedStringKey(active.name))
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiInk)
                         .lineLimit(1)
                     Text("\(active.sizeMB) МБ — Apple Metal")
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                         .lineLimit(1)
                 }
@@ -383,7 +384,7 @@ struct ActiveModelStatusRow: View {
                             ProgressView(value: models.downloadProgress)
                                 .frame(width: 170)
                             Text(LocalizedStringKey(models.downloadStatus))
-                                .font(UIStyleFont.body(size: 10, weight: .regular))
+                                .font(.ui(.micro))
                                 .foregroundColor(.uiMidGray)
                                 .monospacedDigit()
                                 .lineLimit(1)
@@ -396,11 +397,11 @@ struct ActiveModelStatusRow: View {
                     HStack(spacing: 8) {
                         HStack(spacing: 5) {
                             Circle()
-                                .fill(Color(hex: "#10B981"))
+                                .fill(Color.uiSuccess)
                                 .frame(width: 6, height: 6)
                             Text(LocalizedStringKey("RecognitionModel.Installed"))
-                                .font(UIStyleFont.body(size: 11, weight: .medium))
-                                .foregroundColor(Color(hex: "#10B981"))
+                                .font(.ui(.caption, weight: .medium))
+                                .foregroundColor(Color.uiSuccess)
                                 .lineLimit(1)
                         }
                         UIOutlineButton(title: "Удалить") { models.remove(active.id) }
@@ -409,10 +410,10 @@ struct ActiveModelStatusRow: View {
                     HStack(spacing: 8) {
                         HStack(spacing: 5) {
                             Circle()
-                                .fill(Color(hex: "#F59E0B"))
+                                .fill(Color.uiAmber)
                                 .frame(width: 6, height: 6)
                             Text("Не скачана")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                                 .lineLimit(1)
                         }

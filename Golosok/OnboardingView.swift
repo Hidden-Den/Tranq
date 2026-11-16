@@ -19,11 +19,11 @@ struct OnboardingView: View {
                 // ШАПКА
                 VStack(spacing: 8) {
                     Text("Давайте начнём")
-                        .font(UIStyleFont.display(size: 22, weight: .semibold))
+                        .font(.ui(.title, weight: .semibold))
                         .foregroundColor(.uiInk)
                     
                     Text("Разрешите доступ к микрофону для записи речи.\nОстальные опции можно настроить позже.")
-                        .font(UIStyleFont.body(size: 13, weight: .regular))
+                        .font(.ui(.body))
                         .foregroundColor(.uiMidGray)
                         .multilineTextAlignment(.center)
                 }
@@ -35,20 +35,20 @@ struct OnboardingView: View {
                         // ШАГ 1: Микрофон (Обязательно)
                         HStack(spacing: 16) {
                             Circle()
-                                .fill(permissions.isMicGranted ? Color(hex: "#10B981") : Color.uiWarn)
+                                .fill(permissions.isMicGranted ? Color.uiSuccess : Color.uiWarn)
                                 .frame(width: 10, height: 10)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text("Доступ к микрофону")
-                                        .font(UIStyleFont.display(size: 14, weight: .medium))
+                                        .font(.ui(.callout, weight: .medium))
                                         .foregroundColor(.uiInk)
                                     Text("Требуется")
-                                        .font(UIStyleFont.body(size: 10, weight: .bold))
+                                        .font(.ui(.micro, weight: .bold))
                                         .foregroundColor(.uiWarn)
                                 }
                                 Text("Запись голоса для распознавания моделью")
-                                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                                    .font(.ui(.footnote))
                                     .foregroundColor(.uiMidGray)
                             }
                             
@@ -68,20 +68,20 @@ struct OnboardingView: View {
                         // ШАГ 2: Авто-вставка (По желанию)
                         HStack(spacing: 16) {
                             Circle()
-                                .fill(permissions.isAccessibilityGranted ? Color(hex: "#10B981") : Color.uiMidGray.opacity(0.4))
+                                .fill(permissions.isAccessibilityGranted ? Color.uiSuccess : Color.uiMidGray.opacity(0.4))
                                 .frame(width: 10, height: 10)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text("Вставка под курсор")
-                                        .font(UIStyleFont.display(size: 14, weight: .medium))
+                                        .font(.ui(.callout, weight: .medium))
                                         .foregroundColor(.uiInk)
                                     Text("Опционально")
-                                        .font(UIStyleFont.body(size: 10, weight: .regular))
+                                        .font(.ui(.micro))
                                         .foregroundColor(.uiMidGray)
                                 }
                                 Text("Мгновенная вставка распознанного текста в активное окно")
-                                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                                    .font(.ui(.footnote))
                                     .foregroundColor(.uiMidGray)
                             }
                             
@@ -101,20 +101,20 @@ struct OnboardingView: View {
                         // ШАГ 3: Горячая клавиша (По выбору)
                         HStack(spacing: 16) {
                             Circle()
-                                .fill(hotKey.isConfigured ? Color(hex: "#10B981") : Color.uiMidGray.opacity(0.4))
+                                .fill(hotKey.isConfigured ? Color.uiSuccess : Color.uiMidGray.opacity(0.4))
                                 .frame(width: 10, height: 10)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {
                                     Text("Горячая клавиша")
-                                        .font(UIStyleFont.display(size: 14, weight: .medium))
+                                        .font(.ui(.callout, weight: .medium))
                                         .foregroundColor(.uiInk)
                                     Text("По выбору")
-                                        .font(UIStyleFont.body(size: 10, weight: .regular))
+                                        .font(.ui(.micro))
                                         .foregroundColor(.uiMidGray)
                                 }
                                 Text(hotKey.isConfigured ? "Назначена: \(hotKey.hotKeyName)" : "Выберите клавишу для старта диктовки")
-                                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                                    .font(.ui(.footnote))
                                     .foregroundColor(.uiMidGray)
                             }
 

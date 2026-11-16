@@ -13,6 +13,8 @@
 		C4F2FF3D30166B6D006F9170 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */; };
 		C4F2FF3F30166DA8006F9170 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C4F2FF3E30166DA1006F9170 /* README.md */; };
 		C4F2FF4130168DD0006F9170 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF4030168DD0006F9170 /* DashboardView.swift */; };
+		C4AA00012FFF000000000001 /* CTranscribe in Frameworks */ = {isa = PBXBuildFile; productRef = C4AA00012FFF000000000002 /* CTranscribe */; };
+		C4AA00012FFF000000000005 /* llama in Embed llama-server */ = {isa = PBXBuildFile; fileRef = C4AA00012FFF000000000004 /* llama */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,7 +34,22 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C4AA00012FFF000000000006 /* Embed llama-server */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				C4AA00012FFF000000000005 /* llama in Embed llama-server */,
+			);
+			name = "Embed llama-server";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		C4AA00012FFF000000000004 /* llama */ = {isa = PBXFileReference; lastKnownFileType = folder; name = llama; path = Vendor/llama; sourceTree = "<group>"; };
 		C457EFF43017853C007F26A1 /* NativeHotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHotKeyManager.swift; sourceTree = "<group>"; };
 		C4F2FEF930165037006F9170 /* Golosok.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Golosok.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F2FF0730165038006F9170 /* GolosokTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GolosokTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,6 +84,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4AA00012FFF000000000001 /* CTranscribe in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +117,7 @@
 				C4F2FEFB30165037006F9170 /* Golosok */,
 				C4F2FF0A30165038006F9170 /* GolosokTests */,
 				C4F2FF1430165038006F9170 /* GolosokUITests */,
+				C4AA00012FFF000000000004 /* llama */,
 				C4F2FF3530165E28006F9170 /* Frameworks */,
 				C4F2FEFA30165037006F9170 /* Products */,
 			);
@@ -131,6 +150,7 @@
 				C4F2FEF530165037006F9170 /* Sources */,
 				C4F2FEF630165037006F9170 /* Frameworks */,
 				C4F2FEF730165037006F9170 /* Resources */,
+				C4AA00012FFF000000000006 /* Embed llama-server */,
 			);
 			buildRules = (
 			);
@@ -141,6 +161,7 @@
 			);
 			name = Golosok;
 			packageProductDependencies = (
+				C4AA00012FFF000000000002 /* CTranscribe */,
 			);
 			productName = Golosok;
 			productReference = C4F2FEF930165037006F9170 /* Golosok.app */;
@@ -225,6 +246,7 @@
 			mainGroup = C4F2FEF030165037006F9170;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				C4AA00012FFF000000000003 /* XCLocalSwiftPackageReference "Packages/TranscribeCppBinary" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4F2FEFA30165037006F9170 /* Products */;
@@ -426,9 +448,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_ENTITLEMENTS = Config/Golosok.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -454,9 +477,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_ENTITLEMENTS = Config/Golosok.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -581,6 +605,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C4AA00012FFF000000000003 /* XCLocalSwiftPackageReference "Packages/TranscribeCppBinary" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/TranscribeCppBinary;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C4AA00012FFF000000000002 /* CTranscribe */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CTranscribe;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C4F2FEF130165037006F9170 /* Project object */;
 }

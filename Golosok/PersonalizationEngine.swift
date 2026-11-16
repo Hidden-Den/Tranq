@@ -68,7 +68,7 @@ public final class PersonalizationEngine: ObservableObject {
 
     @Published public var isLearningEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isLearningEnabled, forKey: "voice.personalization.enabled")
+            AppEnvironment.defaults.set(isLearningEnabled, forKey: "voice.personalization.enabled")
             scheduleSave()
         }
     }
@@ -84,14 +84,11 @@ public final class PersonalizationEngine: ObservableObject {
     private let lock = NSLock()
 
     private var storageFileURL: URL? {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let dir = appSupport.appendingPathComponent("Golosok", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("personalization.json")
+        AppEnvironment.dataDirectory.appendingPathComponent("personalization.json")
     }
 
     private init() {
-        let storedEnabled = UserDefaults.standard.object(forKey: "voice.personalization.enabled") as? Bool ?? true
+        let storedEnabled = AppEnvironment.defaults.object(forKey: "voice.personalization.enabled") as? Bool ?? true
         self.isLearningEnabled = storedEnabled
         loadFromDisk()
     }

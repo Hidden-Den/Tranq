@@ -30,12 +30,12 @@ struct PromptManagerView: View {
     private var header: some View {
         HStack {
             Text("Промпты")
-                .font(UIStyleFont.display(size: 15, weight: .bold))
+                .font(.ui(.callout, weight: .bold))
                 .foregroundColor(.uiInk)
             Spacer()
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.ui(.caption, weight: .bold))
                     .foregroundColor(.uiMidGray)
                     .frame(width: 28, height: 28)
                     .background(Color.uiSidebar)
@@ -76,21 +76,21 @@ struct PromptManagerView: View {
                         .fill(Color.uiCanvas)
                         .frame(width: 30, height: 30)
                     Image(systemName: prompt.icon)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.ui(.body, weight: .semibold))
                         .foregroundColor(.uiInk)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     if prompt.isCustom {
                         Text(prompt.title)
-                            .font(UIStyleFont.body(size: 13, weight: .medium))
+                            .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
                     } else {
                         Text(LocalizedStringKey(prompt.title))
-                            .font(UIStyleFont.body(size: 13, weight: .medium))
+                            .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
                     }
                     Text(prompt.system)
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -102,13 +102,13 @@ struct PromptManagerView: View {
 
             if prompt.isProtected {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .foregroundColor(.uiMidGray)
                     .help("Этот промпт нельзя удалить")
             } else {
                 Button(action: { store.delete(id: prompt.id) }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.ui(.caption, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 26, height: 26)
                         .background(Color.uiCanvas)
@@ -125,21 +125,21 @@ struct PromptManagerView: View {
             Button(action: { creating = true }) {
                 HStack(spacing: 5) {
                     Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.ui(.caption, weight: .semibold))
                     Text("Новый промпт")
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                 }
                 .foregroundColor(.uiInk)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 14)
                 .background(Color.uiSidebar)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.lg)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
             }
             .buttonStyle(TactileButtonStyle())
             Spacer()
             Text("\(store.templates.count)")
-                .font(UIStyleFont.body(size: 12, weight: .regular))
+                .font(.ui(.footnote))
                 .foregroundColor(.uiMidGray)
         }
         .padding(20)
@@ -196,15 +196,15 @@ struct PromptEditorView: View {
         HStack(spacing: 8) {
             ZStack {
                 Circle().fill(Color.uiCanvas).frame(width: 30, height: 30)
-                Image(systemName: icon).font(.system(size: 13, weight: .semibold)).foregroundColor(.uiInk)
+                Image(systemName: icon).font(.ui(.body, weight: .semibold)).foregroundColor(.uiInk)
             }
             Text(titleKey)
-                .font(UIStyleFont.display(size: 15, weight: .bold))
+                .font(.ui(.callout, weight: .bold))
                 .foregroundColor(.uiInk)
             Spacer()
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.ui(.caption, weight: .bold))
                     .foregroundColor(.uiMidGray)
                     .frame(width: 28, height: 28)
                     .background(Color.uiSidebar)
@@ -222,22 +222,22 @@ struct PromptEditorView: View {
             // Заголовок
             VStack(alignment: .leading, spacing: 6) {
                 Text("Заголовок")
-                    .font(UIStyleFont.body(size: 11, weight: .medium))
+                    .font(.ui(.caption, weight: .medium))
                     .foregroundColor(.uiMidGray)
                 TextField("Например: Краткий пересказ", text: $title)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .font(UIStyleFont.body(size: 13, weight: .regular))
+                    .font(.ui(.body))
                     .foregroundColor(.uiInk)
                     .padding(8)
                     .background(Color.uiCanvas)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
             }
 
             // Иконка
             VStack(alignment: .leading, spacing: 8) {
                 Text("Иконка")
-                    .font(UIStyleFont.body(size: 11, weight: .medium))
+                    .font(.ui(.caption, weight: .medium))
                     .foregroundColor(.uiMidGray)
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
                     ForEach(Self.palette, id: \.self) { symbol in
@@ -245,13 +245,13 @@ struct PromptEditorView: View {
                             icon = symbol
                         } label: {
                             Image(systemName: symbol)
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.ui(.callout, weight: .medium))
                                 .foregroundColor(icon == symbol ? Color.uiPaper : Color.uiInk)
                                 .frame(height: 34)
                                 .frame(maxWidth: .infinity)
                                 .background(icon == symbol ? AnyShapeStyle(Color.uiInk) : AnyShapeStyle(Color.uiCanvas))
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(icon == symbol ? Color.uiInk : Color.uiHairline, lineWidth: 1))
+                                .cornerRadius(UIRadius.sm)
+                                .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(icon == symbol ? Color.uiInk : Color.uiHairline, lineWidth: 1))
                         }
                         .buttonStyle(TactileButtonStyle())
                     }
@@ -261,19 +261,19 @@ struct PromptEditorView: View {
             // Инструкция
             VStack(alignment: .leading, spacing: 6) {
                 Text("Инструкция")
-                    .font(UIStyleFont.body(size: 11, weight: .medium))
+                    .font(.ui(.caption, weight: .medium))
                     .foregroundColor(.uiMidGray)
                 TextEditor(text: $system)
-                    .font(UIStyleFont.body(size: 13, weight: .regular))
+                    .font(.ui(.body))
                     .foregroundColor(.uiInk)
                     .scrollContentBackground(.hidden)
                     .frame(height: 180)
                     .padding(8)
                     .background(Color.uiCanvas)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                 Text("Опишите задачу: что ИИ должен сделать с расшифрованным текстом.")
-                    .font(UIStyleFont.body(size: 10, weight: .regular))
+                    .font(.ui(.micro))
                     .foregroundColor(.uiMidGray)
                     .lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)

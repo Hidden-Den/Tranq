@@ -154,22 +154,22 @@ struct SyncedPlayerView: View {
     let words: [TimedWord]
     let audioDuration: Double
     let itemID: UUID
-    @ObservedObject var audioCapture = AudioCapture.shared
+    @ObservedObject var playback = PlaybackController.shared
     var searchMatchWordIndices: [Int] = []
     var currentMatchPosition: Int = -1
     var onSelectionChange: ((NSRange, CGRect?) -> Void)? = nil
 
     private var isPlaying: Bool {
-        audioCapture.playingItemId == itemID && audioCapture.isPlayerPlaying
+        playback.playingItemId == itemID && playback.isPlayerPlaying
     }
 
     private var playhead: Double {
-        audioCapture.playingItemId == itemID ? audioCapture.playheadTime : 0
+        playback.playingItemId == itemID ? playback.playheadTime : 0
     }
 
     private var currentWordIndex: Int? {
-        guard audioCapture.playingItemId == itemID else { return nil }
-        let t = audioCapture.playheadTime
+        guard playback.playingItemId == itemID else { return nil }
+        let t = playback.playheadTime
         guard !words.isEmpty else { return nil }
         var lo = 0, hi = words.count - 1
         while lo <= hi {
@@ -184,25 +184,25 @@ struct SyncedPlayerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                Button(action: { audioCapture.toggleSyncedPlayback(for: itemID) }) {
+                Button(action: { playback.toggleSyncedPlayback(for: itemID) }) {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.ui(.footnote, weight: .bold))
                         .frame(width: 26, height: 26)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.blue)
 
                 Text(formatTime(playhead))
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(.caption, weight: .medium, design: .monospaced))
                     .foregroundColor(.uiMidGray)
 
                 UISeekSlider(value: Binding(
                     get: { playhead },
-                    set: { audioCapture.seekSynced(to: $0, for: itemID) }
+                    set: { playback.seekSynced(to: $0, for: itemID) }
                 ), range: 0...max(audioDuration, 0.01))
 
                 Text(formatTime(audioDuration))
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(.caption, weight: .medium, design: .monospaced))
                     .foregroundColor(.uiMidGray)
             }
 
@@ -210,7 +210,7 @@ struct SyncedPlayerView: View {
                            searchMatchWordIndices: searchMatchWordIndices,
                            currentMatchPosition: currentMatchPosition,
                            onSelectionChange: onSelectionChange) { time in
-                audioCapture.seekSynced(to: time, for: itemID)
+                playback.seekSynced(to: time, for: itemID)
             }
         }
     }
@@ -504,6 +504,9 @@ struct SyncedTextView: NSViewRepresentable {
 
 struct ContentView: View {
     @ObservedObject var audioCapture = AudioCapture.shared
+    @ObservedObject var historyStore = HistoryStore.shared
+    @ObservedObject var playback = PlaybackController.shared
+    @ObservedObject var preferences = AppPreferences.shared
     @ObservedObject var permissions = PermissionManager.shared
     @ObservedObject var promptStore = PromptStore.shared
     
@@ -556,7 +559,7 @@ struct ContentView: View {
     }
     
     private var displayedHistory: [TranscriptionItem] {
-        searchText.isEmpty ? audioCapture.history : filteredResults
+        searchText.isEmpty ? historyStore.items : filteredResults
     }
     
     var body: some View {
@@ -572,13 +575,13 @@ struct ContentView: View {
         .ignoresSafeArea()
         // Автоматическое открытие заметки
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoSelectNote"))) { notification in
-            if audioCapture.autoOpenNoteEnabled, let newId = notification.object as? UUID {
+            if preferences.autoOpenNoteEnabled, let newId = notification.object as? UUID {
                 withAnimation {
                     self.currentTab = .history
                     self.searchText = ""
                     self.selectedItemId = newId
                 }
-                audioCapture.markAsRead(id: newId)
+                historyStore.markAsRead(id: newId)
             }
         }
         .sheet(isPresented: $showAboutSheet) {
@@ -588,7 +591,7 @@ struct ContentView: View {
             showAboutSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            audioCapture.checkUpdates()
+            UpdateService.shared.checkUpdates()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleTranscriptSearch"))) { _ in
             toggleSearchBar()
@@ -679,7 +682,7 @@ struct ContentView: View {
     }
 
     private func performSearch(_ query: String) {
-        let history = audioCapture.history
+        let history = historyStore.items
         DispatchQueue.global(qos: .userInitiated).async {
             let results = history.filter {
                 $0.text.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
@@ -733,7 +736,7 @@ struct ContentView: View {
             // Заголовок раздела показывается ТОЛЬКО когда боковое меню скрыто, чтобы не дублировать
             if !isSidebarVisible {
                 Text(currentTabTitle)
-                    .font(UIStyleFont.display(size: 13, weight: .semibold))
+                    .font(.ui(.body, weight: .semibold))
                     .foregroundColor(.uiInk)
                     .padding(.leading, 6)
                     .transition(.opacity)
@@ -747,11 +750,11 @@ struct ContentView: View {
     private var sidebarToggleButton: some View {
         Button(action: toggleSidebar) {
             Image(systemName: "sidebar.leading")
-                .font(.system(size: 13, weight: .medium))
+                .font(.ui(.body, weight: .medium))
                 .foregroundColor(.uiInkSoft)
                 .frame(width: 26, height: 26)
                 .background(Color.uiPaper.opacity(0.6))
-                .cornerRadius(6)
+                .cornerRadius(UIRadius.sm)
                 .contentShape(Rectangle())
         }
         .buttonStyle(TactileButtonStyle())
@@ -791,12 +794,12 @@ struct ContentView: View {
     
     private var sidebarHeader: some View {
         HStack(spacing: 8) {
-            Image("AppLogo").resizable().aspectRatio(contentMode: .fit).frame(width: 22, height: 22).cornerRadius(4)
+            Image("AppLogo").resizable().aspectRatio(contentMode: .fit).frame(width: 22, height: 22).cornerRadius(UIRadius.xs)
             VStack(alignment: .leading, spacing: -2) {
-                Text("Голосок").font(UIStyleFont.display(size: 16, weight: .bold)).foregroundColor(.uiInk)
+                Text("Голосок").font(.ui(.callout, weight: .bold)).foregroundColor(.uiInk)
                 HStack(spacing: 4) {
                     let versionStr = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-                    Text(versionStr).font(UIStyleFont.body(size: 10, weight: .medium)).foregroundColor(.uiMidGray)
+                    Text(versionStr).font(.ui(.micro, weight: .medium)).foregroundColor(.uiMidGray)
                 }
             }
             Spacer()
@@ -814,18 +817,18 @@ struct ContentView: View {
                         Image(systemName: "magnifyingglass").foregroundColor(.uiMidGray)
                             .transition(.scale(scale: 0.7).combined(with: .opacity))
                     }
-                    TextField("Поиск...", text: $searchText).textFieldStyle(PlainTextFieldStyle()).font(UIStyleFont.body(size: 13, weight: .regular)).foregroundColor(.uiInk)
+                    TextField("Поиск...", text: $searchText).textFieldStyle(PlainTextFieldStyle()).font(.ui(.body)).foregroundColor(.uiInk)
                     if !searchText.isEmpty { Button(action: { searchText = "" }) { Image(systemName: "xmark.circle.fill").foregroundColor(.uiMidGray) }.buttonStyle(.plain) }
                 }
-                .padding(8).background(Color.uiPaper).cornerRadius(8).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                .padding(8).background(Color.uiPaper).cornerRadius(UIRadius.sm).overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                 Button(action: createNote) {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.ui(.footnote, weight: .semibold))
                         .foregroundColor(.uiInk)
                         .frame(width: 30, height: 30)
                         .background(Color.uiPaper)
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+                        .cornerRadius(UIRadius.sm)
+                        .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                 }
                 .buttonStyle(TactileButtonStyle())
                 .help(String(localized: "Новая заметка"))
@@ -837,12 +840,12 @@ struct ContentView: View {
                             HistorySkeletonCard()
                         }
                     } else if displayedHistory.isEmpty {
-                        Text(searchText.isEmpty ? LocalizedStringKey("История пуста") : LocalizedStringKey("Ничего не найдено")).font(UIStyleFont.body(size: 13, weight: .regular)).foregroundColor(.uiMidGray).padding(.vertical, 20)
+                        Text(searchText.isEmpty ? LocalizedStringKey("История пуста") : LocalizedStringKey("Ничего не найдено")).font(.ui(.body)).foregroundColor(.uiMidGray).padding(.vertical, 20)
                     } else {
                         ForEach(displayedHistory) { item in
                             Button {
                                 selectedItemId = item.id
-                                audioCapture.markAsRead(id: item.id) // Гасим точку при клике руками
+                                historyStore.markAsRead(id: item.id) // Гасим точку при клике руками
                             } label: {
                                 HistoryCard(item: item, isSelected: selectedItemId == item.id)
                             }
@@ -858,7 +861,7 @@ struct ContentView: View {
     private var sidebarFooter: some View {
         HStack {
             Circle().fill(audioCapture.isRecording ? Color.uiEmber : Color.green).frame(width: 8, height: 8)
-            Text(audioCapture.isRecording ? LocalizedStringKey("Запись...") : LocalizedStringKey("Готов к работе")).font(UIStyleFont.body(size: 12, weight: .regular)).foregroundColor(.uiMidGray)
+            Text(audioCapture.isRecording ? LocalizedStringKey("Запись...") : LocalizedStringKey("Готов к работе")).font(.ui(.footnote)).foregroundColor(.uiMidGray)
         }.padding(.horizontal, 16).padding(.bottom, 16)
     }
     
@@ -866,15 +869,15 @@ struct ContentView: View {
         ZStack {
             Color.uiCanvas.ignoresSafeArea()
             VStack {
-                if let selected = audioCapture.history.first(where: { $0.id == selectedItemId }) {
+                if let selected = historyStore.items.first(where: { $0.id == selectedItemId }) {
                     UICard {
                         VStack(alignment: .leading, spacing: 16) {
                             let formattedDate = DateFormattingHelper.formatRussianDate(selected.date)
                             let dateHeader: () -> AnyView = {
                                 AnyView(
                                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                        Text(formattedDate.date).font(UIStyleFont.display(size: 16, weight: .bold)).foregroundColor(.uiInk).lineLimit(1)
-                                        if !formattedDate.time.isEmpty { Text(formattedDate.time).font(UIStyleFont.body(size: 11, weight: .medium)).foregroundColor(.uiMidGray).padding(.horizontal, 6).padding(.vertical, 2).background(Color.uiCanvas).cornerRadius(6) }
+                                        Text(formattedDate.date).font(.ui(.callout, weight: .bold)).foregroundColor(.uiInk).lineLimit(1)
+                                        if !formattedDate.time.isEmpty { Text(formattedDate.time).font(.ui(.caption, weight: .medium)).foregroundColor(.uiMidGray).padding(.horizontal, 6).padding(.vertical, 2).background(Color.uiCanvas).cornerRadius(UIRadius.sm) }
                                     }
                                 )
                             }
@@ -898,23 +901,23 @@ struct ContentView: View {
                                             return arr
                                         }()) {
                                             HStack(spacing: 4) {
-                                                Image(systemName: "sparkles").font(.system(size: 11, weight: .medium))
-                                                Text("ИИ").font(UIStyleFont.body(size: 13, weight: .medium))
-                                                Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)).foregroundColor(.uiMidGray)
+                                                Image(systemName: "sparkles").font(.ui(.caption, weight: .medium))
+                                                Text("ИИ").font(.ui(.body, weight: .medium))
+                                                Image(systemName: "chevron.down").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray)
                                             }
-                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(18).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(UIRadius.lg).overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
                                         }.fixedSize(horizontal: true, vertical: false)
                                         UIDropdownMenu(items: [
-                                            .action("Markdown (.md)") { audioCapture.exportTranscription(selected, format: "md") },
-                                            .action("Текст (.txt)") { audioCapture.exportTranscription(selected, format: "txt") },
-                                            .action("Excel (.csv)") { audioCapture.exportTranscription(selected, format: "csv") },
-                                            .action("JSON (.json)") { audioCapture.exportTranscription(selected, format: "json") },
+                                            .action("Markdown (.md)") { SubtitleExporter.export(selected, format: "md") },
+                                            .action("Текст (.txt)") { SubtitleExporter.export(selected, format: "txt") },
+                                            .action("Excel (.csv)") { SubtitleExporter.export(selected, format: "csv") },
+                                            .action("JSON (.json)") { SubtitleExporter.export(selected, format: "json") },
                                             .divider,
-                                            .action("Субтитры (.srt)") { audioCapture.exportTranscription(selected, format: "srt") },
-                                            .action("Субтитры (.vtt)") { audioCapture.exportTranscription(selected, format: "vtt") }
+                                            .action("Субтитры (.srt)") { SubtitleExporter.export(selected, format: "srt") },
+                                            .action("Субтитры (.vtt)") { SubtitleExporter.export(selected, format: "vtt") }
                                         ]) {
-                                            HStack(spacing: 4) { Image(systemName: "square.and.arrow.up").font(.system(size: 11, weight: .medium)); Text("Экспорт").font(UIStyleFont.body(size: 13, weight: .medium)); Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)).foregroundColor(.uiMidGray) }
-                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(18).overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+                                            HStack(spacing: 4) { Image(systemName: "square.and.arrow.up").font(.ui(.caption, weight: .medium)); Text("Экспорт").font(.ui(.body, weight: .medium)); Image(systemName: "chevron.down").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray) }
+                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(UIRadius.lg).overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
                                         }.fixedSize(horizontal: true, vertical: false)
                                         UIDestructiveButton(title: "Удалить") { itemToDelete = selected.id; showingDeleteAlert = true }
                                     }.fixedSize(horizontal: true, vertical: false).layoutPriority(1)
@@ -938,13 +941,13 @@ struct ContentView: View {
                             HStack(spacing: 8) {
                                 MetadataPill(icon: "waveform", text: selected.duration, color: Color.blue)
                                 MetadataPill(icon: "bolt.fill", text: selected.formattedSpeedup, color: Color.orange)
-                                MetadataPill(icon: "text.alignleft", text: "\(selected.text.count) " + String(localized: "зн"), color: Color(hex: "#10B981"))
+                                MetadataPill(icon: "text.alignleft", text: "\(selected.text.count) " + String(localized: "зн"), color: Color.uiSuccess)
                                 let readMin = max(1, selected.text.count / 900)
                                 MetadataPill(icon: "book.fill", text: "~\(readMin) " + String(localized: "мин чтения"), color: Color.purple)
-                                if selectedTimings == nil && audioCapture.hasAudioFile(for: selected) {
-                                    Button(action: { audioCapture.toggleAudioPlayback(for: selected) }) {
-                                        HStack(spacing: 4) { Image(systemName: audioCapture.playingItemId == selected.id ? "pause.fill" : "play.fill").font(.system(size: 9, weight: .bold)); Text(audioCapture.playingItemId == selected.id ? LocalizedStringKey("Пауза") : LocalizedStringKey("Слушать голос")).font(.system(size: 10, weight: .bold, design: .rounded)) }
-                                        .foregroundColor(.blue).padding(.horizontal, 8).padding(.vertical, 4).background(Color.blue.opacity(0.12)).cornerRadius(6)
+                                if selectedTimings == nil && playback.hasAudioFile(for: selected) {
+                                    Button(action: { playback.toggleAudioPlayback(for: selected) }) {
+                                        HStack(spacing: 4) { Image(systemName: playback.playingItemId == selected.id ? "pause.fill" : "play.fill").font(.ui(.micro, weight: .bold)); Text(playback.playingItemId == selected.id ? LocalizedStringKey("Пауза") : LocalizedStringKey("Слушать голос")).font(.ui(.micro, weight: .bold, design: .rounded)) }
+                                        .foregroundColor(.blue).padding(.horizontal, 8).padding(.vertical, 4).background(Color.blue.opacity(0.12)).cornerRadius(UIRadius.sm)
                                     }.buttonStyle(.plain)
                                 }
                                 Spacer(minLength: 8)
@@ -952,16 +955,16 @@ struct ContentView: View {
                                     Button(action: toggleSearchBar) {
                                         HStack(spacing: 5) {
                                             Image(systemName: "magnifyingglass")
-                                                .font(.system(size: 9, weight: .semibold))
+                                                .font(.ui(.micro, weight: .semibold))
                                             Text(LocalizedStringKey("Поиск"))
-                                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                                .font(.ui(.micro, weight: .medium, design: .rounded))
                                             Text("⌘F")
-                                                .font(.system(size: 9, weight: .semibold, design: .rounded))
+                                                .font(.ui(.micro, weight: .semibold, design: .rounded))
                                                 .foregroundColor(.uiMidGray)
                                                 .padding(.horizontal, 5).padding(.vertical, 1)
                                                 .background(Color.uiCanvas)
-                                                .cornerRadius(4)
-                                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.uiHairline, lineWidth: 0.5))
+                                                .cornerRadius(UIRadius.xs)
+                                                .overlay(RoundedRectangle(cornerRadius: UIRadius.xs).stroke(Color.uiHairline, lineWidth: 0.5))
                                         }
                                         .foregroundColor(.uiMidGray)
                                         .contentShape(Rectangle())
@@ -983,7 +986,7 @@ struct ContentView: View {
                                     }
                                     if editableText.isEmpty {
                                         Text("Начните вводить текст…")
-                                            .font(UIStyleFont.body(size: 15, weight: .regular))
+                                            .font(.ui(.callout))
                                             .foregroundColor(.uiMidGray.opacity(0.55))
                                             .padding(.top, 10)
                                             .padding(.leading, 5)
@@ -1015,13 +1018,13 @@ struct ContentView: View {
                                     Image("AppLogo")
                                         .resizable()
                                         .frame(width: 26, height: 26)
-                                        .cornerRadius(6)
+                                        .cornerRadius(UIRadius.sm)
                                     Text("Голосок")
-                                        .font(UIStyleFont.display(size: 20, weight: .bold))
+                                        .font(.ui(.title, weight: .bold))
                                         .foregroundColor(.uiInk)
                                 }
                                 Text("Локальное приложение для надиктовки, расшифровки созвонов и работы с медиафайлами")
-                                    .font(UIStyleFont.body(size: 13, weight: .regular))
+                                    .font(.ui(.body))
                                     .foregroundColor(.uiMidGray)
                                     .multilineTextAlignment(.center)
                             }
@@ -1045,9 +1048,9 @@ struct ContentView: View {
                                 }
                             }
                             HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.doc").font(.system(size: 11, weight: .medium)).foregroundColor(.uiMidGray)
+                                Image(systemName: "arrow.down.doc").font(.ui(.caption, weight: .medium)).foregroundColor(.uiMidGray)
                                 Text("Перетащите файл в окно программы — расшифровка начнётся автоматически")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                         }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1057,7 +1060,7 @@ struct ContentView: View {
         }
         .onAppear { loadSelectedTimings() }
         .onChange(of: selectedItemId) { newId in
-            audioCapture.stopSyncedPlayback()
+            playback.stopSyncedPlayback()
             if isEditing, let prev = editingItemID, prev != newId {
                 flushPendingEdits()
                 isEditing = false
@@ -1065,7 +1068,7 @@ struct ContentView: View {
             }
             if currentSelection != nil { currentSelection = nil }
             AISelectionToolbarPresenter.shared.close()
-            if let id = newId { selectedTimings = audioCapture.timings(for: id) } else { selectedTimings = nil }
+            if let id = newId { selectedTimings = playback.timings(for: id) } else { selectedTimings = nil }
             isSearchBarVisible = false
             transcriptSearchText = ""
             cachedSyncedMatchIndices = []
@@ -1100,7 +1103,7 @@ struct ContentView: View {
                     self.searchText = ""
                     self.selectedTimings = nil
                 }
-                audioCapture.markAsRead(id: newID)
+                historyStore.markAsRead(id: newID)
             }
         }
         .sheet(isPresented: $showPromptManager) {
@@ -1112,10 +1115,10 @@ struct ContentView: View {
         .alert("Удалить запись?", isPresented: $showingDeleteAlert) {
             Button("Отмена", role: .cancel) { }
             Button("Удалить", role: .destructive) {
-                if let id = itemToDelete, let idx = audioCapture.history.firstIndex(where: { $0.id == id }) {
+                if let id = itemToDelete, let idx = historyStore.items.firstIndex(where: { $0.id == id }) {
                     SoundEffect.playDelete()
-                    audioCapture.stopSyncedPlayback()
-                    audioCapture.deleteItem(at: idx)
+                    playback.stopSyncedPlayback()
+                    historyStore.deleteItem(at: idx)
                     if selectedItemId == id { selectedItemId = nil; selectedTimings = nil }
                 }
             }
@@ -1123,7 +1126,7 @@ struct ContentView: View {
     }
 
     private func loadSelectedTimings() {
-        if let id = selectedItemId { selectedTimings = audioCapture.timings(for: id) }
+        if let id = selectedItemId { selectedTimings = playback.timings(for: id) }
         else { selectedTimings = nil }
     }
 
@@ -1134,21 +1137,21 @@ struct ContentView: View {
         let hasQuery = !transcriptSearchText.isEmpty
         return HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(.ui(.footnote, weight: .medium))
                 .foregroundColor(.uiMidGray)
             TextField("Поиск в стенограмме", text: $transcriptSearchText)
                 .textFieldStyle(PlainTextFieldStyle())
-                .font(UIStyleFont.body(size: 13, weight: .regular))
+                .font(.ui(.body))
                 .foregroundColor(.uiInk)
                 .focused($isSearchFieldFocused)
             if hasQuery {
                 Text(count > 0 ? "\(currentMatchPosition + 1)/\(count)" : "0/0")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.ui(.caption, weight: .medium, design: .monospaced))
                     .foregroundColor(.uiMidGray)
                     .monospacedDigit()
                 Button(action: { goToMatch(offset: -1) }) {
                     Image(systemName: "chevron.up")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.ui(.micro, weight: .bold))
                         .foregroundColor(count > 0 ? .uiInk : .uiMidGray)
                         .frame(width: 20, height: 20)
                 }
@@ -1157,7 +1160,7 @@ struct ContentView: View {
                 .help(String(localized: "Предыдущее совпадение (⇧⌘G)"))
                 Button(action: { goToMatch(offset: 1) }) {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.ui(.micro, weight: .bold))
                         .foregroundColor(count > 0 ? .uiInk : .uiMidGray)
                         .frame(width: 20, height: 20)
                 }
@@ -1167,7 +1170,7 @@ struct ContentView: View {
             }
             Button(action: closeSearchBar) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
+                    .font(.ui(.callout))
                     .foregroundColor(.uiMidGray)
                     .frame(width: 20, height: 20)
             }
@@ -1176,8 +1179,8 @@ struct ContentView: View {
         }
         .padding(8)
         .background(Color.uiCanvas)
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+        .cornerRadius(UIRadius.sm)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
     }
 
     private var currentMatchCount: Int {
@@ -1194,7 +1197,7 @@ struct ContentView: View {
         if let timings = selectedTimings {
             cachedSyncedMatchIndices = TranscriptSearch.matchedWordIndices(in: timings.words, query: transcriptSearchText)
             cachedNativeMatchRanges = []
-        } else if let selected = audioCapture.history.first(where: { $0.id == selectedItemId }) {
+        } else if let selected = historyStore.items.first(where: { $0.id == selectedItemId }) {
             cachedNativeMatchRanges = TranscriptSearch.matchedRanges(in: selected.text, query: transcriptSearchText)
             cachedSyncedMatchIndices = []
         } else {
@@ -1217,7 +1220,7 @@ struct ContentView: View {
         guard currentMatchPosition < cachedSyncedMatchIndices.count else { return }
         let wordIdx = cachedSyncedMatchIndices[currentMatchPosition]
         guard wordIdx < timings.words.count else { return }
-        audioCapture.seekSynced(to: timings.words[wordIdx].start, for: id)
+        playback.seekSynced(to: timings.words[wordIdx].start, for: id)
     }
 
     private func toggleSearchBar() {
@@ -1249,7 +1252,7 @@ struct ContentView: View {
     // MARK: - Редактор заметок
 
     private func beginEditing(_ item: TranscriptionItem) {
-        audioCapture.stopSyncedPlayback()
+        playback.stopSyncedPlayback()
         editSaveWorkItem?.cancel()
         editSaveWorkItem = nil
         editableText = item.text
@@ -1261,7 +1264,7 @@ struct ContentView: View {
         editSaveWorkItem?.cancel()
         editSaveWorkItem = nil
         if editableText != item.text {
-            audioCapture.replaceNoteText(id: item.id, text: editableText)
+            historyStore.replaceNoteText(id: item.id, text: editableText)
         }
         editingItemID = nil
         isEditing = false
@@ -1270,8 +1273,8 @@ struct ContentView: View {
     private func scheduleEditSave(for id: UUID) {
         editSaveWorkItem?.cancel()
         let snapshot = editableText
-        let work = DispatchWorkItem { [weak audioCapture] in
-            audioCapture?.replaceNoteText(id: id, text: snapshot)
+        let work = DispatchWorkItem { [weak historyStore] in
+            historyStore?.replaceNoteText(id: id, text: snapshot)
         }
         editSaveWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
@@ -1281,13 +1284,13 @@ struct ContentView: View {
         guard isEditing, let id = editingItemID else { return }
         editSaveWorkItem?.cancel()
         editSaveWorkItem = nil
-        audioCapture.replaceNoteText(id: id, text: editableText)
+        historyStore.replaceNoteText(id: id, text: editableText)
     }
 
     // MARK: - AI-обработка выделенного фрагмента
 
     private func handleNoteSelectionChange(range: NSRange, screenRect: CGRect?) {
-        guard let selected = audioCapture.history.first(where: { $0.id == selectedItemId }) else {
+        guard let selected = historyStore.items.first(where: { $0.id == selectedItemId }) else {
             if currentSelection != nil { currentSelection = nil }
             AISelectionToolbarPresenter.shared.close()
             return
@@ -1330,7 +1333,7 @@ struct ContentView: View {
 
     private func createNote() {
         if isEditing { flushPendingEdits(); isEditing = false; editingItemID = nil }
-        let id = audioCapture.addNote(text: "")
+        let id = historyStore.addNote(text: "")
         editSaveWorkItem?.cancel()
         editSaveWorkItem = nil
         withAnimation {
@@ -1338,7 +1341,7 @@ struct ContentView: View {
             selectedItemId = id
             selectedTimings = nil
         }
-        audioCapture.markAsRead(id: id)
+        historyStore.markAsRead(id: id)
         editableText = ""
         editingItemID = id
         isEditing = true
@@ -1358,22 +1361,22 @@ struct HeroActionRow: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.uiCanvas)
+                    RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous).fill(Color.uiCanvas)
                         .frame(width: 40, height: 40)
-                    Image(systemName: icon).font(.system(size: 17, weight: .semibold)).foregroundColor(.uiInk)
+                    Image(systemName: icon).font(.ui(.headline, weight: .semibold)).foregroundColor(.uiInk)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(UIStyleFont.display(size: 14, weight: .semibold)).foregroundColor(.uiInk)
-                    Text(subtitle).font(UIStyleFont.body(size: 12, weight: .regular)).foregroundColor(.uiMidGray).lineLimit(1)
+                    Text(title).font(.ui(.callout, weight: .semibold)).foregroundColor(.uiInk)
+                    Text(subtitle).font(.ui(.footnote)).foregroundColor(.uiMidGray).lineLimit(1)
                 }
                 Spacer(minLength: 8)
-                Text(badge).font(UIStyleFont.body(size: 10, weight: .semibold)).tracking(0.5).foregroundColor(.uiMidGray)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundColor(.uiMidGray)
+                Text(badge).font(.ui(.micro, weight: .semibold)).tracking(0.5).foregroundColor(.uiMidGray)
+                Image(systemName: "chevron.right").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray)
             }
             .padding(14)
             .background(Color.uiSidebar)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(TactileButtonStyle())
@@ -1392,15 +1395,15 @@ struct CopyFeedbackButton: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { withAnimation(.spring()) { isCopied = false } }
         }) {
             HStack(spacing: 6) {
-                Image(systemName: isCopied ? "checkmark" : "doc.on.doc").font(.system(size: 11, weight: .medium))
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc").font(.ui(.caption, weight: .medium))
                 Text(isCopied ? LocalizedStringKey("Готово!") : LocalizedStringKey("Скопировать"))
             }
             .lineLimit(1)
-            .font(UIStyleFont.body(size: 13, weight: .medium))
-            .foregroundColor(isCopied ? Color(hex: "#10B981") : .uiInk)
+            .font(.ui(.body, weight: .medium))
+            .foregroundColor(isCopied ? Color.uiSuccess : .uiInk)
             .padding(.vertical, 8).padding(.horizontal, 14)
-            .background(Color.uiPaper).cornerRadius(18)
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(isCopied ? Color(hex: "#10B981").opacity(0.5) : Color.uiHairline, lineWidth: 1))
+            .background(Color.uiPaper).cornerRadius(UIRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(isCopied ? Color.uiSuccess.opacity(0.5) : Color.uiHairline, lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle())
         .fixedSize(horizontal: true, vertical: false)
@@ -1415,15 +1418,15 @@ struct EditToggleButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: isEditing ? "checkmark" : "square.and.pencil")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.ui(.caption, weight: .medium))
                 Text(isEditing ? LocalizedStringKey("Готово") : LocalizedStringKey("Редактировать"))
             }
             .lineLimit(1)
-            .font(UIStyleFont.body(size: 13, weight: .medium))
-            .foregroundColor(isEditing ? Color(hex: "#10B981") : .uiInk)
+            .font(.ui(.body, weight: .medium))
+            .foregroundColor(isEditing ? Color.uiSuccess : .uiInk)
             .padding(.vertical, 8).padding(.horizontal, 14)
-            .background(Color.uiPaper).cornerRadius(18)
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(isEditing ? Color(hex: "#10B981").opacity(0.5) : Color.uiHairline, lineWidth: 1))
+            .background(Color.uiPaper).cornerRadius(UIRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(isEditing ? Color.uiSuccess.opacity(0.5) : Color.uiHairline, lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle())
         .fixedSize(horizontal: true, vertical: false)
@@ -1438,9 +1441,9 @@ struct SidebarTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) { Image(systemName: icon).font(.system(size: 13)); Text(title).font(UIStyleFont.body(size: 13, weight: .medium)); Spacer() }
+            HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
             .foregroundColor(isActive ? .uiPaper : .uiInk).padding(.vertical, 8).padding(.horizontal, 12)
-            .background(isActive ? Color.uiInk : Color.clear).cornerRadius(12).contentShape(Rectangle())
+            .background(isActive ? Color.uiInk : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
         }
         .buttonStyle(TactileButtonStyle())
     }
@@ -1448,8 +1451,8 @@ struct SidebarTabButton: View {
 struct MetadataPill: View {
     let icon: String; let text: String; let color: Color
     var body: some View {
-        HStack(spacing: 4) { Image(systemName: icon).font(.system(size: 9, weight: .bold)); Text(text).font(.system(size: 10, weight: .bold, design: .rounded)) }
-        .foregroundColor(color).padding(.horizontal, 8).padding(.vertical, 4).background(color.opacity(0.12)).cornerRadius(6)
+        HStack(spacing: 4) { Image(systemName: icon).font(.ui(.micro, weight: .bold)); Text(text).font(.ui(.micro, weight: .bold, design: .rounded)) }
+        .foregroundColor(color).padding(.horizontal, 8).padding(.vertical, 4).background(color.opacity(0.12)).cornerRadius(UIRadius.sm)
     }
 }
 
@@ -1463,13 +1466,13 @@ struct HistorySkeletonCard: View {
             Circle().fill(Color.blue.opacity(0.4)).frame(width: 6, height: 6).padding(.top, 5)
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
-                    RoundedRectangle(cornerRadius: 3).fill(bar).frame(width: 56, height: 8)
-                    RoundedRectangle(cornerRadius: 3).fill(bar).frame(width: 30, height: 8)
+                    RoundedRectangle(cornerRadius: UIRadius.xs).fill(bar).frame(width: 56, height: 8)
+                    RoundedRectangle(cornerRadius: UIRadius.xs).fill(bar).frame(width: 30, height: 8)
                     Spacer()
-                    RoundedRectangle(cornerRadius: 3).fill(bar).frame(width: 40, height: 8)
+                    RoundedRectangle(cornerRadius: UIRadius.xs).fill(bar).frame(width: 40, height: 8)
                 }
-                RoundedRectangle(cornerRadius: 3).fill(bar).frame(height: 9)
-                RoundedRectangle(cornerRadius: 3).fill(bar).frame(width: 180, height: 9)
+                RoundedRectangle(cornerRadius: UIRadius.xs).fill(bar).frame(height: 9)
+                RoundedRectangle(cornerRadius: UIRadius.xs).fill(bar).frame(width: 180, height: 9)
             }
             .shimmer()
         }
@@ -1492,15 +1495,15 @@ struct HistoryCard: View {
                 }
                 
                 let formatted = DateFormattingHelper.formatRussianDate(item.date)
-                Text(formatted.date).font(UIStyleFont.body(size: 12, weight: .semibold)).foregroundColor(isSelected ? .uiInk : .uiInkSoft)
-                if !formatted.time.isEmpty { Text(formatted.time).font(UIStyleFont.body(size: 10, weight: .regular)).foregroundColor(isSelected ? .uiMidGray : .uiMidGray.opacity(0.8)) }
+                Text(formatted.date).font(.ui(.footnote, weight: .semibold)).foregroundColor(isSelected ? .uiInk : .uiInkSoft)
+                if !formatted.time.isEmpty { Text(formatted.time).font(.ui(.micro)).foregroundColor(isSelected ? .uiMidGray : .uiMidGray.opacity(0.8)) }
                 Spacer()
-                Text(item.duration).font(UIStyleFont.body(size: 10, weight: .regular)).foregroundColor(.uiMidGray)
+                Text(item.duration).font(.ui(.micro)).foregroundColor(.uiMidGray)
             }
-            Text(item.text).font(UIStyleFont.body(size: 13, weight: .regular)).foregroundColor(isSelected ? .uiInk : .uiInkSoft).lineLimit(2)
+            Text(item.text).font(.ui(.body)).foregroundColor(isSelected ? .uiInk : .uiInkSoft).lineLimit(2)
         }
-        .padding(12).background(isSelected ? Color.uiPaper : Color.clear).cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? Color.uiHairline : Color.clear, lineWidth: 1))
+        .padding(12).background(isSelected ? Color.uiPaper : Color.clear).cornerRadius(UIRadius.md)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(isSelected ? Color.uiHairline : Color.clear, lineWidth: 1))
         .shadow(color: isSelected ? Color.black.opacity(0.04) : Color.clear, radius: 4, x: 0, y: 2)
         .contentShape(Rectangle())
     }
@@ -1523,29 +1526,29 @@ struct FileDropOverlay: View {
                         .fill(Color.blue.opacity(0.12))
                         .frame(width: 76, height: 76)
                     Image(systemName: "arrow.down.doc.fill")
-                        .font(.system(size: 30, weight: .medium))
+                        .font(.ui(.display, weight: .medium))
                         .foregroundColor(.blue)
                 }
 
                 VStack(spacing: 6) {
                     Text(LocalizedStringKey("Перетащите файл — начнётся расшифровка"))
-                        .font(UIStyleFont.display(size: 17, weight: .bold))
+                        .font(.ui(.headline, weight: .bold))
                         .foregroundColor(.uiInk)
                         .multilineTextAlignment(.center)
                     Text(LocalizedStringKey("MP3, MP4, WebM, MKV, WAV и другие"))
-                        .font(UIStyleFont.body(size: 12, weight: .regular))
+                        .font(.ui(.footnote))
                         .foregroundColor(.uiMidGray)
                 }
             }
             .padding(.horizontal, 48)
             .padding(.vertical, 40)
             .background(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: UIRadius.xl)
                     .fill(Color.uiPaper)
                     .shadow(color: .black.opacity(0.14), radius: 28, x: 0, y: 10)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: UIRadius.xl)
                     .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
                     .foregroundColor(Color.blue.opacity(0.55))
             )

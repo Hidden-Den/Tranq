@@ -12,11 +12,11 @@ struct PulsingHaloRing: View {
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            Color(hex: "#064E3B"),
-                            Color(hex: "#10B981"),
-                            Color(hex: "#A7F3D0"),
-                            Color(hex: "#10B981"),
-                            Color(hex: "#064E3B")
+                            Color.uiSuccessShade,
+                            Color.uiSuccess,
+                            Color.uiSuccessPale,
+                            Color.uiSuccess,
+                            Color.uiSuccessShade
                         ]),
                         center: .center,
                         angle: .degrees(angle)
@@ -69,13 +69,13 @@ struct SplashView: View {
             
             ZStack {
                 Circle()
-                    .fill(Color(hex: "#10B981").opacity(0.18))
+                    .fill(Color.uiSuccess.opacity(0.18))
                     .frame(width: 420, height: 420)
                     .offset(aurora1Offset)
                     .blur(radius: 90)
                 
                 Circle()
-                    .fill(Color(hex: "#C084FC").opacity(0.15))
+                    .fill(Color.uiAI.opacity(0.15))
                     .frame(width: 520, height: 520)
                     .offset(aurora2Offset)
                     .blur(radius: 120)
@@ -93,7 +93,7 @@ struct SplashView: View {
                     if phase < 2 {
                         ZStack {
                             Circle().stroke(Color.uiInk.opacity(0.15), lineWidth: 1).frame(width: 80, height: 80).scaleEffect(shockwaveScale1)
-                            Circle().stroke(Color(hex: "#10B981").opacity(0.3), lineWidth: 2).frame(width: 80, height: 80).scaleEffect(shockwaveScale2)
+                            Circle().stroke(Color.uiSuccess.opacity(0.3), lineWidth: 2).frame(width: 80, height: 80).scaleEffect(shockwaveScale2)
                         }
                         .opacity(shockwaveOpacity)
                         
@@ -112,11 +112,11 @@ struct SplashView: View {
                         
                     } else {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            RoundedRectangle(cornerRadius: UIRadius.xl, style: .continuous)
                                 .fill(Color.white)
                                 .frame(width: 80, height: 80)
                                 .shadow(color: Color.black.opacity(0.12), radius: 15, x: 0, y: 8)
-                                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color(hex: "#E5E5E5"), lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: UIRadius.xl, style: .continuous).stroke(Color(hex: "#E5E5E5"), lineWidth: 1))
                             
                             Circle().fill(Color(hex: "#1E1E1E")).frame(width: 44, height: 44)
                         }
@@ -137,14 +137,14 @@ struct SplashView: View {
                     
                     VStack(spacing: 6) {
                         Text("Голосовой ввод и транскрибация на Вашем Mac")
-                            .font(UIStyleFont.body(size: 13, weight: .bold))
+                            .font(.ui(.body, weight: .bold))
                             .tracking(0.5)
                             .foregroundColor(.uiMidGray)
                         
                         Text("APPLE SILICON • GIGAAM V3 • NEURAL ENGINE")
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .font(.ui(.micro, weight: .black, design: .monospaced))
                             .tracking(1.5)
-                            .foregroundColor(Color(hex: "#10B981"))
+                            .foregroundColor(Color.uiSuccess)
                     }
                     .opacity(subtitleOpacity)
                     .offset(y: subtitleOpacity == 1.0 ? 0 : 10)

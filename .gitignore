@@ -6,7 +6,9 @@ xcuserdata/
 .superpowers/
 Golosok/whisper-cli
 Golosok/llama-cli
-*.pbxproj
 Golosok/ffmpeg
-Golosok.xcodeproj/project.pbxproj
 build/
+Vendor/llama/*
+!Vendor/llama/.gitkeep
+Packages/*/.build/
+Packages/*/.swiftpm/

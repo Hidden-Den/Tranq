@@ -10,12 +10,12 @@ struct AIProviderSection: View {
         UICard {
             VStack(alignment: .leading, spacing: 16) {
                 Text("ИИ-ПРОВАЙДЕР")
-                    .font(UIStyleFont.body(size: 11, weight: .bold))
+                    .font(.ui(.caption, weight: .bold))
                     .tracking(1.0)
                     .foregroundColor(.uiMidGray)
 
                 Text(LocalizedStringKey("BYO-ключ. Транскрипция уходит напрямую в выбранный вами сервис — Голосок не выступает оператором данных."))
-                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                    .font(.ui(.caption))
                     .foregroundColor(.uiMidGray)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -44,8 +44,8 @@ struct AIProviderSection: View {
 
                     if let result = store.testResult {
                         Text(result)
-                            .font(UIStyleFont.body(size: 12, weight: .medium))
-                            .foregroundColor(store.testOK ? Color(hex: "#10B981") : .uiEmber)
+                            .font(.ui(.footnote, weight: .medium))
+                            .foregroundColor(store.testOK ? Color.uiSuccess : .uiEmber)
                             .lineLimit(2)
                     }
                     Spacer()
@@ -67,7 +67,7 @@ struct PresetChip: View {
                     .fill(isSelected ? Color.uiPaper : Color.uiMidGray)
                     .frame(width: 6, height: 6)
                 Text(LocalizedStringKey(preset.name))
-                    .font(UIStyleFont.body(size: 12, weight: .medium))
+                    .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(isSelected ? .uiPaper : .uiInk)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -75,8 +75,8 @@ struct PresetChip: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(isSelected ? Color.uiInk : Color.uiPaper)
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? Color.uiInk : Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.md)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(isSelected ? Color.uiInk : Color.uiHairline, lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle())
     }
@@ -91,7 +91,7 @@ struct AIInputField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(UIStyleFont.body(size: 11, weight: .medium))
+                .font(.ui(.caption, weight: .medium))
                 .foregroundColor(.uiMidGray)
             Group {
                 if isSecure {
@@ -101,12 +101,12 @@ struct AIInputField: View {
                 }
             }
             .textFieldStyle(PlainTextFieldStyle())
-            .font(UIStyleFont.body(size: 13, weight: .regular))
+            .font(.ui(.body))
             .foregroundColor(.uiInk)
             .padding(8)
             .background(Color.uiCanvas)
-            .cornerRadius(8)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.sm)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
         }
     }
 }
@@ -121,7 +121,7 @@ struct VoiceIntelligenceSection: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Text("ГОЛОСОВОЙ ВВОД И СИНТЕЗ")
-                        .font(UIStyleFont.body(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .tracking(1.0)
                         .foregroundColor(.uiMidGray)
                     Spacer()
@@ -132,10 +132,10 @@ struct VoiceIntelligenceSection: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Умная речь")
-                            .font(UIStyleFont.body(size: 13, weight: .medium))
+                            .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
                         Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Дословная расшифровка без изменений")
-                            .font(UIStyleFont.body(size: 11, weight: .regular))
+                            .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                     }
                     Spacer()
@@ -144,7 +144,7 @@ struct VoiceIntelligenceSection: View {
                         set: { settings.mode = $0 ? .smart : .direct }
                     ))
                     .labelsHidden()
-                    .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                    .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                 }
 
                 if settings.mode == .smart {
@@ -154,10 +154,10 @@ struct VoiceIntelligenceSection: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Стиль текста")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text("Формат оформления очищенной мысли")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -172,10 +172,10 @@ struct VoiceIntelligenceSection: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Движок синтеза")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text(LocalizedStringKey(settings.engine.subtitle))
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -191,10 +191,10 @@ struct VoiceIntelligenceSection: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Языковая модель")
-                                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                                    .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Оффлайн SLM для Apple Silicon")
-                                    .font(UIStyleFont.body(size: 11, weight: .regular))
+                                    .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
                             Spacer()
@@ -213,16 +213,16 @@ struct VoiceIntelligenceSection: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Адаптация под приложения")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text("Учет контекста активного окна")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
                         Toggle(String(localized: "Адаптация под приложения"), isOn: $settings.adaptiveAppProfilesEnabled)
                             .labelsHidden()
-                            .toggleStyle(SwitchToggleStyle(tint: Color(hex: "#10B981")))
+                            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                     }
 
                     Divider().background(Color.uiHairline)
@@ -231,10 +231,10 @@ struct VoiceIntelligenceSection: View {
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Словарь и обучение")
-                                .font(UIStyleFont.body(size: 13, weight: .medium))
+                                .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
                             Text("Справочник терминов, автозамены речи и системный промпт")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
@@ -257,15 +257,15 @@ struct ActiveSLMModelStatusRow: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(LocalizedStringKey(model.name))
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiInk)
                         .lineLimit(1)
                     Text("\(model.sizeMB) МБ — Apple Metal")
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                         .lineLimit(1)
                     Text(LocalizedStringKey(model.description))
-                        .font(UIStyleFont.body(size: 11, weight: .regular))
+                        .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -280,7 +280,7 @@ struct ActiveSLMModelStatusRow: View {
                             ProgressView(value: slmStore.downloadProgress)
                                 .frame(width: 170)
                             Text(LocalizedStringKey(slmStore.downloadStatus))
-                                .font(UIStyleFont.body(size: 10, weight: .regular))
+                                .font(.ui(.micro))
                                 .foregroundColor(.uiMidGray)
                                 .monospacedDigit()
                                 .lineLimit(1)
@@ -295,11 +295,11 @@ struct ActiveSLMModelStatusRow: View {
                     HStack(spacing: 8) {
                         HStack(spacing: 5) {
                             Circle()
-                                .fill(Color(hex: "#10B981"))
+                                .fill(Color.uiSuccess)
                                 .frame(width: 6, height: 6)
                             Text("Скачана на Mac")
-                                .font(UIStyleFont.body(size: 11, weight: .medium))
-                                .foregroundColor(Color(hex: "#10B981"))
+                                .font(.ui(.caption, weight: .medium))
+                                .foregroundColor(Color.uiSuccess)
                                 .lineLimit(1)
                         }
                         UIOutlineButton(title: "Удалить") {
@@ -310,10 +310,10 @@ struct ActiveSLMModelStatusRow: View {
                     HStack(spacing: 8) {
                         HStack(spacing: 5) {
                             Circle()
-                                .fill(Color(hex: "#F59E0B"))
+                                .fill(Color.uiAmber)
                                 .frame(width: 6, height: 6)
                             Text("Не скачана")
-                                .font(UIStyleFont.body(size: 11, weight: .regular))
+                                .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                                 .lineLimit(1)
                         }

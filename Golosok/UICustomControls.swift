@@ -79,14 +79,14 @@ struct UISegmented<Value: Hashable>: View {
                     selection = s.value
                 } label: {
                     s.text
-                        .font(UIStyleFont.body(size: 12, weight: active ? .semibold : .medium))
+                        .font(.ui(.footnote, weight: active ? .semibold : .medium))
                         .foregroundColor(active ? .uiInk : .uiMidGray)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                         .background(
                             ZStack {
                                 if active {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous)
                                         .fill(Color.uiPaper)
                                         .matchedGeometryEffect(id: "uiseg", in: ns)
                                         .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
@@ -160,9 +160,9 @@ private struct DropdownList: View {
         }
         .padding(.vertical, 6)
         .frame(width: width, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.uiPaper))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.uiHairline, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous).fill(Color.uiPaper))
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous).stroke(Color.uiHairline, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous))
     }
 }
 
@@ -177,18 +177,18 @@ private struct DropdownRowView: View {
             HStack(spacing: 10) {
                 if let icon = row.icon {
                     Image(systemName: icon)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 16)
                 }
                 row.text
-                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .font(.ui(.body, weight: .medium))
                     .foregroundColor(.uiInk)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 if row.isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .foregroundColor(Color.uiAccent)
                 }
             }
@@ -361,17 +361,17 @@ struct UIDropdownPicker<Value: Hashable>: View {
                 .fixedSize(horizontal: true, vertical: false)
             }
         }
-        .font(UIStyleFont.body(size: 13, weight: .medium))
+        .font(.ui(.body, weight: .medium))
         .foregroundColor(.uiInk)
         .lineLimit(1)
         .padding(.vertical, 8).padding(.horizontal, 12)
-        .background(Color.uiPaper).cornerRadius(18)
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.uiHairline, lineWidth: 1))
+        .background(Color.uiPaper).cornerRadius(UIRadius.lg)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
     }
 
     private var selectedText: Text { selected?.text ?? Text("") }
     private var chevron: some View {
-        Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)).foregroundColor(.uiMidGray)
+        Image(systemName: "chevron.down").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray)
     }
 
     private func openAction() {

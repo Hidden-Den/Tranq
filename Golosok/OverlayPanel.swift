@@ -117,11 +117,11 @@ class OverlayPanelManager {
 
 struct CircularProgressView: View {
     var progress: Double
-    let progressGradient = LinearGradient(colors: [Color(hex: "#38BDF8"), Color(hex: "#10B981")], startPoint: .topLeading, endPoint: .bottomTrailing)
+    let progressGradient = LinearGradient(colors: [Color.uiInfoLight, Color.uiSuccess], startPoint: .topLeading, endPoint: .bottomTrailing)
     
     var body: some View {
         ZStack {
-            Circle().stroke(Color(hex: "#6366F1").opacity(0.25), lineWidth: 2.5)
+            Circle().stroke(Color.uiProcessing.opacity(0.25), lineWidth: 2.5)
             Circle()
                 .trim(from: 0, to: CGFloat(progress))
                 .stroke(progressGradient, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
@@ -140,7 +140,7 @@ struct RotatingGlowBorder: View {
                 let angle = (timeline.date.timeIntervalSince1970 * 360.0 / 1.5).truncatingRemainder(dividingBy: 360)
                 ZStack {
                     AngularGradient(
-                        gradient: Gradient(colors: [Color(hex: "#C084FC"), Color(hex: "#6366F1"), Color(hex: "#38BDF8"), Color(hex: "#10B981"), Color(hex: "#C084FC")]),
+                        gradient: Gradient(colors: [Color.uiAI, Color.uiProcessing, Color.uiInfoLight, Color.uiSuccess, Color.uiAI]),
                         center: .center
                     )
                     .frame(width: size, height: size)
@@ -159,10 +159,10 @@ struct SuccessCheckView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(hex: "#34D399").opacity(0.45), lineWidth: 2)
+                .stroke(Color.uiSuccessLight.opacity(0.45), lineWidth: 2)
                 .frame(width: 24, height: 24)
             Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .bold))
+                .font(.ui(.body, weight: .bold))
                 .foregroundColor(.white)
         }
         .scaleEffect(appeared ? 1.0 : 0.2)
@@ -182,8 +182,8 @@ struct FloatingWidgetView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var isAppeared = false
     
-    let greenGradient = LinearGradient(colors: [Color(hex: "#34D399"), Color(hex: "#059669")], startPoint: .top, endPoint: .bottom)
-    let purpleGradient = LinearGradient(colors: [Color(hex: "#C084FC"), Color(hex: "#6366F1")], startPoint: .top, endPoint: .bottom)
+    let greenGradient = LinearGradient(colors: [Color.uiSuccessLight, Color.uiSuccessDeep], startPoint: .top, endPoint: .bottom)
+    let purpleGradient = LinearGradient(colors: [Color.uiAI, Color.uiProcessing], startPoint: .top, endPoint: .bottom)
     let glassBorderGradient = LinearGradient(colors: [Color.white.opacity(0.85), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
     
     var body: some View {
@@ -200,10 +200,10 @@ struct FloatingWidgetView: View {
                 if let warningText = audioCapture.warningMessage {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(hex: "#F59E0B"))
+                            .font(.ui(.body, weight: .bold))
+                            .foregroundColor(Color.uiAmber)
                         Text(warningText)
-                            .font(UIStyleFont.body(size: 12, weight: .semibold))
+                            .font(.ui(.footnote, weight: .semibold))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -211,17 +211,17 @@ struct FloatingWidgetView: View {
                     HStack(spacing: 8) {
                         CircularProgressView(progress: audioCapture.fileProcessingProgress)
                         Text("\(Int(audioCapture.fileProcessingProgress * 100))%")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .font(.ui(.footnote, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
                 } else if !audioCapture.isRecording && audioCapture.isSynthesizingThought {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(hex: "#C084FC"))
+                            .font(.ui(.body, weight: .bold))
+                            .foregroundColor(Color.uiAI)
                         let synthLabel = VoiceIntelligenceSettings.shared.engine == .airGapped ? String(localized: "Синтез мысли SLM...") : String(localized: "Синтез мысли...")
                         Text(synthLabel)
-                            .font(UIStyleFont.body(size: 12, weight: .semibold))
+                            .font(.ui(.footnote, weight: .semibold))
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -241,10 +241,10 @@ struct FloatingWidgetView: View {
                     if let status = audioCapture.hudStatusMessage {
                         HStack(spacing: 6) {
                             Image(systemName: "doc.on.clipboard.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(Color(hex: "#34D399"))
+                                .font(.ui(.footnote, weight: .bold))
+                                .foregroundColor(Color.uiSuccessLight)
                             Text(status)
-                                .font(UIStyleFont.body(size: 12, weight: .semibold))
+                                .font(.ui(.footnote, weight: .semibold))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
                         }
@@ -254,30 +254,7 @@ struct FloatingWidgetView: View {
                             .transition(.opacity)
                     }
                 } else {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(Color(hex: "#10B981"))
-                            .frame(width: 7, height: 7)
-                            .shadow(color: Color(hex: "#10B981").opacity(0.8), radius: 3, x: 0, y: 0)
-                        
-                        Text(audioCapture.formattedRecordingTime)
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundColor(timerColor)
-                            .shadow(color: timerColor.opacity(0.55), radius: 2, x: 0, y: 0)
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 2.0) {
-                        ForEach(0..<18, id: \.self) { i in
-                            let sampleVal = i < audioCapture.audioSamples.count ? audioCapture.audioSamples[i] : 0.15
-                            
-                            RoundedRectangle(cornerRadius: 1)
-                                .fill(greenGradient)
-                                .frame(width: 2.0, height: CGFloat(sampleVal) * 22)
-                                .animation(.spring(response: 0.12, dampingFraction: 0.55), value: sampleVal)
-                        }
-                    }
+                    RecordingLevelView(timerColor: timerColor, barGradient: greenGradient)
                 }
             }
             .padding(.horizontal, 14)
@@ -289,9 +266,9 @@ struct FloatingWidgetView: View {
                     if audioCapture.transcribedText == String(localized: "Расшифровка...") || audioCapture.isProcessingFile || (!audioCapture.isRecording && audioCapture.isSynthesizingThought) {
                         RotatingGlowBorder()
                     } else if audioCapture.warningMessage != nil {
-                        Capsule().stroke(Color(hex: "#F59E0B").opacity(0.6), lineWidth: 1.2)
+                        Capsule().stroke(Color.uiAmber.opacity(0.6), lineWidth: 1.2)
                     } else if audioCapture.isSuccessDone {
-                        Capsule().stroke(Color(hex: "#34D399").opacity(0.75), lineWidth: 1.2)
+                        Capsule().stroke(Color.uiSuccessLight.opacity(0.75), lineWidth: 1.2)
                     } else {
                         Capsule().stroke(glassBorderGradient, lineWidth: 1.0)
                     }
@@ -325,14 +302,51 @@ struct FloatingWidgetView: View {
     }
     
     private func getGlowColor() -> Color {
-        if audioCapture.warningMessage != nil { return Color(hex: "#F59E0B") }
-        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return Color(hex: "#C084FC") }
-        if audioCapture.isProcessingFile || audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color(hex: "#6366F1") }
-        if audioCapture.isSuccessDone { return Color(hex: "#10B981") }
-        return Color(hex: "#10B981")
+        if audioCapture.warningMessage != nil { return Color.uiAmber }
+        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return Color.uiAI }
+        if audioCapture.isProcessingFile || audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color.uiProcessing }
+        if audioCapture.isSuccessDone { return Color.uiSuccess }
+        return Color.uiSuccess
     }
 
     private var timerColor: Color {
-        colorScheme == .dark ? Color(hex: "#10B981") : Color(hex: "#047857")
+        Color.uiSuccessText
+    }
+}
+
+/// Таймер и полосы громкости во время записи. Отдельное представление, чтобы
+/// обновления индикатора 20 раз в секунду не перерисовывали весь оверлей.
+private struct RecordingLevelView: View {
+    @ObservedObject var meter = RecordingMeter.shared
+    let timerColor: Color
+    let barGradient: LinearGradient
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Color.uiSuccess)
+                    .frame(width: 7, height: 7)
+                    .shadow(color: Color.uiSuccess.opacity(0.8), radius: 3, x: 0, y: 0)
+
+                Text(meter.elapsedText)
+                    .font(.ui(.body, weight: .bold, design: .monospaced))
+                    .foregroundColor(timerColor)
+                    .shadow(color: timerColor.opacity(0.55), radius: 2, x: 0, y: 0)
+            }
+
+            Spacer()
+
+            HStack(spacing: 2.0) {
+                ForEach(0..<RecordingMeter.barCount, id: \.self) { i in
+                    let sampleVal = i < meter.samples.count ? meter.samples[i] : RecordingMeter.floorLevel
+
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(barGradient)
+                        .frame(width: 2.0, height: CGFloat(sampleVal) * 22)
+                        .animation(.spring(response: 0.12, dampingFraction: 0.55), value: sampleVal)
+                }
+            }
+        }
     }
 }
