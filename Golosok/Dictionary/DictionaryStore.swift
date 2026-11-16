@@ -466,7 +466,8 @@ final class DictionaryStore: ObservableObject {
     /// иначе следующая запись заменила бы его и данные пропали бы безвозвратно.
     private static func loadEntries(main: URL, backup: URL, corrupt: URL) -> [DictionaryEntry] {
         if let entries = readEntries(at: main) { return entries }
-        if FileManager.default.fileExists(atPath: main.path) {
+        let mainExisted = FileManager.default.fileExists(atPath: main.path)
+        if mainExisted {
             try? FileManager.default.removeItem(at: corrupt)
             do {
                 try FileManager.default.moveItem(at: main, to: corrupt)
@@ -475,7 +476,7 @@ final class DictionaryStore: ObservableObject {
             }
         }
         if let entries = readEntries(at: backup) {
-            if FileManager.default.fileExists(atPath: main.path) {
+            if mainExisted {
                 AppLogger.shared.warn("Dictionary", "Словарь загружен из резервной копии")
             }
             return entries

@@ -31,6 +31,7 @@ enum DictionaryMigration {
         let fm = FileManager.default
         let legacyURL = directory.appendingPathComponent(legacyFileName)
         let migratedURL = directory.appendingPathComponent(migratedFileName)
+        let migratedUserTerms = migrateUserTerms(store: store, defaults: defaults)
         guard fm.fileExists(atPath: legacyURL.path), !fm.fileExists(atPath: migratedURL.path) else { return }
 
         let snapshot: LegacySnapshot
@@ -94,9 +95,8 @@ enum DictionaryMigration {
 
         var terms: [String] = []
         var seenTerms = Set<String>()
-        let userTerms = defaults.stringArray(forKey: userTermsKey) ?? []
         let manualTerms = snapshot.terms.filter { $0.isManual && !builtinTermKeys.contains($0.term.lowercased()) }.map(\.term)
-        for raw in manualTerms + userTerms {
+        for raw in manualTerms {
             let term = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             if !term.isEmpty, seenTerms.insert(term.lowercased()).inserted { terms.append(term) }
         }
@@ -119,12 +119,26 @@ enum DictionaryMigration {
             store.flush()
             return
         }
-        defaults.removeObject(forKey: userTermsKey)
         store.flush()
         AppLogger.shared.info(
             "Dictionary", "Перенос персонализации завершён",
-            details: "записей \(order.count), терминов \(terms.count), отброшено \(dropped), без замены \(droppedEmpty)"
+            details: "записей \(order.count), терминов \(terms.count + migratedUserTerms), отброшено \(dropped), без замены \(droppedEmpty)"
         )
+    }
+
+    /// Строки `voice.userTerms` переносятся всегда, когда ключ есть, независимо от старого файла.
+    private static func migrateUserTerms(store: DictionaryStore, defaults: UserDefaults) -> Int {
+        guard let raw = defaults.stringArray(forKey: userTermsKey) else { return 0 }
+        var seen = Set<String>()
+        for item in raw {
+            let term = item.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !term.isEmpty, seen.insert(term.lowercased()).inserted {
+                store.addEntry(spelling: term, variants: [:], source: .manual)
+            }
+        }
+        defaults.removeObject(forKey: userTermsKey)
+        store.flush()
+        return seen.count
     }
 
     private static func pairKey(_ pattern: String, _ replacement: String) -> String {

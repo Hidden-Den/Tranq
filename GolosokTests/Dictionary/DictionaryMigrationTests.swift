@@ -131,12 +131,19 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.isEmpty)
         }
 
-        @Test func noLegacyFileDoesNothing() {
-            defaults.set(["Grafana"], forKey: "voice.userTerms")
+        @Test func noLegacyFileAndNoUserTermsDoesNothing() {
             let store = makeStore()
             migrate(store)
             #expect(store.userEntries.isEmpty)
-            #expect(defaults.stringArray(forKey: "voice.userTerms") == ["Grafana"])
+        }
+
+        @Test func userTermsMigratedWithoutLegacyFile() {
+            defaults.set(["Grafana", "Loki"], forKey: "voice.userTerms")
+            let store = makeStore()
+            migrate(store)
+            #expect(store.userEntries.map(\.spelling) == ["Grafana", "Loki"])
+            #expect(store.userEntries.allSatisfy { $0.source == .manual && $0.variants.isEmpty })
+            #expect(defaults.object(forKey: "voice.userTerms") == nil)
         }
 
         @Test func rerunAfterPartialRunCreatesNoDuplicates() throws {
