@@ -1,7 +1,7 @@
 import Foundation
 
 /// Полный путь от звука до текста: распознавание фрагментами, затем по
-/// желанию языковая модель, валидация и правила персонализации.
+/// желанию языковая модель, валидация и словарь пользователя.
 ///
 /// Задания выполняются строго по одному на последовательной очереди, поэтому
 /// быстрые диктовки подряд не мешают друг другу и не делят временные файлы.
@@ -190,6 +190,9 @@ final class TranscriptionPipeline {
         let speedup = max(1.0, recognized.audioSeconds / max(0.1, recognized.processingSeconds))
         let noteId = UUID()
         let target = job.focusTarget
+        let language = DictionaryLanguage.current
+        // Словарь применяется до модели: модель получает текст уже с заменами
+        let dictionary = DictionaryStage.apply(stageOneText, noteId: noteId, language: language)
 
         DispatchQueue.main.async {
             // Фиксируем исходный сырой транскрипт до любых ИИ-манипуляций
@@ -221,10 +224,11 @@ final class TranscriptionPipeline {
                     audioURL: recognized.audioURL,
                     ownsAudioFile: recognized.ownsAudioFile
                 )))
+                DictionaryStage.shadowFuzzy(finalText, language: language)
             }
 
             guard job.synthesize else {
-                let direct = PersonalizationEngine.shared.applyRules(to: stageOneText)
+                let direct = dictionary.text
                 AppLogger.shared.info("Pipeline", "Этап 2 пропущен: \(job.source.isFileImport ? "импорт файла" : "режим прямого ввода")", details: "Итог: «\(direct)»")
                 deliver(finalText: direct, transformed: false, isFallback: false)
                 return
@@ -234,14 +238,19 @@ final class TranscriptionPipeline {
             AppLogger.shared.info("Pipeline", "Этап 2: Запуск языковой модели — \(settings.engine.title)", details: "стиль: \(settings.style.title)")
             onStageTwoStarted()
             ThoughtSynthesizer.shared.synthesize(
-                rawText: recognized.rawText,
+                rawText: dictionary.text,
                 style: settings.style,
-                targetBundleId: target?.bundleIdentifier
+                targetBundleId: target?.bundleIdentifier,
+                firedSpellings: dictionary.fired,
+                language: language
             ) { finalText, isFallback in
                 DispatchQueue.main.async {
-                    var resolved = PersonalizationEngine.shared.applyRules(to: finalText.trimmingCharacters(in: .whitespacesAndNewlines))
+                    // Повторный проход страхует от вариантов, которые вернула модель
+                    var resolved = DictionaryStage.apply(
+                        finalText.trimmingCharacters(in: .whitespacesAndNewlines), noteId: noteId, language: language
+                    ).text
                     if resolved.isEmpty {
-                        resolved = PersonalizationEngine.shared.applyRules(to: stageOneText.trimmingCharacters(in: .whitespacesAndNewlines))
+                        resolved = dictionary.text.trimmingCharacters(in: .whitespacesAndNewlines)
                     }
                     guard !resolved.isEmpty else {
                         AppLogger.shared.warn("Recognition", "Текст пуст после очистки от слов-паразитов")

@@ -10,11 +10,15 @@ public final class ThoughtSynthesizer {
     ///   - rawText: сырой распознанный текст
     ///   - style: целевой стиль мысли
     ///   - targetBundleId: идентификатор целевого приложения для контекстной адаптации
+    ///   - firedSpellings: написания, которые словарь уже подставил в текст
+    ///   - language: язык диктовки для подсказки словаря
     ///   - completion: возвращает итоговый текст и флаг, был ли это fallback
-    public func synthesize(
+    func synthesize(
         rawText: String,
         style: VoiceStyle,
         targetBundleId: String? = nil,
+        firedSpellings: [String] = [],
+        language: DictionaryLanguage = .current,
         completion: @escaping (_ finalText: String, _ isFallback: Bool) -> Void
     ) {
         let trimmedRaw = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -37,7 +41,8 @@ public final class ThoughtSynthesizer {
         }
 
         let settings = VoiceIntelligenceSettings.shared
-        let messages = buildMessages(for: stageOneText, style: style, targetBundleId: targetBundleId)
+        let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
+        let messages = buildMessages(for: stageOneText, style: style, targetBundleId: targetBundleId, dictionaryHint: dictionaryHint)
 
         switch settings.engine {
         case .airGapped:
@@ -72,14 +77,8 @@ public final class ThoughtSynthesizer {
                         systemPrompt += "\n\n" + category.guidancePrompt
                     }
                 }
-                if !settings.userTerms.isEmpty {
-                    systemPrompt += "\n\nПользовательские термины: " + settings.userTerms.joined(separator: ", ")
-                }
-                if PersonalizationEngine.shared.isLearningEnabled {
-                    let dynamicContext = PersonalizationEngine.shared.buildPromptContext(for: stageOneText)
-                    if !dynamicContext.isEmpty {
-                        systemPrompt += "\n\n" + dynamicContext
-                    }
+                if !dictionaryHint.isEmpty {
+                    systemPrompt += "\n\n" + dictionaryHint
                 }
 
                 AppLogger.shared.info(
@@ -97,7 +96,7 @@ public final class ThoughtSynthesizer {
                     timeout: localTimeout
                 ) {
                     let cleaned = Self.stripThinkingTags(from: synthResult)
-                    let customTerms = PersonalizationEngine.shared.allApprovedTerms(additionalTerms: settings.userTerms)
+                    let customTerms = DictionaryStore.shared.index?.approvedSpellings ?? []
                     let validation = GroundingValidator.validate(
                         input: stageOneText,
                         output: cleaned,
@@ -363,7 +362,7 @@ public final class ThoughtSynthesizer {
                 }
 
                 // Детерминированный Grounding Validator с учетом стиля, словаря и персонализации
-                let customTerms = PersonalizationEngine.shared.allApprovedTerms(additionalTerms: VoiceIntelligenceSettings.shared.userTerms)
+                let customTerms = DictionaryStore.shared.index?.approvedSpellings ?? []
                 let validation = GroundingValidator.validate(
                     input: stageOneText,
                     output: cleanContent,
@@ -430,7 +429,7 @@ public final class ThoughtSynthesizer {
         }
     }
 
-    private func buildMessages(for text: String, style: VoiceStyle, targetBundleId: String?) -> [AIChatMessage] {
+    private func buildMessages(for text: String, style: VoiceStyle, targetBundleId: String?, dictionaryHint: String) -> [AIChatMessage] {
         var systemPrompt = Self.getSystemPrompt(for: style)
         let settings = VoiceIntelligenceSettings.shared
 
@@ -441,15 +440,8 @@ public final class ThoughtSynthesizer {
             }
         }
 
-        if !settings.userTerms.isEmpty {
-            systemPrompt += "\n\nПользовательские термины: " + settings.userTerms.joined(separator: ", ")
-        }
-
-        if PersonalizationEngine.shared.isLearningEnabled {
-            let dynamicContext = PersonalizationEngine.shared.buildPromptContext(for: text)
-            if !dynamicContext.isEmpty {
-                systemPrompt += "\n\n" + dynamicContext
-            }
+        if !dictionaryHint.isEmpty {
+            systemPrompt += "\n\n" + dictionaryHint
         }
 
         let userPrompt = "<transcript>\(text)</transcript>"

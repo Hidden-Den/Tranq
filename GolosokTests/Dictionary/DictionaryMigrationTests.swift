@@ -107,14 +107,14 @@ extension SharedSettingsSuites {
             #expect(store.userEntries[0].variants.isEmpty)
         }
 
-        @Test func userTermsMigratedAndKeyRemoved() throws {
+        @Test func legacyTermsMigratedAndKeyRemoved() throws {
             try writeLegacy()
-            defaults.set(["Grafana", " Loki ", "grafana"], forKey: "voice.userTerms")
+            defaults.set(["Grafana", " Loki ", "grafana"], forKey: DictionaryMigration.legacyTermsKey)
             let store = makeStore()
             migrate(store)
 
             #expect(store.userEntries.map(\.spelling) == ["Grafana", "Loki"])
-            #expect(defaults.object(forKey: "voice.userTerms") == nil)
+            #expect(defaults.object(forKey: DictionaryMigration.legacyTermsKey) == nil)
         }
 
         @Test func runsOnceAndRenamesFile() throws {
@@ -137,13 +137,13 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.isEmpty)
         }
 
-        @Test func userTermsMigratedWithoutLegacyFile() {
-            defaults.set(["Grafana", "Loki"], forKey: "voice.userTerms")
+        @Test func legacyTermsMigratedWithoutLegacyFile() {
+            defaults.set(["Grafana", "Loki"], forKey: DictionaryMigration.legacyTermsKey)
             let store = makeStore()
             migrate(store)
             #expect(store.userEntries.map(\.spelling) == ["Grafana", "Loki"])
             #expect(store.userEntries.allSatisfy { $0.source == .manual && $0.variants.isEmpty })
-            #expect(defaults.object(forKey: "voice.userTerms") == nil)
+            #expect(defaults.object(forKey: DictionaryMigration.legacyTermsKey) == nil)
         }
 
         @Test func rerunAfterPartialRunCreatesNoDuplicates() throws {

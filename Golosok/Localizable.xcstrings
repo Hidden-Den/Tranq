@@ -4351,6 +4351,22 @@
         }
       }
     },
+    "Словарь" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictionary"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Словарь"
+          }
+        }
+      }
+    },
     "Словарь терминов" : {
       "localizations" : {
         "en" : {

@@ -238,7 +238,7 @@ final class DictionaryLearning {
         word.trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespacesAndNewlines))
     }
 
-    /// Перенесено из `PersonalizationEngine` без изменений.
+    /// Перенесено из удалённого движка персонализации без изменений.
     static func extractDiffPairs(original: String, edited: String) -> [(pattern: String, replacement: String)] {
         let origTokens = original.replacingOccurrences(of: "\n", with: " ").split(separator: " ").map { String($0) }
         let editTokens = edited.replacingOccurrences(of: "\n", with: " ").split(separator: " ").map { String($0) }

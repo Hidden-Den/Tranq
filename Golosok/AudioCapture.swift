@@ -272,7 +272,6 @@ final class AudioCapture: ObservableObject {
             history.storeTimings(for: item.id, words: output.words, duration: output.audioSeconds)
         }
         history.insert(item)
-        PersonalizationEngine.shared.observeSpeech(text: output.finalText)
         NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: item.id)
     }
 

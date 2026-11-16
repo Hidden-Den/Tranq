@@ -711,7 +711,7 @@ struct ContentView: View {
                 
                 Group {
                     switch currentTab {
-                    case .vocabulary: VocabularyView()
+                    case .vocabulary: DictionaryView()
                     case .history: historyDetailView
                     case .dashboard: DashboardView()
                     case .settings: SettingsView()

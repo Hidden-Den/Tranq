@@ -140,22 +140,6 @@ extension SharedSettingsSuites {
             }
         }
 
-        @Test func userCustomTermsPersistenceInSettings() {
-            let settings = VoiceIntelligenceSettings.shared
-            let testTerm = "TestTerm\(Int.random(in: 1000...9999))"
-
-            settings.addUserTerm(testTerm)
-            #expect(settings.userTerms.contains(testTerm))
-
-            // Повторное добавление не должно дублировать
-            settings.addUserTerm(testTerm)
-            let occurrences = settings.userTerms.filter { $0 == testTerm }.count
-            #expect(occurrences == 1)
-
-            settings.removeUserTerm(testTerm)
-            #expect(!settings.userTerms.contains(testTerm))
-        }
-
         // MARK: - AppProfileRouter Context Awareness
 
         @Test func appProfileRouterDetectsCorrectCategory() {

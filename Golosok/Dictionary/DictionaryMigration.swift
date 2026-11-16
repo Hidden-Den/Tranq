@@ -2,14 +2,15 @@ import Foundation
 
 /// Однократный перенос данных старой персонализации в словарь.
 ///
-/// Файл не зависит от `PersonalizationEngine`: нужные структуры и снимок встроенных списков скопированы сюда.
+/// Файл не зависит от удалённого движка персонализации: нужные структуры и снимок встроенных списков скопированы сюда.
 /// Запускается из `DictionaryStore.shared` на главном потоке: если `shared` создан с другого потока,
 /// перенос ставится в очередь главного без ожидания, чтобы исключить взаимную блокировку.
 /// Повторный запуск безопасен: `addEntry` объединяет записи по написанию, а варианты без повторов.
 enum DictionaryMigration {
     static let legacyFileName = "personalization.json"
     static let migratedFileName = "personalization.v1.json"
-    static let userTermsKey = "voice.userTerms"
+    /// Ключ списка терминов из старых настроек синтеза.
+    static let legacyTermsKey = "voice.userTerms"
 
     private struct LegacyRule: Codable {
         var pattern: String
@@ -126,9 +127,9 @@ enum DictionaryMigration {
         )
     }
 
-    /// Строки `voice.userTerms` переносятся всегда, когда ключ есть, независимо от старого файла.
+    /// Строки старого списка терминов переносятся всегда, когда ключ есть, независимо от старого файла.
     private static func migrateUserTerms(store: DictionaryStore, defaults: UserDefaults) -> Int {
-        guard let raw = defaults.stringArray(forKey: userTermsKey) else { return 0 }
+        guard let raw = defaults.stringArray(forKey: legacyTermsKey) else { return 0 }
         var seen = Set<String>()
         for item in raw {
             let term = item.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -136,7 +137,7 @@ enum DictionaryMigration {
                 store.addEntry(spelling: term, variants: [:], source: .manual)
             }
         }
-        defaults.removeObject(forKey: userTermsKey)
+        defaults.removeObject(forKey: legacyTermsKey)
         store.flush()
         return seen.count
     }
