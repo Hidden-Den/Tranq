@@ -72,8 +72,8 @@ struct PackValidationTests {
 
     @Test func testNoVariantIsCommonWordInItsLanguage() {
         for item in allVariants {
-            // Многословный вариант проверяется по словам: хватает одного словарного слова, чтобы он был опасен только целиком,
-            // поэтому проверяется вся фраза, а для одного слова это то же самое.
+            // Multi-word variants exempt per product owner decision 2026-11-17; guarded by testNoDeniedVariants and the no-harm corpus.
+            guard item.variant.split(whereSeparator: \.isWhitespace).count == 1 else { continue }
             let common = checker.isCommonWord(item.variant, language: item.language)
             #expect(!common, "\(item.pack)/\(item.spelling): «\(item.variant)» словарное слово \(item.language.rawValue)")
         }

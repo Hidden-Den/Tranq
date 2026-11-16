@@ -27,7 +27,8 @@
       "spelling" : "K8s",
       "variants" : {
         "en" : [
-
+          "k eights",
+          "kay eights"
         ],
         "ru" : [
           "кейтс",
@@ -371,12 +372,16 @@
       "spelling" : "n8n",
       "variants" : {
         "en" : [
-
+          "n eight n",
+          "n 8 n"
         ],
         "ru" : [
           "но8м",
           "но8",
-          "эн8эн"
+          "эн8эн",
+          "эн восемь эн",
+          "эн восемь",
+          "но восемь эм"
         ]
       }
     },
@@ -539,10 +544,11 @@
       "spelling" : "JS",
       "variants" : {
         "en" : [
-
+          "j s"
         ],
         "ru" : [
-          "джейэс"
+          "джейэс",
+          "джей эс"
         ]
       }
     },
@@ -671,7 +677,7 @@
       "spelling" : "PHP",
       "variants" : {
         "en" : [
-
+          "p h p"
         ],
         "ru" : [
           "пэхапэ",
@@ -867,11 +873,13 @@
       "spelling" : "gRPC",
       "variants" : {
         "en" : [
-          "g rpc"
+          "g rpc",
+          "g r p c"
         ],
         "ru" : [
           "джирписи",
-          "жрпц"
+          "жрпц",
+          "джи эр пи си"
         ]
       }
     },
@@ -897,10 +905,11 @@
       "spelling" : "API",
       "variants" : {
         "en" : [
-
+          "a p i"
         ],
         "ru" : [
-          "апи"
+          "апи",
+          "эй пи ай"
         ]
       }
     },
@@ -911,7 +920,7 @@
       "spelling" : "SDK",
       "variants" : {
         "en" : [
-
+          "s d k"
         ],
         "ru" : [
           "эс ди кей",
@@ -926,7 +935,7 @@
       "spelling" : "CLI",
       "variants" : {
         "en" : [
-
+          "c l i"
         ],
         "ru" : [
           "си эл ай",
@@ -941,7 +950,7 @@
       "spelling" : "IDE",
       "variants" : {
         "en" : [
-
+          "i d e"
         ],
         "ru" : [
           "айди и"
@@ -955,7 +964,7 @@
       "spelling" : "SQL",
       "variants" : {
         "en" : [
-
+          "s q l"
         ],
         "ru" : [
           "эс кью эл",
@@ -985,7 +994,7 @@
       "spelling" : "JSON",
       "variants" : {
         "en" : [
-
+          "j son"
         ],
         "ru" : [
           "джсон",
@@ -1000,7 +1009,7 @@
       "spelling" : "YAML",
       "variants" : {
         "en" : [
-
+          "y a m l"
         ],
         "ru" : [
           "ямл",
@@ -1015,7 +1024,7 @@
       "spelling" : "XML",
       "variants" : {
         "en" : [
-
+          "x m l"
         ],
         "ru" : [
           "икс эм эл",
@@ -1030,7 +1039,7 @@
       "spelling" : "HTML",
       "variants" : {
         "en" : [
-
+          "h t m l"
         ],
         "ru" : [
           "эйч ти эм эл",
@@ -1046,11 +1055,12 @@
       "spelling" : "CSS",
       "variants" : {
         "en" : [
-
+          "c s s"
         ],
         "ru" : [
           "цсс",
-          "сиэсэс"
+          "сиэсэс",
+          "си эс эс"
         ]
       }
     },
@@ -1061,7 +1071,7 @@
       "spelling" : "HTTP",
       "variants" : {
         "en" : [
-
+          "h t t p"
         ],
         "ru" : [
           "эйч ти ти пи",
@@ -1077,7 +1087,7 @@
       "spelling" : "HTTPS",
       "variants" : {
         "en" : [
-
+          "h t t p s"
         ],
         "ru" : [
           "эйч ти ти пи эс",
@@ -1092,11 +1102,12 @@
       "spelling" : "OAuth",
       "variants" : {
         "en" : [
-
+          "o auth"
         ],
         "ru" : [
           "оаут",
-          "оаус"
+          "оаус",
+          "о аут"
         ]
       }
     },
@@ -1107,7 +1118,7 @@
       "spelling" : "JWT",
       "variants" : {
         "en" : [
-
+          "j w t"
         ],
         "ru" : [
           "джей дабл ю ти",
@@ -1123,7 +1134,7 @@
       "spelling" : "SSH",
       "variants" : {
         "en" : [
-
+          "s s h"
         ],
         "ru" : [
           "эс эс эйч",
@@ -1139,7 +1150,7 @@
       "spelling" : "VPN",
       "variants" : {
         "en" : [
-
+          "v p n"
         ],
         "ru" : [
           "ви пи эн"
@@ -1153,10 +1164,11 @@
       "spelling" : "DNS",
       "variants" : {
         "en" : [
-
+          "d n s"
         ],
         "ru" : [
-          "днс"
+          "днс",
+          "ди эн эс"
         ]
       }
     },
@@ -1167,7 +1179,7 @@
       "spelling" : "TCP",
       "variants" : {
         "en" : [
-
+          "t c p"
         ],
         "ru" : [
           "ти си пи",
@@ -1182,10 +1194,11 @@
       "spelling" : "UDP",
       "variants" : {
         "en" : [
-
+          "u d p"
         ],
         "ru" : [
-          "юдп"
+          "юдп",
+          "ю ди пи"
         ]
       }
     },
@@ -1196,10 +1209,11 @@
       "spelling" : "CDN",
       "variants" : {
         "en" : [
-
+          "c d n"
         ],
         "ru" : [
-          "сидиэн"
+          "сидиэн",
+          "си ди эн"
         ]
       }
     },
@@ -1224,11 +1238,12 @@
       "spelling" : "AWS",
       "variants" : {
         "en" : [
-
+          "a w s"
         ],
         "ru" : [
           "эйдаблюэс",
-          "авс"
+          "авс",
+          "эй дабл ю эс"
         ]
       }
     },
@@ -1239,10 +1254,11 @@
       "spelling" : "GCP",
       "variants" : {
         "en" : [
-
+          "g c p"
         ],
         "ru" : [
-          "джисипи"
+          "джисипи",
+          "джи си пи"
         ]
       }
     },
@@ -1434,10 +1450,12 @@
       "spelling" : "CI/CD",
       "variants" : {
         "en" : [
-          "ci cd"
+          "ci cd",
+          "c i c d"
         ],
         "ru" : [
-          "сиай сиди"
+          "сиай сиди",
+          "си ай си ди"
         ]
       }
     },
@@ -1549,10 +1567,11 @@
       "spelling" : "macOS",
       "variants" : {
         "en" : [
-
+          "mac o s"
         ],
         "ru" : [
-          "макос"
+          "макос",
+          "мак ос"
         ]
       }
     },
@@ -1563,10 +1582,10 @@
       "spelling" : "iOS",
       "variants" : {
         "en" : [
-
+          "i o s"
         ],
         "ru" : [
-
+          "ай ос"
         ]
       }
     },
@@ -1605,7 +1624,7 @@
       "spelling" : "VS Code",
       "variants" : {
         "en" : [
-
+          "v s code"
         ],
         "ru" : [
           "ви эс код",
@@ -1766,10 +1785,11 @@
       "spelling" : "npm",
       "variants" : {
         "en" : [
-
+          "n p m"
         ],
         "ru" : [
-          "нпм"
+          "нпм",
+          "эн пи эм"
         ]
       }
     },
@@ -1780,10 +1800,11 @@
       "spelling" : "pnpm",
       "variants" : {
         "en" : [
-
+          "p n p m"
         ],
         "ru" : [
-          "пнпм"
+          "пнпм",
+          "пи эн пи эм"
         ]
       }
     },
@@ -1837,7 +1858,7 @@
       "spelling" : "Zsh",
       "variants" : {
         "en" : [
-
+          "z s h"
         ],
         "ru" : [
           "зэд эс эйч",
