@@ -1,6 +1,14 @@
 import XCTest
 @testable import Golosok
 
+private struct LCG {
+    var seed: UInt64
+    mutating func next(_ bound: Int) -> Int {
+        seed = seed &* 6364136223846793005 &+ 1442695040888963407
+        return Int((seed >> 33) % UInt64(bound))
+    }
+}
+
 final class DictionaryFuzzyTests: XCTestCase {
     private let checker = SetCommonWordChecker([
         .ru: ["кубик", "комната", "привет"],
@@ -58,9 +66,9 @@ final class DictionaryFuzzyTests: XCTestCase {
     }
 
     func testFuzzySkipsExactlyReplacedTokens() {
-        // "кубер" is an exact variant, so it is replaced and never reported again.
+        // "постгрес" is an exact pack variant, so it is replaced and never reported; "кубернетес" is not a variant.
         let idx = makeIndex(users: [user("Kubernetes")])
-        XCTAssertTrue(idx.fuzzyHits(in: "постгрес кубернетес", language: .ru).map(\.token) == ["кубернетес"])
+        XCTAssertEqual(idx.fuzzyHits(in: "постгрес кубернетес", language: .ru).map(\.token), ["кубернетес"])
         XCTAssertTrue(idx.fuzzyHits(in: "постгрес", language: .ru).isEmpty)
     }
 
@@ -94,13 +102,17 @@ final class DictionaryFuzzyTests: XCTestCase {
         XCTAssertEqual(tied.map(\.spelling), ["Kubernetis"])
     }
 
+    func testFuzzyTieAcrossLengthGroupsPrefersUserEntry() {
+        // Pack "Kuberneta" has a shorter key (9) than user "Kubernetis" (10) but the same score 0.9.
+        let shorter = DictionaryPack(id: "p", title: [:], version: 1, entries: [PackEntry(spelling: "Kuberneta", variants: [:])])
+        let hits = makeIndex(users: [user("Kubernetis")], packs: [shorter]).fuzzyHits(in: "кубернетас", language: .ru)
+        XCTAssertEqual(hits.map(\.spelling), ["Kubernetis"])
+    }
+
     func testFuzzyBudgetUnderFiveMilliseconds() {
         // Deterministic pseudo-random product names, 5 to 10 letters, spread over the alphabet.
-        var seed: UInt64 = 42
-        func next(_ bound: Int) -> Int {
-            seed = seed &* 6364136223846793005 &+ 1442695040888963407
-            return Int((seed >> 33) % UInt64(bound))
-        }
+        var rng = LCG(seed: 42)
+        func next(_ bound: Int) -> Int { rng.next(bound) }
         let letters = Array("abcdefghijklmnoprstuvwxyz")
         var users: [DictionaryEntry] = []
         for _ in 0..<1000 {
@@ -124,11 +136,8 @@ final class DictionaryFuzzyTests: XCTestCase {
     }
 
     func testFuzzyPruningMatchesBruteForceSimilarity() {
-        var seed: UInt64 = 7
-        func next(_ bound: Int) -> Int {
-            seed = seed &* 6364136223846793005 &+ 1442695040888963407
-            return Int((seed >> 33) % UInt64(bound))
-        }
+        var rng = LCG(seed: 7)
+        func next(_ bound: Int) -> Int { rng.next(bound) }
         let latin = Array("abdeghiklmnoprstuv")
         let cyrillic = Array("абдегхиклмнорстув")
         let names = (0..<150).map { _ in String((0..<(6 + next(5))).map { _ in latin[next(latin.count)] }).capitalized }

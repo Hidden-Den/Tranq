@@ -40,13 +40,15 @@ struct DictionaryIndex {
         var spellings = Set<String>()
         var fuzzy: [DictionaryLanguage: [FuzzyGroupKey: [FuzzyCandidate]]] = [:]
 
+        var ordinal = 0
         func addFuzzy(_ spelling: String) {
+            defer { ordinal += 1 }
             for language in DictionaryLanguage.allCases {
                 let key = Self.fuzzyKey(spelling, language: language)
                 guard let first = key.first else { continue }
                 let scalars = key.unicodeScalars.map(\.value)
                 fuzzy[language, default: [:]][FuzzyGroupKey(first: first, length: scalars.count), default: []]
-                    .append(FuzzyCandidate(spelling: spelling, lowered: spelling.lowercased(), key: scalars, mask: Self.letterMask(scalars)))
+                    .append(FuzzyCandidate(spelling: spelling, lowered: spelling.lowercased(), key: scalars, mask: Self.letterMask(scalars), ordinal: ordinal))
             }
         }
 
@@ -172,7 +174,7 @@ struct DictionaryIndex {
             let tokenMask = Self.letterMask(scalars)
             guard !checker.isCommonWord(token.lower, language: language) else { continue }
 
-            var best: (spelling: String, similarity: Double)?
+            var best: (spelling: String, similarity: Double, ordinal: Int)?
             for length in max(1, scalars.count - Self.fuzzyLengthSlack)...(scalars.count + Self.fuzzyLengthSlack) {
                 guard let group = groups[FuzzyGroupKey(first: first, length: length)] else { continue }
                 // Порог 0.8 означает расстояние не больше пятой части длиннейшего ключа.
@@ -182,9 +184,9 @@ struct DictionaryIndex {
                 for candidate in group where (candidate.mask ^ tokenMask).nonzeroBitCount <= 2 * limit && candidate.lowered != token.lower {
                     guard let distance = Self.boundedDistance(scalars, candidate.key, limit: limit, rows: &rows) else { continue }
                     let score = 1 - Double(distance) / Double(longest)
-                    if score >= Self.fuzzyThreshold, score > (best?.similarity ?? 0) {
-                        best = (candidate.spelling, score)
-                    }
+                    guard score >= Self.fuzzyThreshold else { continue }
+                    if let current = best, score < current.similarity || (score == current.similarity && candidate.ordinal > current.ordinal) { continue }
+                    best = (candidate.spelling, score, candidate.ordinal)
                 }
             }
             if let best {
@@ -335,6 +337,8 @@ struct DictionaryIndex {
         let key: [UInt32]
         /// Набор букв ключа по модулю 32, быстрый отсев до подсчёта расстояния.
         let mask: UInt32
+        /// Порядок добавления: сначала пользовательские записи, затем наборы.
+        let ordinal: Int
     }
 
     private struct Candidate {
