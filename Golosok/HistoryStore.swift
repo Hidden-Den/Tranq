@@ -90,7 +90,7 @@ final class HistoryStore: ObservableObject {
         let oldText = items[idx].text
         guard oldText != text else { return }
         items[idx] = items[idx].withText(text)
-        PersonalizationEngine.shared.learnFromEdit(original: oldText, edited: text, noteId: id)
+        DictionaryLearning.shared.learn(original: oldText, edited: text, noteId: id)
     }
 
     func replaceRangeInNote(id: UUID, range: NSRange, newText: String) {
@@ -105,7 +105,7 @@ final class HistoryStore: ObservableObject {
         let result = nsText.replacingCharacters(in: range, with: newText)
         guard result != oldText else { return }
         items[idx] = items[idx].withText(result)
-        PersonalizationEngine.shared.learnFromEdit(original: oldText, edited: result, noteId: id)
+        DictionaryLearning.shared.learn(original: oldText, edited: result, noteId: id)
     }
 
     func deleteItem(at index: Int) {

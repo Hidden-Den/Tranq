@@ -46,7 +46,8 @@ final class DictionaryStore: ObservableObject {
     }
 
     private let directory: URL
-    private let defaults: UserDefaults
+    /// Общие настройки: обучение хранит в них счётчики пар и дневной лимит.
+    let defaults: UserDefaults
     private let checker: CommonWordChecking
     private let now: () -> Date
     private let saveDelay: TimeInterval
@@ -152,6 +153,12 @@ final class DictionaryStore: ObservableObject {
             entriesChanged()
             return entry
         }
+    }
+
+    /// Есть ли пользовательская запись с таким написанием без учёта регистра. Можно вызывать с любого потока.
+    func hasEntry(spelling: String) -> Bool {
+        let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return withLock { entriesSnapshot.contains { $0.spelling.lowercased() == key } }
     }
 
     func updateEntry(_ entry: DictionaryEntry) {
