@@ -1,0 +1,589 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NDA",
+      "variants" : {
+        "en" : [
+          "n d a"
+        ],
+        "ru" : [
+          "эн ди эй",
+          "нда"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MSA",
+      "variants" : {
+        "en" : [
+          "m s a"
+        ],
+        "ru" : [
+          "эм эс эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SOW",
+      "variants" : {
+        "en" : [
+          "s o w"
+        ],
+        "ru" : [
+          "эс о даблю"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LOI",
+      "variants" : {
+        "en" : [
+          "l o i"
+        ],
+        "ru" : [
+          "эл о ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MOU",
+      "variants" : {
+        "en" : [
+          "m o u"
+        ],
+        "ru" : [
+          "эм о ю"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GDPR",
+      "variants" : {
+        "en" : [
+          "g d p r"
+        ],
+        "ru" : [
+          "джи ди пи эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CCPA",
+      "variants" : {
+        "en" : [
+          "c c p a"
+        ],
+        "ru" : [
+          "си си пи эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HIPAA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хипаа"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SOX",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сокс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PCI DSS",
+      "variants" : {
+        "en" : [
+          "p c i d s s"
+        ],
+        "ru" : [
+          "пи си ай ди эс эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ISO 27001",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "исо двадцать семь тысяч один"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SOC 2",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сок два"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DPA",
+      "variants" : {
+        "en" : [
+          "d p a"
+        ],
+        "ru" : [
+          "ди пи эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DPO",
+      "variants" : {
+        "en" : [
+          "d p o"
+        ],
+        "ru" : [
+          "ди пи о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EULA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GPL",
+      "variants" : {
+        "en" : [
+          "g p l"
+        ],
+        "ru" : [
+          "джи пи эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MIT License",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм ай ти лицензия"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Apache 2.0",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "апач два ноль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Creative Commons",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "криэйтив коммонс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "LLC",
+      "variants" : {
+        "en" : [
+          "l l c"
+        ],
+        "ru" : [
+          "эл эл си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GmbH",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гмбх",
+          "джи эм би эйч"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DIFC",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ди а эф си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ADGM",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эй ди джи эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЕГРН",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эгрн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КоАП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФЗ-152",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фз сто пятьдесят два"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФЗ-44",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фз сорок четыре"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФЗ-223",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фз двести двадцать три"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КонсультантПлюс",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "консультант плюс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Контур.Фокус",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "контур фокус"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Westlaw",
+      "variants" : {
+        "en" : [
+          "west law"
+        ],
+        "ru" : [
+          "вестлоу",
+          "вест лоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LexisNexis",
+      "variants" : {
+        "en" : [
+          "lexis nexis"
+        ],
+        "ru" : [
+          "лексис нексис"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PandaDoc",
+      "variants" : {
+        "en" : [
+          "panda doc"
+        ],
+        "ru" : [
+          "пандадок",
+          "панда док"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "CLM",
+      "variants" : {
+        "en" : [
+          "c l m"
+        ],
+        "ru" : [
+          "си эл эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UBO",
+      "variants" : {
+        "en" : [
+          "u b o"
+        ],
+        "ru" : [
+          "ю би о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "eIDAS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "айдас",
+          "и айдас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DMCA",
+      "variants" : {
+        "en" : [
+          "d m c a"
+        ],
+        "ru" : [
+          "ди эм си эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "COPPA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "коппа"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LGPD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эл джи пи ди"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FRAND",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фрэнд лицензии"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "KYB",
+      "variants" : {
+        "en" : [
+          "k y b"
+        ],
+        "ru" : [
+          "кей вай би"
+        ]
+      }
+    }
+  ],
+  "id" : "legal",
+  "title" : {
+    "en" : "Legal",
+    "ru" : "Юриспруденция"
+  },
+  "version" : 1
+}

@@ -1,0 +1,756 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Photoshop",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "InDesign",
+      "variants" : {
+        "en" : [
+          "in design"
+        ],
+        "ru" : [
+          "индизайн",
+          "ин дизайн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "After Effects",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "афтер эффектс",
+          "афтер эфектс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Premiere Pro",
+      "variants" : {
+        "en" : [
+          "premier pro"
+        ],
+        "ru" : [
+          "премьер про"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Lightroom",
+      "variants" : {
+        "en" : [
+          "light room"
+        ],
+        "ru" : [
+          "лайтрум",
+          "лайт рум"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Procreate",
+      "variants" : {
+        "en" : [
+          "pro create"
+        ],
+        "ru" : [
+          "прокрейт",
+          "про крейт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Blender",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Cinema 4D",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "синема фо ди",
+          "синема четыре дэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Spline",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Framer",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фреймер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ProtoPie",
+      "variants" : {
+        "en" : [
+          "proto pie"
+        ],
+        "ru" : [
+          "прото пай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Balsamiq",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "балсамик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Zeplin",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "зеплин"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "InVision",
+      "variants" : {
+        "en" : [
+          "in vision"
+        ],
+        "ru" : [
+          "инвижн",
+          "ин вижн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Lottie",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "лотти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Storybook",
+      "variants" : {
+        "en" : [
+          "story book"
+        ],
+        "ru" : [
+          "сторибук",
+          "стори бук"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Dribbble",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дрибл",
+          "дриббл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Behance",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бихэнс",
+          "беханс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Awwwards",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эвордс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UX",
+      "variants" : {
+        "en" : [
+          "u x"
+        ],
+        "ru" : [
+          "ю икс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "UI",
+      "variants" : {
+        "en" : [
+          "u i"
+        ],
+        "ru" : [
+          "ю ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UX/UI",
+      "variants" : {
+        "en" : [
+          "u x u i"
+        ],
+        "ru" : [
+          "ю икс ю ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WCAG",
+      "variants" : {
+        "en" : [
+          "w c a g"
+        ],
+        "ru" : [
+          "вкаг",
+          "даблю си эй джи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SVG",
+      "variants" : {
+        "en" : [
+          "s v g"
+        ],
+        "ru" : [
+          "эс ви джи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PNG",
+      "variants" : {
+        "en" : [
+          "p n g"
+        ],
+        "ru" : [
+          "пи эн джи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "JPEG",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джейпег"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WebP",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "веб пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PDF",
+      "variants" : {
+        "en" : [
+          "p d f"
+        ],
+        "ru" : [
+          "пи ди эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RGB",
+      "variants" : {
+        "en" : [
+          "r g b"
+        ],
+        "ru" : [
+          "эр джи би"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CMYK",
+      "variants" : {
+        "en" : [
+          "c m y k"
+        ],
+        "ru" : [
+          "си эм вай кей"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Pantone",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пантон"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Helvetica",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хелветика"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Roboto",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "робото"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Fonts",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл фонтс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Adobe Fonts",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "адоби фонтс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Material Design",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "матириал дизайн",
+          "метириал дизайн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Tailwind",
+      "variants" : {
+        "en" : [
+          "tail wind"
+        ],
+        "ru" : [
+          "тейлвинд",
+          "тэйлвинд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Bootstrap",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Chakra UI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "чакра ю ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "shadcn",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "шадси",
+          "шэд си эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Ant Design",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "энт дизайн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Heroicons",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хироуикон",
+          "хиро айконс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Iconify",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "айконифай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Unsplash",
+      "variants" : {
+        "en" : [
+          "un splash"
+        ],
+        "ru" : [
+          "анспласт",
+          "ансплэш"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Freepik",
+      "variants" : {
+        "en" : [
+          "free pic"
+        ],
+        "ru" : [
+          "фрипик",
+          "фри пик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Adobe Stock",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "адоби сток"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Excalidraw",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эксклидро",
+          "эксалидро"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Penpot",
+      "variants" : {
+        "en" : [
+          "pen pot"
+        ],
+        "ru" : [
+          "пенпот",
+          "пен пот"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Galileo AI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "галилео эй ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "v0",
+      "variants" : {
+        "en" : [
+          "v zero"
+        ],
+        "ru" : [
+          "ви ноль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Lovable",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "лавабл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Bolt.new",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "болт нью"
+        ]
+      }
+    }
+  ],
+  "id" : "design",
+  "title" : {
+    "en" : "Design",
+    "ru" : "Дизайн"
+  },
+  "version" : 1
+}

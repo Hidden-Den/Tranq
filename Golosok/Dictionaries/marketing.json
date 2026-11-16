@@ -1,0 +1,920 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SEO",
+      "variants" : {
+        "en" : [
+          "s e o"
+        ],
+        "ru" : [
+          "сео",
+          "эс и о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SEM",
+      "variants" : {
+        "en" : [
+          "s e m"
+        ],
+        "ru" : [
+          "эс и эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SMM",
+      "variants" : {
+        "en" : [
+          "s m m"
+        ],
+        "ru" : [
+          "эс эм эм",
+          "смм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PPC",
+      "variants" : {
+        "en" : [
+          "p p c"
+        ],
+        "ru" : [
+          "пи пи си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPC",
+      "variants" : {
+        "en" : [
+          "c p c"
+        ],
+        "ru" : [
+          "си пи си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "CPM",
+      "variants" : {
+        "en" : [
+          "c p m"
+        ],
+        "ru" : [
+          "си пи эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPA",
+      "variants" : {
+        "en" : [
+          "c p a"
+        ],
+        "ru" : [
+          "си пи эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPL",
+      "variants" : {
+        "en" : [
+          "c p l"
+        ],
+        "ru" : [
+          "си пи эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CTR",
+      "variants" : {
+        "en" : [
+          "c t r"
+        ],
+        "ru" : [
+          "си ти эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CRO",
+      "variants" : {
+        "en" : [
+          "c r o"
+        ],
+        "ru" : [
+          "си эр о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ROAS",
+      "variants" : {
+        "en" : [
+          "r o a s"
+        ],
+        "ru" : [
+          "роас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ROMI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "роми"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UTM",
+      "variants" : {
+        "en" : [
+          "u t m"
+        ],
+        "ru" : [
+          "ю ти эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UGC",
+      "variants" : {
+        "en" : [
+          "u g c"
+        ],
+        "ru" : [
+          "ю джи си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GA4",
+      "variants" : {
+        "en" : [
+          "g a four"
+        ],
+        "ru" : [
+          "джи эй четыре",
+          "гугл аналитикс четыре"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Analytics",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл аналитикс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Tag Manager",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл тег менеджер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Ads",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл адс",
+          "гугл эдс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Search Console",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл серч консоль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "VK Ads",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вк адс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Meta Ads",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "мета адс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "TikTok Ads",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тикток адс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Ahrefs",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эйчрефс",
+          "ахрефс",
+          "а хрефс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Semrush",
+      "variants" : {
+        "en" : [
+          "sem rush"
+        ],
+        "ru" : [
+          "семраш",
+          "сем раш"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Serpstat",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "серпстат"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Topvisor",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "топвизор"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UniSender",
+      "variants" : {
+        "en" : [
+          "uni sender"
+        ],
+        "ru" : [
+          "юнисендер",
+          "юни сендер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SendPulse",
+      "variants" : {
+        "en" : [
+          "send pulse"
+        ],
+        "ru" : [
+          "сендпалс",
+          "сенд палс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GetResponse",
+      "variants" : {
+        "en" : [
+          "get response"
+        ],
+        "ru" : [
+          "гетреспонс",
+          "гет респонс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Klaviyo",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "клавио",
+          "клавийо"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Mailgun",
+      "variants" : {
+        "en" : [
+          "mail gun"
+        ],
+        "ru" : [
+          "мейлган",
+          "мейл ган"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Hootsuite",
+      "variants" : {
+        "en" : [
+          "hoot suite"
+        ],
+        "ru" : [
+          "хутсьют",
+          "хутсуит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Sprout Social",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "спраут сошиал"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Hotjar",
+      "variants" : {
+        "en" : [
+          "hot jar"
+        ],
+        "ru" : [
+          "хотджар",
+          "хот джар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Mixpanel",
+      "variants" : {
+        "en" : [
+          "mix panel"
+        ],
+        "ru" : [
+          "микспанел",
+          "микс панел"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Amplitude",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "амплитьюд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "AppsFlyer",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "аппсфлаер",
+          "апс флаер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Buzzsumo",
+      "variants" : {
+        "en" : [
+          "buzz sumo"
+        ],
+        "ru" : [
+          "базсумо",
+          "баз сумо"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CMS",
+      "variants" : {
+        "en" : [
+          "c m s"
+        ],
+        "ru" : [
+          "си эм эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CTA",
+      "variants" : {
+        "en" : [
+          "c t a"
+        ],
+        "ru" : [
+          "си ти эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DSP",
+      "variants" : {
+        "en" : [
+          "d s p"
+        ],
+        "ru" : [
+          "ди эс пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SSP",
+      "variants" : {
+        "en" : [
+          "s s p"
+        ],
+        "ru" : [
+          "эс эс пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RTB",
+      "variants" : {
+        "en" : [
+          "r t b"
+        ],
+        "ru" : [
+          "эр ти би"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Screaming Frog",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "скриминг фрог"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Yoast",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "йоаст",
+          "йост"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Copy.ai",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "копи эй ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Linktree",
+      "variants" : {
+        "en" : [
+          "link tree"
+        ],
+        "ru" : [
+          "линктри",
+          "линк три"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Bitly",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "битли"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Beehiiv",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "биехив",
+          "би хайв"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Substack",
+      "variants" : {
+        "en" : [
+          "sub stack"
+        ],
+        "ru" : [
+          "субстэк",
+          "саб стэк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Taplink",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "таплинк",
+          "тап линк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Unbounce",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "анбаунс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Leadpages",
+      "variants" : {
+        "en" : [
+          "lead pages"
+        ],
+        "ru" : [
+          "лидпейджес",
+          "лид пейджес"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Optimizely",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "оптимайзли"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Lemlist",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "лемлист",
+          "лэм лист"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Phantombuster",
+      "variants" : {
+        "en" : [
+          "phantom buster"
+        ],
+        "ru" : [
+          "фантом бастер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Similarweb",
+      "variants" : {
+        "en" : [
+          "similar web"
+        ],
+        "ru" : [
+          "симилар веб",
+          "симиларвеб"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Brandwatch",
+      "variants" : {
+        "en" : [
+          "brand watch"
+        ],
+        "ru" : [
+          "брендвотч",
+          "бренд вотч"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Meltwater",
+      "variants" : {
+        "en" : [
+          "melt water"
+        ],
+        "ru" : [
+          "мелтвотер",
+          "мелт вотер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Click.ru",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "клик ру"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Calltouch",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "коллтач",
+          "колл тач"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Roistat",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ройстат"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Albato",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "албато"
+        ]
+      }
+    }
+  ],
+  "id" : "marketing",
+  "title" : {
+    "en" : "Marketing",
+    "ru" : "Маркетинг"
+  },
+  "version" : 1
+}

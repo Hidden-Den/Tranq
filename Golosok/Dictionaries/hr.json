@@ -1,0 +1,572 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "HR",
+      "variants" : {
+        "en" : [
+          "h r"
+        ],
+        "ru" : [
+          "эйч эр",
+          "ашар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HRBP",
+      "variants" : {
+        "en" : [
+          "h r b p"
+        ],
+        "ru" : [
+          "эйч эр би пи",
+          "ашар бипи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HRD",
+      "variants" : {
+        "en" : [
+          "h r d"
+        ],
+        "ru" : [
+          "эйч эр ди"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "L&D",
+      "variants" : {
+        "en" : [
+          "l and d"
+        ],
+        "ru" : [
+          "эл энд ди"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ATS",
+      "variants" : {
+        "en" : [
+          "a t s"
+        ],
+        "ru" : [
+          "эй ти эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HRIS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эйч эр ай эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HRM",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эйч эр эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "eNPS",
+      "variants" : {
+        "en" : [
+          "e n p s"
+        ],
+        "ru" : [
+          "и эн пи эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Talent Acquisition",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тэлент экизишн",
+          "талент акйизишн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EVP",
+      "variants" : {
+        "en" : [
+          "e v p"
+        ],
+        "ru" : [
+          "и ви пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DEI",
+      "variants" : {
+        "en" : [
+          "d e i"
+        ],
+        "ru" : [
+          "ди и ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PIP",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пип план"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IDP",
+      "variants" : {
+        "en" : [
+          "i d p"
+        ],
+        "ru" : [
+          "ай ди пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PTO",
+      "variants" : {
+        "en" : [
+          "p t o"
+        ],
+        "ru" : [
+          "пи ти о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FTE",
+      "variants" : {
+        "en" : [
+          "f t e"
+        ],
+        "ru" : [
+          "эф ти и"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "hh.ru",
+      "variants" : {
+        "en" : [
+          "h h dot r u"
+        ],
+        "ru" : [
+          "эйч эйч ру",
+          "хх ру"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "HeadHunter",
+      "variants" : {
+        "en" : [
+          "head hunter"
+        ],
+        "ru" : [
+          "хедхантер",
+          "хэдхантер",
+          "хед хантер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Huntflow",
+      "variants" : {
+        "en" : [
+          "hunt flow"
+        ],
+        "ru" : [
+          "хантфлоу",
+          "хант флоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Talantix",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "талантикс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Workday",
+      "variants" : {
+        "en" : [
+          "work day"
+        ],
+        "ru" : [
+          "воркдей",
+          "ворк дей"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BambooHR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бамбу эйч эр",
+          "бамбук эйч эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Superjob",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "суперджоб",
+          "супер джоб"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Habr Career",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хабр карьера"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LinkedIn Recruiter",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "линкедин рекрутер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Lattice",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "латтис"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "15Five",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фифтин файв"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "TeamTailor",
+      "variants" : {
+        "en" : [
+          "team tailor"
+        ],
+        "ru" : [
+          "тим тейлор"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Personio",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "персонио"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Gallup",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гэллап",
+          "геллап"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MBTI",
+      "variants" : {
+        "en" : [
+          "m b t i"
+        ],
+        "ru" : [
+          "эм би ти ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Great Place to Work",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "грейт плейс ту ворк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Culture Amp",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кальчер амп",
+          "калчер амп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Coursera",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "курсера"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Udemy",
+      "variants" : {
+        "en" : [
+          "you demi"
+        ],
+        "ru" : [
+          "юдеми",
+          "юдэми"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Skillbox",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "скиллбокс",
+          "скилбокс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Stepik",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "степик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SuccessFactors",
+      "variants" : {
+        "en" : [
+          "success factors"
+        ],
+        "ru" : [
+          "саксесс фэкторс",
+          "саксесс факторс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Mentimeter",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ментиметр",
+          "ментимитер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Slido",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "слайдо"
+        ]
+      }
+    }
+  ],
+  "id" : "hr",
+  "title" : {
+    "en" : "HR",
+    "ru" : "HR и рекрутинг"
+  },
+  "version" : 1
+}

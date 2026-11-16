@@ -1,0 +1,995 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OpenAI",
+      "variants" : {
+        "en" : [
+          "open a i"
+        ],
+        "ru" : [
+          "опенэйай",
+          "опен эй ай",
+          "оупен эй ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ChatGPT",
+      "variants" : {
+        "en" : [
+          "chat g p t",
+          "chat gpt"
+        ],
+        "ru" : [
+          "чат джипити",
+          "чат джи пи ти",
+          "чатжпт",
+          "чат гпт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GPT",
+      "variants" : {
+        "en" : [
+          "g p t"
+        ],
+        "ru" : [
+          "джипити",
+          "джи пи ти",
+          "гпт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GPT-4",
+      "variants" : {
+        "en" : [
+          "g p t four"
+        ],
+        "ru" : [
+          "джипити четыре",
+          "джи пи ти четыре"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GPT-5",
+      "variants" : {
+        "en" : [
+          "g p t five"
+        ],
+        "ru" : [
+          "джипити пять",
+          "джи пи ти пять"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Claude",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "клауд",
+          "клод"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Claude Code",
+      "variants" : {
+        "en" : [
+          "cloud code"
+        ],
+        "ru" : [
+          "клауд код",
+          "клод код"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Anthropic",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "антропик",
+          "энтропик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Gemini",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джемини",
+          "гемини"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DeepMind",
+      "variants" : {
+        "en" : [
+          "deep mind"
+        ],
+        "ru" : [
+          "дипмайнд",
+          "дип майнд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Llama",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ллама"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Mistral",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "мистрал"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DeepSeek",
+      "variants" : {
+        "en" : [
+          "deep seek"
+        ],
+        "ru" : [
+          "дипсик",
+          "дип сик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Qwen",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "квен",
+          "куэн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Grok",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "грок"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "xAI",
+      "variants" : {
+        "en" : [
+          "x a i"
+        ],
+        "ru" : [
+          "икс эй ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Perplexity",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "перплексити"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Midjourney",
+      "variants" : {
+        "en" : [
+          "mid journey"
+        ],
+        "ru" : [
+          "миджорни",
+          "мидджорни",
+          "мид джорни"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Stable Diffusion",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "стейбл диффьюжн",
+          "стабл диффужн",
+          "стабильная диффузия"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DALL-E",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "далли",
+          "дал и"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Sora",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Whisper",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "виспер",
+          "уиспер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GigaChat",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гигачат",
+          "гига чат"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "YandexGPT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "яндекс джипити",
+          "яндекс джи пи ти",
+          "яндекс гпт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Hugging Face",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хагинг фейс",
+          "хаггинг фейс",
+          "хаггингфейс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PyTorch",
+      "variants" : {
+        "en" : [
+          "pie torch"
+        ],
+        "ru" : [
+          "пайторч",
+          "пай торч"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "TensorFlow",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тензорфлоу",
+          "тензор флоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Keras",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "керас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "scikit-learn",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сайкит лёрн",
+          "сайкит лерн",
+          "скикит лерн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NumPy",
+      "variants" : {
+        "en" : [
+          "num pie"
+        ],
+        "ru" : [
+          "нампай",
+          "нам пай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Pandas",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пандас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Jupyter",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джупитер",
+          "юпитер ноутбук"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LangChain",
+      "variants" : {
+        "en" : [
+          "lang chain"
+        ],
+        "ru" : [
+          "лангчейн",
+          "ленгчейн",
+          "ланг чейн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LlamaIndex",
+      "variants" : {
+        "en" : [
+          "llama index"
+        ],
+        "ru" : [
+          "лама индекс",
+          "ллама индекс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "RAG",
+      "variants" : {
+        "en" : [
+          "r a g"
+        ],
+        "ru" : [
+          "раг"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "LLM",
+      "variants" : {
+        "en" : [
+          "l l m"
+        ],
+        "ru" : [
+          "эл эл эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "NLP",
+      "variants" : {
+        "en" : [
+          "n l p"
+        ],
+        "ru" : [
+          "эн эл пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "GPU",
+      "variants" : {
+        "en" : [
+          "g p u"
+        ],
+        "ru" : [
+          "джи пи ю"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CUDA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кьюда"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NVIDIA",
+      "variants" : {
+        "en" : [
+          "in video a"
+        ],
+        "ru" : [
+          "нвидиа",
+          "энвидиа"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "TPU",
+      "variants" : {
+        "en" : [
+          "t p u"
+        ],
+        "ru" : [
+          "ти пи ю"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MCP",
+      "variants" : {
+        "en" : [
+          "m c p"
+        ],
+        "ru" : [
+          "эм си пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Copilot",
+      "variants" : {
+        "en" : [
+          "co pilot"
+        ],
+        "ru" : [
+          "копилот",
+          "копайлот"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Cursor",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "курсор эй ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Codex",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Windsurf",
+      "variants" : {
+        "en" : [
+          "wind surf"
+        ],
+        "ru" : [
+          "виндсерф",
+          "винд серф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Replit",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "реплит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ElevenLabs",
+      "variants" : {
+        "en" : [
+          "eleven labs"
+        ],
+        "ru" : [
+          "элевен лабс",
+          "илевен лабс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Runway",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ранвей",
+          "ран вей"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Suno",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "суно"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "LoRA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RLHF",
+      "variants" : {
+        "en" : [
+          "r l h f"
+        ],
+        "ru" : [
+          "эр эл эйч эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "AGI",
+      "variants" : {
+        "en" : [
+          "a g i"
+        ],
+        "ru" : [
+          "эй джи ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ASR",
+      "variants" : {
+        "en" : [
+          "a s r"
+        ],
+        "ru" : [
+          "эй эс эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "TTS",
+      "variants" : {
+        "en" : [
+          "t t s"
+        ],
+        "ru" : [
+          "ти ти эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OCR",
+      "variants" : {
+        "en" : [
+          "o c r"
+        ],
+        "ru" : [
+          "о си эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CNN",
+      "variants" : {
+        "en" : [
+          "c n n"
+        ],
+        "ru" : [
+          "си эн эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kaggle",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кэггл",
+          "каггл",
+          "кагл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Google Colab",
+      "variants" : {
+        "en" : [
+          "google collab"
+        ],
+        "ru" : [
+          "гугл колаб",
+          "гугл колэб"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Pinecone",
+      "variants" : {
+        "en" : [
+          "pine cone"
+        ],
+        "ru" : [
+          "пайнкон",
+          "пайн кон"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Qdrant",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кьюдрант"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Weaviate",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вивиэйт",
+          "вивиат"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "vLLM",
+      "variants" : {
+        "en" : [
+          "v l l m"
+        ],
+        "ru" : [
+          "ви эл эл эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ONNX",
+      "variants" : {
+        "en" : [
+          "o n n x"
+        ],
+        "ru" : [
+          "онникс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Gemma",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джемма"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kimi",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кими"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Manus",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "манус"
+        ]
+      }
+    }
+  ],
+  "id" : "ai",
+  "title" : {
+    "en" : "AI & ML",
+    "ru" : "ИИ и нейросети"
+  },
+  "version" : 1
+}

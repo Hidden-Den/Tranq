@@ -5,7 +5,7 @@ import Foundation
 /// Проверки всех наборов из `Dictionaries` в бандле. Нарушения исправляются в данных, а не в тестах.
 struct PackValidationTests {
     /// Наборы, файлы которых уже есть. Новый набор добавляется сюда вместе с файлом.
-    static let implementedPackIds = ["it"]
+    static let implementedPackIds = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design"]
 
     static let loanwordBlocklist: Set<String> = [
         "спринт", "оффер", "деплой", "онбординг", "оффбординг", "бэклог", "ретро", "стендап", "дейли", "синк",
@@ -139,9 +139,17 @@ struct PackValidationTests {
         }
     }
 
-    @Test func testItPackIsNotEmpty() {
-        let it = packs.first { $0.id == "it" }
-        #expect((it?.entries.count ?? 0) >= 100, "В наборе it меньше 100 записей")
+    /// Минимальные размеры наборов: не меньше 80 процентов от плана спеки.
+    static let minimumPackSizes: [String: Int] = [
+        "it": 100, "ai": 48, "apps": 64, "management": 40, "business": 48,
+        "hr": 32, "finance": 48, "marketing": 48, "legal": 32, "design": 32,
+    ]
+
+    @Test func testPacksMeetMinimumSize() {
+        for (id, minimum) in Self.minimumPackSizes {
+            let count = packs.first { $0.id == id }?.entries.count ?? 0
+            #expect(count >= minimum, "В наборе \(id) \(count) записей, нужно не меньше \(minimum)")
+        }
     }
 
     @Test func testCommonInIsUpToDate() {
