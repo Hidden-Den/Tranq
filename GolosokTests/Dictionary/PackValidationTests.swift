@@ -118,10 +118,36 @@ struct PackValidationTests {
         }
     }
 
+    /// Те же правила, что в scripts/annotate-dictionaries.swift: кириллица только для ru, латиница только для en,
+    /// написания с цифрами и символами словарными не бывают.
+    static func candidateLanguages(for spelling: String) -> [DictionaryLanguage] {
+        let letters = spelling.filter { !$0.isWhitespace }
+        guard !letters.isEmpty, letters.allSatisfy(\.isLetter) else { return [] }
+        if letters.allSatisfy({ $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }) { return [.ru] }
+        if letters.allSatisfy(\.isASCII) { return [.en] }
+        return []
+    }
+
+    static let deniedVariants: Set<String> = [
+        "кубик", "питон", "свифт", "сас", "рои", "сла", "хр",
+        "jason", "джейсон", "джанго", "no js", "view js", "sas",
+    ]
+
+    @Test func testNoDeniedVariants() {
+        for item in allVariants {
+            #expect(!Self.deniedVariants.contains(item.variant.lowercased()), "\(item.pack)/\(item.spelling): запрещённый вариант «\(item.variant)»")
+        }
+    }
+
+    @Test func testItPackIsNotEmpty() {
+        let it = packs.first { $0.id == "it" }
+        #expect((it?.entries.count ?? 0) >= 100, "В наборе it меньше 100 записей")
+    }
+
     @Test func testCommonInIsUpToDate() {
         for pack in packs {
             for entry in pack.entries {
-                let expected = DictionaryLanguage.allCases.filter { checker.isCommonWord(entry.spelling, language: $0) }
+                let expected = Self.candidateLanguages(for: entry.spelling).filter { checker.isCommonWord(entry.spelling, language: $0) }
                 #expect(Set(entry.commonIn) == Set(expected), "\(pack.id)/\(entry.spelling): commonIn устарел, \(Self.annotateHint)")
             }
         }

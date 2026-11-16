@@ -8,8 +8,6 @@
 // Файлы перезаписываются с сортировкой ключей и отступом 2.
 import AppKit
 
-let languages = ["en", "ru"]
-
 func isCommonWord(_ word: String, language: String) -> Bool {
     let checker = NSSpellChecker.shared
     guard !word.isEmpty,
@@ -19,6 +17,16 @@ func isCommonWord(_ word: String, language: String) -> Bool {
         inSpellDocumentWithTag: 0, wordCount: nil
     )
     return range.location == NSNotFound
+}
+
+/// Языки, в которых написание вообще может быть словарным: кириллица только для ru, латиница только для en.
+/// Написания с цифрами и символами словарными не бывают.
+func candidateLanguages(for spelling: String) -> [String] {
+    let letters = spelling.filter { !$0.isWhitespace }
+    guard !letters.isEmpty, letters.allSatisfy(\.isLetter) else { return [] }
+    if letters.allSatisfy({ $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }) { return ["ru"] }
+    if letters.allSatisfy(\.isASCII) { return ["en"] }
+    return []
 }
 
 guard CommandLine.arguments.count == 2 else {
@@ -47,7 +55,7 @@ for url in files {
         pack["entries"] = entries.map { entry -> [String: Any] in
             var entry = entry
             let spelling = (entry["spelling"] as? String) ?? ""
-            let common = languages.filter { isCommonWord(spelling, language: $0) }
+            let common = candidateLanguages(for: spelling).filter { isCommonWord(spelling, language: $0) }
             if (entry["commonIn"] as? [String]) != common { changed += 1 }
             entry["commonIn"] = common
             return entry

@@ -8,9 +8,7 @@
       "variants" : {
         "en" : [
           "cooper netties",
-          "kuber netties",
-          "kubernetties",
-          "coober nettis"
+          "kuber netties"
         ],
         "ru" : [
           "кубер",
@@ -24,7 +22,7 @@
     },
     {
       "commonIn" : [
-        "en"
+
       ],
       "spelling" : "K8s",
       "variants" : {
@@ -45,7 +43,7 @@
       "spelling" : "Docker",
       "variants" : {
         "en" : [
-          "dockr"
+
         ],
         "ru" : [
 
@@ -59,7 +57,7 @@
       "spelling" : "Docker Compose",
       "variants" : {
         "en" : [
-          "docker kompose"
+
         ],
         "ru" : [
           "докер композ",
@@ -74,7 +72,7 @@
       "spelling" : "Podman",
       "variants" : {
         "en" : [
-          "podmen"
+
         ],
         "ru" : [
           "подман"
@@ -133,9 +131,7 @@
       "variants" : {
         "en" : [
           "post gress",
-          "postgress",
-          "post gres",
-          "postgres q l"
+          "post gres"
         ],
         "ru" : [
           "постгрес",
@@ -149,13 +145,12 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "MySQL",
       "variants" : {
         "en" : [
-          "mysequel"
+
         ],
         "ru" : [
           "майэскюэль",
@@ -205,7 +200,7 @@
       "spelling" : "Redis",
       "variants" : {
         "en" : [
-          "reddis"
+
         ],
         "ru" : [
 
@@ -239,7 +234,7 @@
           "cass andra"
         ],
         "ru" : [
-          "кассандра"
+
         ]
       }
     },
@@ -265,7 +260,7 @@
       "spelling" : "ClickHouse",
       "variants" : {
         "en" : [
-          "clickhouse"
+
         ],
         "ru" : [
           "кликхаус"
@@ -295,7 +290,7 @@
       "spelling" : "OpenSearch",
       "variants" : {
         "en" : [
-          "opensearch"
+
         ],
         "ru" : [
           "опен сёрч",
@@ -371,7 +366,7 @@
     },
     {
       "commonIn" : [
-        "en"
+
       ],
       "spelling" : "n8n",
       "variants" : {
@@ -402,8 +397,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "GitLab",
       "variants" : {
@@ -434,8 +428,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "Git",
       "variants" : {
@@ -454,9 +447,7 @@
       "spelling" : "Jira",
       "variants" : {
         "en" : [
-          "gera",
-          "jeera",
-          "gyra"
+
         ],
         "ru" : [
           "джира",
@@ -502,7 +493,7 @@
       "spelling" : "Python",
       "variants" : {
         "en" : [
-          "pythan"
+
         ],
         "ru" : [
           "пайтон",
@@ -623,8 +614,7 @@
       "spelling" : "Kotlin",
       "variants" : {
         "en" : [
-          "cot lin",
-          "cotlin"
+          "cot lin"
         ],
         "ru" : [
           "котлин",
@@ -697,8 +687,7 @@
       "spelling" : "Laravel",
       "variants" : {
         "en" : [
-          "lara vel",
-          "laravell"
+          "lara vel"
         ],
         "ru" : [
           "ларавель",
@@ -713,8 +702,7 @@
       "spelling" : "Node.js",
       "variants" : {
         "en" : [
-          "node js",
-          "no js"
+          "node js"
         ],
         "ru" : [
           "нод джей эс",
@@ -762,7 +750,7 @@
       "spelling" : "Vue.js",
       "variants" : {
         "en" : [
-          "view js"
+
         ],
         "ru" : [
           "вью жс"
@@ -790,8 +778,7 @@
       "spelling" : "Svelte",
       "variants" : {
         "en" : [
-          "svelt",
-          "swelt"
+
         ],
         "ru" : [
           "свелт",
@@ -809,7 +796,6 @@
 
         ],
         "ru" : [
-          "джанго",
           "джэнго"
         ]
       }
@@ -935,8 +921,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "CLI",
       "variants" : {
@@ -995,16 +980,14 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "JSON",
       "variants" : {
         "en" : [
-          "jason"
+
         ],
         "ru" : [
-          "джейсон",
           "джсон",
           "джейсона"
         ]
@@ -1012,13 +995,12 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "YAML",
       "variants" : {
         "en" : [
-          "yammel"
+
         ],
         "ru" : [
           "ямл",
@@ -1028,8 +1010,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "XML",
       "variants" : {
@@ -1044,8 +1025,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "HTML",
       "variants" : {
@@ -1076,8 +1056,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "HTTP",
       "variants" : {
@@ -1093,8 +1072,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "HTTPS",
       "variants" : {
@@ -1232,12 +1210,10 @@
       "spelling" : "SaaS",
       "variants" : {
         "en" : [
-          "sas"
+
         ],
         "ru" : [
-          "сас",
-          "саас",
-          "сэс"
+          "саас"
         ]
       }
     },
@@ -1277,7 +1253,6 @@
       "spelling" : "Azure",
       "variants" : {
         "en" : [
-          "azhure",
           "a zure"
         ],
         "ru" : [
@@ -1308,7 +1283,7 @@
       "spelling" : "Vercel",
       "variants" : {
         "en" : [
-          "versell"
+
         ],
         "ru" : [
           "версел",
@@ -1323,7 +1298,6 @@
       "spelling" : "Netlify",
       "variants" : {
         "en" : [
-          "net lifi",
           "net lify"
         ],
         "ru" : [
@@ -1339,8 +1313,7 @@
       "spelling" : "Heroku",
       "variants" : {
         "en" : [
-          "he roku",
-          "heroku"
+          "he roku"
         ],
         "ru" : [
           "хероку",
@@ -1456,7 +1429,7 @@
     },
     {
       "commonIn" : [
-        "ru"
+
       ],
       "spelling" : "CI/CD",
       "variants" : {
@@ -1493,8 +1466,7 @@
           "prome theus"
         ],
         "ru" : [
-          "прометеус",
-          "прометей"
+          "прометеус"
         ]
       }
     },
@@ -1528,8 +1500,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "Linux",
       "variants" : {
@@ -1563,8 +1534,7 @@
       "spelling" : "Debian",
       "variants" : {
         "en" : [
-          "deb ian",
-          "debbian"
+          "deb ian"
         ],
         "ru" : [
           "дебиан",
@@ -1616,8 +1586,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "Windows",
       "variants" : {
@@ -1646,8 +1615,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "Vim",
       "variants" : {
@@ -1784,7 +1752,7 @@
       "spelling" : "Vite",
       "variants" : {
         "en" : [
-          "veet"
+
         ],
         "ru" : [
           "вайт"
@@ -1850,8 +1818,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+        "en"
       ],
       "spelling" : "Bash",
       "variants" : {
@@ -1924,8 +1891,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+
       ],
       "spelling" : "C++",
       "variants" : {
@@ -1939,8 +1905,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+
       ],
       "spelling" : "C#",
       "variants" : {
@@ -1955,8 +1920,7 @@
     },
     {
       "commonIn" : [
-        "en",
-        "ru"
+
       ],
       "spelling" : ".NET",
       "variants" : {
