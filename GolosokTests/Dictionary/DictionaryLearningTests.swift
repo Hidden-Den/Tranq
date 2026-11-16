@@ -122,9 +122,27 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.isEmpty)
         }
 
-        @Test func commonWordPatternIsNotLearnedEvenWithLatinReplacement() {
+        @Test func commonWordPatternWithLatinReplacementIsLearned() {
             for _ in 0..<2 {
                 learn("Купили кубик в центре", "Купили Kubik в центре")
+            }
+            #expect(store.userEntries.count == 1)
+            #expect(store.userEntries[0].spelling == "Kubik")
+            #expect(store.userEntries[0].variants[.ru] == ["кубик"])
+        }
+
+        @Test func commonWordGrammarFixIsNotLearned() {
+            let checker = SetCommonWordChecker([.ru: ["давай"]])
+            let local = DictionaryLearning(store: store, checker: checker, now: { [clock] in clock.date })
+            for _ in 0..<2 {
+                local.learnSync(original: "ну давай", edited: "ну Давайте", noteId: nil, language: .ru)
+            }
+            #expect(store.userEntries.isEmpty)
+        }
+
+        @Test func englishSentenceInitialCaseEditIsNotLearned() {
+            for _ in 0..<2 {
+                learn("the cat sat. the dog", "The cat sat. The dog", language: .en)
             }
             #expect(store.userEntries.isEmpty)
         }
@@ -132,7 +150,7 @@ extension SharedSettingsSuites {
         @Test func englishCaseOnlyEditLearnsForceCase() {
             learn("ping me on slack today", "ping me on Slack today", language: .en)
             #expect(store.userEntries.isEmpty)
-            learn("open slack now", "open Slack now", language: .en)
+            learn("on slack now", "on Slack now", language: .en)
 
             #expect(store.userEntries.count == 1)
             let entry = store.userEntries[0]
@@ -160,6 +178,25 @@ extension SharedSettingsSuites {
             learn("Мы используем Kubernetes", "Мы используем кубер", noteId: noteId)
 
             #expect(store.userEntries.first?.variants[.ru] == ["кубернетес"])
+        }
+
+        @Test func revertedReplacementIsConsumed() {
+            let entry = store.addEntry(spelling: "Kubernetes", variants: [.ru: ["кубер"]], source: .manual)
+            let noteId = UUID()
+            store.recordReplacements([
+                AppliedReplacement(
+                    original: "кубер", replacement: "Kubernetes",
+                    entryKey: "user/\(entry.id.uuidString)", variant: "кубер", reason: .variant
+                )
+            ], noteId: noteId)
+
+            learn("Мы используем Kubernetes", "Мы используем кубер", noteId: noteId)
+            #expect(store.replacements(for: noteId).isEmpty)
+
+            // Вариант возвращён вручную: повторная правка не должна снять его снова.
+            store.updateEntry({ var e = store.userEntries[0]; e.variants[.ru] = ["кубер"]; return e }())
+            learn("Мы используем кубер", "Мы используем кубер тут", noteId: noteId)
+            #expect(store.userEntries.first?.variants[.ru] == ["кубер"])
         }
 
         @Test func reverseEditIgnoredWhenReplacementStillPresent() {

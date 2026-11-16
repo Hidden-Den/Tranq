@@ -61,7 +61,7 @@ final class DictionaryLearning {
         var seen = Set<String>()
         for pair in pairs {
             guard Self.isLearnablePair(pattern: pair.pattern, replacement: pair.replacement, language: language),
-                  !isCommonPattern(pair.pattern, replacement: pair.replacement, language: language) else { continue }
+                  !isGrammarFix(pair.pattern, replacement: pair.replacement, language: language) else { continue }
             let key = "\(language)|\(pair.pattern.lowercased())|\(pair.replacement)"
             guard seen.insert(key).inserted else { continue }
             register(pair, key: key, language: language)
@@ -71,6 +71,8 @@ final class DictionaryLearning {
     /// Замена отменена, если её текст исчез из правки, а исходный появился.
     private func undoReverted(original: String, edited: String, noteId: UUID, language: DictionaryLanguage) {
         let editedTokens = Self.tokens(edited)
+        var consumed: [AppliedReplacement] = []
+        defer { store.forgetReplacements(consumed, noteId: noteId) }
         for replacement in store.replacements(for: noteId) {
             let exact = replacement.reason == .caseFix
             let replacementTokens = Self.tokens(replacement.replacement)
@@ -78,53 +80,74 @@ final class DictionaryLearning {
             guard !Self.contains(editedTokens, replacementTokens, caseSensitive: exact),
                   Self.contains(editedTokens, originalTokens, caseSensitive: exact) else { continue }
             store.removeVariant(replacement.variant, language: language, fromEntryKey: replacement.entryKey)
+            consumed.append(replacement)
             AppLogger.shared.info("Dictionary", "Замена отменена правкой", details: "\(replacement.original) -> \(replacement.replacement)")
         }
     }
 
+    private enum Decision { case wait, capped, learn(isNew: Bool) }
+
     private func register(_ pair: (pattern: String, replacement: String), key: String, language: DictionaryLanguage) {
-        countersLock.lock()
-        defer { countersLock.unlock() }
-
-        var pending = store.defaults.dictionary(forKey: Keys.pendingPairs) as? [String: Int] ?? [:]
-        if pending.count >= Self.maxPendingPairs, pending[key] == nil { pending = [:] }
-        let count = (pending[key] ?? 0) + 1
-        guard count >= Self.repeatsToLearn else {
-            pending[key] = count
+        // Блокировка охватывает только счётчики: вызовы хранилища уходят на главный поток и идут уже без неё.
+        let decision: Decision = withCounters {
+            var pending = store.defaults.dictionary(forKey: Keys.pendingPairs) as? [String: Int] ?? [:]
+            if pending.count >= Self.maxPendingPairs, pending[key] == nil { pending = [:] }
+            let count = (pending[key] ?? 0) + 1
+            let isNew = !store.hasEntry(spelling: pair.replacement)
+            if count < Self.repeatsToLearn {
+                pending[key] = count
+                store.defaults.set(pending, forKey: Keys.pendingPairs)
+                return .wait
+            }
+            if isNew, learnedToday() >= Self.dailyCap {
+                pending[key] = count
+                store.defaults.set(pending, forKey: Keys.pendingPairs)
+                return .capped
+            }
+            pending[key] = nil
             store.defaults.set(pending, forKey: Keys.pendingPairs)
-            return
+            if isNew { incrementLearnedToday() }
+            return .learn(isNew: isNew)
         }
 
-        let caseOnly = pair.pattern.lowercased() == pair.replacement.lowercased()
-        let isNew = !store.hasEntry(spelling: pair.replacement)
-        if isNew, learnedToday() >= Self.dailyCap {
-            pending[key] = count
-            store.defaults.set(pending, forKey: Keys.pendingPairs)
+        switch decision {
+        case .wait:
+            return
+        case .capped:
             AppLogger.shared.info("Dictionary", "Дневной лимит обучения исчерпан", details: pair.replacement)
-            return
+        case .learn:
+            let caseOnly = pair.pattern.lowercased() == pair.replacement.lowercased()
+            let entry = store.addEntry(
+                spelling: pair.replacement,
+                variants: caseOnly ? [:] : [language: [pair.pattern]],
+                source: .learned,
+                forceCase: caseOnly
+            )
+            // Подкреплённая запись не должна попасть под удаление неиспользуемых за 60 дней.
+            store.touch(id: entry.id)
+            AppLogger.shared.info("Dictionary", "Слово выучено из правки", details: "\(pair.pattern) -> \(pair.replacement)")
         }
-
-        pending[key] = nil
-        store.defaults.set(pending, forKey: Keys.pendingPairs)
-
-        var entry = store.addEntry(
-            spelling: pair.replacement,
-            variants: caseOnly ? [:] : [language: [pair.pattern]],
-            source: .learned,
-            forceCase: caseOnly
-        )
-        // Подкреплённая запись не должна попасть под удаление неиспользуемых за 60 дней.
-        entry.lastUsed = now()
-        store.updateEntry(entry)
-        if isNew { incrementLearnedToday() }
-        AppLogger.shared.info("Dictionary", "Слово выучено из правки", details: "\(pair.pattern) -> \(pair.replacement)")
     }
 
-    private func isCommonPattern(_ pattern: String, replacement: String, language: DictionaryLanguage) -> Bool {
-        // Исправление регистра не создаёт вариант, поэтому обычное слово допустимо.
+    private func withCounters<T>(_ body: () -> T) -> T {
+        countersLock.lock()
+        defer { countersLock.unlock() }
+        return body()
+    }
+
+    /// Правка обычных слов в кириллическую форму с заглавной, например «давай» в «Давайте», это грамматика,
+    /// а не термин. Латиница и аббревиатуры допустимы: такой вариант срабатывает только в точной форме.
+    private func isGrammarFix(_ pattern: String, replacement: String, language: DictionaryLanguage) -> Bool {
         if pattern.lowercased() == replacement.lowercased() { return false }
         let words = pattern.split(separator: " ").map(String.init)
-        return !words.isEmpty && words.allSatisfy { checker.isCommonWord($0, language: language) }
+        guard !words.isEmpty, words.allSatisfy({ checker.isCommonWord($0, language: language) }) else { return false }
+        let hasLatin = replacement.contains { $0.isASCII && $0.isLetter }
+        return !hasLatin && !Self.isAcronym(replacement)
+    }
+
+    private static func isAcronym(_ text: String) -> Bool {
+        let chars = text.filter { !$0.isWhitespace }
+        return chars.count >= 2 && chars.allSatisfy { $0.isLetter || $0.isNumber } && !chars.contains(where: \.isLowercase)
     }
 
     // MARK: - Дневной лимит
@@ -186,9 +209,14 @@ final class DictionaryLearning {
         let lhs = original.replacingOccurrences(of: "\n", with: " ").split(separator: " ").map { cleanWord(String($0)) }
         let rhs = edited.replacingOccurrences(of: "\n", with: " ").split(separator: " ").map { cleanWord(String($0)) }
         guard lhs.count == rhs.count else { return [] }
-        return zip(lhs, rhs)
-            .filter { !$0.isEmpty && $0 != $1 && $0.lowercased() == $1.lowercased() }
-            .map { (pattern: $0, replacement: $1) }
+        // Первое слово текста и слово после . ! ? пишутся с заглавной по грамматике, а не по желанию пользователя.
+        let raw = original.replacingOccurrences(of: "\n", with: " ").split(separator: " ").map(String.init)
+        var pairs: [(pattern: String, replacement: String)] = []
+        for i in lhs.indices where !lhs[i].isEmpty && lhs[i] != rhs[i] && lhs[i].lowercased() == rhs[i].lowercased() {
+            let sentenceStart = i == 0 || raw[i - 1].last.map { ".!?".contains($0) } == true
+            if !sentenceStart { pairs.append((pattern: lhs[i], replacement: rhs[i])) }
+        }
+        return pairs
     }
 
     private static func tokens(_ text: String) -> [String] {

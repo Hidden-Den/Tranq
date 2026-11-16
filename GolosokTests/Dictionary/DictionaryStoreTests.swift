@@ -81,6 +81,27 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.first == merged)
         }
 
+        @Test func forgetReplacementsRemovesOnlyGivenOnes() {
+            let store = makeStore()
+            let noteId = UUID()
+            let a = AppliedReplacement(original: "кубер", replacement: "Kubernetes", entryKey: "it/Kubernetes", variant: "кубер", reason: .variant)
+            let b = AppliedReplacement(original: "гитхаб", replacement: "GitHub", entryKey: "it/GitHub", variant: "гитхаб", reason: .variant)
+            store.recordReplacements([a, b], noteId: noteId)
+
+            store.forgetReplacements([a], noteId: noteId)
+            #expect(store.replacements(for: noteId) == [b])
+            store.forgetReplacements([b], noteId: noteId)
+            #expect(store.replacements(for: noteId).isEmpty)
+        }
+
+        @Test func touchRefreshesLastUsedInPlace() {
+            let store = makeStore()
+            let added = store.addEntry(spelling: "Kubernetes", variants: [.ru: ["кубер"]], source: .learned)
+            store.touch(id: added.id)
+            #expect(store.userEntries[0].lastUsed != nil)
+            #expect(store.userEntries[0].variants == added.variants)
+        }
+
         @Test func removeVariantFromLearnedDeletesEntryWhenLast() {
             let store = makeStore()
             let learned = store.addEntry(spelling: "Kubernetes", variants: [.ru: ["кубер", "кубернетис"]], source: .learned)

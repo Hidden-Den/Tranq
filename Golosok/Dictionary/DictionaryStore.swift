@@ -161,6 +161,15 @@ final class DictionaryStore: ObservableObject {
         return withLock { entriesSnapshot.contains { $0.spelling.lowercased() == key } }
     }
 
+    /// Обновляет `lastUsed` записи на месте, в одном блоке на главном потоке, не трогая остальные поля.
+    func touch(id: UUID) {
+        onMain {
+            guard let i = userEntries.firstIndex(where: { $0.id == id }) else { return }
+            userEntries[i].lastUsed = now()
+            scheduleSave()
+        }
+    }
+
     func updateEntry(_ entry: DictionaryEntry) {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == entry.id }), userEntries[i] != entry else { return }
@@ -276,6 +285,17 @@ final class DictionaryStore: ObservableObject {
             while noteOrder.count > Self.maxRecordedNotes {
                 noteReplacements[noteOrder.removeFirst()] = nil
             }
+        }
+    }
+
+    /// Убирает учтённые замены заметки, например после того, как правка пользователя их отменила.
+    func forgetReplacements(_ replacements: [AppliedReplacement], noteId: UUID) {
+        guard !replacements.isEmpty else { return }
+        withLock {
+            guard var list = noteReplacements[noteId] else { return }
+            list.removeAll { replacements.contains($0) }
+            noteReplacements[noteId] = list.isEmpty ? nil : list
+            if list.isEmpty { noteOrder.removeAll { $0 == noteId } }
         }
     }
 
