@@ -19,6 +19,7 @@ final class DictionaryIndexTests: XCTestCase {
             PackEntry(spelling: "Node.js", variants: [:]),
             PackEntry(spelling: "Jira", variants: [.ru: ["джира"]]),
             PackEntry(spelling: "НДС", variants: [.ru: ["эндээс"]]),
+            PackEntry(spelling: "1С", variants: [.ru: ["одинэс"]]),
             PackEntry(spelling: "PostgreSQL", variants: [.ru: ["постгрес"]]),
         ]
     )
@@ -100,6 +101,7 @@ final class DictionaryIndexTests: XCTestCase {
 
     func testAcronymSwallowsEnding() {
         XCTAssertEqual(idx.apply(to: "без эндээса", language: .ru).text, "без НДС")
+        XCTAssertEqual(idx.apply(to: "в одинэсе", language: .ru).text, "в 1С")
     }
 
     func testCyrillicSpellingKeepsEnding() {
@@ -111,6 +113,8 @@ final class DictionaryIndexTests: XCTestCase {
     func testCommonWordVariantOnlyExactForm() {
         // пользовательская запись Python, вариант «питон», который словарный
         XCTAssertEqual(idx.apply(to: "питон и питона", language: .ru).text, "Python и питона")
+        // «питону» и «питоном» не словарные для проверки, их отсекает только словарность варианта
+        XCTAssertEqual(idx.apply(to: "к питону с питоном", language: .ru).text, "к питону с питоном")
     }
 
     func testCommonTokenIsNotTakenAsWordForm() {
@@ -191,6 +195,10 @@ final class DictionaryIndexTests: XCTestCase {
 
         let noVariant = makeIndex(packs: [devops], disabledVariants: ["devops/Kubernetes/кубер"])
         XCTAssertEqual(noVariant.apply(to: "кубер кубернетес кубера", language: .ru).text, "кубер Kubernetes кубера")
+
+        let noCaseFix = makeIndex(disabledVariants: ["devops/GitHub/github"])
+        XCTAssertEqual(noCaseFix.apply(to: "github гитхаб", language: .en).text, "github гитхаб")
+        XCTAssertEqual(noCaseFix.apply(to: "гитхаб", language: .ru).text, "GitHub")
 
         let noWord = makeIndex(disabledWords: ["devops/GitHub"])
         XCTAssertEqual(noWord.apply(to: "github", language: .en).text, "github")

@@ -47,13 +47,16 @@ struct DictionaryIndex {
                 let key = "\(pack.id)/\(entry.spelling)"
                 guard !disabledPackWords.contains(key) else { continue }
                 spellings.insert(entry.spelling)
+                // Отменённое исправление регистра выключает вариант «<packId>/<spelling>/<spelling в нижнем регистре>».
+                let caseFixDisabled = disabledPackVariants.contains("\(key)/\(entry.spelling.lowercased())")
                 for language in DictionaryLanguage.allCases {
                     let variants = (entry.variants[language] ?? []).filter {
                         !disabledPackVariants.contains("\(key)/\($0)")
                     }
                     builders[language]?.add(
                         spelling: entry.spelling, entryKey: key, variants: variants,
-                        caseFixEligible: !entry.commonIn.contains(language), language: language, checker: checker
+                        caseFixEligible: !caseFixDisabled && !entry.commonIn.contains(language),
+                        language: language, checker: checker
                     )
                 }
             }
@@ -269,11 +272,15 @@ struct DictionaryIndex {
         }
     }
 
-    /// Латинское написание или кириллическая аббревиатура заменяют всю словоформу.
+    /// Латинское написание или кириллическая аббревиатура, например НДС или 1С, заменяют всю словоформу.
     private static func swallowsEnding(_ spelling: String) -> Bool {
-        let hasCyrillic = spelling.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) }
-        guard hasCyrillic else { return true }
-        let letters = spelling.filter(\.isLetter)
-        return letters.count >= 2 && letters.allSatisfy(\.isUppercase)
+        guard spelling.contains(where: isCyrillic) else { return true }
+        return spelling.count >= 2
+            && spelling.allSatisfy { ($0.isLetter || $0.isNumber) && !$0.isLowercase }
+            && spelling.contains { isCyrillic($0) && $0.isUppercase }
+    }
+
+    private static func isCyrillic(_ c: Character) -> Bool {
+        c.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) }
     }
 }
