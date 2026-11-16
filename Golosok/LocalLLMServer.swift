@@ -72,6 +72,20 @@ final class LocalLLMServer {
             guard state == .ready else { return nil }
             return (port, apiKey)
         }
+        return await send(endpoint: endpoint, system: system, user: user, timeout: timeout)
+    }
+
+    /// Как `complete`, но ничего не запускает и не переключает: только готовый сервер с этой же моделью.
+    func completeIfReady(system: String, user: String, modelPath: String, timeout: TimeInterval) async -> String? {
+        let endpoint: (port: UInt16, key: String)? = queue.sync {
+            guard state == .ready, self.modelPath == modelPath, process?.isRunning == true else { return nil }
+            scheduleIdleStopLocked()
+            return (port, apiKey)
+        }
+        return await send(endpoint: endpoint, system: system, user: user, timeout: timeout)
+    }
+
+    private func send(endpoint: (port: UInt16, key: String)?, system: String, user: String, timeout: TimeInterval) async -> String? {
         guard let endpoint, let url = URL(string: "http://127.0.0.1:\(endpoint.port)/v1/chat/completions") else { return nil }
 
         var request = URLRequest(url: url, timeoutInterval: timeout)

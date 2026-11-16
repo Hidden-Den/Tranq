@@ -56,17 +56,11 @@ struct PackValidationTests {
             #expect(!words.isEmpty, "\(item.pack)/\(item.spelling): пустой вариант")
             #expect(item.variant == item.variant.lowercased(), "\(item.pack)/\(item.spelling): вариант не в нижнем регистре: \(item.variant)")
             for word in words {
-                let chars = Array(word)
-                let valid = chars.allSatisfy { $0.isLetter || $0.isNumber || "-./".contains($0) }
-                    && (chars.first.map { $0.isLetter || $0.isNumber } ?? false)
-                    && (chars.last.map { $0.isLetter || $0.isNumber } ?? false)
-                #expect(valid, "\(item.pack)/\(item.spelling): вариант не сопоставится: \(item.variant)")
+                #expect(VariantRules.isMatchableToken(String(word)), "\(item.pack)/\(item.spelling): вариант не сопоставится: \(item.variant)")
             }
             let script = item.language == .ru ? "кириллица" : "латиница"
-            let letters = item.variant.filter(\.isLetter)
-            let isCyrillic = letters.allSatisfy { $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }
-            let isLatin = letters.allSatisfy { $0.isASCII }
-            #expect(item.language == .ru ? isCyrillic : isLatin, "\(item.pack)/\(item.spelling): \(item.variant) не \(script)")
+            let scriptOK = item.language == .ru ? VariantRules.isCyrillic(item.variant) : VariantRules.isLatin(item.variant)
+            #expect(scriptOK, "\(item.pack)/\(item.spelling): \(item.variant) не \(script)")
         }
     }
 

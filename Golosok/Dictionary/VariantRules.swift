@@ -22,6 +22,10 @@ enum VariantRules {
         return chars.allSatisfy { $0.isLetter || $0.isNumber || "-./".contains($0) }
     }
 
+    static func hasCyrillic(_ text: String) -> Bool {
+        text.unicodeScalars.contains { (0x400...0x4FF).contains($0.value) }
+    }
+
     static func isCyrillic(_ text: String) -> Bool {
         text.filter(\.isLetter).allSatisfy { $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }
     }

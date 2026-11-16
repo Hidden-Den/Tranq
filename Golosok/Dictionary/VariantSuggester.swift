@@ -29,7 +29,7 @@ struct VariantSuggester {
     func instant(for spelling: String) -> [DictionaryLanguage: [String]] {
         let trimmed = spelling.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.contains(where: { $0.isASCII && $0.isLetter }),
-              !trimmed.contains(where: { $0.unicodeScalars.contains { (0x400...0x4FF).contains($0.value) } }) else { return [:] }
+              !VariantRules.hasCyrillic(trimmed) else { return [:] }
         let ru = Phonetics.transliterateToCyrillic(trimmed)
         let filtered = filter([ru], spelling: trimmed, language: .ru)
         return filtered.isEmpty ? [:] : [.ru: filtered]
@@ -40,7 +40,10 @@ struct VariantSuggester {
         var result = instant(for: trimmed)
         guard !trimmed.isEmpty, let llm, let reply = await llm.complete(system: Self.systemPrompt, user: trimmed),
               let parsed = Self.parse(reply) else { return result }
+        let hasCyrillic = VariantRules.hasCyrillic(trimmed)
         for language in DictionaryLanguage.allCases {
+            // Кириллическое написание: латинские варианты не нужны.
+            if hasCyrillic, language == .en { result[.en] = nil; continue }
             let merged = filter((result[language] ?? []) + (parsed[language] ?? []), spelling: trimmed, language: language)
             if merged.isEmpty { result[language] = nil } else { result[language] = merged }
         }
@@ -94,7 +97,7 @@ private struct LocalVariantLLM: VariantLLM {
     let modelPath: String
 
     func complete(system: String, user: String) async -> String? {
-        await LocalLLMServer.shared.complete(system: system, user: user, modelPath: modelPath, timeout: VariantSuggester.llmTimeout)
+        await LocalLLMServer.shared.completeIfReady(system: system, user: user, modelPath: modelPath, timeout: VariantSuggester.llmTimeout)
     }
 }
 

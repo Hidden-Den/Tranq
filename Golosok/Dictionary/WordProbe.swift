@@ -19,6 +19,12 @@ final class WordProbe: ObservableObject {
     private var peakDb: Float = -160
     private var lastLoudAt: TimeInterval?
     private var active = false
+    private var deadline: DispatchWorkItem?
+
+    deinit {
+        deadline?.cancel()
+        recorder.cancel()
+    }
 
     /// Пора останавливать: истёк лимит или после начала речи прошла тишина.
     static func shouldStop(elapsed: TimeInterval, peakDb: Float, lastLoudAt: TimeInterval?, now: TimeInterval) -> Bool {
@@ -67,8 +73,18 @@ final class WordProbe: ObservableObject {
         }
         if started {
             active = true
+            // Независимый предел: не зависит от колбэков измерителя.
+            let work = DispatchWorkItem { [weak self] in
+                guard let self, self.token == session, self.active else { return }
+                self.finish(spelling: spelling, session: session, completion: completion)
+            }
+            deadline = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.maxSeconds, execute: work)
         } else {
-            DispatchQueue.main.async { completion(.noise) }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.token == session else { return }
+                completion(.noise)
+            }
         }
     }
 
@@ -76,12 +92,16 @@ final class WordProbe: ObservableObject {
     func cancel() {
         token = UUID()
         active = false
+        deadline?.cancel()
+        deadline = nil
         recorder.cancel()
         level = -60
     }
 
     private func finish(spelling: String, session: UUID, completion: @escaping (WordProbeOutcome) -> Void) {
         active = false
+        deadline?.cancel()
+        deadline = nil
         let peak = peakDb
         guard let recording = recorder.stop() else {
             completion(.noise)

@@ -43,11 +43,30 @@ struct VariantSuggesterTests {
         #expect(nilResult == s.instant(for: "Kubernetes"))
     }
 
-    @Test func testNoLLMWhenModelNotLoaded() {
-        // В тестах локальный сервер не запущен, внешний провайдер по умолчанию не настроен.
-        let engine = VoiceIntelligenceSettings.shared.engine
-        defer { VoiceIntelligenceSettings.shared.engine = engine }
-        VoiceIntelligenceSettings.shared.engine = .airGapped
-        #expect(VariantSuggester.currentLLM() == nil)
+    @Test func testCyrillicSpellingDropsEnglishVariants() async {
+        let llm = MockLLM(reply: #"{"ru":["галосок"],"en":["golosok"]}"#)
+        let result = await VariantSuggester(checker: SetCommonWordChecker([:]), llm: llm).suggest(for: "Голосок")
+        #expect(result[.en] == nil)
+        #expect(result[.ru] == ["галосок"])
+    }
+}
+
+extension SharedSettingsSuites {
+    @MainActor struct VariantLLMAvailabilityTests {
+        @Test func testNoLLMWhenModelNotLoaded() {
+            let settings = VoiceIntelligenceSettings.shared
+            let engine = settings.engine
+            defer { settings.engine = engine }
+
+            settings.engine = .airGapped
+            #expect(VariantSuggester.currentLLM() == nil)
+
+            let store = AIProviderStore.shared
+            let baseURL = store.baseURL
+            defer { store.baseURL = baseURL }
+            store.baseURL = ""
+            settings.engine = .external
+            #expect(VariantSuggester.currentLLM() == nil)
+        }
     }
 }
