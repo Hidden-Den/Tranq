@@ -27,7 +27,6 @@ final class TermSuspectTests: XCTestCase {
             ("Мы работаем в BB, а не в Buce.", "BB", "B2B"),
             ("Мы работаем в BB, а не в Buce.", "Buce", "B2C"),
             ("Вопрос про CNT лучше задать HR-бизнес-партнёру.", "CNT", "C&B"),
-            ("Пришли Sk-запрос, я проверю.", "Sk", "SQL"),
             ("Выгрузи отчёт из Power B в PDF.", "Power B", "Power BI"),
         ]
         for (text, token, term) in cases {
@@ -72,6 +71,11 @@ final class TermSuspectTests: XCTestCase {
         let avito = suspects.first { $0.token == "Avito" }?.candidates ?? []
         XCTAssertTrue(Set(ozon).isDisjoint(with: ["Asana", "Suno", "УСН", "C&B"]), "\(ozon)")
         XCTAssertFalse(avito.contains("FTE"), "\(avito)")
+    }
+
+    /// Две буквы не заглавными слишком мало говорят о термине: «Sk» модель меняла то на SQL, то на SDK.
+    func testShortMixedCaseWordIsNotSuspect() {
+        XCTAssertEqual(index.termSuspects(in: "Пришли Sk-запрос, я проверю.", language: .ru), [])
     }
 
     func testCyrillicIsNotSuspect() {

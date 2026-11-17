@@ -234,6 +234,8 @@ struct DictionaryIndex {
         if word.unicodeScalars.first?.isASCII == true {
             if word.contains(" ") { return true }
             guard !approvedWordsLower.contains(lower) else { return false }
+            // Две буквы не заглавными слишком мало говорят о термине: «Sk» модель меняла то на SQL, то на SDK
+            if word.count <= 2 && word != word.uppercased() { return false }
             // Проверка орфографии принимает короткие аббревиатуры вроде «BB» за слова
             let shortAcronym = word.count <= 4 && word == word.uppercased()
             return shortAcronym || !checker.isCommonWord(word, language: .en)
