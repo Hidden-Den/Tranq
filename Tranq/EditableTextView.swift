@@ -19,7 +19,7 @@ struct EditableTextView: NSViewRepresentable {
         textView.isEditable = isEditable
         textView.isSelectable = true
         textView.drawsBackground = false
-        textView.font = NSFont.systemFont(ofSize: 15, weight: .regular)
+        textView.font = NSFont(name: "Inter-Regular", size: 15) ?? NSFont.systemFont(ofSize: 15, weight: .regular)
         textView.textColor = NSColor(Color.uiInk)
         textView.textContainerInset = NSSize(width: 0, height: 10)
         textView.allowsUndo = true

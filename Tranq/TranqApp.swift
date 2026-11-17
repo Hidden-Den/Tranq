@@ -61,6 +61,7 @@ struct TranqApp: App {
     @ObservedObject var theme = ThemeSettings.shared
 
     init() {
+        BrandFonts.registerAll()
         LanguageSettings.shared.apply()
         ThemeSettings.shared.apply()
         // Под тестами уборка тронула бы настоящие данные пользователя

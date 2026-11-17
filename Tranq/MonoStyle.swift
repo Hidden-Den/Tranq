@@ -83,7 +83,10 @@ enum UITextSize: CGFloat {
 
 extension Font {
     static func ui(_ size: UITextSize, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
-        .system(size: size.rawValue, weight: weight, design: design)
+        guard BrandFonts.usesInter(for: design) else {
+            return .system(size: size.rawValue, weight: weight, design: design)
+        }
+        return .custom(BrandFonts.interName(for: weight), size: size.rawValue)
     }
 }
 
