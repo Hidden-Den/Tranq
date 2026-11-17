@@ -92,21 +92,6 @@ final class HistoryStore: ObservableObject {
         DictionaryLearning.shared.learn(original: oldText, edited: text, noteId: id)
     }
 
-    func replaceRangeInNote(id: UUID, range: NSRange, newText: String) {
-        guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
-        let oldText = items[idx].text
-        let nsText = oldText as NSString
-        guard range.location != NSNotFound,
-              range.location >= 0,
-              range.length >= 0,
-              range.location <= nsText.length,
-              range.length <= nsText.length - range.location else { return }
-        let result = nsText.replacingCharacters(in: range, with: newText)
-        guard result != oldText else { return }
-        items[idx] = items[idx].withText(result)
-        DictionaryLearning.shared.learn(original: oldText, edited: result, noteId: id)
-    }
-
     func deleteItem(at index: Int) {
         guard items.indices.contains(index) else { return }
         let item = items.remove(at: index)

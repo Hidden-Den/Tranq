@@ -4,22 +4,6 @@ import UniformTypeIdentifiers
 
 enum MainTab { case vocabulary, history, settings }
 
-struct NoteSelection: Equatable {
-    let noteID: UUID
-    let range: NSRange
-    let screenRect: CGRect
-    let fullText: String
-    let selectedText: String
-
-    static func == (lhs: NoteSelection, rhs: NoteSelection) -> Bool {
-        lhs.noteID == rhs.noteID
-            && NSEqualRanges(lhs.range, rhs.range)
-            && lhs.screenRect == rhs.screenRect
-            && lhs.selectedText == rhs.selectedText
-            && lhs.fullText == rhs.fullText
-    }
-}
-
 struct DateFormattingHelper {
     private static let inputFormatter: DateFormatter = { let df = DateFormatter(); df.dateFormat = "dd.MM.yyyy"; return df }()
     private static let outputFormatter: DateFormatter = { let df = DateFormatter(); df.locale = Locale.current; df.dateFormat = "d MMMM yyyy"; return df }()
@@ -508,7 +492,6 @@ struct ContentView: View {
     @ObservedObject var playback = PlaybackController.shared
     @ObservedObject var preferences = AppPreferences.shared
     @ObservedObject var permissions = PermissionManager.shared
-    @ObservedObject var promptStore = PromptStore.shared
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     
@@ -525,15 +508,11 @@ struct ContentView: View {
     @State private var selectedTimings: (words: [TimedWord], duration: Double)?
     
     @State private var showAboutSheet = false
-    @State private var aiRequest: AIActionRequest?
-    @State private var showPromptManager = false
-    @State private var showCreatePrompt = false
 
     @State private var isEditing: Bool = false
     @State private var editableText: String = ""
     @State private var editingItemID: UUID?
     @State private var editSaveWorkItem: DispatchWorkItem?
-    @State private var currentSelection: NoteSelection?
 
     @State private var isSearchBarVisible: Bool = false
     @State private var transcriptSearchText: String = ""
@@ -845,25 +824,6 @@ struct ContentView: View {
                                         EditToggleButton(isEditing: isEditing) {
                                             if isEditing { commitEditing(for: selected) } else { beginEditing(selected) }
                                         }
-                                        UIDropdownMenu(items: {
-                                            var arr: [UIDropdownItem] = promptStore.templates.map { t in
-                                                let label: Text = t.isCustom ? Text(t.title) : Text(LocalizedStringKey(t.title))
-                                                return .action(text: label, icon: t.icon) {
-                                                    aiRequest = AIActionRequest(template: t, noteID: selected.id, noteText: selected.text)
-                                                }
-                                            }
-                                            arr.append(.divider)
-                                            arr.append(.action("Новый промпт…", icon: "plus") { showCreatePrompt = true })
-                                            arr.append(.action("Управлять промптами…", icon: "slider.horizontal.3") { showPromptManager = true })
-                                            return arr
-                                        }()) {
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "sparkles").font(.ui(.caption, weight: .medium))
-                                                Text("ИИ").font(.ui(.body, weight: .medium))
-                                                Image(systemName: "chevron.down").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray)
-                                            }
-                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(UIRadius.lg).overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
-                                        }.fixedSize(horizontal: true, vertical: false)
                                         UIDestructiveButton(title: "Удалить") { itemToDelete = selected.id; showingDeleteAlert = true }
                                     }.fixedSize(horizontal: true, vertical: false).layoutPriority(1)
                                 )
@@ -941,17 +901,11 @@ struct ContentView: View {
                             } else if let timings = selectedTimings {
                                 SyncedPlayerView(text: selected.text, words: timings.words, audioDuration: timings.duration, itemID: selected.id,
                                                  searchMatchWordIndices: cachedSyncedMatchIndices,
-                                                 currentMatchPosition: cachedSyncedMatchIndices.isEmpty ? -1 : currentMatchPosition,
-                                                 onSelectionChange: { range, rect in
-                                    handleNoteSelectionChange(range: range, screenRect: rect)
-                                })
+                                                 currentMatchPosition: cachedSyncedMatchIndices.isEmpty ? -1 : currentMatchPosition)
                             } else {
                                 NativeTextView(text: selected.text,
                                                searchRanges: cachedNativeMatchRanges,
-                                               currentMatchPosition: cachedNativeMatchRanges.isEmpty ? -1 : currentMatchPosition,
-                                               onSelectionChange: { range, rect in
-                                    handleNoteSelectionChange(range: range, screenRect: rect)
-                                })
+                                               currentMatchPosition: cachedNativeMatchRanges.isEmpty ? -1 : currentMatchPosition)
                             }
                         }
                     }
@@ -996,8 +950,6 @@ struct ContentView: View {
                 isEditing = false
                 editingItemID = nil
             }
-            if currentSelection != nil { currentSelection = nil }
-            AISelectionToolbarPresenter.shared.close()
             if let id = newId { selectedTimings = playback.timings(for: id) } else { selectedTimings = nil }
             isSearchBarVisible = false
             transcriptSearchText = ""
@@ -1007,8 +959,6 @@ struct ContentView: View {
         }
         .onChange(of: currentTab) { _ in
             if isEditing { flushPendingEdits(); isEditing = false; editingItemID = nil }
-            if currentSelection != nil { currentSelection = nil }
-            AISelectionToolbarPresenter.shared.close()
             isSearchBarVisible = false
             transcriptSearchText = ""
             cachedSyncedMatchIndices = []
@@ -1017,30 +967,12 @@ struct ContentView: View {
         }
         .onChange(of: isEditing) { editing in
             if editing {
-                if currentSelection != nil { currentSelection = nil }
-                AISelectionToolbarPresenter.shared.close()
                 isSearchBarVisible = false
                 transcriptSearchText = ""
                 cachedSyncedMatchIndices = []
                 cachedNativeMatchRanges = []
                 currentMatchPosition = 0
             }
-        }
-        .sheet(item: $aiRequest) { request in
-            AIResultSheet(request: request) { newID in
-                withAnimation {
-                    self.selectedItemId = newID
-                    self.searchText = ""
-                    self.selectedTimings = nil
-                }
-                historyStore.markAsRead(id: newID)
-            }
-        }
-        .sheet(isPresented: $showPromptManager) {
-            PromptManagerView()
-        }
-        .sheet(isPresented: $showCreatePrompt) {
-            PromptEditorView(prompt: nil)
         }
         .alert("Удалить запись?", isPresented: $showingDeleteAlert) {
             Button("Отмена", role: .cancel) { }
@@ -1215,50 +1147,6 @@ struct ContentView: View {
         editSaveWorkItem?.cancel()
         editSaveWorkItem = nil
         historyStore.replaceNoteText(id: id, text: editableText)
-    }
-
-    // MARK: - AI-обработка выделенного фрагмента
-
-    private func handleNoteSelectionChange(range: NSRange, screenRect: CGRect?) {
-        guard let selected = historyStore.items.first(where: { $0.id == selectedItemId }) else {
-            if currentSelection != nil { currentSelection = nil }
-            AISelectionToolbarPresenter.shared.close()
-            return
-        }
-        if range.location == NSNotFound || range.length == 0 {
-            if currentSelection != nil { currentSelection = nil }
-            AISelectionToolbarPresenter.shared.close()
-            return
-        }
-        let fullText = selected.text
-        let ns = fullText as NSString
-        guard range.location + range.length <= ns.length else {
-            if currentSelection != nil { currentSelection = nil }
-            AISelectionToolbarPresenter.shared.close()
-            return
-        }
-        let selectedText = ns.substring(with: range)
-        guard let rect = screenRect else { return }
-
-        let sel = NoteSelection(noteID: selected.id, range: range, screenRect: rect, fullText: fullText, selectedText: selectedText)
-        currentSelection = sel
-
-        AISelectionToolbarPresenter.shared.update(
-            anchorScreenRect: rect,
-            templates: promptStore.templates,
-            onPick: { tpl in openSelectionAI(with: tpl) },
-            onClose: { currentSelection = nil }
-        )
-    }
-
-    private func openSelectionAI(with template: AIPromptTemplate) {
-        guard let sel = currentSelection else { return }
-        aiRequest = AIActionRequest(
-            template: template,
-            noteID: sel.noteID,
-            noteText: sel.selectedText,
-            scope: .selection(range: sel.range, fullText: sel.fullText)
-        )
     }
 
     private func createNote() {

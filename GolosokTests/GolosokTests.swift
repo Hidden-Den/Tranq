@@ -202,78 +202,16 @@ struct GolosokTests {
     }
 }
 
-// MARK: - AI-обработка выделенного фрагмента
+// MARK: - История и модели
 
 @Suite(.serialized)
 @MainActor
-struct AISelectionStatefulTests {
-
-    @Test func aiRequestSelectionFlagsAreCorrect() {
-        let noteID = UUID()
-        let range = NSRange(location: 4, length: 6)
-        let fullText = "Это полный текст заметки."
-        let selectionReq = AIActionRequest(
-            template: AIPromptDefaults.template(id: "polish")!,
-            noteID: noteID,
-            noteText: "фрагмент",
-            scope: .selection(range: range, fullText: fullText)
-        )
-        let wholeReq = AIActionRequest(
-            template: AIPromptDefaults.template(id: "polish")!,
-            noteID: noteID,
-            noteText: fullText
-        )
-        #expect(selectionReq.scope.isSelection == true)
-        #expect(wholeReq.scope.isSelection == false)
-        #expect(selectionReq.scope.cacheKey == "sel_4_6")
-        #expect(wholeReq.scope.cacheKey == "")
-    }
-
-    @Test func aiCacheDistinguishesScopeForSameNoteTemplate() {
-        let cache = AICache.shared
-        cache.clear()
-        defer { cache.clear() }
-
-        let noteID = UUID()
-        let templateID = "polish"
-        let noteText = "Вся заметка целиком."
-        let fragText = "Только фрагмент."
-
-        cache.store(noteID: noteID, templateID: templateID, scopeID: "", text: noteText, result: "Whole result")
-        cache.store(noteID: noteID, templateID: templateID, scopeID: "sel_3_5", text: fragText, result: "Selection result")
-
-        #expect(cache.result(noteID: noteID, templateID: templateID, scopeID: "",         for: noteText) == "Whole result")
-        #expect(cache.result(noteID: noteID, templateID: templateID, scopeID: "sel_3_5", for: fragText) == "Selection result")
-        #expect(cache.result(noteID: noteID, templateID: templateID, scopeID: "",         for: fragText) == nil)
-        #expect(cache.result(noteID: noteID, templateID: templateID, scopeID: "sel_3_5", for: noteText) == nil)
-    }
+struct HistoryAndModelTests {
 
     /// История во временной папке: тесты не трогают настоящие заметки пользователя.
     static func makeIsolatedHistoryStore() -> HistoryStore {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("golosok-tests-\(UUID().uuidString)", isDirectory: true)
         return HistoryStore(directory: dir)
-    }
-
-    @Test func replaceRangeSwapsOnlyFragment() {
-        let store = Self.makeIsolatedHistoryStore()
-        let initial = "Первоначальный текст-фрагмент. Соседний абзац остаётся как есть."
-        let id = store.addNote(text: initial)
-        let ns = initial as NSString
-        let range = ns.range(of: "фрагмент")
-        #expect(range.location != NSNotFound)
-        store.replaceRangeInNote(id: id, range: range, newText: "кусок")
-        #expect(store.items.first(where: { $0.id == id })?.text == "Первоначальный текст-кусок. Соседний абзац остаётся как есть.")
-    }
-
-    @Test func replaceRangeWithInvalidRangeIsNoOp() {
-        let store = Self.makeIsolatedHistoryStore()
-        let initial = "Тестовый текст остаётся нетронутым."
-        let id = store.addNote(text: initial)
-        store.replaceRangeInNote(id: id, range: NSRange(location: 9999, length: 5), newText: "Вторжение")
-        #expect(store.items.first(where: { $0.id == id })?.text == initial)
-
-        store.replaceRangeInNote(id: id, range: NSRange(location: NSNotFound, length: 5), newText: "Вторжение")
-        #expect(store.items.first(where: { $0.id == id })?.text == initial)
     }
 
     // MARK: - ModelStore
