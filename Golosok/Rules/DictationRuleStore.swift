@@ -5,6 +5,7 @@ final class DictationRuleStore: ObservableObject {
     static let shared = DictationRuleStore(defaults: AppEnvironment.defaults)
 
     private static let key = "dictation.rules"
+    private static let backupKey = "dictation.rules.backup"
 
     @Published private(set) var rules: [DictationRule]
     private let defaults: UserDefaults
@@ -35,13 +36,30 @@ final class DictationRuleStore: ObservableObject {
         defaults.set(data, forKey: Self.key)
     }
 
+    /// Читает правила по одному: нечитаемая запись пропускается, остальные остаются.
+    /// Если что-то не прочиталось, исходные данные откладываются в резервный ключ раньше любой записи.
     private static func load(from defaults: UserDefaults) -> [DictationRule] {
         guard let data = defaults.data(forKey: key) else { return [] }
         do {
-            return try JSONDecoder().decode([DictationRule].self, from: data)
+            let items = try JSONDecoder().decode([Lossy<DictationRule>].self, from: data)
+            let rules = items.compactMap(\.value)
+            if rules.count != items.count {
+                defaults.set(data, forKey: backupKey)
+                AppLogger.shared.warn("Rules", "Часть правил приложений не прочиталась и пропущена", details: "прочитано \(rules.count) из \(items.count), копия в \(backupKey)")
+            }
+            return rules
         } catch {
+            defaults.set(data, forKey: backupKey)
             AppLogger.shared.warn("Rules", "Не удалось прочитать правила приложений", details: error.localizedDescription)
             return []
         }
+    }
+}
+
+/// Элемент массива, который не обрушивает чтение остальных.
+private struct Lossy<T: Decodable>: Decodable {
+    let value: T?
+    init(from decoder: Decoder) throws {
+        value = try? T(from: decoder)
     }
 }
