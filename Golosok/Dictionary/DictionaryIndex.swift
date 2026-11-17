@@ -8,9 +8,14 @@ struct FuzzyHit: Equatable {
 }
 
 /// Слово распознавания, похожее на искажённый термин, и термины словаря, похожие на него по звучанию.
-struct TermSuspect: Equatable {
-    let token: String
-    let candidates: [String]
+public struct TermSuspect: Equatable {
+    public let token: String
+    public let candidates: [String]
+
+    public init(token: String, candidates: [String]) {
+        self.token = token
+        self.candidates = candidates
+    }
 }
 
 /// Точная замена по вариантам, словоформы и исправление регистра.

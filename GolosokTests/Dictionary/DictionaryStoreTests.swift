@@ -267,6 +267,20 @@ extension SharedSettingsSuites {
 
         // MARK: - Подсказка модели
 
+        @Test func termHintFormat() {
+            let store = makeStore()
+            #expect(store.termHint([]) == "")
+            let hint = store.termHint([
+                TermSuspect(token: "IPI", candidates: ["API", "IPO"]),
+                TermSuspect(token: "BB", candidates: ["B2B", "P2P"]),
+            ])
+            #expect(hint == """
+            Распознавание могло исказить термины. Замени слово на термин, только если он подходит по смыслу фразы.
+            «IPI»: API, IPO
+            «BB»: B2B, P2P
+            """)
+        }
+
         @Test func promptHintCapsAtEightAndUsesLanguagePrefix() {
             let base = Date(timeIntervalSince1970: 1_000_000)
             #expect(makeStore().promptHint(firedSpellings: [], language: .ru) == "")

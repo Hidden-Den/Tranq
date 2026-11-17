@@ -80,6 +80,12 @@ public final class ThoughtSynthesizer {
         var system = Self.getSystemPrompt(for: level)
         let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
         if !dictionaryHint.isEmpty { system += "\n\n" + dictionaryHint }
+        let suspects = DictionaryStore.shared.index?.termSuspects(in: stageOne, language: language) ?? []
+        let termHint = DictionaryStore.shared.termHint(suspects)
+        if !termHint.isEmpty {
+            system += "\n\n" + termHint
+            AppLogger.shared.info("Pipeline", "Этап 2: подсказка терминов", details: termHint)
+        }
 
         let reply: String
         do {
@@ -105,7 +111,7 @@ public final class ThoughtSynthesizer {
         }
 
         let customTerms = DictionaryStore.shared.index?.approvedSpellings ?? []
-        switch GroundingValidator.validate(input: stageOne, output: cleaned, level: level, customTerms: customTerms) {
+        switch GroundingValidator.validate(input: stageOne, output: cleaned, level: level, customTerms: customTerms, termSuspects: suspects) {
         case .valid(let validated):
             AppLogger.shared.info("Pipeline", "Этап 2 завершён: модель очистила речь", details: "Итог: «\(validated)»")
             return CleanupResult(text: validated, fallback: nil)

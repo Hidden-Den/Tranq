@@ -133,6 +133,53 @@ struct LevelValidatorTests {
         #expect(sanitized("<|channel|>Я заберу ноутбук.<end_of_turn>") == "Я заберу ноутбук.")
     }
 
+    private let suspects = [TermSuspect(token: "IPI", candidates: ["API", "IPO"])]
+    private let terms: Set<String> = ["API", "IPO", "SDK", "Git"]
+
+    private func check(_ input: String, _ output: String, _ suspects: [TermSuspect]) -> ValidationResult {
+        GroundingValidator.validate(input: input, output: output, level: .clean, customTerms: terms, termSuspects: suspects)
+    }
+
+    @Test func suspectReplacedByCandidateIsValid() {
+        let result = check("Настрой IPI ключ для интеграции.", "Настрой API-ключ для интеграции.", suspects)
+        #expect(result == .valid(sanitizedText: "Настрой API-ключ для интеграции."))
+    }
+
+    @Test func suspectKeptIsStillValid() {
+        let result = check("Настрой IPI ключ для интеграции.", "Настрой IPI ключ для интеграции.", suspects)
+        #expect(result == .valid(sanitizedText: "Настрой IPI ключ для интеграции."))
+    }
+
+    @Test func suspectReplacedByOtherTermIsRejected() {
+        guard case .rejected(let reason) = check("Настрой IPI ключ для интеграции.", "Настрой SDK ключ для интеграции.", suspects) else {
+            Issue.record("замена не из списка кандидатов принята")
+            return
+        }
+        #expect(reason.hasPrefix("Пропущен исходный термин"))
+    }
+
+    @Test func droppedLatinWithoutSuspectIsRejected() {
+        guard case .rejected = check("Настрой IPI ключ для интеграции.", "Настрой API-ключ для интеграции.", []) else {
+            Issue.record("пропавшая латиница без подсказки принята")
+            return
+        }
+    }
+
+    @Test func cyrillicSuspectReplacedIsValid() {
+        let gid = [TermSuspect(token: "ГИД", candidates: ["Git"])]
+        let result = check("Подними версию в ГИД и поставь тег релиза.", "Подними версию в Git и поставь тег релиза.", gid)
+        #expect(result == .valid(sanitizedText: "Подними версию в Git и поставь тег релиза."))
+    }
+
+    @Test func twoWordSuspectReplacedIsValid() {
+        let power = [TermSuspect(token: "Power B", candidates: ["Power BI"])]
+        let result = GroundingValidator.validate(
+            input: "Выгрузи отчёт из Power B в PDF.", output: "Выгрузи отчёт из Power BI в PDF.",
+            level: .clean, customTerms: ["Power BI", "PDF"], termSuspects: power
+        )
+        #expect(result == .valid(sanitizedText: "Выгрузи отчёт из Power BI в PDF."))
+    }
+
     private func isValid(_ input: String, _ output: String) -> Bool {
         if case .valid = GroundingValidator.validate(input: input, output: output, level: .clean) { return true }
         return false

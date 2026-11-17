@@ -28,7 +28,8 @@ public struct GroundingValidator {
         input: String,
         output: String,
         level: CleanupLevel,
-        customTerms: Set<String> = []
+        customTerms: Set<String> = [],
+        termSuspects: [TermSuspect] = []
     ) -> ValidationResult {
         let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
         // Уровень A обходится без модели, проверять нечего
@@ -135,7 +136,9 @@ public struct GroundingValidator {
             // Латинские термины речи, как и числа, обязаны дожить до результата
             if isClean || isRewrite {
                 let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
-                if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) }) {
+                // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
+                let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
+                if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
                     return .rejected(reason: "Пропущен исходный термин \(missing)")
                 }
             }
@@ -194,6 +197,22 @@ public struct GroundingValidator {
         }
 
         return nil
+    }
+
+    /// Латинские слова подозрений в нижнем регистре, вместо которых в ответе стоит один из их кандидатов.
+    static func replacedSuspectWords(_ suspects: [TermSuspect], output: String) -> Set<String> {
+        var replaced = Set<String>()
+        for suspect in suspects {
+            let hasCandidate = suspect.candidates.contains { candidate in
+                let words = candidate.split(separator: " ").map { NSRegularExpression.escapedPattern(for: String($0)) }
+                let pattern = #"(?<![\p{L}\p{N}])"# + words.joined(separator: #"\s+"#) + #"(?![\p{L}\p{N}])"#
+                return output.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+            }
+            if hasCandidate {
+                replaced.formUnion(extractLatinTokens(from: suspect.token).map { $0.lowercased() })
+            }
+        }
+        return replaced
     }
 
     /// Слова в нижнем регистре без знаков препинания по краям; «ё» приравнивается к «е».
@@ -317,7 +336,8 @@ public struct GroundingValidator {
     }
 
     private static func extractLatinTokens(from text: String) -> Set<String> {
-        let pattern = #"\b[A-Za-z][A-Za-z0-9_-]*\b"#
+        // Дефис входит в слово, только если за ним снова латиница: «API-ключ» даёт API, а не «API-»
+        let pattern = #"\b[A-Za-z][A-Za-z0-9_]*(?:-[A-Za-z0-9_]+)*\b"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let nsString = text as NSString
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
