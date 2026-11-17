@@ -1,4 +1,4 @@
-# Golosok: Local Speech Recognition for macOS
+# Golosok: Clean Voice Dictation for macOS
 
 > **Read this in another language: [Русский](README_RU.md)**
 
@@ -17,39 +17,39 @@
 > At this stage, architecture and interfaces are undergoing rapid changes: certain features may be unstable, and parts of the original repository functionality may be removed or completely rewritten in upcoming releases.
 > The app is being reshaped for new workflows. Current development efforts are strictly focused on perfecting and polishing the **macOS** version. Once all core features are refined and stable, cross-platform porting to **Windows** and **Linux** will follow.
 
-Native voice dictation and offline audio transcription powered by Sber GigaAM v3 and Whisper (Large-v3 Turbo / Medium). Hardware-accelerated inference for Apple Silicon. Local speech recognition is 100% offline; optional AI post-processing connects directly to your chosen provider or local Ollama. Zero telemetry, zero external tracking.
+Voice dictation for macOS. Press a key, speak, and clean, concise text lands in the active field — without filler words, slips, or repeated thoughts. Speech is recognized on-device by Sber GigaAM v3; text cleanup runs on the language model of your choice: local and offline, an external API, or a corporate gateway. No telemetry.
+
+The app targets Russian speech with Latin-script technical terms.
 
 ---
 
-## Architecture & Capabilities
+## Capabilities
 
-* **Local Speech Recognition (100% Offline):** Speech-to-text inference runs entirely on-device without internet access. Audio streams never leave your Mac. Zero telemetry, analytics, or background tracking.
-* **Autonomous Air-Gapped SLM Synthesis (100% Offline):** On-device thought cleanup and structuring powered by local Small Language Models (QVikhr 2.5 1.5B, Qwen 2.5 1.5B / 0.5B, Llama 3.2 1B) accelerated via Metal GPU on Apple Silicon without network calls.
-* **Adaptive Learning & Speech Style Personalization:** On-the-fly learning from spoken terminology and manual user corrections without cloud fine-tuning.
-* **Pre-seeded IT, Management & Business Knowledge Base:** Built-in catalog of hundreds of terms and phonetic speech corrections with inline editing.
-* **Direct Input:** Press your global hotkey (default `⌥ + Space`, or single key `Fn`) — dictate — text is inserted directly under your active cursor in any application (VS Code, Notion, Telegram, Xcode, Obsidian, Slack, browsers).
-* **Hardware Acceleration:** Neural network models run on Apple Silicon (M1–M5) leveraging Core ML, Apple Neural Engine (ANE), and Metal Performance Shaders without CPU overheating.
-* **Dual Operation Modes:**
-  * **Toggle (Переключение):** Press once to start recording, press again to stop, transcribe, and insert.
-  * **Push-to-Talk (Рация):** Hold key down while speaking, release to transcribe and paste immediately.
-* **Offline Batch Transcription:** Transcribe audio and video recordings of any length (MP3, WAV, M4A, AAC, FLAC, OGG, OPUS, MP4, MOV, WebM, MKV).
-* **Direct External AI Post-Processing (Optional):** Clean up punctuation, summarize, or translate transcriptions via direct Bring-Your-Own-Key connections (OpenAI, Groq, DeepSeek) requiring network access, or 100% locally via Ollama. Zero intermediate proxy servers.
+* **Offline recognition.** GigaAM v3 runs on-device; audio never leaves your Mac. Whisper Large-v3 Turbo and Medium are available as alternatives.
+* **Speech cleanup.** By default it removes filler words, self-corrections, and repeated thoughts while keeping the speaker's own words and facts. Numbers, names, and terms are guarded by a validator: if the model drops or invents something, the text is inserted without its edits.
+* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech.
+* **Prompt mode.** Your hotkey with Shift turns one dictation into a request for an AI assistant. Enabled in Settings.
+* **Three processing options:**
+  * local models without network access, with a recommendation based on your Mac's memory;
+  * an external API: OpenRouter, OpenAI, Anthropic, DeepSeek, Ollama;
+  * an OpenAI-compatible corporate gateway. If it is unreachable, for example with VPN off, the text is inserted without cleanup and the overlay shows a notice.
+* **Terms.** Built-in dictionaries for IT, business, HR, finance, and more. Latin terms stay in Latin script, Russian abbreviations stay in Cyrillic. The dictionary learns from your note edits.
+* **Insertion under the cursor** in any app. Two hotkey modes: toggle and push-to-talk.
+* **History.** Notes with the final text, the raw transcript, and the voice recording. Edit text in place.
 
 ---
 
-## Technical Specifications & Stack
+## Technical Specifications
 
 | Component | Specification |
 | :--- | :--- |
-| **OS** | macOS 13.5+ (Ventura, Sonoma, Sequoia) |
-| **Architecture** | Apple Silicon (arm64: M1 / M2 / M3 / M4 / M5) |
+| **OS** | macOS 13.5+ |
+| **Architecture** | Apple Silicon |
 | **Languages & Frameworks** | Swift 5.9+, SwiftUI, AppKit |
-| **Speech Models** | GigaAM v3 RNN-T (GGUF Q8_0) / Whisper Large-v3 Turbo / Whisper Medium (Q5) |
-| **Acceleration Engines** | Core ML / Apple Neural Engine (ANE) / MPS |
-| **HotKey Subsystem** | Carbon Event Manager (combos) + Quartz CGEventTap (modifiers like `Fn`) |
-| **Memory Footprint** | ~70 MB idle / ~100 MB active inference |
-| **Telemetry & Analytics** | None (Completely removed) |
-| **Distribution Format** | Compressed `.dmg` disk image (~260 MB) |
+| **Speech Models** | GigaAM v3 RNN-T, Whisper Large-v3 Turbo, Whisper Medium |
+| **Local Cleanup** | llama-server with Gemma 4 and T-lite models |
+| **HotKey Subsystem** | Carbon Event Manager for combos, CGEventTap for modifiers and `Fn` |
+| **Telemetry** | None |
 
 ---
 
@@ -83,7 +83,8 @@ xattr -cr /Applications/Golosok.app
   * In **Toggle** mode: 1st press starts recording, 2nd press finalizes transcription and pastes text.
   * In **Push-to-Talk** mode: Hold key to record, release to transcribe.
 * **`ESC`:** Cancels recording immediately without saving or pasting.
-* **Menu Bar Status Icon:** Access recent dictation history, copy snippets, and open settings.
+* **Hotkey with Shift:** Runs one dictation in prompt mode, when enabled.
+* **Menu Bar Status Icon:** Open the app and settings.
 
 ---
 

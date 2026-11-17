@@ -1,3 +1,6 @@
+> [!WARNING]
+> Устарело. Актуальные решения: `docs/superpowers/specs/2026-11-17-dictation-focus-design.md`.
+
 # «Голосок»: план реализации Voice Intelligence & Thought Synthesis
 
 Дата: Ноябрь 2026.  
