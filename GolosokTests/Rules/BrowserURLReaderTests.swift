@@ -24,12 +24,12 @@ struct BrowserURLReaderTests {
 
     @Test func browserReturnsNormalizedHost() async {
         let fake = FakeURLSource(url: URL(string: "https://www.Mail.Company.ru/inbox")!)
-        #expect(await BrowserURLReader.readHost(pid: 1, bundleId: "com.google.Chrome", source: fake) == "mail.company.ru")
+        #expect(await BrowserURLReader.readHost(pid: 1, bundleId: "com.google.Chrome", source: fake, deadline: 5) == "mail.company.ru")
     }
 
     @Test func browserWithoutURLGivesNil() async {
         let fake = FakeURLSource(url: nil)
-        #expect(await BrowserURLReader.readHost(pid: 1, bundleId: "com.apple.Safari", source: fake) == nil)
+        #expect(await BrowserURLReader.readHost(pid: 1, bundleId: "com.apple.Safari", source: fake, deadline: 5) == nil)
     }
 
     @Test func hangingBrowserGivesUpByDeadline() async {

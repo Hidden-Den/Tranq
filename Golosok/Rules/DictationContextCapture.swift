@@ -22,8 +22,12 @@ final class DictationContextCapture {
     private var hostTask: Task<String?, Never>?
     private var generation = 0
 
-    init(source: FocusedURLSource = AccessibilityURLSource()) {
+    private let readDeadline: TimeInterval
+
+    /// `readDeadline` — сколько ждать адрес вкладки; тесты увеличивают его, чтобы не зависеть от нагрузки.
+    init(source: FocusedURLSource = AccessibilityURLSource(), readDeadline: TimeInterval = 0.3) {
         self.source = source
+        self.readDeadline = readDeadline
     }
 
     /// `onHost` вызывается один раз, если запись за это время не сменилась новой.
@@ -33,6 +37,7 @@ final class DictationContextCapture {
         onHost: ((String?) -> Void)? = nil
     ) {
         let source = self.source
+        let readDeadline = self.readDeadline
         let current = lock.withLock { () -> Int in
             generation += 1
             bundleId = app?.bundleId
@@ -44,7 +49,7 @@ final class DictationContextCapture {
             return
         }
         let task = Task<String?, Never> { [weak self] in
-            let host = await BrowserURLReader.readHost(pid: app.pid, bundleId: app.bundleId, source: source)
+            let host = await BrowserURLReader.readHost(pid: app.pid, bundleId: app.bundleId, source: source, deadline: readDeadline)
             if let self, self.isCurrent(current) { onHost?(host) }
             return host
         }

@@ -12,7 +12,7 @@ struct DictationContextCaptureTests {
 
     @Test func contextFrozenAtBegin() async {
         let fake = FakeURLSource(url: URL(string: "https://mail.company.ru")!)
-        let capture = DictationContextCapture(source: fake)
+        let capture = DictationContextCapture(source: fake, readDeadline: 5)
         capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: true)
         // Ждём, пока адрес реально прочитан, а не фиксированное время: под нагрузкой чтение может задержаться
         let deadline = Date().addingTimeInterval(5)
@@ -33,14 +33,14 @@ struct DictationContextCaptureTests {
 
     @Test func nonBrowserHasNoHost() async {
         let fake = FakeURLSource(url: URL(string: "https://x.ru")!)
-        let capture = DictationContextCapture(source: fake)
+        let capture = DictationContextCapture(source: fake, readDeadline: 5)
         capture.begin(app: (pid: 1, bundleId: "org.telegram.desktop"), promptRequested: false)
         #expect(await capture.finish() == DictationContext(bundleId: "org.telegram.desktop", host: nil, promptRequested: false))
         #expect(fake.calls == 0)
     }
 
     @Test func frozenContextSurvivesNewBegin() async {
-        let capture = DictationContextCapture(source: FakeURLSource(url: URL(string: "https://mail.company.ru")!))
+        let capture = DictationContextCapture(source: FakeURLSource(url: URL(string: "https://mail.company.ru")!), readDeadline: 5)
         capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: true)
         let frozen = capture.freeze()
         capture.begin(app: (pid: 2, bundleId: "org.telegram.desktop"), promptRequested: false)
@@ -49,7 +49,7 @@ struct DictationContextCaptureTests {
 
     @Test func hostCallbackFiresOnceForCurrentRecording() async {
         let fake = FakeURLSource(url: URL(string: "https://mail.company.ru")!)
-        let capture = DictationContextCapture(source: fake)
+        let capture = DictationContextCapture(source: fake, readDeadline: 5)
         let received = HostBox()
         capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: false, onHost: { received.append($0) })
         _ = await capture.finish()
@@ -58,12 +58,13 @@ struct DictationContextCaptureTests {
     }
 
     @Test func staleHostCallbackIsIgnored() async {
-        let slow = FakeURLSource(url: URL(string: "https://mail.company.ru")!, delay: 0.15)
-        let capture = DictationContextCapture(source: slow)
+        let capture = DictationContextCapture(source: FakeURLSource(url: URL(string: "https://mail.company.ru")!, delay: 0.05), readDeadline: 5)
         let first = HostBox()
         capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: false, onHost: { first.append($0) })
+        let finishingFirst = capture.freeze()
         capture.begin(app: (pid: 2, bundleId: "org.telegram.desktop"), promptRequested: false)
-        try? await Task.sleep(for: .milliseconds(400))
+        // Ждём конец первого чтения вместе с решением, вызывать ли колбэк: без пауз на удачу
+        _ = await finishingFirst.resolve()
         #expect(first.values.isEmpty)
     }
 
