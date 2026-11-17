@@ -42,6 +42,17 @@ struct VoiceIntelligencePhase2Tests {
         #expect(normalized.contains("15:30") || normalized.contains("15 30"))
     }
 
+    @Test func normalizerKeepsOrdinalsOutsideDatesAsWords() {
+        #expect(NumberNormalizer.normalize("Я бы взял вторую кандидатку.") == "Я бы взял вторую кандидатку.")
+        #expect(NumberNormalizer.normalize("Не работает уже третий день.") == "Не работает уже третий день.")
+        #expect(NumberNormalizer.normalize("Дедлайн первое марта.").contains("1 марта"))
+    }
+
+    @Test func normalizerKeepsScaleAfterFractionWord() {
+        #expect(NumberNormalizer.normalize("Бюджет полтора миллиона.") == "Бюджет полтора миллиона.")
+        #expect(NumberNormalizer.normalize("Бюджет два миллиона.").contains("2000000"))
+    }
+
     @Test func normalizerPreservesExistingDigits() {
         let input = "Счет номер 40817810 и сумма 500 рублей."
         let normalized = NumberNormalizer.normalize(input)
