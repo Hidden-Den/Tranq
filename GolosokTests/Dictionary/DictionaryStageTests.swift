@@ -100,4 +100,25 @@ final class DictionaryStageTests: XCTestCase {
         XCTAssertTrue(store.replacements(for: noteId).isEmpty)
         XCTAssertEqual(store.userEntries.first { $0.id == kubernetes.id }?.hits, 0)
     }
+
+    func testSafetyPassDoesNotCountHitsAgain() {
+        let store = makeStore()
+        let grafana = store.addEntry(spelling: "Grafana", variants: [.ru: ["графана"]], source: .manual)
+        store.waitForIndex()
+        let noteId = UUID()
+
+        _ = DictionaryStage.apply("открой графана", noteId: noteId, language: .ru, store: store)
+        // Модель вернула вариант снова: повторный проход заменяет, но не считает срабатывание заново.
+        let second = DictionaryStage.apply("Открой графана.", noteId: noteId, language: .ru, store: store, warnIfNotReady: false)
+
+        XCTAssertEqual(second.text, "Открой Grafana.")
+        XCTAssertEqual(store.userEntries.first { $0.id == grafana.id }?.hits, 1)
+        XCTAssertEqual(store.replacements(for: noteId).count, 1)
+        _ = DictionaryStage.apply("Графана", noteId: noteId, language: .ru, store: store, warnIfNotReady: false)
+        XCTAssertEqual(store.userEntries.first { $0.id == grafana.id }?.hits, 1)
+
+        // Другая заметка считается отдельно.
+        _ = DictionaryStage.apply("открой графана", noteId: UUID(), language: .ru, store: store)
+        XCTAssertEqual(store.userEntries.first { $0.id == grafana.id }?.hits, 2)
+    }
 }

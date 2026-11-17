@@ -253,4 +253,30 @@ final class DictionaryIndexTests: XCTestCase {
         XCTAssertLessThan(medianRu, 0.001, "ru median \(medianRu)")
         XCTAssertLessThan(medianEn, 0.001, "en median \(medianEn)")
     }
+
+    /// Записывает слова, которые индекс проверил по словарю.
+    private final class RecordingChecker: CommonWordChecking {
+        private let lock = NSLock()
+        private var words: [String] = []
+        var checked: [String] { lock.lock(); defer { lock.unlock() }; return words }
+
+        func isCommonWord(_ word: String, language: DictionaryLanguage) -> Bool {
+            lock.lock(); words.append(word.lowercased()); lock.unlock()
+            return false
+        }
+    }
+
+    func testPackVariantsAreNotSpellChecked() {
+        let recorder = RecordingChecker()
+        let index = DictionaryIndex(
+            userEntries: [user("Grafana", ru: ["графана"])], packs: [devops],
+            disabledPacks: [], disabledPackWords: [], disabledPackVariants: [], checker: recorder
+        )
+        XCTAssertTrue(recorder.checked.contains("графана"))
+        for word in ["кубер", "кубернетес", "гитхаб", "джира", "эндээс", "одинэс", "постгрес", "слак", "эн"] {
+            XCTAssertFalse(recorder.checked.contains(word), word)
+        }
+        // Словоформы варианта набора по-прежнему работают.
+        XCTAssertEqual(index.apply(to: "в джире", language: .ru).text, "в Jira")
+    }
 }

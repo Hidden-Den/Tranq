@@ -24,8 +24,11 @@ enum DictionaryStage {
         let result = index.apply(to: text, language: language)
         guard !result.replacements.isEmpty else { return (text, []) }
 
+        // Повторный проход той же заметки не считает срабатывание второй раз,
+        // даже если модель изменила регистр исходного слова.
+        let counted = Set(store.replacements(for: noteId).map(hitKey))
         store.recordReplacements(result.replacements, noteId: noteId)
-        store.registerHits(result.replacements)
+        store.registerHits(result.replacements.filter { !counted.contains(hitKey($0)) })
 
         var seen = Set<String>()
         var fired: [String] = []
@@ -57,6 +60,10 @@ enum DictionaryStage {
             )
         }
         return hits
+    }
+
+    private static func hitKey(_ replacement: AppliedReplacement) -> String {
+        "\(replacement.entryKey)|\(replacement.variant.lowercased())"
     }
 
     private static func reasonTitle(_ reason: AppliedReplacement.Reason) -> String {

@@ -231,12 +231,24 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
+    /// Удаляет выученные записи, счётчики обучения и выключенные варианты наборов.
     func resetLearned() {
         onMain {
+            defaults.removeObject(forKey: DictionaryLearning.Keys.pendingPairs)
+            defaults.removeObject(forKey: DictionaryLearning.Keys.learnedToday)
             let kept = userEntries.filter { $0.source != .learned }
-            guard kept.count != userEntries.count else { return }
-            userEntries = kept
-            entriesChanged()
+            let entriesChange = kept.count != userEntries.count
+            let variantsChange = !disabledPackVariants.isEmpty
+            if variantsChange {
+                disabledPackVariants = []
+                defaults.removeObject(forKey: Keys.disabledPackVariants)
+            }
+            if entriesChange {
+                userEntries = kept
+                entriesChanged()
+            } else if variantsChange {
+                rebuildIndex()
+            }
         }
     }
 

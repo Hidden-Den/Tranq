@@ -11,6 +11,18 @@ final class SpellCommonWordChecker: CommonWordChecking {
 
     /// Общий для всех экземпляров: `NSSpellChecker.shared` один на процесс.
     private static let spellLock = NSLock()
+    /// Найденные коды языков проверки, под `spellLock`. Недоступный язык ищется снова: словарь может появиться позже.
+    private static var languageCodes: [DictionaryLanguage: String] = [:]
+
+    /// Прогрев на главном потоке при запуске: первое обращение к `NSSpellChecker.shared` дорогое
+    /// и иначе случилось бы при сборке индекса или в окне добавления.
+    func warmUp() {
+        Self.spellLock.lock()
+        defer { Self.spellLock.unlock() }
+        for language in DictionaryLanguage.allCases {
+            _ = Self.languageCode(language, checker: NSSpellChecker.shared)
+        }
+    }
 
     private let lock = NSLock()
     private var cache: [String: Bool] = [:]
@@ -33,15 +45,21 @@ final class SpellCommonWordChecker: CommonWordChecking {
         return result
     }
 
+    /// Вызывается под `spellLock`.
+    private static func languageCode(_ language: DictionaryLanguage, checker: NSSpellChecker) -> String? {
+        if let code = languageCodes[language] { return code }
+        let code = checker.availableLanguages.first { $0.hasPrefix(language.rawValue) }
+        if let code { languageCodes[language] = code }
+        return code
+    }
+
     /// `nil`, если язык недоступен в системе.
     private static func check(_ word: String, language: DictionaryLanguage) -> Bool? {
         guard !word.isEmpty else { return false }
         spellLock.lock()
         defer { spellLock.unlock() }
         let checker = NSSpellChecker.shared
-        guard let code = checker.availableLanguages.first(where: { $0.hasPrefix(language.rawValue) }) else {
-            return nil
-        }
+        guard let code = languageCode(language, checker: checker) else { return nil }
         let range = checker.checkSpelling(
             of: word, startingAt: 0, language: code, wrap: false,
             inSpellDocumentWithTag: 0, wordCount: nil

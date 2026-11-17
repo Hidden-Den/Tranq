@@ -166,6 +166,26 @@ extension SharedSettingsSuites {
             #expect(store.userEntries.map(\.spelling) == ["GitHub"])
         }
 
+        @Test func resetLearnedClearsLearningStateAndDisabledPackVariants() {
+            let store = makeStore(packs: [pack])
+            store.addEntry(spelling: "GitHub", variants: [.ru: ["гитхаб"]], source: .manual)
+            store.removeVariant("кубер", language: .ru, fromEntryKey: "it/Kubernetes")
+            defaults.set(["ru|кубер|Kubernetes": 1], forKey: "dictionary.pendingPairs")
+            defaults.set(["day": "2026-11-17", "count": 3] as [String: Any], forKey: "dictionary.learnedToday")
+            #expect(!store.disabledPackVariants.isEmpty)
+
+            store.resetLearned()
+
+            #expect(store.disabledPackVariants.isEmpty)
+            #expect(defaults.object(forKey: "dictionary.disabledPackVariants") == nil
+                || defaults.stringArray(forKey: "dictionary.disabledPackVariants") == [])
+            #expect(defaults.object(forKey: "dictionary.pendingPairs") == nil)
+            #expect(defaults.object(forKey: "dictionary.learnedToday") == nil)
+            #expect(store.userEntries.map(\.spelling) == ["GitHub"])
+            store.waitForIndex()
+            #expect(store.index?.apply(to: "кубер", language: .ru).text == "Kubernetes")
+        }
+
         // MARK: - Файлы
 
         @Test func corruptMainFileFallsBackToBackup() throws {

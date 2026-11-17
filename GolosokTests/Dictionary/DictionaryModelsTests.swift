@@ -53,4 +53,23 @@ final class DictionaryModelsTests: XCTestCase {
         XCTAssertTrue(c.isCommonWord("Slack", language: .en))
         XCTAssertFalse(c.isCommonWord("slack", language: .ru))
     }
+
+    func testUnknownLanguageKeysAreDropped() throws {
+        let packJSON = #"{"id":"it","title":{"ru":"IT","de":"IT DE"},"version":1,"entries":[{"spelling":"Kubernetes","variants":{"ru":["кубер"],"de":["kuba"]},"commonIn":["de","en"]}]}"#
+        let pack = try JSONDecoder().decode(DictionaryPack.self, from: Data(packJSON.utf8))
+        XCTAssertEqual(pack.title, [.ru: "IT"])
+        XCTAssertEqual(pack.entries[0].variants, [.ru: ["кубер"]])
+        XCTAssertEqual(pack.entries[0].commonIn, [.en])
+
+        let entryJSON = #"{"id":"9F1C8C42-7B39-4C5B-9E0D-2A1B3C4D5E6F","spelling":"Grafana","variants":{"ru":["графана"],"de":["grafana"]},"source":"manual","forceCase":false,"createdAt":0,"hits":2}"#
+        let entry = try JSONDecoder().decode(DictionaryEntry.self, from: Data(entryJSON.utf8))
+        XCTAssertEqual(entry.variants, [.ru: ["графана"]])
+        XCTAssertEqual(entry.hits, 2)
+
+        // Кодирование прежнее: объект с ключами языков.
+        let data = try JSONEncoder().encode(entry)
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual((obj["variants"] as? [String: Any])?["ru"] as? [String], ["графана"])
+        XCTAssertEqual(try JSONDecoder().decode(DictionaryEntry.self, from: data), entry)
+    }
 }

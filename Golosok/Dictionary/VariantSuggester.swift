@@ -55,11 +55,18 @@ struct VariantSuggester {
         var out: [String] = []
         for item in raw {
             guard let variant = VariantRules.accepted(item, spelling: spelling, language: language, checker: checker),
+                  !isCommonPhrase(variant, language: language),
                   seen.insert(variant).inserted else { continue }
             out.append(variant)
             if out.count == Self.maxPerLanguage { break }
         }
         return out
+    }
+
+    /// Фраза из одних обычных слов. Наборам такая допустима после проверки корпусами, автоподбору нет.
+    private func isCommonPhrase(_ variant: String, language: DictionaryLanguage) -> Bool {
+        let words = variant.split(separator: " ").map(String.init)
+        return words.count > 1 && words.allSatisfy { checker.isCommonWord($0, language: language) }
     }
 
     /// Строгий JSON `{"ru":[…],"en":[…]}`; допускается обёртка из кодового блока. Иначе nil.

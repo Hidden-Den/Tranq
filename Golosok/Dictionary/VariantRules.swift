@@ -38,7 +38,8 @@ enum VariantRules {
     static func accepted(_ raw: String, spelling: String, language: DictionaryLanguage, checker: CommonWordChecking) -> String? {
         let variant = raw.lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
         let words = variant.split(separator: " ").map(String.init)
-        guard (1...4).contains(words.count), variant != spelling.lowercased() else { return nil }
+        // Одна буква, например «c» для C#, совпадает со слишком многими словами.
+        guard (1...4).contains(words.count), variant.count >= 2, variant != spelling.lowercased() else { return nil }
         guard words.allSatisfy(isMatchableToken) else { return nil }
         guard variant.contains(where: \.isLetter), language == .ru ? isCyrillic(variant) : isLatin(variant) else { return nil }
         guard !denied.contains(variant) else { return nil }

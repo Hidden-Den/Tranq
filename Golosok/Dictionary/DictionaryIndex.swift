@@ -77,10 +77,11 @@ struct DictionaryIndex {
                     let variants = (entry.variants[language] ?? []).filter {
                         !disabledPackVariants.contains("\(key)/\($0)")
                     }
+                    // Варианты наборов проверены PackValidationTests: словарными они не бывают.
                     builders[language]?.add(
                         spelling: entry.spelling, entryKey: key, variants: variants,
                         caseFixEligible: !caseFixDisabled && !entry.commonIn.contains(language),
-                        language: language, checker: checker
+                        language: language, checker: nil
                     )
                 }
             }
@@ -369,9 +370,10 @@ struct DictionaryIndex {
         var isEmpty: Bool { exact.isEmpty && caseFix.isEmpty }
 
         /// Записи добавляются в порядке приоритета, поэтому первая вставка побеждает.
+        /// `checker` проверяет однословные русские варианты; `nil` для заранее проверенных вариантов наборов.
         mutating func add(
             spelling: String, entryKey: String, variants: [String],
-            caseFixEligible: Bool, language: DictionaryLanguage, checker: CommonWordChecking
+            caseFixEligible: Bool, language: DictionaryLanguage, checker: CommonWordChecking?
         ) {
             for variant in variants {
                 let words = variant.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
@@ -389,7 +391,8 @@ struct DictionaryIndex {
                 }
                 exact[first] = bucket
 
-                if language == .ru, words.count == 1, !checker.isCommonWord(first, language: .ru) {
+                // `checker == nil`: вариант заранее проверен и не словарный.
+                if language == .ru, words.count == 1, checker?.isCommonWord(first, language: .ru) != true {
                     addForms(variant: first, candidate: candidate)
                 }
             }

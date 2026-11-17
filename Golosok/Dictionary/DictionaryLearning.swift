@@ -9,7 +9,8 @@ final class DictionaryLearning {
         now: Date.init
     )
 
-    private enum Keys {
+    /// Ключи счётчиков в `defaults`; `DictionaryStore.resetLearned` их стирает.
+    enum Keys {
         static let pendingPairs = "dictionary.pendingPairs"
         static let learnedToday = "dictionary.learnedToday"
     }

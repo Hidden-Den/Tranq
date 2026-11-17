@@ -27,7 +27,7 @@ struct VariantSuggesterTests {
     }
 
     @Test func testFilterCapsAndDeduplicatesAndDropsSpellingAndDenied() async {
-        let llm = MockLLM(reply: #"{"ru":["а","б","в","г","д","е","ё","кубик","питон"],"en":["kubernetes","Kubernetes","kuber kuber kuber kuber kuber"]}"#)
+        let llm = MockLLM(reply: #"{"ru":["аа","бб","вв","гг","дд","ее","ёё","кубик","питон"],"en":["kubernetes","Kubernetes","kuber kuber kuber kuber kuber"]}"#)
         let s = VariantSuggester(checker: SetCommonWordChecker([:]), llm: llm)
         let result = await s.suggest(for: "Kubernetes")
         #expect((result[.ru] ?? []).count == 5)
@@ -41,6 +41,17 @@ struct VariantSuggesterTests {
         #expect(result == s.instant(for: "Kubernetes"))
         let nilResult = await VariantSuggester(checker: checker, llm: MockLLM(reply: nil)).suggest(for: "Kubernetes")
         #expect(nilResult == s.instant(for: "Kubernetes"))
+    }
+
+    @Test func testMultiWordVariantOfCommonWordsIsRejected() async {
+        let common = SetCommonWordChecker([.ru: ["дом", "кот"], .en: ["home", "cat"]])
+        let llm = MockLLM(reply: #"{"ru":["дом кот","дом котлин"],"en":["home cat","home catlin"]}"#)
+        let result = await VariantSuggester(checker: common, llm: llm).suggest(for: "Zzyzx")
+        #expect(result[.ru]?.contains("дом кот") == false)
+        #expect(result[.ru]?.contains("дом котлин") == true)
+        #expect(result[.en] == ["home catlin"])
+        // Путь наборов не меняется: многословный вариант из обычных слов там допустим.
+        #expect(VariantRules.accepted("дом кот", spelling: "Zzyzx", language: .ru, checker: common) == "дом кот")
     }
 
     @Test func testCyrillicSpellingDropsEnglishVariants() async {

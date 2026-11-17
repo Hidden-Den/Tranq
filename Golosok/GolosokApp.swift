@@ -31,6 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Словарь создаётся на главном потоке при запуске: загрузка и сборка индекса
         // успевают до первой диктовки, а не выполняются на очереди конвейера посреди неё
         if !AppEnvironment.isRunningTests {
+            SpellCommonWordChecker.shared.warmUp()
             _ = DictionaryStore.shared
         }
 
