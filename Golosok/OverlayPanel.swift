@@ -65,7 +65,6 @@ class OverlayPanelManager {
         DispatchQueue.main.async {
             self.pendingHideWorkItem?.cancel()
             AudioCapture.shared.warningMessage = message
-            AudioCapture.shared.isProcessingFile = false
             SoundEffect.playWarning()
             self.showOverlay {
                 let workItem = DispatchWorkItem { [weak self] in
@@ -112,23 +111,6 @@ class OverlayPanelManager {
     func keepFront() {
         guard let panel = self.panel, panel.alphaValue > 0, !panel.isVisible else { return }
         panel.orderFrontRegardless()
-    }
-}
-
-struct CircularProgressView: View {
-    var progress: Double
-    let progressGradient = LinearGradient(colors: [Color.uiInfoLight, Color.uiSuccess], startPoint: .topLeading, endPoint: .bottomTrailing)
-    
-    var body: some View {
-        ZStack {
-            Circle().stroke(Color.uiProcessing.opacity(0.25), lineWidth: 2.5)
-            Circle()
-                .trim(from: 0, to: CGFloat(progress))
-                .stroke(progressGradient, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: progress)
-        }
-        .frame(width: 18, height: 18)
     }
 }
 
@@ -207,13 +189,6 @@ struct FloatingWidgetView: View {
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
-                } else if audioCapture.isProcessingFile {
-                    HStack(spacing: 8) {
-                        CircularProgressView(progress: audioCapture.fileProcessingProgress)
-                        Text("\(Int(audioCapture.fileProcessingProgress * 100))%")
-                            .font(.ui(.footnote, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
-                    }
                 } else if !audioCapture.isRecording && audioCapture.isSynthesizingThought {
                     HStack(spacing: 6) {
                         Image(systemName: "sparkles")
@@ -263,7 +238,7 @@ struct FloatingWidgetView: View {
             .clipShape(Capsule())
             .overlay(
                 Group {
-                    if audioCapture.transcribedText == String(localized: "Расшифровка...") || audioCapture.isProcessingFile || (!audioCapture.isRecording && audioCapture.isSynthesizingThought) {
+                    if audioCapture.transcribedText == String(localized: "Расшифровка...") || (!audioCapture.isRecording && audioCapture.isSynthesizingThought) {
                         RotatingGlowBorder()
                     } else if audioCapture.warningMessage != nil {
                         Capsule().stroke(Color.uiAmber.opacity(0.6), lineWidth: 1.2)
@@ -293,7 +268,6 @@ struct FloatingWidgetView: View {
     private func getWidth() -> CGFloat {
         if audioCapture.warningMessage != nil { return 210 }
         if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return 180 }
-        if audioCapture.isProcessingFile { return 110 }
         if audioCapture.isRecording { return audioCapture.modeLabel.isEmpty ? 200 : 236 }
         if audioCapture.isSuccessDone {
             return audioCapture.hudStatusMessage != nil ? 180 : 150
@@ -304,7 +278,7 @@ struct FloatingWidgetView: View {
     private func getGlowColor() -> Color {
         if audioCapture.warningMessage != nil { return Color.uiAmber }
         if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return Color.uiAI }
-        if audioCapture.isProcessingFile || audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color.uiProcessing }
+        if audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color.uiProcessing }
         if audioCapture.isSuccessDone { return Color.uiSuccess }
         return Color.uiSuccess
     }

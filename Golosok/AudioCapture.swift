@@ -1,7 +1,6 @@
 import Foundation
 import AVFoundation
 import AppKit
-import UniformTypeIdentifiers
 
 // MARK: - Кастомная акустическая айдентика
 struct SoundEffect {
@@ -13,7 +12,7 @@ struct SoundEffect {
     static func playWarning() { LuxurySoundSynth.shared.playWarning() }
 }
 
-/// Координатор диктовки: запись, импорт файлов, запуск конвейера и вставка результата.
+/// Координатор диктовки: запись, запуск конвейера и вставка результата.
 ///
 /// Публикует только редко меняющееся состояние для HUD. Индикатор громкости живёт в
 /// `RecordingMeter`, история — в `HistoryStore`, воспроизведение — в `PlaybackController`.
@@ -22,10 +21,8 @@ final class AudioCapture: ObservableObject {
     static let shared = AudioCapture()
 
     @Published var isRecording = false
-    @Published var isProcessingFile = false
     @Published var isSynthesizingThought = false
     @Published var hudStatusMessage: String?
-    @Published var fileProcessingProgress: Double = 0.0
     @Published var transcribedText = ""
     @Published var warningMessage: String?
     @Published var isSuccessDone = false
@@ -44,25 +41,18 @@ final class AudioCapture: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
             UpdateService.shared.checkUpdates()
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) { [history] in
-            DashboardStatsStore.shared.refresh(history: history.items)
-        }
     }
 
     // MARK: - Запись
 
     /// `promptRequested` действует только при начале записи; остановка от него не зависит.
     func toggleRecording(promptRequested: Bool = false) {
-        if isProcessingFile {
-            SoundEffect.playCancel()
-            return
-        }
         if isRecording { stopRecording() } else { startRecording(promptRequested: promptRequested) }
     }
 
     /// `promptRequested` включает режим промпта на одну диктовку, если он разрешён в настройках.
     func startRecording(promptRequested: Bool = false) {
-        guard !isProcessingFile, !isRecording else { return }
+        guard !isRecording else { return }
         isSynthesizingThought = false
         hudStatusMessage = nil
 
@@ -127,7 +117,6 @@ final class AudioCapture: ObservableObject {
         )
 
         isRecording = false
-        fileProcessingProgress = 0.0
         RecordingMeter.shared.reset()
         transcribedText = String(localized: "Расшифровка...")
 
@@ -205,70 +194,6 @@ final class AudioCapture: ObservableObject {
         }
     }
 
-    // MARK: - Импорт файлов
-
-    func importAndTranscribeFile() {
-        if isRecording || isProcessingFile {
-            SoundEffect.playCancel()
-            return
-        }
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        let webmType = UTType(filenameExtension: "webm") ?? .movie
-        let mkvType = UTType(filenameExtension: "mkv") ?? .movie
-        let oggType = UTType(filenameExtension: "ogg") ?? .audio
-        panel.allowedContentTypes = [.audio, .movie, .mp3, .mpeg4Audio, .wav, webmType, mkvType, oggType]
-        if panel.runModal() == .OK, !panel.urls.isEmpty {
-            importFiles(panel.urls)
-        }
-    }
-
-    func importFiles(_ urls: [URL]) {
-        guard !isRecording, !isProcessingFile else {
-            SoundEffect.playCancel()
-            return
-        }
-        let media = urls.filter { Self.isMediaURL($0) }
-        guard !media.isEmpty else { return }
-        processNextFile(media, index: 0)
-    }
-
-    private func processNextFile(_ urls: [URL], index: Int) {
-        guard index < urls.count else {
-            isProcessingFile = false
-            OverlayPanelManager.shared.scheduleHide(after: 0.8)
-            return
-        }
-        warningMessage = nil
-        isProcessingFile = true
-        fileProcessingProgress = 0.0
-        transcribedText = String(localized: "Извлечение аудио...")
-        OverlayPanelManager.shared.showOverlay()
-
-        let job = TranscriptionPipeline.Job(source: .mediaFile(urls[index]), focusTarget: nil, level: nil)
-        pipeline.run(job, progress: { [weak self] fraction in
-            self?.fileProcessingProgress = fraction
-            OverlayPanelManager.shared.keepFront()
-        }) { [weak self] result in
-            guard let self else { return }
-            self.handle(result, job: job) {
-                self.processNextFile(urls, index: index + 1)
-            }
-        }
-    }
-
-    private static func isMediaURL(_ url: URL) -> Bool {
-        let ext = url.pathExtension.lowercased()
-        let mediaExts: Set<String> = ["mp3", "m4a", "wav", "aiff", "aif", "aac", "flac", "ogg", "opus", "mp4", "mov", "m4v", "webm", "mkv", "avi"]
-        if mediaExts.contains(ext) { return true }
-        if let values = try? url.resourceValues(forKeys: [.contentTypeKey]), let ut = values.contentType {
-            return ut.conforms(to: .audio) || ut.conforms(to: .movie)
-        }
-        return false
-    }
-
     // MARK: - Результат
 
     private func handle(
@@ -286,13 +211,12 @@ final class AudioCapture: ObservableObject {
                 }
                 message = String(localized: "Речь не распознана")
             case .audioUnreadable:
-                message = job.source.isFileImport ? String(localized: "Не удалось извлечь аудио") : String(localized: "Ошибка чтения файла")
+                message = String(localized: "Ошибка чтения файла")
             }
             OverlayPanelManager.shared.showWarning(message: message)
-            if job.source.isFileImport { next() }
         case .success(let output):
             save(output)
-            insert(output, isFileImport: job.source.isFileImport, target: job.focusTarget, then: next)
+            insert(output, target: job.focusTarget, then: next)
         }
     }
 
@@ -320,16 +244,16 @@ final class AudioCapture: ObservableObject {
         NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: item.id)
     }
 
-    private func insert(_ output: TranscriptionPipeline.Output, isFileImport: Bool, target: FocusSnapshot?, then next: @escaping () -> Void) {
+    private func insert(_ output: TranscriptionPipeline.Output, target: FocusSnapshot?, then next: @escaping () -> Void) {
         transcribedText = output.finalText
         isSuccessDone = true
-        let fallbackNotice = isFileImport ? nil : FallbackNotice.message(
+        let fallbackNotice = FallbackNotice.message(
             for: output.fallback,
             providerID: AIProviderStore.shared.providerID,
             engine: VoiceIntelligenceSettings.shared.engine
         )
 
-        if isFileImport || !preferences.autoPasteEnabled {
+        if !preferences.autoPasteEnabled {
             InsertionService.shared.copyToPasteboard(text: output.finalText, markTransient: false)
             hudStatusMessage = fallbackNotice
             SoundEffect.playSuccess()

@@ -11,20 +11,12 @@ final class TranscriptionPipeline {
     enum Source {
         /// Запись микрофона: WAV 16 кГц моно, удаляется вызывающим.
         case recording(URL, duration: TimeInterval)
-        /// Импортированный файл любого поддерживаемого формата.
-        case mediaFile(URL)
-
-        var isFileImport: Bool {
-            if case .mediaFile = self { return true }
-            return false
-        }
     }
 
     struct Job {
         let source: Source
         let focusTarget: FocusSnapshot?
-        /// Уровень очистки; `nil` для импорта файлов: текст остаётся как распознан.
-        let level: CleanupLevel?
+        let level: CleanupLevel
     }
 
     struct Output {
@@ -94,14 +86,6 @@ final class TranscriptionPipeline {
         case .recording(let url, _):
             audioURL = url
             ownsAudioFile = false
-        case .mediaFile(let url):
-            let converted = TempFiles.makeURL(prefix: "import", ext: "wav")
-            guard AudioPCM.convertMediaToWav(url, output: converted) else {
-                TempFiles.remove(converted)
-                return .failure(.audioUnreadable)
-            }
-            audioURL = converted
-            ownsAudioFile = true
         }
 
         guard let reader = AudioChunkReader(url: audioURL) else {
@@ -230,13 +214,7 @@ final class TranscriptionPipeline {
                 DictionaryStage.shadowFuzzy(finalText, language: language)
             }
 
-            guard let level = job.level else {
-                let direct = dictionary.text
-                AppLogger.shared.info("Pipeline", "Этап 2 пропущен: импорт файла", details: "Итог: «\(direct)»")
-                deliver(finalText: direct, transformed: false, fallback: nil)
-                return
-            }
-
+            let level = job.level
             let settings = VoiceIntelligenceSettings.shared
             AppLogger.shared.info("Pipeline", "Этап 2: очистка речи, движок \(settings.engine.title)", details: "уровень: \(level)")
             if level != .verbatim { onStageTwoStarted() }

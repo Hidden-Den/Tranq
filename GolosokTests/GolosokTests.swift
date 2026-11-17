@@ -263,49 +263,6 @@ struct GolosokTests {
         #expect(result == words)
     }
 
-    // MARK: - Subtitle export
-
-    @Test func subtitleCuesGroupBySentence() {
-        let words = [
-            TimedWord(text: "Привет,", start: 0.0, end: 0.5),
-            TimedWord(text: "мир.", start: 0.5, end: 1.0),
-            TimedWord(text: "Как", start: 1.5, end: 1.7),
-            TimedWord(text: "дела?", start: 1.7, end: 2.2)
-        ]
-        let cues = SubtitleExporter.makeCues(from: words)
-        #expect(cues.count == 2)
-        #expect(cues[0].text == "Привет, мир.")
-        #expect(cues[0].start == 0.0)
-        #expect(cues[0].end == 1.0)
-        #expect(cues[1].text == "Как дела?")
-        #expect(cues[1].start == 1.5)
-    }
-
-    @Test func subtitleCuesFromTextFallsBack() {
-        let cues = SubtitleExporter.makeCues(fromText: "Первое. Второе.")
-        #expect(cues.count == 2)
-        #expect(cues[0].text == "Первое.")
-        #expect(cues[0].end >= cues[0].start)
-    }
-
-    @Test func srtContentFormatsCorrectly() {
-        let cues = [SubtitleCue(start: 0.0, end: 2.36, text: "Привет, это проверка")]
-        let srt = SubtitleExporter.srtContent(cues: cues)
-        #expect(srt == "1\n00:00:00,000 --> 00:00:02,360\nПривет, это проверка\n\n")
-    }
-
-    @Test func vttContentHasHeaderAndDotTime() {
-        let cues = [SubtitleCue(start: 1.5, end: 3.0, text: "Текст")]
-        let vtt = SubtitleExporter.vttContent(cues: cues)
-        #expect(vtt.hasPrefix("WEBVTT\n\n"))
-        #expect(vtt.contains("00:00:01.500 --> 00:00:03.000"))
-    }
-
-    @Test func subtitleTimestampsFormat() {
-        #expect(SubtitleExporter.srtTime(3661.5) == "01:01:01,500")
-        #expect(SubtitleExporter.vttTime(3661.5) == "01:01:01.500")
-    }
-
     // MARK: - Version comparison (update check)
 
     @Test func versionComparisonHandlesSuffixes() {

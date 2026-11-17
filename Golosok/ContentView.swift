@@ -525,7 +525,6 @@ struct ContentView: View {
     @State private var selectedTimings: (words: [TimedWord], duration: Double)?
     
     @State private var showAboutSheet = false
-    @State private var isFileDropTargeted = false
     @State private var aiRequest: AIActionRequest?
     @State private var showPromptManager = false
     @State private var showCreatePrompt = false
@@ -611,18 +610,8 @@ struct ContentView: View {
                 .opacity(0)
                 .frame(width: 0, height: 0)
         )
-        .onDrop(of: [UTType.fileURL], isTargeted: $isFileDropTargeted) { providers in
-            handleDroppedProviders(providers)
-        }
         .onChange(of: searchText) { newValue in
             scheduleSearch(newValue)
-        }
-        .overlay {
-            if isFileDropTargeted {
-                FileDropOverlay()
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
-            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
             currentTab = .settings
@@ -634,32 +623,6 @@ struct ContentView: View {
             toggleSidebar()
         }
         .background(WindowAccessor())
-        .animation(.easeOut(duration: 0.16), value: isFileDropTargeted)
-    }
-
-    private func handleDroppedProviders(_ providers: [NSItemProvider]) -> Bool {
-        let fileType = UTType.fileURL.identifier
-        let loaders = providers.filter { $0.hasItemConformingToTypeIdentifier(fileType) }
-        guard !loaders.isEmpty else { return false }
-        var urls: [URL] = []
-        let group = DispatchGroup()
-        for provider in loaders {
-            group.enter()
-            provider.loadItem(forTypeIdentifier: fileType, options: nil) { item, _ in
-                defer { group.leave() }
-                if let url = item as? URL {
-                    urls.append(url)
-                } else if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
-                    urls.append(url)
-                } else if let str = item as? String, let url = URL(string: str) {
-                    urls.append(url)
-                }
-            }
-        }
-        group.notify(queue: .main) {
-            if !urls.isEmpty { audioCapture.importFiles(urls) }
-        }
-        return true
     }
 
     private func scheduleSearch(_ query: String) {
@@ -907,18 +870,6 @@ struct ContentView: View {
                                             }
                                             .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(UIRadius.lg).overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
                                         }.fixedSize(horizontal: true, vertical: false)
-                                        UIDropdownMenu(items: [
-                                            .action("Markdown (.md)") { SubtitleExporter.export(selected, format: "md") },
-                                            .action("Текст (.txt)") { SubtitleExporter.export(selected, format: "txt") },
-                                            .action("Excel (.csv)") { SubtitleExporter.export(selected, format: "csv") },
-                                            .action("JSON (.json)") { SubtitleExporter.export(selected, format: "json") },
-                                            .divider,
-                                            .action("Субтитры (.srt)") { SubtitleExporter.export(selected, format: "srt") },
-                                            .action("Субтитры (.vtt)") { SubtitleExporter.export(selected, format: "vtt") }
-                                        ]) {
-                                            HStack(spacing: 4) { Image(systemName: "square.and.arrow.up").font(.ui(.caption, weight: .medium)); Text("Экспорт").font(.ui(.body, weight: .medium)); Image(systemName: "chevron.down").font(.ui(.micro, weight: .bold)).foregroundColor(.uiMidGray) }
-                                            .lineLimit(1).foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 14).background(Color.uiPaper).cornerRadius(UIRadius.lg).overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
-                                        }.fixedSize(horizontal: true, vertical: false)
                                         UIDestructiveButton(title: "Удалить") { itemToDelete = selected.id; showingDeleteAlert = true }
                                     }.fixedSize(horizontal: true, vertical: false).layoutPriority(1)
                                 )
@@ -1023,7 +974,7 @@ struct ContentView: View {
                                         .font(.ui(.title, weight: .bold))
                                         .foregroundColor(.uiInk)
                                 }
-                                Text("Локальное приложение для надиктовки, расшифровки созвонов и работы с медиафайлами")
+                                Text("Чистый текст голосом в любом приложении")
                                     .font(.ui(.body))
                                     .foregroundColor(.uiMidGray)
                                     .multilineTextAlignment(.center)
@@ -1037,21 +988,6 @@ struct ContentView: View {
                                 ) {
                                     audioCapture.toggleRecording()
                                 }
-
-                                HeroActionRow(
-                                    icon: "video.fill",
-                                    badge: String(localized: "⌘ + O"),
-                                    title: "Расшифровать файл",
-                                    subtitle: "Созвоны Zoom, Телемост и медиафайлы: MP3, MP4, WebM"
-                                ) {
-                                    audioCapture.importAndTranscribeFile()
-                                }
-                            }
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.doc").font(.ui(.caption, weight: .medium)).foregroundColor(.uiMidGray)
-                                Text("Перетащите файл в окно программы — расшифровка начнётся автоматически")
-                                    .font(.ui(.caption))
-                                    .foregroundColor(.uiMidGray)
                             }
                         }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
@@ -1506,53 +1442,5 @@ struct HistoryCard: View {
         .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(isSelected ? Color.uiHairline : Color.clear, lineWidth: 1))
         .shadow(color: isSelected ? Color.black.opacity(0.04) : Color.clear, radius: 4, x: 0, y: 2)
         .contentShape(Rectangle())
-    }
-}
-
-struct FileDropOverlay: View {
-    var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(.regularMaterial)
-            LinearGradient(
-                colors: [Color.blue.opacity(0.10), Color.blue.opacity(0.04)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(spacing: 18) {
-                ZStack {
-                    Circle()
-                        .fill(Color.blue.opacity(0.12))
-                        .frame(width: 76, height: 76)
-                    Image(systemName: "arrow.down.doc.fill")
-                        .font(.ui(.display, weight: .medium))
-                        .foregroundColor(.blue)
-                }
-
-                VStack(spacing: 6) {
-                    Text(LocalizedStringKey("Перетащите файл — начнётся расшифровка"))
-                        .font(.ui(.headline, weight: .bold))
-                        .foregroundColor(.uiInk)
-                        .multilineTextAlignment(.center)
-                    Text(LocalizedStringKey("MP3, MP4, WebM, MKV, WAV и другие"))
-                        .font(.ui(.footnote))
-                        .foregroundColor(.uiMidGray)
-                }
-            }
-            .padding(.horizontal, 48)
-            .padding(.vertical, 40)
-            .background(
-                RoundedRectangle(cornerRadius: UIRadius.xl)
-                    .fill(Color.uiPaper)
-                    .shadow(color: .black.opacity(0.14), radius: 28, x: 0, y: 10)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: UIRadius.xl)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
-                    .foregroundColor(Color.blue.opacity(0.55))
-            )
-        }
-        .ignoresSafeArea()
     }
 }

@@ -91,12 +91,7 @@ struct GolosokApp: App {
                 }
             }
 
-            CommandGroup(replacing: .newItem) {
-                Button("Открыть аудиофайл...") {
-                    AudioCapture.shared.importAndTranscribeFile()
-                }
-                .keyboardShortcut("o", modifiers: .command)
-            }
+            CommandGroup(replacing: .newItem) {}
 
             CommandGroup(after: .pasteboard) {
                 Button(String(localized: "Вставить оригинал речи")) {

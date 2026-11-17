@@ -168,15 +168,12 @@ struct GigaAMIntegrationTests {
     @Test(.enabled(if: ModelStore.shared.localModelPath(for: RecognitionModel.russianGigaAM.id) != nil, "нет модели gigaam.gguf"))
     func recognizesSynthesizedRussianSpeech() throws {
         let aiff = TempFiles.makeURL(prefix: "say", ext: "aiff")
-        let wav = TempFiles.makeURL(prefix: "say", ext: "wav")
-        defer { TempFiles.remove(aiff); TempFiles.remove(wav) }
+        defer { TempFiles.remove(aiff) }
 
         guard let say = ProcessRunner.run("/usr/bin/say", arguments: ["-v", "Milena", "-o", aiff.path, "Завтра в десять утра созвонимся с командой"], timeout: 30),
               say.succeeded else { return }
 
-        #expect(AudioPCM.convertMediaToWav(aiff, output: wav))
-        let reader = try #require(AudioChunkReader(url: wav))
-        let samples = try #require(reader.samples(fromSecond: 0, length: reader.durationSeconds))
+        let samples = try #require(AudioPCM.loadSamples(from: aiff))
 
         let result = GigaAMEngine.shared.recognize(samples: samples)
         let text = result.text.lowercased()

@@ -42,7 +42,6 @@ LLAMA_FILES=(
 MANUAL_FILES=(
   "whisper-cli:aff85e776f3e0f2cd7fe266daa5b58ec86b61ec751bf88944a043d64b81935e8"
   "llama-cli:af14ac6ecc9bc19db2a07662a392b4218a96679d97da4c255e5eba451103c06b"
-  "ffmpeg:ec83fcf58e073f0e421d102ea8ffbfcfe94f29d880dca40a3f7e184062f79d87"
 )
 
 log()  { printf '\033[1m==>\033[0m %s\n' "$*"; }
@@ -104,7 +103,7 @@ check_manual_files() {
     fi
   done
   if (( missing )); then
-    warn "whisper-cli и llama-cli — резервные пути, ffmpeg нужен для WebM и MKV; приложение соберётся и без них"
+    warn "whisper-cli и llama-cli — резервные пути; приложение соберётся и без них"
   fi
 }
 
