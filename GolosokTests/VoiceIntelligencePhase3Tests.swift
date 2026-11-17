@@ -134,17 +134,13 @@ extension SharedSettingsSuites {
             settings.engine = .airGapped
             defer { settings.engine = originalEngine }
 
-            await withCheckedContinuation { continuation in
-                ThoughtSynthesizer.shared.synthesize(
-                    rawText: "эээ ну короче тестирование локального отката",
-                    style: .clean
-                ) { finalText, isFallback in
-                    #expect(isFallback == true, "При отказе локального демона фреймворк обязан сообщать о fallback")
-                    #expect(!finalText.isEmpty)
-                    #expect(!finalText.contains("эээ"))
-                    continuation.resume()
-                }
-            }
+            let result = await ThoughtSynthesizer.shared.clean(
+                "эээ ну короче тестирование локального отката",
+                level: .clean, targetBundleId: nil, firedSpellings: [], language: .ru
+            )
+            #expect(result.fallback != nil, "При отказе локального демона фреймворк обязан сообщать о fallback")
+            #expect(!result.text.isEmpty)
+            #expect(!result.text.contains("эээ"))
         }
 
         @Test func aiProviderPresetsContainAnthropicAndNoGroq() {

@@ -101,7 +101,7 @@ struct VoiceIntelligencePhase5Tests {
 
             // Симулируем попытку модели ответить на вопрос
             let hallucinatedAnswer = "Ответ на ваш вопрос: это произойдет скоро."
-            let answerValidation = GroundingValidator.validate(input: stageOne, output: hallucinatedAnswer, style: .clean)
+            let answerValidation = GroundingValidator.validate(input: stageOne, output: hallucinatedAnswer, level: .clean)
 
             // Валидатор обязан отклонить такой ответ
             if case .rejected(let reason) = answerValidation, reason.contains("вопрос") {
@@ -110,7 +110,7 @@ struct VoiceIntelligencePhase5Tests {
 
             // А чистый сохраненный вопрос обязан пройти валидацию
             let validCleanQuestion = stageOne.hasSuffix("?") ? stageOne : stageOne + "?"
-            let validResult = GroundingValidator.validate(input: stageOne, output: validCleanQuestion, style: .clean)
+            let validResult = GroundingValidator.validate(input: stageOne, output: validCleanQuestion, level: .clean)
             if case .valid = validResult {
                 // Успешный пропуск
             } else {
@@ -133,19 +133,13 @@ struct VoiceIntelligencePhase5Tests {
             totalEvaluated += 1
             let cleanStageOne = DisfluencyPrefilter.filter(sample.rawSpeech)
 
-            let candidateOutput: String
-            switch sample.style {
-            case .bullets:
-                candidateOutput = "- " + cleanStageOne
-            default:
-                candidateOutput = cleanStageOne
-            }
+            let candidateOutput = cleanStageOne
 
             // Корректный синтезированный результат: сохраненный очищенный текст
             let result = GroundingValidator.validate(
                 input: sample.rawSpeech,
                 output: candidateOutput,
-                style: sample.style
+                level: sample.level
             )
 
             if case .rejected = result {
@@ -167,8 +161,8 @@ struct VoiceIntelligencePhase5Tests {
         for sample in samples.prefix(30) {
             let prefiltered = DisfluencyPrefilter.filter(sample.rawSpeech)
             let normalized = NumberNormalizer.normalize(prefiltered)
-            let output = sample.style == .bullets ? "- " + normalized : normalized
-            _ = GroundingValidator.validate(input: sample.rawSpeech, output: output, style: sample.style)
+            let output = normalized
+            _ = GroundingValidator.validate(input: sample.rawSpeech, output: output, level: sample.level)
         }
 
         // Серия замеров для нивелирования шедулинга ОС и CI
@@ -178,8 +172,8 @@ struct VoiceIntelligencePhase5Tests {
             for sample in samples {
                 let prefiltered = DisfluencyPrefilter.filter(sample.rawSpeech)
                 let normalized = NumberNormalizer.normalize(prefiltered)
-                let output = sample.style == .bullets ? "- " + normalized : normalized
-                _ = GroundingValidator.validate(input: sample.rawSpeech, output: output, style: sample.style)
+                let output = normalized
+                _ = GroundingValidator.validate(input: sample.rawSpeech, output: output, level: sample.level)
             }
             let elapsed = CFAbsoluteTimeGetCurrent() - startTime
             if elapsed < bestElapsed {

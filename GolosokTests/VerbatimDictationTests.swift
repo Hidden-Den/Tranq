@@ -15,7 +15,7 @@ struct VerbatimDictationTests {
     @Test func cleanStyleRejectsParaphrase() {
         let input = "Нужно короче собрать RAG-систему на базе документов отдела и проверить качество ответов."
         let output = "Требуется разработать систему поиска по корпоративной базе знаний и оценить её эффективность."
-        let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+        let result = GroundingValidator.validate(input: input, output: output, level: .clean)
         guard case .rejected = result else {
             Issue.record("Пересказ должен отклоняться, получено: \(result)")
             return
@@ -25,25 +25,25 @@ struct VerbatimDictationTests {
     @Test func cleanStyleAcceptsFillerRemoval() {
         let input = "Ну короче нужно как бы собрать RAG-систему на базе документов отдела."
         let output = "Нужно собрать RAG-систему на базе документов отдела."
-        #expect(GroundingValidator.validate(input: input, output: output, style: .clean) == .valid(sanitizedText: output))
+        #expect(GroundingValidator.validate(input: input, output: output, level: .clean) == .valid(sanitizedText: output))
     }
 
     @Test func cleanStyleAcceptsSelfCorrection() {
         let input = "Давай встретимся в понедельник, ой, во вторник."
         let output = "Давай встретимся во вторник."
-        #expect(GroundingValidator.validate(input: input, output: output, style: .clean) == .valid(sanitizedText: output))
+        #expect(GroundingValidator.validate(input: input, output: output, level: .clean) == .valid(sanitizedText: output))
     }
 
     @Test func cleanStyleAllowsOneGrammarFix() {
         let input = "Я думаю что мы успеем сделать отчет к пятнице если начнем сегодня."
         let output = "Я думаю, что мы успеем сделать отчёт к пятнице, если начнём сегодня."
-        #expect(GroundingValidator.validate(input: input, output: output, style: .clean) == .valid(sanitizedText: output))
+        #expect(GroundingValidator.validate(input: input, output: output, level: .clean) == .valid(sanitizedText: output))
     }
 
     @Test func cleanStyleRejectsDroppingMostOfSpeech() {
         let input = "Сначала обновим зависимости, потом прогоним тесты, затем соберём образ и выложим его на стенд."
         let output = "Обновим зависимости."
-        guard case .rejected = GroundingValidator.validate(input: input, output: output, style: .clean) else {
+        guard case .rejected = GroundingValidator.validate(input: input, output: output, level: .clean) else {
             Issue.record("Потеря большей части речи должна отклоняться")
             return
         }
@@ -53,7 +53,7 @@ struct VerbatimDictationTests {
         let input = "Нужно собрать систему на базе документов отдела и проверить качество ответов."
         let output = "Прошу собрать систему по документам отдела и оценить качество ответов."
         #expect(GroundingValidator.rewriteViolation(input: input, output: output) != nil)
-        #expect(GroundingValidator.validate(input: input, output: output, style: .formal) == .valid(sanitizedText: output))
+        #expect(GroundingValidator.validate(input: input, output: output, level: .rewrite(tone: "деловой")) == .valid(sanitizedText: output))
     }
 
     @Test func dictionaryTermsDoNotCountAsNovel() {

@@ -17,34 +17,7 @@ public enum VoiceInputMode: String, CaseIterable, Identifiable {
     public var subtitle: String {
         switch self {
         case .smart: return String(localized: "Синтез мыслей и очистка от паразитов")
-        case .direct: return String(localized: "Дословная расшифровка без изменений")
-        }
-    }
-}
-
-public enum VoiceStyle: String, CaseIterable, Identifiable {
-    case clean = "clean"
-    case bullets = "bullets"
-    case formal = "formal"
-    case prompt = "prompt"
-
-    public var id: String { rawValue }
-
-    public var title: String {
-        switch self {
-        case .clean: return String(localized: "Чистая мысль")
-        case .bullets: return String(localized: "Тезисы")
-        case .formal: return String(localized: "Деловой стиль")
-        case .prompt: return String(localized: "Промпт для ИИ")
-        }
-    }
-
-    public var icon: String {
-        switch self {
-        case .clean: return "sparkles"
-        case .bullets: return "list.bullet"
-        case .formal: return "briefcase"
-        case .prompt: return "command"
+        case .direct: return String(localized: "Только звуки и заикания, без ИИ")
         }
     }
 }
@@ -80,10 +53,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
 
     @Published public var mode: VoiceInputMode {
         didSet { Self.defaults.set(mode.rawValue, forKey: "voice.mode") }
-    }
-
-    @Published public var style: VoiceStyle {
-        didSet { Self.defaults.set(style.rawValue, forKey: "voice.style") }
     }
 
     @Published public var engine: VoiceEngine {
@@ -124,7 +93,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
 
     public func resetToDefaults() {
         self.mode = .smart
-        self.style = .clean
         self.engine = .external
         self.openRouterModel = "anthropic/claude-haiku-5.5"
         self.localModel = "vikhr_1.5b"
@@ -136,9 +104,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     private init() {
         let storedMode = Self.defaults.string(forKey: "voice.mode") ?? VoiceInputMode.smart.rawValue
         self.mode = VoiceInputMode(rawValue: storedMode) ?? .smart
-
-        let storedStyle = Self.defaults.string(forKey: "voice.style") ?? VoiceStyle.clean.rawValue
-        self.style = VoiceStyle(rawValue: storedStyle) ?? .clean
 
         let storedEngine = Self.defaults.string(forKey: "voice.engine") ?? VoiceEngine.external.rawValue
         if storedEngine == "airGapped" {

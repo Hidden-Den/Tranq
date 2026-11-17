@@ -54,7 +54,7 @@ struct VoiceIntelligencePhase2Tests {
         let normalized = NumberNormalizer.normalize(rawSpeech)
         // Модель на выходе дала текст с цифрой 25
         let modelOutput = "Отправь 25 документов на почту."
-        let result = GroundingValidator.validate(input: normalized, output: modelOutput, style: .clean)
+        let result = GroundingValidator.validate(input: normalized, output: modelOutput, level: .clean)
         switch result {
         case .valid(let text):
             #expect(text == "Отправь 25 документов на почту.")

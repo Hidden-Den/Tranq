@@ -22,7 +22,7 @@ public struct GoldenSample {
     public let expectedNumbers: [String]
     public let isQuestion: Bool
     public let forbiddenFillers: [String]
-    public let style: VoiceStyle
+    public let level: CleanupLevel
     public let targetBundleId: String?
 
     public init(
@@ -32,7 +32,7 @@ public struct GoldenSample {
         expectedNumbers: [String] = [],
         isQuestion: Bool = false,
         forbiddenFillers: [String] = [],
-        style: VoiceStyle = .clean,
+        level: CleanupLevel = .clean,
         targetBundleId: String? = nil
     ) {
         self.id = id
@@ -41,7 +41,7 @@ public struct GoldenSample {
         self.expectedNumbers = expectedNumbers
         self.isQuestion = isQuestion
         self.forbiddenFillers = forbiddenFillers
-        self.style = style
+        self.level = level
         self.targetBundleId = targetBundleId
     }
 }
@@ -261,16 +261,14 @@ public struct VoiceIntelligenceGoldenDataset {
         var index = 1
         for tpl in templates {
             for app in apps {
-                let style: VoiceStyle
+                let level: CleanupLevel
                 switch app {
                 case "com.apple.mail":
-                    style = .formal
-                case "md.obsidian":
-                    style = .bullets
+                    level = .rewrite(tone: "деловой")
                 case "com.microsoft.VSCode":
-                    style = .prompt
+                    level = .prompt
                 default:
-                    style = .clean
+                    level = .clean
                 }
 
                 list.append(GoldenSample(
@@ -278,7 +276,7 @@ public struct VoiceIntelligenceGoldenDataset {
                     category: .compoundMixed,
                     rawSpeech: tpl,
                     isQuestion: tpl.contains("?"),
-                    style: style,
+                    level: level,
                     targetBundleId: app
                 ))
                 index += 1

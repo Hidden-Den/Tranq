@@ -134,7 +134,7 @@ struct VoiceIntelligenceSection: View {
                         Text("Умная речь")
                             .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
-                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Дословная расшифровка без изменений")
+                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Только звуки и заикания, без ИИ")
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                     }
@@ -148,24 +148,6 @@ struct VoiceIntelligenceSection: View {
                 }
 
                 if settings.mode == .smart {
-                    Divider().background(Color.uiHairline)
-
-                    // Стиль мысли
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Стиль текста")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Формат оформления очищенной мысли")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        UIDropdownPicker(selection: $settings.style, options: VoiceStyle.allCases.map { s in
-                            .init(LocalizedStringKey(s.title), value: s)
-                        }, width: 160)
-                    }
-
                     Divider().background(Color.uiHairline)
 
                     // Движок обработки

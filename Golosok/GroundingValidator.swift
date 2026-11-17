@@ -27,10 +27,15 @@ public struct GroundingValidator {
     public static func validate(
         input: String,
         output: String,
-        style: VoiceStyle,
+        level: CleanupLevel,
         customTerms: Set<String> = []
     ) -> ValidationResult {
         let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Уровень A обходится без модели, проверять нечего
+        if level == .verbatim { return .valid(sanitizedText: output.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        let isClean = level == .clean
+        var isRewrite = false
+        if case .rewrite = level { isRewrite = true }
         var sanitizedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !sanitizedOutput.isEmpty else {
@@ -73,26 +78,26 @@ public struct GroundingValidator {
 
         if isDirectQuestion {
             // Для чистой мысли и делового стиля прямой вопрос обязан оставаться вопросом
-            if (style == .clean || style == .formal) && !sanitizedOutput.contains("?") && !hasLeadingQuestionKeyword(sanitizedOutput) {
+            if (isClean || isRewrite) && !sanitizedOutput.contains("?") && !hasLeadingQuestionKeyword(sanitizedOutput) {
                 return .rejected(reason: "Модель ответила на вопрос вместо сохранения вопроса")
             }
-            if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
+            if isClean && outputWordCount > max(6, inputWordCount + 4) {
                 return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
             }
         } else if hasQuestionMark {
             // Если вопросительный знак встретился в длинной мысли или сложноподчиненном предложении
             // (например, «Нужно подумать, как сделать...?»), отклоняем только если модель развернула ответ
-            if style == .clean && outputWordCount > max(6, inputWordCount + 4) {
+            if isClean && outputWordCount > max(6, inputWordCount + 4) {
                 return .rejected(reason: "Модель попыталась ответить на вопрос вместо его очистки")
             }
         }
 
         // 4. Проверка чисел (Strict Numbers Grounding)
         let inputNumbers = extractNumbers(from: trimmedInput)
-        let outputNumbers = extractNumbers(from: sanitizedOutput, excludingListIndices: style == .bullets)
+        let outputNumbers = extractNumbers(from: sanitizedOutput)
 
-        // В стилях clean, formal и bullets все исходные числа должны сохраняться
-        if style == .clean || style == .formal || style == .bullets {
+        // На уровнях очистки и переписывания все исходные числа должны сохраняться
+        if isClean || isRewrite {
             for num in inputNumbers {
                 if !outputNumbers.contains(num) {
                     return .rejected(reason: "Пропущено исходное число \(num)")
@@ -107,7 +112,7 @@ public struct GroundingValidator {
         }
 
         // 5. Проверка латиницы и пользовательского словаря терминов
-        if style != .prompt {
+        if level != .prompt {
             let inputLatinLower = Set(extractLatinTokens(from: trimmedInput).map { $0.lowercased() })
             let outputLatin = extractLatinTokens(from: sanitizedOutput)
             var customTermsTokens = Set<String>()
@@ -126,24 +131,13 @@ public struct GroundingValidator {
             }
         }
 
-        // 6. Проверка структуры маркированного списка для стиля «Тезисы»
-        if style == .bullets && inputWordCount > 5 {
-            let bulletRegex = #"(?m)^\s*([-•*]|\d+[.)])\s+"#
-            let hasBullets = sanitizedOutput.range(of: bulletRegex, options: .regularExpression) != nil
-            if !hasBullets {
-                return .rejected(reason: "Стиль тезисов требует наличия маркированного списка")
-            }
-        }
-
         // 7. Дифференцированная проверка длины по стилям
         let maxAllowedWords: Int
-        switch style {
-        case .clean:
+        switch level {
+        case .verbatim, .clean:
             maxAllowedWords = max(10, Int(Double(inputWordCount) * 1.8))
-        case .formal:
+        case .rewrite:
             maxAllowedWords = max(12, Int(Double(inputWordCount) * 2.0))
-        case .bullets:
-            maxAllowedWords = max(15, Int(Double(inputWordCount) * 2.2))
         case .prompt:
             maxAllowedWords = max(25, Int(Double(inputWordCount) * 3.0))
         }
@@ -153,7 +147,7 @@ public struct GroundingValidator {
         }
 
         // 8. Чистая мысль только удаляет мусор: пересказ своими словами отклоняется
-        if style == .clean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms) {
+        if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms) {
             return .rejected(reason: reason)
         }
 
@@ -233,13 +227,8 @@ public struct GroundingValidator {
         return false
     }
 
-    private static func extractNumbers(from text: String, excludingListIndices: Bool = false) -> Set<String> {
-        var processedText = text
-        if excludingListIndices {
-            // Удаляем структурные маркеры нумерации списков в начале строк (например: "1. ", "2) ")
-            let listIndexPattern = #"(?m)^\s*\d+[.)]\s+"#
-            processedText = processedText.replacingOccurrences(of: listIndexPattern, with: "", options: .regularExpression)
-        }
+    private static func extractNumbers(from text: String) -> Set<String> {
+        let processedText = text
         let pattern = #"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d.,])"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let nsString = processedText as NSString

@@ -125,7 +125,7 @@ final class AudioCapture: ObservableObject {
         let job = TranscriptionPipeline.Job(
             source: .recording(recording.url, duration: recording.duration),
             focusTarget: focusTarget,
-            synthesize: VoiceIntelligenceSettings.shared.mode == .smart
+            level: VoiceIntelligenceSettings.shared.mode == .smart ? .clean : .verbatim
         )
         pipeline.run(job, onStageTwoStarted: { [weak self] in
             self?.isSynthesizingThought = true
@@ -202,7 +202,7 @@ final class AudioCapture: ObservableObject {
         transcribedText = String(localized: "Извлечение аудио...")
         OverlayPanelManager.shared.showOverlay()
 
-        let job = TranscriptionPipeline.Job(source: .mediaFile(urls[index]), focusTarget: nil, synthesize: false)
+        let job = TranscriptionPipeline.Job(source: .mediaFile(urls[index]), focusTarget: nil, level: nil)
         pipeline.run(job, progress: { [weak self] fraction in
             self?.fileProcessingProgress = fraction
             OverlayPanelManager.shared.keepFront()

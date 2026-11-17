@@ -15,7 +15,7 @@ extension SharedSettingsSuites {
         @Test func cleanStyleStrictExtractionPreservesNumbersAndRejectsHallucinations() {
             let input = "Встреча назначена на 14 часов 30 минут"
             let validOutput = "Встреча в 14:30"
-            let validResult = GroundingValidator.validate(input: input, output: validOutput, style: .clean)
+            let validResult = GroundingValidator.validate(input: input, output: validOutput, level: .clean)
             if case .valid(let text) = validResult {
                 #expect(!text.isEmpty)
             } else {
@@ -24,23 +24,23 @@ extension SharedSettingsSuites {
 
             // Число 14 пропущено
             let missingNumOutput = "Встреча в 30 минут"
-            let missingResult = GroundingValidator.validate(input: input, output: missingNumOutput, style: .clean)
+            let missingResult = GroundingValidator.validate(input: input, output: missingNumOutput, level: .clean)
             #expect(missingResult == .rejected(reason: "Пропущено исходное число 14"))
 
             // Придуманное число 99
             let hallucinatedNumOutput = "Встреча в 14:30 в кабинете 99"
-            let hallucinatedResult = GroundingValidator.validate(input: input, output: hallucinatedNumOutput, style: .clean)
+            let hallucinatedResult = GroundingValidator.validate(input: input, output: hallucinatedNumOutput, level: .clean)
             #expect(hallucinatedResult == .rejected(reason: "Модель придумала число 99, отсутствовавшее в речи"))
         }
 
         @Test func cleanStylePreservesQuestionMark() {
             let input = "Мы успеем отправить релиз сегодня?"
             let invalidStatementOutput = "Мы успеем отправить релиз сегодня."
-            let result = GroundingValidator.validate(input: input, output: invalidStatementOutput, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: invalidStatementOutput, level: .clean)
             #expect(result == .rejected(reason: "Модель ответила на вопрос вместо сохранения вопроса"))
 
             let validQuestionOutput = "Успеем ли мы отправить релиз сегодня?"
-            let validResult = GroundingValidator.validate(input: input, output: validQuestionOutput, style: .clean)
+            let validResult = GroundingValidator.validate(input: input, output: validQuestionOutput, level: .clean)
             if case .valid(let text) = validResult {
                 #expect(text.contains("?"))
             } else {
@@ -51,7 +51,7 @@ extension SharedSettingsSuites {
         @Test func subordinateClauseWithQuestionWordIsNotFalselyRejected() {
             let input = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать про No8M и про Кубернейтс под тем, как эффективно сделать интеграцию с онлайн-университетом для No8?"
             let output = "Раз, 2, 3, 4, 5. Я иду искать. Нужно подумать о No8M и Кубернейтс, как эффективно интегрировать с онлайн-университетом для No8."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             if case .valid(let text) = result {
                 #expect(text.contains("No8M"))
                 #expect(text.contains("2"))
@@ -69,14 +69,14 @@ extension SharedSettingsSuites {
             Очищенный текст:
             Надо подумать о задаче.
             """
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             #expect(result == .valid(sanitizedText: "Надо подумать о задаче."))
         }
 
         @Test func formalStyleAllowsPoliteRestructuringWithinLimits() {
             let input = "Слушай давай созвонимся завтра в 10 утра обсудим контракт"
             let formalOutput = "Коллеги, предлагаю провести встречу завтра в 10 утра для обсуждения контракта."
-            let result = GroundingValidator.validate(input: input, output: formalOutput, style: .formal)
+            let result = GroundingValidator.validate(input: input, output: formalOutput, level: .rewrite(tone: "деловой"))
             if case .valid(let text) = result {
                 #expect(text.contains("10"))
             } else {
@@ -85,29 +85,14 @@ extension SharedSettingsSuites {
 
             // Если при перефразировании потеряли число
             let missingNumFormal = "Коллеги, предлагаю встретиться завтра утром для обсуждения контракта."
-            let missingResult = GroundingValidator.validate(input: input, output: missingNumFormal, style: .formal)
+            let missingResult = GroundingValidator.validate(input: input, output: missingNumFormal, level: .rewrite(tone: "деловой"))
             #expect(missingResult == .rejected(reason: "Пропущено исходное число 10"))
-        }
-
-        @Test func bulletsStyleEnforcesListMarkers() {
-            let input = "Нужно купить молоко хлеб и сыр а также не забыть заехать на почту"
-            let noBulletsOutput = "Нужно купить молоко, хлеб, сыр и заехать на почту."
-            let rejectedResult = GroundingValidator.validate(input: input, output: noBulletsOutput, style: .bullets)
-            #expect(rejectedResult == .rejected(reason: "Стиль тезисов требует наличия маркированного списка"))
-
-            let validBulletsOutput = "- Купить продукты: молоко, хлеб, сыр\n- Заехать на почту"
-            let validResult = GroundingValidator.validate(input: input, output: validBulletsOutput, style: .bullets)
-            if case .valid(let text) = validResult {
-                #expect(text.contains("- "))
-            } else {
-                Issue.record("Должно быть валидно для маркированного списка")
-            }
         }
 
         @Test func promptStyleAllowsStructuralTokensAndExpandedLength() {
             let input = "Сделай парсер логов на питоне"
             let promptOutput = "Role: Senior Python Developer\nTask: Напиши парсер логов на Python с обработкой ошибок.\nConstraints: Используй стандартную библиотеку."
-            let result = GroundingValidator.validate(input: input, output: promptOutput, style: .prompt)
+            let result = GroundingValidator.validate(input: input, output: promptOutput, level: .prompt)
             if case .valid(let text) = result {
                 #expect(text.contains("Role:"))
                 #expect(text.contains("Task:"))
@@ -123,14 +108,14 @@ extension SharedSettingsSuites {
             let outputWithTerm = "Мы используем Golosok в проде"
 
             // Без добавления в словарь — отклоняется как неизвестный латинский термин
-            let rejected = GroundingValidator.validate(input: input, output: outputWithTerm, style: .clean)
+            let rejected = GroundingValidator.validate(input: input, output: outputWithTerm, level: .clean)
             #expect(rejected == .rejected(reason: "Новый термин Golosok не найден в речи или словаре"))
 
             // С добавлением в словарь — пропускается
             let allowed = GroundingValidator.validate(
                 input: input,
                 output: outputWithTerm,
-                style: .clean,
+                level: .clean,
                 customTerms: ["Golosok"]
             )
             if case .valid(let text) = allowed {
