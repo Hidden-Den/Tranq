@@ -28,17 +28,25 @@ enum AIProviderPresets {
         AIProviderPreset(
             id: "openai",
             name: "OpenAI",
-            hint: "ChatGPT, gpt-4o-mini, gpt-4o",
+            hint: "ChatGPT, gpt-6-luna, gpt-6.1-terra",
             baseURL: "https://api.openai.com/v1",
-            defaultModel: "gpt-4o-mini",
+            defaultModel: "gpt-6-luna",
             needsKey: true
         ),
         AIProviderPreset(
             id: "anthropic",
             name: "Anthropic",
-            hint: "claude-3-5-haiku, claude-3-7-sonnet",
+            hint: "claude-haiku-5-5, claude-sonnet-5-5",
             baseURL: "https://api.anthropic.com/v1",
-            defaultModel: "claude-3-5-haiku-20241022",
+            defaultModel: "claude-haiku-5-5",
+            needsKey: true
+        ),
+        AIProviderPreset(
+            id: "corporate",
+            name: "Корпоративный шлюз",
+            hint: "Адрес шлюза компании",
+            baseURL: "",
+            defaultModel: "",
             needsKey: true
         ),
         AIProviderPreset(
@@ -70,8 +78,9 @@ struct AIProviderConfig {
     let model: String
     var providerID: String = ""
 
+    /// Формат Anthropic определяется только выбранным пресетом, не адресом.
     var isAnthropic: Bool {
-        baseURL.contains("anthropic.com") || providerID == "anthropic"
+        providerID == "anthropic"
     }
 }
 
@@ -266,10 +275,7 @@ final class AIService {
             request.httpMethod = "POST"
             request.timeoutInterval = 180
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            ChatRequestBuilder.applyAuth(&request, config: config)
 
             var systemPrompt: String? = nil
             var anthropicMessages: [[String: String]] = []
@@ -354,15 +360,13 @@ final class AIService {
         request.httpMethod = "POST"
         request.timeoutInterval = 180
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-        }
-        if config.baseURL.contains("openrouter.ai") {
+        ChatRequestBuilder.applyAuth(&request, config: config)
+        if config.isOpenRouter {
             request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
             request.setValue("Golosok", forHTTPHeaderField: "X-Title")
         }
 
-        let isOpenRouter = config.baseURL.contains("openrouter.ai")
+        let isOpenRouter = config.isOpenRouter
         let reasoning = isOpenRouter ? ReasoningConfig(effort: "none", exclude: true) : nil
         let provider = isOpenRouter ? ProviderConfig(sort: "latency") : nil
         // Для OpenRouter опускаем поле temperature (nil), чтобы исключить HTTP 400 на моделях с фиксированной температурой
@@ -424,16 +428,7 @@ final class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 15
-        if config.isAnthropic {
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        } else {
-            if !config.apiKey.isEmpty {
-                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-            }
-        }
+        ChatRequestBuilder.applyAuth(&request, config: config)
         session.dataTask(with: request) { data, response, error in
             if let error {
                 completion(.failure(.network(error.localizedDescription)))
@@ -460,16 +455,7 @@ final class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 15
-        if config.isAnthropic {
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        } else {
-            if !config.apiKey.isEmpty {
-                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-            }
-        }
+        ChatRequestBuilder.applyAuth(&request, config: config)
         session.dataTask(with: request) { data, response, error in
             if let error {
                 completion(.failure(.network(error.localizedDescription)))

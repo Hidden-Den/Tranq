@@ -59,10 +59,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         didSet { Self.defaults.set(engine.rawValue, forKey: "voice.engine") }
     }
 
-    @Published public var openRouterModel: String {
-        didSet { Self.defaults.set(openRouterModel, forKey: "voice.openRouterModel") }
-    }
-
     @Published public var localModel: String {
         didSet { Self.defaults.set(localModel, forKey: "voice.localModel") }
     }
@@ -122,6 +118,16 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         """,
     ]
 
+    /// Ожидание ответа модели по умолчанию, секунды. Через VPN ответы бывают медленнее.
+    static let defaultTimeoutSeconds = 6.0
+
+    /// Прежнее значение по умолчанию, 3 секунды, считается нетронутым и заменяется на новое.
+    static func migrateLegacyTimeout(_ defaults: UserDefaults) {
+        if defaults.double(forKey: "voice.timeout") == 3.0 {
+            defaults.set(defaultTimeoutSeconds, forKey: "voice.timeout")
+        }
+    }
+
     /// Убирает сохранённый промпт, если он совпадает с одним из прежних текстов по умолчанию.
     static func migrateLegacyPrompt(_ defaults: UserDefaults) {
         let key = "voice.customSystemPrompt"
@@ -138,14 +144,14 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     public func resetToDefaults() {
         self.mode = .smart
         self.engine = .external
-        self.openRouterModel = "anthropic/claude-haiku-5.5"
         self.localModel = "vikhr_1.5b"
-        self.adaptiveTimeoutSeconds = 3.0
+        self.adaptiveTimeoutSeconds = Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaultCustomPrompt
     }
 
     private init() {
         Self.migrateLegacyPrompt(Self.defaults)
+        Self.migrateLegacyTimeout(Self.defaults)
         let storedMode = Self.defaults.string(forKey: "voice.mode") ?? VoiceInputMode.smart.rawValue
         self.mode = VoiceInputMode(rawValue: storedMode) ?? .smart
 
@@ -156,14 +162,13 @@ public final class VoiceIntelligenceSettings: ObservableObject {
             self.engine = .external
         }
 
-        self.openRouterModel = Self.defaults.string(forKey: "voice.openRouterModel") ?? "anthropic/claude-haiku-5.5"
         let storedLocal = Self.defaults.string(forKey: "voice.localModel") ?? "vikhr_1.5b"
         if SLMModelStore.catalog.contains(where: { $0.id == storedLocal }) {
             self.localModel = storedLocal
         } else {
             self.localModel = "vikhr_1.5b"
         }
-        self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : 3.0
+        self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaults.string(forKey: "voice.customSystemPrompt") ?? Self.defaultCustomPrompt
     }
 }

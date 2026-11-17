@@ -132,14 +132,7 @@ public final class ThoughtSynthesizer {
                 guard let url = URL(string: "\(cleanBase)/models") else { return }
                 var request = URLRequest(url: url)
                 request.httpMethod = "HEAD"
-                if config.isAnthropic {
-                    if !config.apiKey.isEmpty {
-                        request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-                    }
-                    request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-                } else if !config.apiKey.isEmpty {
-                    request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-                }
+                ChatRequestBuilder.applyAuth(&request, config: config)
                 request.timeoutInterval = 2.0
                 _ = try? await URLSession.shared.data(for: request)
                 AppLogger.shared.info("Synthesizer", "TLS сессия к внешнему провайдеру успешно прогрета", details: config.baseURL)

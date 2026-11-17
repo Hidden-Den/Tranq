@@ -145,21 +145,20 @@ extension SharedSettingsSuites {
         @Test func defaultSettingsAreCorrect() {
             let settings = VoiceIntelligenceSettings.shared
             // resetToDefaults пишет в настоящие настройки пользователя — возвращаем всё как было
-            let saved = (settings.mode, settings.engine, settings.openRouterModel, settings.localModel,
+            let saved = (settings.mode, settings.engine, settings.localModel,
                          settings.adaptiveTimeoutSeconds, settings.customSystemPrompt)
             settings.resetToDefaults()
             defer {
                 settings.mode = saved.0
                 settings.engine = saved.1
-                settings.openRouterModel = saved.2
-                settings.localModel = saved.3
-                settings.adaptiveTimeoutSeconds = saved.4
-                settings.customSystemPrompt = saved.5
+                settings.localModel = saved.2
+                settings.adaptiveTimeoutSeconds = saved.3
+                settings.customSystemPrompt = saved.4
             }
 
             #expect(settings.mode == .smart)
             #expect(settings.engine == .external)
-            #expect(settings.adaptiveTimeoutSeconds == 3.0)
+            #expect(settings.adaptiveTimeoutSeconds == 6.0)
             #expect(VoiceInputMode.smart.title == "Умная речь")
             #expect(VoiceEngine.airGapped.title == "Air-Gapped")
             #expect(VoiceEngine.external.title == "Внешний")

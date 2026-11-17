@@ -30,44 +30,7 @@ struct ExternalBackend: CleanupBackend {
     }
 
     private func stream(system: String, user: String) async throws -> String {
-        let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
-        let target: String
-        if config.isAnthropic {
-            target = cleanBase.hasSuffix("/messages") ? cleanBase : cleanBase + "/messages"
-        } else {
-            target = cleanBase.hasSuffix("/chat/completions") ? cleanBase : cleanBase + "/chat/completions"
-        }
-        guard let url = URL(string: target) else { throw CleanupBackendError.unavailable }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if config.isAnthropic {
-            if !config.apiKey.isEmpty { request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key") }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        } else if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-        }
-        request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
-        request.setValue("Golosok macOS", forHTTPHeaderField: "X-Title")
-
-        let userPrompt = "<transcript>\(user)</transcript>"
-        var body: [String: Any] = ["model": config.model, "stream": true]
-        if config.isAnthropic {
-            body["max_tokens"] = 1024
-            body["temperature"] = 0.1
-            body["messages"] = [["role": "user", "content": userPrompt]]
-            if !system.isEmpty { body["system"] = system }
-        } else {
-            body["messages"] = [["role": "system", "content": system], ["role": "user", "content": userPrompt]]
-            if config.baseURL.contains("openrouter.ai") {
-                body["reasoning"] = ["effort": "none", "exclude": true]
-                body["provider"] = ["sort": "latency"]
-            } else {
-                body["temperature"] = 0.1
-            }
-        }
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let request = try ChatRequestBuilder.streamRequest(config: config, system: system, user: "<transcript>\(user)</transcript>")
 
         let started = CFAbsoluteTimeGetCurrent()
         var accumulated = ""
