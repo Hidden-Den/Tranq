@@ -3,6 +3,9 @@ import AppKit
 
 struct EditableTextView: NSViewRepresentable {
     @Binding var text: String
+    var isEditable = true
+    /// Ставить ли курсор в текст при появлении.
+    var autoFocus = true
     var onChange: ((String) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
@@ -13,7 +16,7 @@ struct EditableTextView: NSViewRepresentable {
         let scrollView = NSTextView.scrollableTextView()
         guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
         textView.delegate = context.coordinator
-        textView.isEditable = true
+        textView.isEditable = isEditable
         textView.isSelectable = true
         textView.drawsBackground = false
         textView.font = NSFont.systemFont(ofSize: 15, weight: .regular)
@@ -36,8 +39,9 @@ struct EditableTextView: NSViewRepresentable {
             textView.string = text
             textView.textColor = NSColor(Color.uiInk)
         }
+        textView.isEditable = isEditable
         context.coordinator.parent = self
-        if !context.coordinator.didFocus, let window = textView.window {
+        if autoFocus, isEditable, !context.coordinator.didFocus, let window = textView.window {
             window.makeFirstResponder(textView)
             context.coordinator.didFocus = true
         }

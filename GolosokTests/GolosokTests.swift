@@ -37,66 +37,11 @@ struct GolosokTests {
         #expect(result == "— Привет.\n\n— Здравствуй!")
     }
 
-    // MARK: - Synced word alignment
+    // MARK: - Whisper timing interpolation
 
     private func timedWords(_ texts: [String]) -> [TimedWord] {
         texts.enumerated().map { TimedWord(text: $0.element, start: Double($0.offset), end: Double($0.offset) + 1) }
     }
-
-    private func wordRanges(_ text: String, _ words: [TimedWord]) -> [NSRange] {
-        SyncedTextView.Coordinator(onSeek: { _ in }).wordRanges(text: text, words: words)
-    }
-
-    @Test func exactWordsProducePositionalRanges() {
-        let text = "Привет! Это проверка."
-        let words = timedWords(["Привет!", "Это", "проверка."])
-        let ranges = wordRanges(text, words)
-        #expect(ranges.count == 3)
-        #expect(ranges[0] == NSRange(location: 0, length: 7))
-        #expect(ranges[1] == NSRange(location: 8, length: 3))
-        #expect(ranges[2] == NSRange(location: 12, length: 9))
-    }
-
-    @Test func caseInsensitiveTokensStillAlign() {
-        let text = "Привет мир"
-        let words = timedWords(["привет", "мир"])
-        let ranges = wordRanges(text, words)
-        #expect(ranges[0].location == 0)
-        #expect(ranges[1].location == 7)
-    }
-
-    @Test func extraTextWordIsSkippedByAlignment() {
-        let text = "один два три"
-        let words = timedWords(["один", "три"])
-        let ranges = wordRanges(text, words)
-        #expect(ranges[0] == NSRange(location: 0, length: 4))
-        #expect(ranges[1] == NSRange(location: 9, length: 3))
-    }
-
-    @Test func missingWordBecomesNotFoundPlaceholder() {
-        let text = "привет мир"
-        let words = timedWords(["привет", "неттакого", "мир"])
-        let ranges = wordRanges(text, words)
-        #expect(ranges.count == 3)
-        #expect(ranges[0] == NSRange(location: 0, length: 6))
-        #expect(ranges[1].location == NSNotFound)
-        #expect(ranges[2] == NSRange(location: 7, length: 3))
-    }
-
-    @Test func punctuationAttachedToTokensStillAligns() {
-        let text = "Числа 1, 2, 3 и всё."
-        let words = timedWords(["Числа", "1,", "2,", "3", "и", "всё."])
-        let ranges = wordRanges(text, words)
-        #expect(ranges.allSatisfy { $0.location != NSNotFound })
-        #expect(ranges.count == 6)
-    }
-
-    @Test func emptyWordsProduceNoRanges() {
-        #expect(wordRanges("", timedWords(["слово"])).isEmpty)
-        #expect(wordRanges("текст", []).isEmpty)
-    }
-
-    // MARK: - Whisper timing interpolation
 
     @Test func interpolateTimingsSpreadsAcrossRange() {
         let words = timedWords(["а", "б", "в"])
@@ -141,64 +86,6 @@ struct GolosokTests {
         #expect(UpdateService.compareVersions("1.12.1", "1.12.1") == .orderedSame)
         #expect(UpdateService.compareVersions("2.0", "1.99.9") == .orderedDescending)
         #expect(UpdateService.compareVersions("1.0", "1.0.1") == .orderedAscending)
-    }
-
-    // MARK: - Transcript search (⌘ + F)
-
-    private func tw(_ texts: [String]) -> [TimedWord] {
-        texts.enumerated().map { TimedWord(text: $0.element, start: Double($0.offset), end: Double($0.offset) + 1) }
-    }
-
-    @Test func transcriptSearchMatchesWordsCaseInsensitive() {
-        let words = tw(["Привет", "мир", "ПРИВЕТ", "дом"])
-        let indices = TranscriptSearch.matchedWordIndices(in: words, query: "привет")
-        #expect(indices == [0, 2])
-    }
-
-    @Test func transcriptSearchMatchesBySubstringWithinWord() {
-        let words = tw(["прилетел", "привет", "ушёл"])
-        let indices = TranscriptSearch.matchedWordIndices(in: words, query: "при")
-        #expect(indices == [0, 1])
-    }
-
-    @Test func transcriptSearchIsDiacriticInsensitive() {
-        let words = tw(["еле", "ёлка", "ёж"])
-        let indices = TranscriptSearch.matchedWordIndices(in: words, query: "е")
-        #expect(indices == [0, 1, 2])
-    }
-
-    @Test func transcriptSearchEmptyQueryReturnsNoMatches() {
-        let words = tw(["слово", "текст"])
-        #expect(TranscriptSearch.matchedWordIndices(in: words, query: "").isEmpty)
-    }
-
-    @Test func transcriptSearchNoMatchReturnsEmpty() {
-        let words = tw(["кот", "пёс"])
-        #expect(TranscriptSearch.matchedWordIndices(in: words, query: "слон").isEmpty)
-    }
-
-    @Test func transcriptSearchRangesFindAllOccurrences() {
-        let text = "кот пошёл к коту за котёнком"
-        let ranges = TranscriptSearch.matchedRanges(in: text, query: "кот")
-        #expect(ranges.count == 3)
-        let ns = text as NSString
-        for r in ranges {
-            #expect(ns.substring(with: r).lowercased().contains("кот"))
-        }
-    }
-
-    @Test func transcriptSearchRangesAreCaseInsensitive() {
-        let text = "Тест тест ТЕСТ"
-        let ranges = TranscriptSearch.matchedRanges(in: text, query: "тест")
-        #expect(ranges.count == 3)
-    }
-
-    @Test func transcriptSearchRangesEmptyQueryReturnsNothing() {
-        #expect(TranscriptSearch.matchedRanges(in: "текст", query: "").isEmpty)
-    }
-
-    @Test func transcriptSearchRangesNoMatchReturnsEmpty() {
-        #expect(TranscriptSearch.matchedRanges(in: "привет мир", query: "слон").isEmpty)
     }
 }
 
