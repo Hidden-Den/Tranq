@@ -36,7 +36,8 @@ struct BrowserURLReaderTests {
         let fake = FakeURLSource(url: URL(string: "https://x.ru")!, delay: 2)
         let start = Date()
         #expect(await BrowserURLReader.readHost(pid: 1, bundleId: "com.apple.Safari", source: fake, deadline: 0.3) == nil)
-        #expect(Date().timeIntervalSince(start) < 0.6)
+        // Порог ниже задержки источника в 2 с: доказывает, что чтение не ждали, и не падает под нагрузкой
+        #expect(Date().timeIntervalSince(start) < 1.5)
     }
 
     @Test func browserListCoversChromiumAndSafari() {

@@ -14,7 +14,11 @@ struct DictationContextCaptureTests {
         let fake = FakeURLSource(url: URL(string: "https://mail.company.ru")!)
         let capture = DictationContextCapture(source: fake)
         capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: true)
-        try? await Task.sleep(for: .milliseconds(100))
+        // Ждём, пока адрес реально прочитан, а не фиксированное время: под нагрузкой чтение может задержаться
+        let deadline = Date().addingTimeInterval(5)
+        while fake.calls == 0 && Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
         fake.url = URL(string: "https://chatgpt.com")!
         let c = await capture.finish()
         #expect(c == DictationContext(bundleId: "com.google.Chrome", host: "mail.company.ru", promptRequested: true))
