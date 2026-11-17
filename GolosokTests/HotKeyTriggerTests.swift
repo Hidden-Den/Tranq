@@ -95,6 +95,70 @@ struct HotKeyTriggerTests {
         }
     }
 
+    @Test func singleModifierWithoutAccessibilityExplainsAndRetries() {
+        let manager = NativeHotKeyManager.shared
+        let settings = HotKeySettings.shared
+        let original = settings.trigger
+        let originalCheck = manager.isAccessibilityTrusted
+        let originalRequest = settings.requestAccessibility
+        var requested = 0
+        defer {
+            manager.isAccessibilityTrusted = originalCheck
+            settings.requestAccessibility = originalRequest
+            settings.setPreset(original)
+        }
+        manager.isAccessibilityTrusted = { false }
+        settings.requestAccessibility = { requested += 1 }
+
+        let assigned = settings.setPreset(.singleModifier(.fn))
+
+        #expect(assigned == false)
+        #expect(requested == 1)
+        #expect(manager.pendingTrigger == .singleModifier(.fn))
+        #expect(settings.warningMessage != nil, "без прав пользователь должен видеть причину")
+
+        // Права появились: ожидающая клавиша встаёт сама, причина уходит
+        manager.isAccessibilityTrusted = { true }
+        manager.register()
+
+        #expect(settings.trigger == .singleModifier(.fn))
+        #expect(settings.hotKeyName == "Fn")
+        #expect(settings.warningMessage == nil)
+    }
+
+    @Test func pendingSingleModifierRegistersWhenAccessArrivesWithoutActivation() async throws {
+        let manager = NativeHotKeyManager.shared
+        let settings = HotKeySettings.shared
+        let original = settings.trigger
+        let originalCheck = manager.isAccessibilityTrusted
+        let originalRequest = settings.requestAccessibility
+        let originalInterval = manager.pendingRetryInterval
+        defer {
+            manager.isAccessibilityTrusted = originalCheck
+            manager.pendingRetryInterval = originalInterval
+            settings.requestAccessibility = originalRequest
+            settings.setPreset(original)
+        }
+        manager.pendingRetryInterval = 0.05
+        manager.isAccessibilityTrusted = { false }
+        settings.requestAccessibility = {}
+
+        settings.setPreset(.singleModifier(.fn))
+        #expect(manager.pendingTrigger == .singleModifier(.fn))
+
+        // Права появились спустя время, окно приложения при этом не активировалось
+        manager.isAccessibilityTrusted = { true }
+        var waited = 0
+        while manager.pendingTrigger != nil && waited < 40 {
+            try await Task.sleep(for: .milliseconds(50))
+            waited += 1
+        }
+
+        #expect(manager.pendingTrigger == nil, "ожидающая клавиша должна встать сама")
+        #expect(settings.trigger == .singleModifier(.fn))
+        #expect(settings.warningMessage == nil)
+    }
+
     @Test func unsupportedModifierFallsBackToNone() {
         let manager = NativeHotKeyManager.shared
         let original = manager.trigger

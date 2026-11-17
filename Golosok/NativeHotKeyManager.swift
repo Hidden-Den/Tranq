@@ -25,7 +25,11 @@ public class NativeHotKeyManager {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isModifierActive: Bool = false
-    public private(set) var pendingTrigger: HotKeyTrigger?
+    public private(set) var pendingTrigger: HotKeyTrigger? {
+        didSet { updatePendingRetry() }
+    }
+    private var pendingRetryTimer: Timer?
+    private var wasTrustedOnLastRetry = false
 
     /// Аргумент `true`, если нажато сочетание для режима промпта: основная клавиша с Shift.
     public var onHotKeyPressed: ((_ promptRequested: Bool) -> Void)?
@@ -198,6 +202,28 @@ public class NativeHotKeyManager {
         }
     }
 
+    /// Пока клавиша ждёт доступа, права проверяются по таймеру: система обновляет их с задержкой,
+    /// а активация окна может прийти раньше и больше не повториться.
+    private func updatePendingRetry() {
+        guard pendingTrigger != nil else {
+            pendingRetryTimer?.invalidate()
+            pendingRetryTimer = nil
+            return
+        }
+        guard pendingRetryTimer == nil else { return }
+        wasTrustedOnLastRetry = false
+        let timer = Timer(timeInterval: pendingRetryInterval, repeats: true) { [weak self] _ in
+            guard let self, self.pendingTrigger != nil else { return }
+            // Одна попытка на каждое появление прав: иначе при сбое тапа ошибка писалась бы каждую секунду
+            let trusted = self.isAccessibilityTrusted()
+            defer { self.wasTrustedOnLastRetry = trusted }
+            guard trusted, !self.wasTrustedOnLastRetry else { return }
+            self.register()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        pendingRetryTimer = timer
+    }
+
     public func register() {
         if let pending = pendingTrigger {
             if register(trigger: pending) {
@@ -224,19 +250,28 @@ public class NativeHotKeyManager {
 
     private var hasLoggedAccessibilityWarning = false
 
-    private func registerEventTap(for key: SingleModifierKey) -> Bool {
-        if isTestEnvironment {
-            return true
-        }
+    /// Как часто проверять права, пока клавиша ждёт доступа. Тесты ставят меньше.
+    var pendingRetryInterval: TimeInterval = 1
 
-        guard AXIsProcessTrusted() else {
+    /// Доверяет ли система этому процессу. Под тестами всегда да; тесты подменяют, чтобы смоделировать отказ.
+    var isAccessibilityTrusted: () -> Bool = {
+        AppEnvironment.isRunningTests || AXIsProcessTrusted()
+    }
+
+    private func registerEventTap(for key: SingleModifierKey) -> Bool {
+        guard isAccessibilityTrusted() else {
             if !hasLoggedAccessibilityWarning {
                 hasLoggedAccessibilityWarning = true
-                AppLogger.shared.warn("HotKey", "Ожидание прав Универсального доступа", details: key.displayName)
+                // Путь нужен для диагностики: права привязаны к конкретной сборке, а копий приложения может быть несколько
+                AppLogger.shared.warn("HotKey", "Ожидание прав Универсального доступа", details: "\(key.displayName), \(Bundle.main.bundlePath)")
             }
             return false
         }
         hasLoggedAccessibilityWarning = false
+
+        if isTestEnvironment {
+            return true
+        }
 
         let mask = (1 << CGEventType.flagsChanged.rawValue)
         let observer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())

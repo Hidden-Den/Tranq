@@ -860,6 +860,22 @@
         }
       }
     },
+    "HotKey.NeedsAccessibility" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accessibility access needed"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нужен Универсальный доступ"
+          }
+        }
+      }
+    },
     "HotKey.Preset.Default" : {
       "localizations" : {
         "en" : {

@@ -14,6 +14,11 @@ public final class HotKeySettings: ObservableObject {
     @Published public var isTaken = false
     @Published public var warningMessage: String? = nil
 
+    /// Запрос прав Универсального доступа. Тесты подменяют, чтобы не открывать системные настройки.
+    var requestAccessibility: () -> Void = {
+        PermissionManager.shared.requestAccessibilityPermission()
+    }
+
     private var monitor: Any?
     private var pendingSingleModifier: SingleModifierKey?
 
@@ -26,6 +31,8 @@ public final class HotKeySettings: ObservableObject {
     public func refreshName() {
         trigger = NativeHotKeyManager.shared.trigger
         hotKeyName = NativeHotKeyManager.shared.displayName()
+        // Ожидавшая клавиша встала после выдачи прав: причина больше не нужна
+        if isConfigured && !isCapturing { warningMessage = nil }
     }
 
     public var isConfigured: Bool {
@@ -47,7 +54,9 @@ public final class HotKeySettings: ObservableObject {
                 self.isTaken = true
             case .singleModifier:
                 self.isTaken = false
-                PermissionManager.shared.requestAccessibilityPermission()
+                // Без прав клавиша молча не назначалась; причина должна быть видна рядом с ней
+                self.warningMessage = NSLocalizedString("HotKey.NeedsAccessibility", value: "Нужен Универсальный доступ", comment: "Single modifier hotkey needs Accessibility access")
+                requestAccessibility()
             case .none:
                 self.isTaken = false
             }
