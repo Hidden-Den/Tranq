@@ -115,6 +115,7 @@ struct AIInputField: View {
 
 struct VoiceIntelligenceSection: View {
     @ObservedObject var settings = VoiceIntelligenceSettings.shared
+    @ObservedObject var hotKey = HotKeySettings.shared
 
     var body: some View {
         UICard {
@@ -234,7 +235,44 @@ struct VoiceIntelligenceSection: View {
                             .accessibilityLabel(Text("Инструкция модели"))
                     }
                 }
+
+                Divider().background(Color.uiHairline)
+
+                promptModeRow
             }
+        }
+    }
+
+    /// Режим промпта: основная клавиша с Shift запускает одну диктовку как запрос к нейросети.
+    private var promptModeRow: some View {
+        let hint = PromptModeHint.make(for: hotKey.trigger)
+        let isAvailable: Bool = { if case .available = hint { return true } else { return false } }()
+        return HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Режим промпта")
+                    .font(.ui(.body, weight: .medium))
+                    .foregroundColor(.uiInk)
+                Group {
+                    switch hint {
+                    case .available(let combo): Text("\(combo) на одну диктовку")
+                    case .unavailableShift: Text("Недоступно с клавишей Shift")
+                    case .noHotKey: Text("Нет горячей клавиши")
+                    }
+                }
+                .font(.ui(.caption))
+                .foregroundColor(.uiMidGray)
+            }
+            Spacer()
+            Toggle(String(localized: "Режим промпта"), isOn: Binding(
+                get: { settings.promptModeEnabled },
+                set: { newValue in
+                    settings.promptModeEnabled = newValue
+                    NativeHotKeyManager.shared.refreshPromptRegistration()
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
+            .disabled(!isAvailable)
         }
     }
 }

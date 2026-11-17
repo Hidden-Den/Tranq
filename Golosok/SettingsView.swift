@@ -320,6 +320,9 @@ HStack {
                 // РАЗДЕЛ 3.5: ГОЛОСОВОЙ ВВОД И СИНТЕЗ
                 VoiceIntelligenceSection()
 
+                // РАЗДЕЛ 3.55: ПРАВИЛА ПРИЛОЖЕНИЙ
+                RulesSettingsSection()
+
                 // РАЗДЕЛ 3.6: ИИ-ПРОВАЙДЕР
                 AIProviderSection()
 
