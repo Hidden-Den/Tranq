@@ -53,6 +53,13 @@ final class TermSuspectTests: XCTestCase {
         XCTAssertTrue(suspects.allSatisfy { $0.candidates.count <= 6 })
     }
 
+    /// Один согласный звук совпадает почти с чем угодно: «Ley» стало LOI. Такой ключ годится только аббревиатуре.
+    func testSingleSoundKeyNeedsUppercase() {
+        let suspects = index.termSuspects(in: "The Ley Fix на Staging, скинь ссылку.", language: .ru)
+        XCTAssertNil(suspects.first { $0.token == "Ley" }, "\(suspects)")
+        XCTAssertNotNil(index.termSuspects(in: "Настрой IPI ключ.", language: .ru).first { $0.token == "IPI" })
+    }
+
     func testOnlyRussianDictation() {
         XCTAssertEqual(index.termSuspects(in: "Настрой IPI ключ для интеграции.", language: .en), [])
     }

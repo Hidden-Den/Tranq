@@ -244,6 +244,8 @@ struct DictionaryIndex {
     private func candidates(for word: String) -> [String] {
         let key = Array(Phonetics.soundKey(word))
         guard !key.isEmpty else { return [] }
+        // Один согласный звук совпадает почти с чем угодно: такой ключ годится только аббревиатуре вроде «IPI»
+        guard key.count > 1 || word == word.uppercased() else { return [] }
         let letters = Phonetics.latinLetters(word)
         let lower = word.lowercased()
         var scored: [(similarity: Double, distance: Double, ordinal: Int, spelling: String)] = []
