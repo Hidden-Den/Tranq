@@ -24,7 +24,7 @@ final class DictionaryScreenLogicTests: XCTestCase {
     // MARK: - Поиск
 
     func testEmptyQueryReturnsNothing() {
-        XCTAssertEqual(DictionaryScreenLogic.search("  ", userEntries: [entry("Голосок", [:])], packs: packs), [])
+        XCTAssertEqual(DictionaryScreenLogic.search("  ", userEntries: [entry("Колосок", [:])], packs: packs), [])
     }
 
     func testSearchMatchesSpellingAndVariantsOfBothLanguages() {

@@ -55,7 +55,7 @@ final class DictionaryIndexTests: XCTestCase {
     }
 
     private var idx: DictionaryIndex {
-        makeIndex(users: [user("Голосок", ru: ["голосог"]), user("Python", ru: ["питон"])])
+        makeIndex(users: [user("Колосок", ru: ["колосог"]), user("Python", ru: ["питон"])])
     }
 
     // MARK: - Exact variants
@@ -105,9 +105,9 @@ final class DictionaryIndexTests: XCTestCase {
     }
 
     func testCyrillicSpellingKeepsEnding() {
-        // пользовательская запись «Голосок», вариант «голосог»
-        XCTAssertEqual(idx.apply(to: "у голосога", language: .ru).text, "у Голосока")
-        XCTAssertEqual(idx.apply(to: "с голосогом", language: .ru).text, "с Голосоком")
+        // пользовательская запись «Колосок», вариант «колосог»
+        XCTAssertEqual(idx.apply(to: "у колосога", language: .ru).text, "у Колосока")
+        XCTAssertEqual(idx.apply(to: "с колосогом", language: .ru).text, "с Колосоком")
     }
 
     func testCommonWordVariantOnlyExactForm() {
@@ -206,8 +206,8 @@ final class DictionaryIndexTests: XCTestCase {
     }
 
     func testApprovedSpellings() {
-        let index = makeIndex(users: [user("Голосок")], packs: [other])
-        XCTAssertEqual(index.approvedSpellings, ["Голосок", "Kuber"])
+        let index = makeIndex(users: [user("Колосок")], packs: [other])
+        XCTAssertEqual(index.approvedSpellings, ["Колосок", "Kuber"])
     }
 
     // MARK: - Budget

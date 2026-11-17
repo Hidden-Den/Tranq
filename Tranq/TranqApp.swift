@@ -107,8 +107,8 @@ struct TranqApp: App {
 
         .defaultSize(width: 990, height: 710)
         
-        MenuBarExtra("Голосок", systemImage: audioCapture.isRecording ? "record.circle.fill" : "waveform") {
-            Button("Развернуть Голосок") {
+        MenuBarExtra("Tranq", systemImage: audioCapture.isRecording ? "record.circle.fill" : "waveform") {
+            Button("Развернуть Tranq") {
                 MainWindowController.shared.showMainWindow()
             }
             

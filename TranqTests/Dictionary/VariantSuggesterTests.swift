@@ -56,7 +56,7 @@ struct VariantSuggesterTests {
 
     @Test func testCyrillicSpellingDropsEnglishVariants() async {
         let llm = MockLLM(reply: #"{"ru":["галосок"],"en":["tranq"]}"#)
-        let result = await VariantSuggester(checker: SetCommonWordChecker([:]), llm: llm).suggest(for: "Голосок")
+        let result = await VariantSuggester(checker: SetCommonWordChecker([:]), llm: llm).suggest(for: "Колосок")
         #expect(result[.en] == nil)
         #expect(result[.ru] == ["галосок"])
     }

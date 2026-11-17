@@ -870,22 +870,6 @@
         }
       }
     },
-    "Голосок" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tranq"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Голосок"
-          }
-        }
-      }
-    },
     "Горячая клавиша" : {
       "localizations" : {
         "en" : {
@@ -1966,7 +1950,7 @@
         }
       }
     },
-    "Развернуть Голосок" : {
+    "Развернуть Tranq" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1977,7 +1961,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Развернуть Голосок"
+            "value" : "Развернуть Tranq"
           }
         }
       }

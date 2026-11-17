@@ -159,7 +159,7 @@ struct HistoryNoteView: View {
         HistoryStore.shared.replaceNoteText(id: item.id, text: draft)
     }
 
-    /// Прячет Голосок и вставляет текст в приложение, которое стало активным.
+    /// Прячет Tranq и вставляет текст в приложение, которое стало активным.
     private func pasteAgain() {
         saveNow()
         let text = visibleText
