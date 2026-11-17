@@ -34,6 +34,7 @@ final class DictationContextCapture {
     func begin(
         app: (pid: pid_t, bundleId: String?)?,
         promptRequested: Bool,
+        readsHost: Bool = true,
         onHost: ((String?) -> Void)? = nil
     ) {
         let source = self.source
@@ -44,7 +45,8 @@ final class DictationContextCapture {
             self.promptRequested = promptRequested
             return generation
         }
-        guard let app, BrowserURLReader.isBrowser(app.bundleId) else {
+        // Без правил по сайтам адрес вкладки не нужен: чтение включает режим доступности у браузеров на Chromium
+        guard readsHost, let app, BrowserURLReader.isBrowser(app.bundleId) else {
             lock.withLock { hostTask = nil }
             return
         }

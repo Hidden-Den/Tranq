@@ -163,7 +163,11 @@ final class AudioCapture: ObservableObject {
     private func beginDictationContext(promptRequested: Bool) {
         let app = NSWorkspace.shared.frontmostApplication.map { (pid: $0.processIdentifier, bundleId: $0.bundleIdentifier) }
         modeLabel = resolveLevel(for: DictationContext(bundleId: app?.bundleId, host: nil, promptRequested: promptRequested)).overlayLabel ?? ""
-        contextCapture.begin(app: app, promptRequested: promptRequested) { [weak self] host in
+        let hasSiteRules = DictationRuleStore.shared.rules.contains { rule in
+            if case .site = rule.target { return rule.isEnabled }
+            return false
+        }
+        contextCapture.begin(app: app, promptRequested: promptRequested, readsHost: hasSiteRules) { [weak self] host in
             DispatchQueue.main.async {
                 guard let self, self.isRecording else { return }
                 let context = DictationContext(bundleId: app?.bundleId, host: host, promptRequested: promptRequested)

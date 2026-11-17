@@ -31,6 +31,14 @@ struct DictationContextCaptureTests {
         #expect(await capture.finish() == DictationContext(bundleId: nil, host: nil, promptRequested: false))
     }
 
+    @Test func browserHostIsNotReadWithoutSiteRules() async {
+        let fake = FakeURLSource(url: URL(string: "https://mail.company.ru")!)
+        let capture = DictationContextCapture(source: fake, readDeadline: 5)
+        capture.begin(app: (pid: 1, bundleId: "com.google.Chrome"), promptRequested: false, readsHost: false)
+        #expect(await capture.finish() == DictationContext(bundleId: "com.google.Chrome", host: nil, promptRequested: false))
+        #expect(fake.calls == 0)
+    }
+
     @Test func nonBrowserHasNoHost() async {
         let fake = FakeURLSource(url: URL(string: "https://x.ru")!)
         let capture = DictationContextCapture(source: fake, readDeadline: 5)

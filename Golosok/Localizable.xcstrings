@@ -2240,6 +2240,22 @@
         }
       }
     },
+    "Разрешите доступ к микрофону для записи речи.\nОстальные опции можно настроить позже." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grant microphone access to record speech.\nOther options can be configured later."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Разрешите доступ к микрофону для записи речи.\nОстальные опции можно настроить позже."
+          }
+        }
+      }
+    },
     "Умная речь" : {
       "localizations" : {
         "en" : {
