@@ -5,7 +5,7 @@ import Foundation
 /// Имя и идентификаторы после ребрендинга в Tranq.
 struct BrandingTests {
     @Test func bundleIdentifierIsTranq() {
-        #expect(Bundle.main.bundleIdentifier == "kozak-developer.Tranq")
+        #expect(Bundle.main.bundleIdentifier == "nuter.Tranq")
     }
 
     @Test func bundleNameIsTranq() {

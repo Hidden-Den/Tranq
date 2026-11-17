@@ -12,7 +12,7 @@ enum AppEnvironment {
     /// Имя папки данных в Application Support, единое для всех хранилищ.
     static let dataFolderName = "Tranq"
 
-    private static let testDefaultsSuite = "kozak-developer.Tranq.tests"
+    private static let testDefaultsSuite = "nuter.Tranq.tests"
 
     /// Папка данных: ~/Library/Application Support/Tranq или временная под тестами.
     static let dataDirectory: URL = {

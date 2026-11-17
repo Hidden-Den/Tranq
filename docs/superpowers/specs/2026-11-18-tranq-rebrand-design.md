@@ -89,7 +89,7 @@
 | Область | Было | Станет |
 | --- | --- | --- |
 | Видимое имя | Голосок | Tranq. «Развернуть Голосок» превращается в «Развернуть Tranq» |
-| Bundle ID | `kozak-developer.Golosok` | `kozak-developer.Tranq` |
+| Bundle ID | `kozak-developer.Golosok` | `nuter.Tranq` |
 | Таргеты и схема | `Golosok`, `GolosokTests`, `GolosokUITests` | `Tranq`, `TranqTests`, `TranqUITests` |
 | Папки и файлы | `Golosok/`, `GolosokApp.swift`, `GolosokSynthProtocol.swift` | `Tranq/`, `TranqApp.swift`, `TranqSynthProtocol.swift` |
 | Данные | `~/Library/Application Support/Golosok` | `.../Tranq` |
