@@ -149,7 +149,7 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     public func resetToDefaults() {
         self.mode = .smart
         self.engine = .external
-        self.localModel = "vikhr_1.5b"
+        self.localModel = SLMRecommendation.smallID
         self.adaptiveTimeoutSeconds = Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaultCustomPrompt
         self.promptModeEnabled = false
@@ -168,11 +168,12 @@ public final class VoiceIntelligenceSettings: ObservableObject {
             self.engine = .external
         }
 
-        let storedLocal = Self.defaults.string(forKey: "voice.localModel") ?? "vikhr_1.5b"
+        // Выведенная из каталога модель и новая установка получают лёгкую рекомендуемую модель
+        let storedLocal = Self.defaults.string(forKey: "voice.localModel") ?? SLMRecommendation.smallID
         if SLMModelStore.catalog.contains(where: { $0.id == storedLocal }) {
             self.localModel = storedLocal
         } else {
-            self.localModel = "vikhr_1.5b"
+            self.localModel = SLMRecommendation.smallID
         }
         self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaults.string(forKey: "voice.customSystemPrompt") ?? Self.defaultCustomPrompt

@@ -66,6 +66,10 @@ public final class LocalSynthServiceClient: ObservableObject {
             }
         }
 
+        guard allowsCLIFallback(modelPath: modelPath) else {
+            AppLogger.shared.info("LocalSynthClient", "Модель работает только через llama-server — откат на этап 1", details: "Модель: \(modelName)")
+            return nil
+        }
         guard isCLIEnabled, let cliPath = Self.llamaCLIPath else {
             AppLogger.shared.info("LocalSynthClient", "Локальный исполнитель недоступен — откат на этап 1")
             return nil
@@ -74,6 +78,12 @@ public final class LocalSynthServiceClient: ObservableObject {
         return await Task.detached(priority: .userInitiated) {
             Self.runCLISynthesis(cliPath: cliPath, modelPath: modelPath, prompt: prompt, stylePrompt: stylePrompt, timeout: timeout)
         }.value
+    }
+
+    /// Запасной путь через llama-cli закрыт для моделей, которые работают только через llama-server:
+    /// встроенный llama-cli может не знать их архитектуру и шаблон чата.
+    func allowsCLIFallback(modelPath: String) -> Bool {
+        SLMModelStore.model(forPath: modelPath)?.requiresServer != true
     }
 
     /// Поднимает модель заранее, пока человек ещё говорит.

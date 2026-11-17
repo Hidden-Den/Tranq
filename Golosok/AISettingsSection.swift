@@ -182,8 +182,8 @@ struct VoiceIntelligenceSection: View {
                             }
                             Spacer()
                             UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
-                                .init(LocalizedStringKey(m.name), value: m.id)
-                            }, width: 210)
+                                .init(LocalizedStringKey(SLMRecommendation.pickerLabel(for: m)), value: m.id)
+                            }, width: 240)
                         }
 
                         ActiveSLMModelStatusRow(modelID: settings.localModel)
@@ -285,10 +285,17 @@ struct ActiveSLMModelStatusRow: View {
         if let model = slmStore.model(named: modelID) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(LocalizedStringKey(model.name))
-                        .font(.ui(.body, weight: .medium))
-                        .foregroundColor(.uiInk)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(LocalizedStringKey(model.name))
+                            .font(.ui(.body, weight: .medium))
+                            .foregroundColor(.uiInk)
+                            .lineLimit(1)
+                        if SLMRecommendation.isRecommended(model) {
+                            Text("Рекомендуем")
+                                .font(.ui(.micro))
+                                .foregroundColor(.uiSuccess)
+                        }
+                    }
                     Text("\(model.sizeMB) МБ — Apple Metal")
                         .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)

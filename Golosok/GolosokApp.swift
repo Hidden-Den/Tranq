@@ -63,6 +63,9 @@ struct GolosokApp: App {
     init() {
         LanguageSettings.shared.apply()
         ThemeSettings.shared.apply()
+        Task.detached(priority: .utility) {
+            SLMModelStore.shared.removeRetiredModels()
+        }
     }
     
     var body: some Scene {
