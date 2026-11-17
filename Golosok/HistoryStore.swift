@@ -7,14 +7,17 @@ struct TranscriptionItem: Identifiable, Codable, Hashable {
     let duration: String
     var speedup: Double?
     var isUnread: Bool? = false
+    /// Сырая расшифровка до очистки; пусто у ручных заметок и у заметок прошлых версий.
+    var spokenText: String?
 
-    var formattedSpeedup: String {
-        if let s = speedup, s > 0 { return String(format: "x%.0f", s) }
-        return "x1"
+    /// Показывать ли переключатель «Итог / Сказано»: только если сказанное отличается от итога.
+    var showsSpokenToggle: Bool {
+        guard let spoken = spokenText?.trimmingCharacters(in: .whitespacesAndNewlines), !spoken.isEmpty else { return false }
+        return spoken != text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func withText(_ newText: String) -> TranscriptionItem {
-        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread)
+        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread, spokenText: spokenText)
     }
 
     static let dateFormat = "dd.MM.yyyy, HH:mm"

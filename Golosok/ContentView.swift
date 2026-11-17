@@ -845,7 +845,6 @@ struct ContentView: View {
                             
                             HStack(spacing: 8) {
                                 MetadataPill(icon: "waveform", text: selected.duration, color: Color.blue)
-                                MetadataPill(icon: "bolt.fill", text: selected.formattedSpeedup, color: Color.orange)
                                 MetadataPill(icon: "text.alignleft", text: "\(selected.text.count) " + String(localized: "зн"), color: Color.uiSuccess)
                                 let readMin = max(1, selected.text.count / 900)
                                 MetadataPill(icon: "book.fill", text: "~\(readMin) " + String(localized: "мин чтения"), color: Color.purple)

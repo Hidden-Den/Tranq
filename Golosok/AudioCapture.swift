@@ -233,7 +233,8 @@ final class AudioCapture: ObservableObject {
             text: output.finalText,
             duration: durationText,
             speedup: output.speedup,
-            isUnread: true
+            isUnread: true,
+            spokenText: output.rawText
         )
         history.storeAudio(for: item.id, from: output.audioURL, move: output.ownsAudioFile)
         // Тайминги слов храним только для текста без ИИ: модель переставляет и убирает слова
