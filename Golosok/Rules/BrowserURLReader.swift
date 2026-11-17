@@ -62,9 +62,45 @@ private final class ResumeOnce: @unchecked Sendable {
     }
 }
 
-/// Читает адрес из дерева Accessibility: первый `AXWebArea` в сфокусированном окне.
+/// Поиск веб-области страницы в дереве Accessibility. Обобщён по типу узла, чтобы проверяться без браузера.
+enum AXWebAreaSearch {
+    /// Обход в ширину. Страницей считается веб-область с адресом http или https: панели разработчика
+    /// и инспектор браузера пропускаются. Обход прекращается по числу узлов и по времени,
+    /// потому что медленный браузер иначе держал бы поток, когда результат уже никому не нужен.
+    static func firstPageURL<Node>(
+        root: Node,
+        maxVisited: Int,
+        budget: TimeInterval,
+        now: () -> Date = Date.init,
+        role: (Node) -> String?,
+        children: (Node) -> [Node],
+        url: (Node) -> URL?
+    ) -> URL? {
+        let start = now()
+        var queue = [root]
+        var index = 0
+        while index < queue.count, index < maxVisited {
+            if now().timeIntervalSince(start) > budget { return nil }
+            let current = queue[index]
+            index += 1
+            if role(current) == "AXWebArea", let candidate = url(current), isPage(candidate) {
+                return candidate
+            }
+            queue.append(contentsOf: children(current))
+        }
+        return nil
+    }
+
+    private static func isPage(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
+    }
+}
+
+/// Читает адрес из дерева Accessibility: первая веб-область страницы в сфокусированном окне.
 struct AccessibilityURLSource: FocusedURLSource {
     private static let maxVisited = 400
+    private static let walkBudget: TimeInterval = 0.3
     private static let messagingTimeout: Float = 0.25
 
     func focusedURL(pid: pid_t, bundleId: String) -> URL? {
@@ -74,18 +110,21 @@ struct AccessibilityURLSource: FocusedURLSource {
             ManualAccessibilityTracker.shared.enableOnce(for: app, pid: pid)
         }
         guard let window = Self.element(app, kAXFocusedWindowAttribute) else { return nil }
+        // Таймаут задан у приложения, но элементы, которые оно вернуло, берут общий, около шести секунд
+        AXUIElementSetMessagingTimeout(window, Self.messagingTimeout)
 
-        var queue = [window]
-        var index = 0
-        while index < queue.count, index < Self.maxVisited {
-            let current = queue[index]
-            index += 1
-            if Self.string(current, kAXRoleAttribute) == "AXWebArea" {
-                return Self.url(current)
-            }
-            queue.append(contentsOf: Self.children(current))
-        }
-        return nil
+        return AXWebAreaSearch.firstPageURL(
+            root: window,
+            maxVisited: Self.maxVisited,
+            budget: Self.walkBudget,
+            role: { Self.string($0, kAXRoleAttribute) },
+            children: { parent in
+                let kids = Self.children(parent)
+                kids.forEach { AXUIElementSetMessagingTimeout($0, Self.messagingTimeout) }
+                return kids
+            },
+            url: { Self.url($0) }
+        )
     }
 
     private static func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
