@@ -229,7 +229,6 @@ struct ContentView: View {
     
     private var sidebarHeader: some View {
         HStack(spacing: 8) {
-            Image("AppLogo").resizable().aspectRatio(contentMode: .fit).frame(width: 22, height: 22).foregroundColor(.uiInk)
             VStack(alignment: .leading, spacing: -2) {
                 Text("Tranq").font(.brand(22)).foregroundColor(.uiInk)
                 HStack(spacing: 4) {
@@ -336,11 +335,6 @@ struct ContentView: View {
             VStack(spacing: 24) {
                 VStack(spacing: 6) {
                     HStack(spacing: 8) {
-                        Image("AppLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 26, height: 26)
-                            .foregroundColor(.uiInk)
                         Text("Tranq")
                             .font(.brand(30))
                             .foregroundColor(.uiInk)

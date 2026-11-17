@@ -5,7 +5,7 @@ enum BrandAssets {
     /// Высота знака в строке меню в точках.
     static let menuBarMarkHeight: CGFloat = 16
 
-    /// Монограмма Tq для строки меню: шаблонное изображение, цвет подбирает система.
+    /// Строчная q для строки меню: шаблонное изображение, цвет подбирает система.
     /// Исходный контур большой, поэтому размер задаётся явно, с сохранением пропорций.
     static func menuBarMark() -> NSImage {
         guard let source = NSImage(named: "MenuBarMark"), source.size.height > 0 else { return NSImage() }
