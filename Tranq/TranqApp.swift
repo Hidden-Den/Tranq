@@ -108,7 +108,7 @@ struct TranqApp: App {
 
         .defaultSize(width: 990, height: 710)
         
-        MenuBarExtra("Tranq", systemImage: audioCapture.isRecording ? "record.circle.fill" : "waveform") {
+        MenuBarExtra {
             Button("Развернуть Tranq") {
                 MainWindowController.shared.showMainWindow()
             }
@@ -122,6 +122,12 @@ struct TranqApp: App {
             
             Button("Завершить") {
                 NSApplication.shared.terminate(nil)
+            }
+        } label: {
+            if audioCapture.isRecording {
+                Image(systemName: "record.circle.fill")
+            } else {
+                Image(nsImage: BrandAssets.menuBarGlyph())
             }
         }
     }
