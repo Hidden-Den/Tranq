@@ -29,7 +29,10 @@ final class AudioCapture: ObservableObject {
     @Published var transcribedText = ""
     @Published var warningMessage: String?
     @Published var isSuccessDone = false
+    /// Подпись необычного режима для окошка записи: «Промпт» или имя правила. Пусто при обычной очистке.
+    @Published var modeLabel = ""
 
+    private let contextCapture = DictationContextCapture()
     private let recorder = AudioRecorder()
     private let pipeline = TranscriptionPipeline.shared
     private let history = HistoryStore.shared
@@ -56,7 +59,8 @@ final class AudioCapture: ObservableObject {
         if isRecording { stopRecording() } else { startRecording() }
     }
 
-    func startRecording() {
+    /// `promptRequested` включает режим промпта на одну диктовку, если он разрешён в настройках.
+    func startRecording(promptRequested: Bool = false) {
         guard !isProcessingFile, !isRecording else { return }
         isSynthesizingThought = false
         hudStatusMessage = nil
@@ -64,7 +68,7 @@ final class AudioCapture: ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
-                if granted { DispatchQueue.main.async { self.startRecording() } }
+                if granted { DispatchQueue.main.async { self.startRecording(promptRequested: promptRequested) } }
             }
             return
         case .denied, .restricted:
@@ -83,6 +87,7 @@ final class AudioCapture: ObservableObject {
             OverlayPanelManager.shared.keepFront()
         }) else { return }
 
+        beginDictationContext(promptRequested: promptRequested)
         SoundEffect.playStart()
         AppLogger.shared.info("Recording", "Запись началась", details: "режим: \(HotKeySettings.shared.mode == .pushToTalk ? "рация" : "переключатель")")
         // Пока человек говорит, заранее поднимаем модели, чтобы распознавание и синтез стартовали без загрузки
@@ -105,7 +110,10 @@ final class AudioCapture: ObservableObject {
         guard isRecording else { return }
         removeEscMonitor()
         let focusTarget = InsertionService.shared.captureFocus()
+        // Контекст фиксируется сразу: новая запись сразу после этой не должна его подменить
+        let frozenContext = contextCapture.freeze()
         hudStatusMessage = nil
+        modeLabel = ""
 
         guard let recording = recorder.stop() else {
             isRecording = false
@@ -122,20 +130,55 @@ final class AudioCapture: ObservableObject {
         RecordingMeter.shared.reset()
         transcribedText = String(localized: "Расшифровка...")
 
-        let job = TranscriptionPipeline.Job(
-            source: .recording(recording.url, duration: recording.duration),
-            focusTarget: focusTarget,
-            level: VoiceIntelligenceSettings.shared.mode == .smart ? .clean : .verbatim
-        )
-        pipeline.run(job, onStageTwoStarted: { [weak self] in
-            self?.isSynthesizingThought = true
-        }, progress: { _ in }) { [weak self] result in
-            guard let self else { return }
-            self.isSynthesizingThought = false
-            self.handle(result, job: job) {
-                OverlayPanelManager.shared.scheduleHide(after: 1.0)
+        Task { @MainActor [weak self] in
+            guard let self else {
+                TempFiles.remove(recording.url)
+                return
             }
-            TempFiles.remove(recording.url)
+            let resolved = self.resolveLevel(for: await frozenContext.resolve())
+            if let rule = resolved.ruleName {
+                AppLogger.shared.info("Rules", "Правило: \(rule)")
+            }
+            let job = TranscriptionPipeline.Job(
+                source: .recording(recording.url, duration: recording.duration),
+                focusTarget: focusTarget,
+                level: resolved.level
+            )
+            self.pipeline.run(job, onStageTwoStarted: { [weak self] in
+                self?.isSynthesizingThought = true
+            }, progress: { _ in }) { [weak self] result in
+                guard let self else { return }
+                self.isSynthesizingThought = false
+                self.handle(result, job: job) {
+                    OverlayPanelManager.shared.scheduleHide(after: 1.0)
+                }
+                TempFiles.remove(recording.url)
+            }
+        }
+    }
+
+    // MARK: - Контекст диктовки
+
+    private func resolveLevel(for context: DictationContext) -> ResolvedLevel {
+        let settings = VoiceIntelligenceSettings.shared
+        return CleanupLevelResolver.resolve(
+            context,
+            rules: DictationRuleStore.shared.rules,
+            mode: settings.mode,
+            promptModeEnabled: settings.promptModeEnabled
+        )
+    }
+
+    /// Снимает контекст при начале записи. Подпись режима сначала по приложению, потом уточняется по сайту.
+    private func beginDictationContext(promptRequested: Bool) {
+        let app = NSWorkspace.shared.frontmostApplication.map { (pid: $0.processIdentifier, bundleId: $0.bundleIdentifier) }
+        modeLabel = resolveLevel(for: DictationContext(bundleId: app?.bundleId, host: nil, promptRequested: promptRequested)).overlayLabel ?? ""
+        contextCapture.begin(app: app, promptRequested: promptRequested) { [weak self] host in
+            DispatchQueue.main.async {
+                guard let self, self.isRecording else { return }
+                let context = DictationContext(bundleId: app?.bundleId, host: host, promptRequested: promptRequested)
+                self.modeLabel = self.resolveLevel(for: context).overlayLabel ?? ""
+            }
         }
     }
 
@@ -148,6 +191,7 @@ final class AudioCapture: ObservableObject {
         isRecording = false
         isSynthesizingThought = false
         hudStatusMessage = nil
+        modeLabel = ""
         RecordingMeter.shared.reset()
         transcribedText = String(localized: "Запись отменена")
         OverlayPanelManager.shared.hideOverlay()

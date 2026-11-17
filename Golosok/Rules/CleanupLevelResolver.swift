@@ -14,6 +14,14 @@ struct ResolvedLevel: Equatable {
     let label: String
     /// Имя сработавшего правила; пусто, если правила не было.
     let ruleName: String?
+
+    /// Подпись для окошка записи: только для необычного режима, обычная очистка не подписывается.
+    var overlayLabel: String? {
+        switch level {
+        case .prompt, .rewrite: return label
+        case .verbatim, .clean: return nil
+        }
+    }
 }
 
 enum CleanupLevelResolver {

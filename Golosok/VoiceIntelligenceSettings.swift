@@ -141,12 +141,18 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         didSet { Self.defaults.set(customSystemPrompt, forKey: "voice.customSystemPrompt") }
     }
 
+    /// Режим промпта по Shift на одну диктовку; по умолчанию выключен.
+    @Published public var promptModeEnabled: Bool {
+        didSet { Self.defaults.set(promptModeEnabled, forKey: "voice.promptModeEnabled") }
+    }
+
     public func resetToDefaults() {
         self.mode = .smart
         self.engine = .external
         self.localModel = "vikhr_1.5b"
         self.adaptiveTimeoutSeconds = Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaultCustomPrompt
+        self.promptModeEnabled = false
     }
 
     private init() {
@@ -170,5 +176,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         }
         self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaults.string(forKey: "voice.customSystemPrompt") ?? Self.defaultCustomPrompt
+        self.promptModeEnabled = Self.defaults.bool(forKey: "voice.promptModeEnabled")
     }
 }

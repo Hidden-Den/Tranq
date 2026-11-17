@@ -254,7 +254,7 @@ struct FloatingWidgetView: View {
                             .transition(.opacity)
                     }
                 } else {
-                    RecordingLevelView(timerColor: timerColor, barGradient: greenGradient)
+                    RecordingLevelView(timerColor: timerColor, barGradient: greenGradient, modeLabel: audioCapture.modeLabel)
                 }
             }
             .padding(.horizontal, 14)
@@ -294,7 +294,7 @@ struct FloatingWidgetView: View {
         if audioCapture.warningMessage != nil { return 210 }
         if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return 180 }
         if audioCapture.isProcessingFile { return 110 }
-        if audioCapture.isRecording { return 200 }
+        if audioCapture.isRecording { return audioCapture.modeLabel.isEmpty ? 200 : 236 }
         if audioCapture.isSuccessDone {
             return audioCapture.hudStatusMessage != nil ? 180 : 150
         }
@@ -320,6 +320,8 @@ private struct RecordingLevelView: View {
     @ObservedObject var meter = RecordingMeter.shared
     let timerColor: Color
     let barGradient: LinearGradient
+    /// Пусто при обычной очистке; иначе «Промпт» или имя правила.
+    let modeLabel: String
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
@@ -333,6 +335,14 @@ private struct RecordingLevelView: View {
                     .font(.ui(.body, weight: .bold, design: .monospaced))
                     .foregroundColor(timerColor)
                     .shadow(color: timerColor.opacity(0.55), radius: 2, x: 0, y: 0)
+            }
+
+            if !modeLabel.isEmpty {
+                Text(modeLabel)
+                    .font(.ui(.caption, weight: .semibold))
+                    .foregroundColor(Color.uiAI)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
 
             Spacer()
