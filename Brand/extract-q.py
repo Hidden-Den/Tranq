@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Вытаскивает контур буквы Q из Knewave в Brand/q.svg.
+"""Вытаскивает контур строчной буквы q из Knewave в Brand/q.svg.
 
 Запуск из окружения с fonttools, вне репозитория:
-    python3 Brand/extract-q.py Tranq/Fonts/Knewave-Regular.ttf Brand/q.svg
+    python3 Brand/extract-q.py Tranq/Fonts/Knewave-Regular.ttf Brand/q.svg [буква]
+
+Буква по умолчанию q, строчная.
 """
 import sys
 
@@ -12,9 +14,10 @@ from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
 
 font_path, out_path = sys.argv[1], sys.argv[2]
+letter = sys.argv[3] if len(sys.argv) > 3 else "q"
 font = TTFont(font_path)
 glyphs = font.getGlyphSet()
-name = font.getBestCmap()[ord("Q")]
+name = font.getBestCmap()[ord(letter)]
 
 bounds = BoundsPen(glyphs)
 glyphs[name].draw(bounds)
@@ -31,4 +34,4 @@ with open(out_path, "w", encoding="utf-8") as f:
         f'width="{width:g}" height="{height:g}">'
         f'<path fill="#000000" d="{pen.getCommands()}"/></svg>\n'
     )
-print(f"Q: {width:g} x {height:g} -> {out_path}")
+print(f"{letter}: {width:g} x {height:g} -> {out_path}")
