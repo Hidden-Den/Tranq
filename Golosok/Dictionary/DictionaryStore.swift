@@ -8,23 +8,12 @@ import Combine
 /// Индекс пересобирается на фоновой очереди и подменяется целиком. `index`, `promptHint`,
 /// `recordReplacements`, `replacements(for:)` и `registerHits` можно вызывать с любого потока.
 final class DictionaryStore: ObservableObject {
-    static let shared: DictionaryStore = {
-        let store = DictionaryStore(
-            directory: AppEnvironment.dataDirectory,
-            defaults: AppEnvironment.defaults,
-            packsBundle: .main,
-            checker: SpellCommonWordChecker.shared
-        )
-        // Перенос идёт на главном потоке. Из другого потока он ставится в очередь без ожидания:
-        // синхронный переход на главный из инициализатора `static let` мог бы заблокироваться.
-        let migrate = {
-            DictionaryMigration.runIfNeeded(
-                store: store, directory: AppEnvironment.dataDirectory, defaults: AppEnvironment.defaults
-            )
-        }
-        if Thread.isMainThread { migrate() } else { DispatchQueue.main.async(execute: migrate) }
-        return store
-    }()
+    static let shared = DictionaryStore(
+        directory: AppEnvironment.dataDirectory,
+        defaults: AppEnvironment.defaults,
+        packsBundle: .main,
+        checker: SpellCommonWordChecker.shared
+    )
 
     /// Порядок наборов на экране и в индексе.
     static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design"]

@@ -28,7 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         hotKey.register()
 
-        // Словарь создаётся на главном потоке при запуске: перенос старых данных и сборка индекса
+        // Словарь создаётся на главном потоке при запуске: загрузка и сборка индекса
         // успевают до первой диктовки, а не выполняются на очереди конвейера посреди неё
         if !AppEnvironment.isRunningTests {
             _ = DictionaryStore.shared
