@@ -22,7 +22,9 @@ extension AIProviderConfig {
 enum ChatRequestBuilder {
     /// Потоковый запрос очистки. `user` уходит как есть.
     static func streamRequest(config: AIProviderConfig, system: String, user: String) throws -> URLRequest {
-        let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+        var cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
+        // Адрес без версии вводят часто: у этих двух сервисов она обязательна
+        if cleanBase == "https://api.anthropic.com" || cleanBase == "https://api.openai.com" { cleanBase += "/v1" }
         let target: String
         if config.isAnthropic {
             target = cleanBase.hasSuffix("/messages") ? cleanBase : cleanBase + "/messages"

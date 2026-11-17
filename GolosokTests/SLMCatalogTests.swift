@@ -27,14 +27,6 @@ struct SLMCatalogTests {
         #expect(SLMModelStore.retiredFiles(in: dir).map(\.lastPathComponent) == ["QVikhr-3-4B-Instruction-Q4_K_M.gguf"])
     }
 
-    @Test func retiredFilesAreKeptWhileNoCurrentModelIsDownloaded() throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("slm-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
-        FileManager.default.createFile(atPath: dir.appendingPathComponent("QVikhr-3-4B-Instruction-Q4_K_M.gguf").path, contents: Data())
-        #expect(SLMModelStore.retiredFiles(in: dir).isEmpty)
-    }
-
     @Test func retiredNamesNeverOverlapCatalog() {
         #expect(Set(SLMModelStore.catalog.map(\.fileName)).isDisjoint(with: SLMModelStore.retiredFileNames))
     }

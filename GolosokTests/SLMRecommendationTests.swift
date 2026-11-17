@@ -26,8 +26,8 @@ struct SLMRecommendationTests {
     @Test func pickerLabels() {
         let large = SLMModelStore.catalog.first { $0.id == "gemma_4_e4b_qat" }!
         let spare = SLMModelStore.catalog.first { $0.id == "tlite_2.1" }!
-        #expect(SLMRecommendation.pickerLabel(for: large, physicalMemory: 32 * gib).hasSuffix("Рекомендуем"))
+        #expect(SLMRecommendation.pickerLabel(for: large, physicalMemory: 32 * gib).hasSuffix(String(localized: "Рекомендуем")))
         #expect(SLMRecommendation.pickerLabel(for: spare, physicalMemory: 32 * gib) == spare.name)
-        #expect(SLMRecommendation.pickerLabel(for: large, physicalMemory: 8 * gib).hasSuffix("Нужно 16 ГБ"))
+        #expect(SLMRecommendation.pickerLabel(for: large, physicalMemory: 8 * gib).hasSuffix(String(localized: "Нужно 16 ГБ")))
     }
 }

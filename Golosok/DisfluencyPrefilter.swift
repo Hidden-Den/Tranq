@@ -37,7 +37,7 @@ public struct DisfluencyPrefilter {
     /// иначе схлопнулись бы соседние предложения вроде «Это сделал он. Он сказал.». Второе должно тоже
     /// закончить предложение или часть: «Иван. Иван Петров пришёл.» остаётся как есть.
     private static let sentenceRepeatRegex: NSRegularExpression? = {
-        let pattern = #"(?i)(?<=^|[.!?]\s)([a-zа-яё]+)\.\s+\1(?=[.!?,]|\s*$)"#
+        let pattern = #"(?i)(?<=^|[.!?]\s{1,8})([a-zа-яё]+)\.\s+\1(?=[.!?,]|\s*$)"#
         return try? NSRegularExpression(pattern: pattern)
     }()
 

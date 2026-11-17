@@ -3,8 +3,8 @@ import Foundation
 /// Локальная очистка речи на моделях GGUF из каталога.
 ///
 /// Основной путь — постоянный `LocalLLMServer`: модель уже в памяти, ответ за доли
-/// секунды. Если сервер ещё загружается или недоступен, запрос выполняется через
-/// `llama-cli`, как раньше, а сервер тем временем догружается для следующих диктовок.
+/// секунды. Если сервер ещё загружается или недоступен, диктовка идёт без очистки, а сервер
+/// догружается для следующих. `llama-cli` остаётся запасным путём только для моделей без `requiresServer`.
 public final class LocalSynthServiceClient: ObservableObject {
     public static let shared = LocalSynthServiceClient()
 
@@ -60,9 +60,9 @@ public final class LocalSynthServiceClient: ObservableObject {
                     return Self.cleanModelOutput(raw)
                 }
             } else {
-                // Сервер догружается в фоне; эту диктовку обслужит llama-cli
+                // Сервер догружается в фоне; эту диктовку обслужит llama-cli, если модель это позволяет
                 LocalLLMServer.shared.prewarm(modelPath: modelPath)
-                AppLogger.shared.info("LocalSynthClient", "llama-server ещё загружается — запрос через llama-cli")
+                AppLogger.shared.info("LocalSynthClient", "llama-server ещё загружается")
             }
         }
 

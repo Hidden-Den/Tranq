@@ -68,7 +68,9 @@ enum CleanupLevelResolver {
 enum DomainNormalizer {
     /// Адрес или домен приводится к виду «mail.company.ru»: без схемы, порта, пути, `www.` и точки в конце.
     static func host(from input: String) -> String? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        var trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Правило пишут как «*.company.ru» или «.company.ru», браузер такой хост не отдаёт
+        while trimmed.hasPrefix("*") || trimmed.hasPrefix(".") { trimmed.removeFirst() }
         guard !trimmed.isEmpty else { return nil }
         let withScheme = trimmed.contains("://") ? trimmed : "https://" + trimmed
         guard var host = URLComponents(string: withScheme)?.host?.lowercased() else { return nil }

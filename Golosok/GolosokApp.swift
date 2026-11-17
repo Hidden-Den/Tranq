@@ -63,9 +63,12 @@ struct GolosokApp: App {
     init() {
         LanguageSettings.shared.apply()
         ThemeSettings.shared.apply()
-        Task.detached(priority: .utility) {
-            LegacyCleanup.run()
-            SLMModelStore.shared.removeRetiredModels()
+        // Под тестами уборка тронула бы настоящие данные пользователя
+        if !AppEnvironment.isRunningTests {
+            Task.detached(priority: .utility) {
+                LegacyCleanup.run()
+                SLMModelStore.shared.removeRetiredModels()
+            }
         }
     }
     

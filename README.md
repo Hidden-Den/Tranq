@@ -25,9 +25,9 @@ The app targets Russian speech with Latin-script technical terms.
 
 ## Capabilities
 
-* **Offline recognition.** GigaAM v3 runs on-device; audio never leaves your Mac. Whisper Large-v3 Turbo and Medium are available as alternatives.
-* **Speech cleanup.** By default it removes filler words, self-corrections, and repeated thoughts while keeping the speaker's own words and facts. Numbers, names, and terms are guarded by a validator: if the model drops or invents something, the text is inserted without its edits.
-* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech.
+* **Offline recognition.** GigaAM v3 runs on-device; audio never leaves your Mac. Whisper Large-v3 Turbo and Medium are available as English-only alternatives.
+* **Speech cleanup.** With a cleanup model set up, local or through an API, it removes filler words, self-corrections, and repeated thoughts while keeping the speaker's own words and facts. Without one, only sounds and stutters are removed. Numbers and Latin terms are guarded by a validator: if the model drops or invents something, the text is inserted without its edits.
+* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech, unless direct mode is on.
 * **Prompt mode.** Your hotkey with Shift turns one dictation into a request for an AI assistant. Enabled in Settings.
 * **Three processing options:**
   * local models without network access, with a recommendation based on your Mac's memory;

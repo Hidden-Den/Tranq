@@ -216,7 +216,7 @@ final class TranscriptionPipeline {
 
             let level = job.level
             let settings = VoiceIntelligenceSettings.shared
-            AppLogger.shared.info("Pipeline", "Этап 2: очистка речи, движок \(settings.engine.title)", details: "уровень: \(level)")
+            AppLogger.shared.info("Pipeline", level == .verbatim ? "Этап 2: без модели" : "Этап 2: очистка речи, движок \(settings.engine.title)", details: "уровень: \(level)")
             if level != .verbatim { onStageTwoStarted() }
             Task {
                 let cleaned = await ThoughtSynthesizer.shared.clean(

@@ -28,9 +28,9 @@ struct AIProviderSection: View {
                     }
                 }
 
-                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.currentPreset.flatMap { $0.baseURL.isEmpty ? nil : $0.baseURL } ?? "https://api.openai.com/v1")
+                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.providerID == "corporate" ? "https://gateway.company.ru/v1" : (store.currentPreset?.baseURL ?? "https://api.openai.com/v1"))
                 AIInputField(title: "API-ключ", text: $store.apiKey, placeholder: "sk-…", isSecure: true)
-                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset.flatMap { $0.defaultModel.isEmpty ? nil : $0.defaultModel } ?? "gpt-6-luna")
+                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset?.defaultModel ?? "gpt-6-luna")
 
                 HStack(spacing: 10) {
                     UIOutlineButton(title: "Проверить") {
@@ -272,7 +272,7 @@ struct VoiceIntelligenceSection: View {
             ))
             .labelsHidden()
             .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
-            .disabled(!isAvailable)
+            .disabled(!isAvailable && !settings.promptModeEnabled)
         }
     }
 }

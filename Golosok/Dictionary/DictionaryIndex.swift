@@ -207,23 +207,29 @@ struct DictionaryIndex {
 
     /// Латинские и кириллические слова по порядку. Однобуквенное латинское слово склеивается
     /// с предыдущим латинским через пробел, как «Power B», а без такого соседа пропускается.
-    private static func suspectWords(in text: String) -> [String] {
+    static func suspectWords(in text: String) -> [String] {
         let ns = text as NSString
         var words: [String] = []
         var previous: (range: NSRange, latin: Bool)?
         for match in suspectPattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
             let word = ns.substring(with: match.range)
             let latin = word.unicodeScalars.first.map { $0.isASCII } ?? false
-            defer { previous = (match.range, latin) }
             guard latin, word.count == 1 else {
                 words.append(word)
+                previous = (match.range, latin)
                 continue
             }
-            guard let prev = previous, prev.latin else { continue }
-            let gapStart = prev.range.location + prev.range.length
-            let gap = ns.substring(with: NSRange(location: gapStart, length: match.range.location - gapStart))
-            guard gap == " ", let last = words.last else { continue }
-            words[words.count - 1] = last + " " + word
+            // Пропущенная буква не соседка: в «привет A B» буква B не склеивается с «привет»
+            if let prev = previous, prev.latin, let last = words.last {
+                let gapStart = prev.range.location + prev.range.length
+                let gap = ns.substring(with: NSRange(location: gapStart, length: match.range.location - gapStart))
+                if gap == " " {
+                    words[words.count - 1] = last + " " + word
+                    previous = (match.range, true)
+                    continue
+                }
+            }
+            previous = nil
         }
         return words
     }

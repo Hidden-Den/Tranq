@@ -46,6 +46,13 @@ struct CleanupAPITests {
         #expect(CleanupBackendError.empty.logDescription == "пустой ответ")
     }
 
+    @Test func emptyStageOneIsNotReportedAsModelAnswer() async {
+        let stub = StubBackend(reply: "x")
+        let result = await clean("эээ", level: .clean, backend: stub)
+        #expect(stub.calls == 0)
+        #expect(result.fallback != nil)
+    }
+
     @Test func shortPhraseSkipsBackend() async {
         let stub = StubBackend(reply: "x")
         let result = await clean("ну БТИ", level: .clean, backend: stub)

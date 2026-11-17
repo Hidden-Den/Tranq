@@ -118,9 +118,6 @@ public final class SLMModelStore: NSObject, ObservableObject {
     static func retiredFiles(in directory: URL, retired: [String] = retiredFileNames) -> [URL] {
         let names = Set(retired)
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        // Прежние модели остаются, пока не скачана ни одна из каталога: без неё офлайн-режим пропал бы совсем
-        let current = Set(catalog.map(\.fileName))
-        guard files.contains(where: { current.contains($0.lastPathComponent) }) else { return [] }
         return files.filter { names.contains($0.lastPathComponent) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 

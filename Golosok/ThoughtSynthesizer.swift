@@ -27,7 +27,8 @@ public final class ThoughtSynthesizer {
         backend: CleanupBackend? = nil
     ) async -> CleanupResult {
         let stageOne = Self.stageOne(text)
-        guard !stageOne.isEmpty else { return CleanupResult(text: "", fallback: nil) }
+        // Речь из одних звуков: модель не нужна, а текст не от неё
+        guard !stageOne.isEmpty else { return CleanupResult(text: "", fallback: .shortPhrase) }
 
         if level == .verbatim {
             return CleanupResult(text: stageOne, fallback: nil)

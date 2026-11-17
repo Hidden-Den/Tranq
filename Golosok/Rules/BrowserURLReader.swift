@@ -163,6 +163,8 @@ private final class ManualAccessibilityTracker: @unchecked Sendable {
     func enableOnce(for app: AXUIElement, pid: pid_t) {
         let isNew = lock.withLock { enabledPids.insert(pid).inserted }
         guard isNew else { return }
-        AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        let status = AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+        // Неудачную просьбу повторит следующая диктовка
+        if status != .success { _ = lock.withLock { enabledPids.remove(pid) } }
     }
 }

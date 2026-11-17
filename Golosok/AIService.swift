@@ -244,6 +244,7 @@ final class AIService {
         let temperature: Double?
         let reasoning: ReasoningConfig?
         let provider: ProviderConfig?
+        let reasoning_effort: String?
     }
 
     func chat(messages: [AIChatMessage], using config: AIProviderConfig, completion: @escaping (Result<String, AIError>) -> Void) {
@@ -358,7 +359,8 @@ final class AIService {
             messages: messages,
             temperature: temp,
             reasoning: reasoning,
-            provider: provider
+            provider: provider,
+            reasoning_effort: config.needsReasoningOff ? "none" : nil
         )
         guard let data = try? JSONEncoder().encode(body) else {
             completion(.failure(.parse("кодирование запроса")))

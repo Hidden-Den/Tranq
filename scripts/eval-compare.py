@@ -45,6 +45,8 @@ def load(path):
 
 
 def summary(rows):
+    if not rows:
+        return dict(sim=0.0, other=0.0, terms=0.0, extra=0, acc=0, lost=0, med=0.0, p95=0.0)
     secs = sorted(r["sec"] for r in rows.values())
     expected_terms = found_terms = extra_terms = 0
     for r in rows.values():
@@ -61,7 +63,7 @@ def summary(rows):
         acc=sum(r["fb"] == "нет" for r in rows.values()),
         lost=sum(r["lost"] for r in rows.values()),
         med=st.median(secs),
-        p95=secs[max(0, int(0.95 * len(secs)) - 1)],
+        p95=secs[max(0, -(-95 * len(secs) // 100) - 1)],
     )
 
 
@@ -109,7 +111,7 @@ def main():
     reasons = Counter()
     for m in models:
         for r in after[m].values():
-            if r["fb"] != "нет":
+            if r["fb"] not in ("нет", "shortPhrase"):
                 reasons[re.sub(r"\d+", "N", re.sub(r"термин [^\")]+", "термин X", r["fb"]))] += 1
     if reasons:
         print("\nОставшиеся отказы:")

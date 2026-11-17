@@ -5,6 +5,7 @@ import Foundation
 final class StubBackend: CleanupBackend, @unchecked Sendable {
     private let lock = NSLock()
     private var count = 0
+    private var received: String?
     private let reply: String?
     private let error: CleanupBackendError?
 
@@ -23,9 +24,16 @@ final class StubBackend: CleanupBackend, @unchecked Sendable {
         return count
     }
 
+    /// Текст, который пришёл в последнем вызове.
+    var lastUser: String? {
+        lock.lock(); defer { lock.unlock() }
+        return received
+    }
+
     func complete(system: String, user: String, timeout: TimeInterval) async throws -> String {
         lock.lock()
         count += 1
+        received = user
         lock.unlock()
         if let error { throw error }
         return reply ?? ""

@@ -42,6 +42,13 @@ struct ProviderRequestTests {
         #expect(json["system"] as? String == "sys")
     }
 
+    @Test func rootBaseURLsGetVersionPrefix() throws {
+        let openAI = AIProviderConfig(baseURL: "https://api.openai.com", apiKey: "k", model: "m", providerID: "openai")
+        #expect(try ChatRequestBuilder.streamRequest(config: openAI, system: "s", user: "u").url?.absoluteString == "https://api.openai.com/v1/chat/completions")
+        let anthropic = AIProviderConfig(baseURL: "https://api.anthropic.com/", apiKey: "k", model: "m", providerID: "anthropic")
+        #expect(try ChatRequestBuilder.streamRequest(config: anthropic, system: "s", user: "u").url?.absoluteString == "https://api.anthropic.com/v1/messages")
+    }
+
     @Test func anthropicFormatOnlyByPreset() {
         let proxy = AIProviderConfig(baseURL: "https://anthropic.com.proxy.corp/v1", apiKey: "k", model: "m", providerID: "corporate")
         #expect(proxy.isAnthropic == false)

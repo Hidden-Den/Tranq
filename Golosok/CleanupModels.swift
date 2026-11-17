@@ -27,7 +27,7 @@ public enum FallbackReason: Equatable {
 
 public struct CleanupResult: Equatable {
     public let text: String
-    /// Пусто, если текст вернула модель или модель не нужна.
+    /// Пусто, если текст вернула модель или уровень не требует модели. Иначе причина, по которой это текст этапа 1.
     public let fallback: FallbackReason?
 
     public init(text: String, fallback: FallbackReason?) {

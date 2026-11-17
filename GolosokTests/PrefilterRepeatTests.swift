@@ -27,6 +27,10 @@ struct PrefilterRepeatTests {
         #expect(DisfluencyPrefilter.filter("Да. Да, конечно.") == "Да, конечно.")
     }
 
+    @Test func collapsesRepeatAfterSeveralSpaces() {
+        #expect(DisfluencyPrefilter.filter("Готово.  Деплой. Деплой.") == "Готово. Деплой.")
+    }
+
     @Test func cleanCallsModelWithoutFillers() async {
         let stub = StubBackend(reply: "Давай перенесём встречу на четверг")
         _ = await ThoughtSynthesizer.shared.clean(
@@ -34,5 +38,6 @@ struct PrefilterRepeatTests {
             targetBundleId: nil, firedSpellings: [], language: .ru, backend: stub
         )
         #expect(stub.calls == 1)
+        #expect(stub.lastUser == ThoughtSynthesizer.stageOne("давай перенесём встречу на четверг давай на четверг"))
     }
 }

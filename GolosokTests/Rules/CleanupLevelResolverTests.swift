@@ -68,6 +68,8 @@ struct CleanupLevelResolverTests {
         #expect(DomainNormalizer.host(from: "https://WWW.Mail.Company.RU.:8443/inbox") == "mail.company.ru")
         #expect(DomainNormalizer.host(from: "https://mail.company.ru/inbox?x=1") == "mail.company.ru")
         #expect(DomainNormalizer.host(from: "company.ru") == "company.ru")
+        #expect(DomainNormalizer.host(from: "*.company.ru") == "company.ru")
+        #expect(DomainNormalizer.host(from: ".company.ru") == "company.ru")
         #expect(DomainNormalizer.host(from: "   ") == nil)
         #expect(DomainNormalizer.matches(host: "mail.company.ru", ruleDomain: "company.ru"))
         #expect(!DomainNormalizer.matches(host: "notcompany.ru", ruleDomain: "company.ru"))

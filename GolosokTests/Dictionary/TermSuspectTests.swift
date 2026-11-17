@@ -20,6 +20,11 @@ final class TermSuspectTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testSkippedSingleLetterDoesNotMergeLaterOnes() {
+        XCTAssertEqual(DictionaryIndex.suspectWords(in: "привет A B"), ["привет"])
+        XCTAssertEqual(DictionaryIndex.suspectWords(in: "Выгрузи Power B"), ["Выгрузи", "Power B"])
+    }
+
     /// Пары из замера: распознанная фраза, искажённое слово и термин, который был сказан.
     func testMisrecognizedTermsGetTheSpokenCandidate() {
         let cases: [(String, String, String)] = [
