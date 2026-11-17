@@ -1,12 +1,12 @@
-# Golosok: Clean Voice Dictation for macOS
+# Tranq: Clean Voice Dictation for macOS
 
 > **Read this in another language: [Русский](README_RU.md)**
 
 <p align="left">
-  <a href="https://github.com/Nuteres/Golosok/releases">
-    <img src="https://img.shields.io/github/v/release/Nuteres/Golosok?style=for-the-badge&color=black&logo=apple" alt="Latest Release">
+  <a href="https://github.com/Nuteres/Tranq/releases">
+    <img src="https://img.shields.io/github/v/release/Nuteres/Tranq?style=for-the-badge&color=black&logo=apple" alt="Latest Release">
   </a>
-  <a href="https://github.com/Nuteres/Golosok/blob/main/LICENSE">
+  <a href="https://github.com/Nuteres/Tranq/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-black?style=for-the-badge" alt="License">
   </a>
 </p>
@@ -55,18 +55,18 @@ The app targets Russian speech with Latin-script technical terms.
 
 ## Installation
 
-1. Download `Golosok.dmg` from the [Releases](https://github.com/Nuteres/Golosok/releases) section.
-2. Drag `Golosok.app` to your `/Applications` folder.
+1. Download `Tranq.dmg` from the [Releases](https://github.com/Nuteres/Tranq/releases) section.
+2. Drag `Tranq.app` to your `/Applications` folder.
 
 ### Gatekeeper Quarantine Removal
 
 This build is distributed as open source without a paid Apple Developer certificate. If macOS blocks the initial launch, remove the quarantine attribute:
 
 ```bash
-xattr -cr /Applications/Golosok.app
+xattr -cr /Applications/Tranq.app
 ```
 
-*(Alternatively: Control + Right-click `Golosok.app` -> Open -> Confirm).*
+*(Alternatively: Control + Right-click `Tranq.app` -> Open -> Confirm).*
 
 ---
 
@@ -92,14 +92,14 @@ xattr -cr /Applications/Golosok.app
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Nuteres/Golosok.git
-cd Golosok
+git clone https://github.com/Nuteres/Tranq.git
+cd Tranq
 
 # 2. Fetch the GigaAM model and llama-server; versions and SHA-256 checksums are pinned in the script
 scripts/fetch-deps.sh
 
 # 3. Open the project in Xcode
-open Golosok.xcodeproj
+open Tranq.xcodeproj
 ```
 
 Press `⌘ + R` in Xcode to build and run. Xcode downloads the transcribe.cpp engine on its own as a Swift package.

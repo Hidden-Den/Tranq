@@ -9,8 +9,8 @@
 # сопоставляются с фразами по тексту, повторные попытки и обрывки пропускаются.
 # Рядом с cases.jsonl пишется review.md: фраза, что распознано, что вставлено и что ожидалось.
 #
-# Журнал по умолчанию: ~/Library/Application Support/Golosok/transcript_journal.jsonl,
-# другой путь можно задать через GOLOSOK_JOURNAL.
+# Журнал по умолчанию: ~/Library/Application Support/Tranq/transcript_journal.jsonl,
+# другой путь можно задать через TRANQ_JOURNAL.
 set -euo pipefail
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ] || ! [[ "$1" =~ ^[1-9][0-9]*$ ]]; then
@@ -25,7 +25,7 @@ fi
 count="$1"
 outdir="$2"
 expected="${3:-}"
-journal="${GOLOSOK_JOURNAL:-$HOME/Library/Application Support/Golosok/transcript_journal.jsonl}"
+journal="${TRANQ_JOURNAL:-$HOME/Library/Application Support/Tranq/transcript_journal.jsonl}"
 target="$outdir/cases.jsonl"
 
 if [ ! -f "$journal" ]; then

@@ -27,10 +27,10 @@ jobs:
           set -o pipefail
           mkdir -p build
           xcodebuild test \
-            -project Golosok.xcodeproj \
-            -scheme Golosok \
+            -project Tranq.xcodeproj \
+            -scheme Tranq \
             -destination 'platform=macOS' \
-            -only-testing:GolosokTests \
+            -only-testing:TranqTests \
             -derivedDataPath build/DerivedData-ci \
             CODE_SIGN_IDENTITY=- \
             | tee build/xcodebuild.log | grep -E "error:|Test run with|\*\* TEST" || true
