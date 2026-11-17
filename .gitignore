@@ -4,8 +4,8 @@ DerivedData/
 xcuserdata/
 .DS_Store
 .superpowers/
-Golosok/whisper-cli
-Golosok/llama-cli
+Tranq/whisper-cli
+Tranq/llama-cli
 build/
 Vendor/llama/*
 !Vendor/llama/.gitkeep

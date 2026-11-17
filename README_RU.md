@@ -1,12 +1,12 @@
-# Голосок: чистая голосовая диктовка для macOS
+# Tranq: чистая голосовая диктовка для macOS
 
 > **Читать на английском: [English](README.md)**
 
 <p align="left">
-  <a href="https://github.com/Nuteres/Golosok/releases">
-    <img src="https://img.shields.io/github/v/release/Nuteres/Golosok?style=for-the-badge&color=black&logo=apple" alt="Последний релиз">
+  <a href="https://github.com/Nuteres/Tranq/releases">
+    <img src="https://img.shields.io/github/v/release/Nuteres/Tranq?style=for-the-badge&color=black&logo=apple" alt="Последний релиз">
   </a>
-  <a href="https://github.com/Nuteres/Golosok/blob/main/LICENSE">
+  <a href="https://github.com/Nuteres/Tranq/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/Лицензия-MIT-black?style=for-the-badge" alt="Лицензия">
   </a>
 </p>
@@ -53,18 +53,18 @@
 
 ## Установка
 
-1. Скачайте `Golosok.dmg` из раздела [Releases](https://github.com/Nuteres/Golosok/releases).
-2. Перетащите `Golosok.app` в системную папку `/Applications`.
+1. Скачайте `Tranq.dmg` из раздела [Releases](https://github.com/Nuteres/Tranq/releases).
+2. Перетащите `Tranq.app` в системную папку `/Applications`.
 
 ### Снятие атрибута карантина (Gatekeeper)
 
 Приложение поставляется как Open Source без платной подписи Apple Developer. Если macOS блокирует первый запуск, выполните в Терминале:
 
 ```bash
-xattr -cr /Applications/Golosok.app
+xattr -cr /Applications/Tranq.app
 ```
 
-*(Или через GUI: зажать Control + правый клик по `Golosok.app` -> Открыть -> Подтвердить).*
+*(Или через GUI: зажать Control + правый клик по `Tranq.app` -> Открыть -> Подтвердить).*
 
 ---
 
@@ -90,14 +90,14 @@ xattr -cr /Applications/Golosok.app
 
 ```bash
 # 1. Клонировать репозиторий
-git clone https://github.com/Nuteres/Golosok.git
-cd Golosok
+git clone https://github.com/Nuteres/Tranq.git
+cd Tranq
 
 # 2. Скачать модель GigaAM и llama-server; версии и контрольные суммы SHA-256 зафиксированы в скрипте
 scripts/fetch-deps.sh
 
 # 3. Открыть проект в Xcode
-open Golosok.xcodeproj
+open Tranq.xcodeproj
 ```
 
 Для сборки и запуска нажмите `⌘ + R` в Xcode. Движок transcribe.cpp Xcode скачает сам как Swift-пакет.

@@ -8,20 +8,20 @@
 2. Выгрузить их вместе с эталонами:
 
    ```bash
-   scripts/eval-export-journal.sh 100 ~/golosok-eval docs/eval/expected.jsonl
+   scripts/eval-export-journal.sh 100 ~/tranq-eval docs/eval/expected.jsonl
    ```
 
-3. Открыть `~/golosok-eval/review.md`: фраза, что распознано, что вставлено и что ожидалось. Там же лежит готовый `cases.jsonl` для прогона ниже.
+3. Открыть `~/tranq-eval/review.md`: фраза, что распознано, что вставлено и что ожидалось. Там же лежит готовый `cases.jsonl` для прогона ниже.
 
 ## Собрать набор из обычных диктовок
 
 1. Выгрузить последние диктовки из журнала:
 
    ```bash
-   scripts/eval-export-journal.sh 100 ~/golosok-eval
+   scripts/eval-export-journal.sh 100 ~/tranq-eval
    ```
 
-2. В `~/golosok-eval/cases.jsonl` заполнить у каждой строки:
+2. В `~/tranq-eval/cases.jsonl` заполнить у каждой строки:
    - `category`: паразиты, самоисправления, повторы мыслей, числа, термины, вопросы, длинные рассуждения;
    - `expected`: как должен выглядеть результат уровня B.
 
@@ -32,33 +32,33 @@
 Внешний API, формат `openai` или `anthropic`:
 
 ```bash
-TEST_RUNNER_GOLOSOK_EVAL_DIR=~/golosok-eval \
-TEST_RUNNER_GOLOSOK_EVAL_BASE_URL=https://api.openai.com/v1 \
-TEST_RUNNER_GOLOSOK_EVAL_KEY=ключ \
-TEST_RUNNER_GOLOSOK_EVAL_MODEL=имя-модели \
-TEST_RUNNER_GOLOSOK_EVAL_PROVIDER=openai \
-xcodebuild test -project Golosok.xcodeproj -scheme Golosok -destination 'platform=macOS' \
-  -only-testing:GolosokTests/CleanupEvalTests CODE_SIGN_IDENTITY=-
+TEST_RUNNER_TRANQ_EVAL_DIR=~/tranq-eval \
+TEST_RUNNER_TRANQ_EVAL_BASE_URL=https://api.openai.com/v1 \
+TEST_RUNNER_TRANQ_EVAL_KEY=ключ \
+TEST_RUNNER_TRANQ_EVAL_MODEL=имя-модели \
+TEST_RUNNER_TRANQ_EVAL_PROVIDER=openai \
+xcodebuild test -project Tranq.xcodeproj -scheme Tranq -destination 'platform=macOS' \
+  -only-testing:TranqTests/CleanupEvalTests CODE_SIGN_IDENTITY=-
 ```
 
-Локальная модель вместо внешнего API: вместо трёх переменных с адресом, ключом и моделью задать `TEST_RUNNER_GOLOSOK_EVAL_LOCAL_MODEL=путь/к/модели.gguf`.
+Локальная модель вместо внешнего API: вместо трёх переменных с адресом, ключом и моделью задать `TEST_RUNNER_TRANQ_EVAL_LOCAL_MODEL=путь/к/модели.gguf`.
 
 То же одной командой:
 
 ```bash
-scripts/eval-run-local.sh ~/golosok-eval/models/модель.gguf
+scripts/eval-run-local.sh ~/tranq-eval/models/модель.gguf
 ```
 
 Перед моделью и после неё фразы проходят через словарь, как в приложении. Счётчики словаря пользователя замер не трогает.
 
-Отчёт появится в `~/golosok-eval/report-<модель>-<дата>.md`: сводка и таблица по каждому случаю. Колонка «Оценка» заполняется вручную: смысл сохранён, повторы убраны, звучит как говорящий.
+Отчёт появится в `~/tranq-eval/report-<модель>-<дата>.md`: сводка и таблица по каждому случаю. Колонка «Оценка» заполняется вручную: смысл сохранён, повторы убраны, звучит как говорящий.
 
 ## Повторный замер
 
 Отчёты «до» сложить в один каталог, «после» в другой и сравнить:
 
 ```bash
-python3 scripts/eval-compare.py ~/golosok-eval/до ~/golosok-eval/после
+python3 scripts/eval-compare.py ~/tranq-eval/до ~/tranq-eval/после
 ```
 
 Скрипт печатает сводку по моделям, разбор фраз с терминами и оставшиеся отказы. «Термины на месте» — доля латинских слов эталона, которые есть в результате. «Лишние термины» — латинские слова результата, которых нет ни в эталоне, ни в речи.

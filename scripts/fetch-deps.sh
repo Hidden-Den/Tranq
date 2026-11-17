@@ -13,9 +13,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_DIR="$ROOT/Golosok"
+APP_DIR="$ROOT/Tranq"
 LLAMA_DIR="$ROOT/Vendor/llama"
-CACHE_DIR="${GOLOSOK_DEPS_CACHE:-$ROOT/build/deps-cache}"
+CACHE_DIR="${TRANQ_DEPS_CACHE:-$ROOT/build/deps-cache}"
 
 GIGAAM_URL="https://huggingface.co/memoravox/gigaam-v3-e2e-rnnt-gguf/resolve/main/gigaam-v3-e2e-rnnt-Q8_0.gguf"
 GIGAAM_SHA256="78d63b47723b7f8d78c6113a6ef983b5a86e2a86f6c273e1f5cb6967b1c4467a"
@@ -94,10 +94,10 @@ check_manual_files() {
   for entry in "${MANUAL_FILES[@]}"; do
     local name="${entry%%:*}" expected="${entry#*:}" path="$APP_DIR/${entry%%:*}"
     if [[ ! -f "$path" ]]; then
-      warn "нет Golosok/$name — соответствующая функция работать не будет"
+      warn "нет Tranq/$name — соответствующая функция работать не будет"
       missing=1
     elif [[ "$(sha256 "$path")" != "$expected" ]]; then
-      warn "Golosok/$name отличается от проверенной сборки, сумма $(sha256 "$path")"
+      warn "Tranq/$name отличается от проверенной сборки, сумма $(sha256 "$path")"
     else
       log "$name проверен"
     fi

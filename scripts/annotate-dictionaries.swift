@@ -3,7 +3,7 @@
 // является словарным словом по NSSpellChecker.
 //
 // Запуск из корня репозитория:
-//   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift scripts/annotate-dictionaries.swift Golosok/Dictionaries
+//   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift scripts/annotate-dictionaries.swift Tranq/Dictionaries
 //
 // Файлы перезаписываются с сортировкой ключей и отступом 2.
 import AppKit
