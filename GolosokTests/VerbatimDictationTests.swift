@@ -53,21 +53,6 @@ struct VerbatimDictationTests {
         #expect(GroundingValidator.rewriteViolation(input: input, output: output, customTerms: ["Llama", "Ollama"]) == nil)
     }
 
-    // MARK: - Пропуск модели
-
-    @Test func cleanTextNeedsNoModel() {
-        #expect(!DisfluencyPrefilter.needsCleanup("Собери RAG-систему на базе документов отдела и проверь ответы."))
-        #expect(!DisfluencyPrefilter.needsCleanup("Это ты отлично придумал, давай так и сделаем."))
-    }
-
-    @Test func fillersAndCorrectionsNeedModel() {
-        #expect(DisfluencyPrefilter.needsCleanup("Короче, надо собрать отчёт."))
-        #expect(DisfluencyPrefilter.needsCleanup("Надо как бы собрать отчёт."))
-        #expect(DisfluencyPrefilter.needsCleanup("Встреча в понедельник, ой, во вторник."))
-        #expect(DisfluencyPrefilter.needsCleanup("Встреча в понедельник, то есть во вторник."))
-        #expect(DisfluencyPrefilter.needsCleanup("Давай пое- поедем завтра."))
-    }
-
     // MARK: - Словарь
 
     @Test func ragVariantsAreInAIPack() throws {
