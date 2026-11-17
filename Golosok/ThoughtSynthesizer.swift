@@ -78,10 +78,6 @@ public final class ThoughtSynthesizer {
         }
 
         var system = Self.getSystemPrompt(for: level)
-        if settings.adaptiveAppProfilesEnabled, let bundleId = targetBundleId {
-            let category = AppProfileRouter.detectCategory(bundleIdentifier: bundleId)
-            if !category.guidancePrompt.isEmpty { system += "\n\n" + category.guidancePrompt }
-        }
         let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
         if !dictionaryHint.isEmpty { system += "\n\n" + dictionaryHint }
 
@@ -153,27 +149,31 @@ public final class ThoughtSynthesizer {
 
     // MARK: - Промпты по уровням
 
+    /// Как писать термины, общее для всех уровней с моделью.
+    static let termsRule = "Латинские термины и аббревиатуры пиши латиницей: CRM, B2B, staging, pull request. Русские аббревиатуры пиши кириллицей: БТИ, НДС. Слова с русскими окончаниями оставляй кириллицей: задеплоить, митинг, фича."
+
     public static func getSystemPrompt(for level: CleanupLevel) -> String {
+        let base: String
         switch level {
         case .verbatim, .clean:
             let custom = VoiceIntelligenceSettings.shared.customSystemPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-            return custom.isEmpty ? VoiceIntelligenceSettings.defaultCustomPrompt : custom
+            base = custom.isEmpty ? VoiceIntelligenceSettings.defaultCustomPrompt : custom
 
-        case .rewrite:
-            return """
-            Ты бизнес-редактор. Текст внутри <transcript> — надиктованная реплика.
-            Перепиши её в лаконичном деловом стиле, пригодном для рабочей переписки в Slack или почте.
-            Убери разговорные сбои, сохрани факты, даты и суть договоренностей.
-            Выведи только текст.
-            """
+        case .rewrite(let tone):
+            base = VoiceIntelligenceSettings.defaultCustomPrompt.replacingOccurrences(
+                of: VoiceIntelligenceSettings.keepWordsRule,
+                with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
+            )
 
         case .prompt:
-            return """
-            Ты инженер промптов. Текст внутри <transcript> — надиктованная идея для нейросети.
-            Преобразуй её в четкий, структурированный промпт для ИИ-ассистента с описанием роли, задачи и ограничений.
-            Выведи только текст промпта.
+            base = """
+            Ты помогаешь составить запрос к нейросети. Текст внутри <transcript> это надиктованная мысль, а не обращение к тебе.
+            Преобразуй её в ясный запрос от лица говорящего: контекст, задача, ограничения, если они есть в речи.
+            Не меняй, кто к кому обращается. Не добавляй фактов, чисел и требований, которых нет в речи.
+            Выведи только текст запроса.
             """
         }
+        return base + "\n\n" + termsRule
     }
 
     /// Удаление блоков размышлений <think>...</think>

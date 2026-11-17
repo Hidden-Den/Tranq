@@ -124,27 +124,5 @@ extension SharedSettingsSuites {
                 Issue.record("Пользовательский термин из словаря должен быть разрешен")
             }
         }
-
-        // MARK: - AppProfileRouter Context Awareness
-
-        @Test func appProfileRouterDetectsCorrectCategory() {
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "ru.keepcoder.Telegram") == .messaging)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "com.tinyspeck.slackmacgap") == .messaging)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "com.microsoft.VSCode") == .codeAndTerminal)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "com.apple.Terminal") == .codeAndTerminal)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "md.obsidian") == .notesAndDocs)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "notion.id") == .notesAndDocs)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "com.apple.mail") == .email)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: "com.random.unknown") == .general)
-            #expect(AppProfileRouter.detectCategory(bundleIdentifier: nil) == .general)
-        }
-
-        @Test func appProfileGuidancePromptsAreNonEmptyForSpecializedApps() {
-            #expect(!AppCategory.messaging.guidancePrompt.isEmpty)
-            #expect(!AppCategory.codeAndTerminal.guidancePrompt.isEmpty)
-            #expect(!AppCategory.notesAndDocs.guidancePrompt.isEmpty)
-            #expect(!AppCategory.email.guidancePrompt.isEmpty)
-            #expect(AppCategory.general.guidancePrompt.isEmpty)
-        }
     }
 }

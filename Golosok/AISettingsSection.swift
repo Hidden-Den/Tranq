@@ -191,24 +191,6 @@ struct VoiceIntelligenceSection: View {
 
                     Divider().background(Color.uiHairline)
 
-                    // Адаптация под приложения
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Адаптация под приложения")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Учет контекста активного окна")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        Toggle(String(localized: "Адаптация под приложения"), isOn: $settings.adaptiveAppProfilesEnabled)
-                            .labelsHidden()
-                            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
-                    }
-
-                    Divider().background(Color.uiHairline)
-
                     // Словарь
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 2) {

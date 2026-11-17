@@ -194,31 +194,9 @@ struct VoiceIntelligencePhase5Tests {
         #expect(throughput > 500, "Пропускная способность должна превышать 500 реплик в секунду")
     }
 
-    // MARK: - 7. Матрица интеграционного тестирования вставки и целевых приложений
+    // MARK: - 7. Безопасность вставки
 
-    @Test func insertionMatrixTargetAppProfilesAndSafety() {
-        // Проверка профилей приложений из матрицы
-        let matrix: [(bundleId: String, expectedCategory: AppCategory)] = [
-            ("com.microsoft.VSCode", .codeAndTerminal),
-            ("com.todesktop.230313mzl4w4u92", .codeAndTerminal),
-            ("com.apple.Terminal", .codeAndTerminal),
-            ("com.googlecode.iterm2", .codeAndTerminal),
-            ("ru.keepcoder.Telegram", .messaging),
-            ("com.tinyspeck.slackmacgap", .messaging),
-            ("com.apple.MobileSMS", .messaging),
-            ("md.obsidian", .notesAndDocs),
-            ("notion.id", .notesAndDocs),
-            ("com.apple.mail", .email),
-            ("com.microsoft.Outlook", .email),
-            ("com.apple.Safari", .general),
-            ("com.google.Chrome", .general)
-        ]
-
-        for item in matrix {
-            let cat = AppProfileRouter.detectCategory(bundleIdentifier: item.bundleId)
-            #expect(cat == item.expectedCategory, "Для \(item.bundleId) ожидалась категория \(item.expectedCategory)")
-        }
-
+    @Test func insertionMatrixPasteboardAndSafety() {
         // Частный буфер: системный не затрагивается, параллельные тесты не конфликтуют
         let pb = NSPasteboard(name: NSPasteboard.Name("golosok.tests.\(UUID().uuidString)"))
         defer { pb.releaseGlobally() }

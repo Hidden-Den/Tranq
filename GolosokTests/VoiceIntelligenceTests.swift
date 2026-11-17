@@ -146,7 +146,7 @@ extension SharedSettingsSuites {
             let settings = VoiceIntelligenceSettings.shared
             // resetToDefaults пишет в настоящие настройки пользователя — возвращаем всё как было
             let saved = (settings.mode, settings.engine, settings.openRouterModel, settings.localModel,
-                         settings.adaptiveTimeoutSeconds, settings.adaptiveAppProfilesEnabled, settings.customSystemPrompt)
+                         settings.adaptiveTimeoutSeconds, settings.customSystemPrompt)
             settings.resetToDefaults()
             defer {
                 settings.mode = saved.0
@@ -154,8 +154,7 @@ extension SharedSettingsSuites {
                 settings.openRouterModel = saved.2
                 settings.localModel = saved.3
                 settings.adaptiveTimeoutSeconds = saved.4
-                settings.adaptiveAppProfilesEnabled = saved.5
-                settings.customSystemPrompt = saved.6
+                settings.customSystemPrompt = saved.5
             }
 
             #expect(settings.mode == .smart)
