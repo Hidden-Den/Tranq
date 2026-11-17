@@ -283,6 +283,20 @@ final class DictionaryStore: ObservableObject {
         return prefix + spellings.joined(separator: ", ")
     }
 
+    /// Написания пользовательских записей от недавних к старым через запятую: подсказка распознавателю,
+    /// который принимает начальный контекст, например Whisper. Пустая строка, если записей нет.
+    func recognizerPrompt(limit: Int = 40) -> String {
+        let entries = withLock { entriesSnapshot }
+        var seen = Set<String>()
+        var spellings: [String] = []
+        for entry in entries.sorted(by: { ($0.lastUsed ?? $0.createdAt) > ($1.lastUsed ?? $1.createdAt) }) where spellings.count < limit {
+            let spelling = entry.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !spelling.isEmpty, seen.insert(spelling.lowercased()).inserted else { continue }
+            spellings.append(spelling)
+        }
+        return spellings.joined(separator: ", ")
+    }
+
     // MARK: - Замены по заметкам
 
     func recordReplacements(_ replacements: [AppliedReplacement], noteId: UUID) {

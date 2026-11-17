@@ -30,9 +30,16 @@ final class WhisperCLIEngine: SpeechRecognizer {
         }
         guard AudioPCM.writeWav(samples: samples, to: wavURL) else { return .empty }
 
+        var arguments = ["-m", modelPath, "-f", wavURL.path, "-l", model.languageCode, "-nt", "-ojf"]
+        // Слова из словаря как начальный контекст: Whisper охотнее пишет их как надо
+        let vocabulary = DictionaryStore.shared.recognizerPrompt()
+        if !vocabulary.isEmpty {
+            arguments += ["--prompt", vocabulary]
+        }
+
         guard let result = ProcessRunner.run(
             cliPath,
-            arguments: ["-m", modelPath, "-f", wavURL.path, "-l", model.languageCode, "-nt", "-ojf"],
+            arguments: arguments,
             timeout: processTimeout
         ) else { return .empty }
         if !result.succeeded {
