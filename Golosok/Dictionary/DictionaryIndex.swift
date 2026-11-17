@@ -238,7 +238,9 @@ struct DictionaryIndex {
             let shortAcronym = word.count <= 4 && word == word.uppercased()
             return shortAcronym || !checker.isCommonWord(word, language: .en)
         }
-        return (2...5).contains(word.count) && word == word.uppercased()
+        // Кириллица в первую версию не входит: «СМИ», «МВД», «НДС» — обычные слова рабочей речи,
+        // а по звуку и буквам они близки к SMM и MVP. Верная находка в замере была одна: «ГИД» → Git.
+        return false
     }
 
     private func candidates(for word: String) -> [String] {
@@ -248,6 +250,10 @@ struct DictionaryIndex {
         guard key.count > 1 || word == word.uppercased() else { return [] }
         let letters = Phonetics.latinLetters(word)
         let lower = word.lowercased()
+        // Латиница заглавными — аббревиатура, её буквы мало говорят о сказанном. Остальным словам
+        // кандидат нужен близкий и по буквам, не дальше двух третей: иначе Ozon получит Asana.
+        let isLatin = word.unicodeScalars.first?.isASCII == true
+        let maxLetterShare: Double? = isLatin && word == word.uppercased() ? nil : 2.0 / 3.0
         var scored: [(similarity: Double, distance: Double, ordinal: Int, spelling: String)] = []
         for term in soundTerms where term.lowered != lower {
             var best: Double?
@@ -258,6 +264,8 @@ struct DictionaryIndex {
                 if distance <= limit { best = max(best ?? 0, 1 - Double(distance) / Double(longest)) }
             }
             if let best {
+                let letterDistance = Phonetics.normalizedDistance(letters, term.letters)
+                if let maxLetterShare, letterDistance > maxLetterShare + 1e-9 { continue }
                 scored.append((best, Phonetics.normalizedDistance(letters, term.letters), term.ordinal, term.spelling))
             }
         }

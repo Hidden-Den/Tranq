@@ -29,7 +29,6 @@ final class TermSuspectTests: XCTestCase {
             ("Вопрос про CNT лучше задать HR-бизнес-партнёру.", "CNT", "C&B"),
             ("Пришли Sk-запрос, я проверю.", "Sk", "SQL"),
             ("Выгрузи отчёт из Power B в PDF.", "Power B", "Power BI"),
-            ("Подними версию в ГИД и поставь тег.", "ГИД", "Git"),
         ]
         for (text, token, term) in cases {
             let suspects = index.termSuspects(in: text, language: .ru)
@@ -58,6 +57,25 @@ final class TermSuspectTests: XCTestCase {
         let suspects = index.termSuspects(in: "The Ley Fix на Staging, скинь ссылку.", language: .ru)
         XCTAssertNil(suspects.first { $0.token == "Ley" }, "\(suspects)")
         XCTAssertNotNil(index.termSuspects(in: "Настрой IPI ключ.", language: .ru).first { $0.token == "IPI" })
+    }
+
+    /// Обычные русские аббревиатуры не термины: «ЗП» не должно превращаться в C&B, «СМИ» в CMS.
+    func testCommonRussianAbbreviationsAreNotSuspects() {
+        let text = "Скинь ТЗ по ЗП до пятницы, СМИ и ГОСТ подождут, МВД тоже."
+        XCTAssertEqual(index.termSuspects(in: text, language: .ru), [])
+    }
+
+    /// Бренды вне словаря не получают далёких по буквам терминов: Ozon не станет Asana или C&B.
+    func testBrandsOutsideDictionaryGetNoDistantTerms() {
+        let suspects = index.termSuspects(in: "Закажи на Ozon, потом зайди на Avito.", language: .ru)
+        let ozon = suspects.first { $0.token == "Ozon" }?.candidates ?? []
+        let avito = suspects.first { $0.token == "Avito" }?.candidates ?? []
+        XCTAssertTrue(Set(ozon).isDisjoint(with: ["Asana", "Suno", "УСН", "C&B"]), "\(ozon)")
+        XCTAssertFalse(avito.contains("FTE"), "\(avito)")
+    }
+
+    func testCyrillicIsNotSuspect() {
+        XCTAssertEqual(index.termSuspects(in: "Подними версию в ГИД и поставь тег.", language: .ru), [])
     }
 
     func testOnlyRussianDictation() {
