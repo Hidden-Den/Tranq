@@ -67,13 +67,29 @@ struct CleanupEvalTests {
         let dir = URL(fileURLWithPath: (env["GOLOSOK_EVAL_DIR"]! as NSString).expandingTildeInPath, isDirectory: true)
         let cases = try CleanupEval.loadCases(from: dir.appendingPathComponent("cases.jsonl"))
         let (backend, label) = try CleanupEval.backendFromEnvironment(env)
+        try await CleanupEval.waitForLocalServer(env)
+
+        // Словарь срабатывает до модели и после неё, как в TranscriptionPipeline. Чистый `apply`
+        // не трогает счётчики срабатываний в словаре пользователя.
+        DictionaryStore.shared.waitForIndex()
+        let index = DictionaryStore.shared.index
 
         var runs: [EvalRun] = []
         for evalCase in cases {
             let started = Date()
-            let result = await ThoughtSynthesizer.shared.clean(
-                evalCase.raw, level: .clean, targetBundleId: nil, firedSpellings: [], language: .ru, backend: backend
+            let dictionary = index?.apply(to: evalCase.raw, language: .ru)
+            var fired: [String] = []
+            for replacement in dictionary?.replacements ?? [] where !fired.contains(replacement.replacement) {
+                fired.append(replacement.replacement)
+            }
+            let cleaned = await ThoughtSynthesizer.shared.clean(
+                dictionary?.text ?? evalCase.raw, level: .clean, targetBundleId: nil,
+                firedSpellings: fired, language: .ru, backend: backend
             )
+            let text = index?.apply(
+                to: cleaned.text.trimmingCharacters(in: .whitespacesAndNewlines), language: .ru
+            ).text ?? cleaned.text
+            let result = CleanupResult(text: text, fallback: cleaned.fallback)
             runs.append(EvalRun(evalCase: evalCase, result: result, seconds: Date().timeIntervalSince(started)))
         }
         let summary = CleanupEval.summarize(runs)

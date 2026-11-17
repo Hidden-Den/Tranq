@@ -30,6 +30,7 @@ struct EvalSummary: Equatable {
 
 enum CleanupEvalError: Error {
     case noBackend
+    case serverNotReady
 }
 
 enum CleanupEval {
@@ -117,6 +118,18 @@ enum CleanupEval {
             providerID: env["GOLOSOK_EVAL_PROVIDER"] ?? "openai"
         )
         return (ExternalBackend(config: config), model)
+    }
+
+    /// Модели каталога работают только через llama-server: до первой фразы сервер должен загрузить модель,
+    /// иначе весь прогон откатится на уровень A. Внешнему API ждать нечего.
+    static func waitForLocalServer(_ env: [String: String], timeout: TimeInterval = 180) async throws {
+        guard let path = env["GOLOSOK_EVAL_LOCAL_MODEL"], !path.isEmpty, LocalLLMServer.isAvailable else { return }
+        LocalLLMServer.shared.prewarm(modelPath: path)
+        let deadline = Date().addingTimeInterval(timeout)
+        while !LocalLLMServer.shared.isReady(for: path) {
+            guard Date() < deadline else { throw CleanupEvalError.serverNotReady }
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
     }
 
     // MARK: - Вспомогательное
