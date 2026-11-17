@@ -18,6 +18,10 @@ struct OnboardingView: View {
             VStack(spacing: 24) {
                 // ШАПКА
                 VStack(spacing: 8) {
+                    Text("Tranq")
+                        .font(.brand(34))
+                        .foregroundColor(.uiInk)
+
                     Text("Давайте начнём")
                         .font(.ui(.title, weight: .semibold))
                         .foregroundColor(.uiInk)

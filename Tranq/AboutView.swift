@@ -19,7 +19,7 @@ struct AboutView: View {
                     .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
                 
                 Text("Tranq")
-                    .font(.ui(.title, weight: .bold))
+                    .font(.brand(30))
                     .foregroundColor(.uiInk)
                 
                 UIBadge(text: currentVersionStr)

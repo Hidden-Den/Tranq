@@ -231,7 +231,7 @@ struct ContentView: View {
         HStack(spacing: 8) {
             Image("AppLogo").resizable().aspectRatio(contentMode: .fit).frame(width: 22, height: 22).foregroundColor(.uiInk)
             VStack(alignment: .leading, spacing: -2) {
-                Text("Tranq").font(.ui(.callout, weight: .bold)).foregroundColor(.uiInk)
+                Text("Tranq").font(.brand(22)).foregroundColor(.uiInk)
                 HStack(spacing: 4) {
                     let versionStr = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
                     Text(versionStr).font(.ui(.micro, weight: .medium)).foregroundColor(.uiMidGray)
@@ -342,7 +342,7 @@ struct ContentView: View {
                             .frame(width: 26, height: 26)
                             .foregroundColor(.uiInk)
                         Text("Tranq")
-                            .font(.ui(.title, weight: .bold))
+                            .font(.brand(30))
                             .foregroundColor(.uiInk)
                     }
                     Text("Чистый текст голосом в любом приложении")
