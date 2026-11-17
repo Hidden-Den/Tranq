@@ -89,9 +89,10 @@ public final class ThoughtSynthesizer {
             switch error {
             case .timeout: reason = .timeout
             case .empty: reason = .emptyResponse
-            case .unavailable, .http: reason = .providerUnavailable
+            case .http(let code): reason = .providerError(code)
+            case .unavailable: reason = .providerUnavailable
             }
-            AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, причина \(reason)", details: "Откат на текст этапа 1")
+            AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, \(error.logDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: reason)
         } catch {
             AppLogger.shared.warn("Pipeline", "Этап 2: ошибка модели \(error.localizedDescription)", details: "Откат на текст этапа 1")

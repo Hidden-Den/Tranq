@@ -26,6 +26,25 @@ struct LevelValidatorTests {
         guard case .rejected = result else { Issue.record("\(result)"); return }
     }
 
+    @Test func cleanRejectsDroppedLatinTerm() {
+        let result = GroundingValidator.validate(
+            input: "закинь ну короче в CRM карточку клиента", output: "Закинь карточку клиента", level: .clean
+        )
+        guard case .rejected = result else { Issue.record("потеря CRM должна отклоняться: \(result)"); return }
+    }
+
+    @Test func rewriteRejectsDroppedLatinTerm() {
+        let result = GroundingValidator.validate(
+            input: "закинь ну короче в CRM карточку клиента", output: "Прошу добавить карточку клиента", level: .rewrite(tone: "деловой")
+        )
+        guard case .rejected = result else { Issue.record("потеря CRM должна отклоняться: \(result)"); return }
+    }
+
+    @Test func latinTermKeptInAnyCaseIsAccepted() {
+        let out = "Закинь в crm карточку клиента"
+        #expect(GroundingValidator.validate(input: "закинь ну короче в CRM карточку клиента", output: out, level: .clean) == .valid(sanitizedText: out))
+    }
+
     @Test func cleanRejectsGrowthOverLimit() {
         let input = "давай короче перенесём встречу на четверг"
         let output = "Давай перенесём встречу на четверг, потому что так будет удобнее всем участникам команды"

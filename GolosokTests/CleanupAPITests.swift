@@ -30,13 +30,20 @@ struct CleanupAPITests {
     @Test func backendErrorsMapToReasons() async {
         let input = "ну короче давай перенесём встречу на четверг"
         let cases: [(CleanupBackendError, FallbackReason)] = [
-            (.unavailable, .providerUnavailable), (.http(500), .providerUnavailable), (.timeout, .timeout),
+            (.unavailable, .providerUnavailable), (.http(500), .providerError(500)), (.http(401), .providerError(401)), (.timeout, .timeout),
         ]
         for (error, reason) in cases {
             let result = await clean(input, level: .clean, backend: StubBackend(error: error))
             #expect(result.fallback == reason)
             #expect(result.text == ThoughtSynthesizer.stageOne(input))
         }
+    }
+
+    @Test func backendErrorsDescribeThemselvesForTheLog() {
+        #expect(CleanupBackendError.http(401).logDescription == "HTTP 401")
+        #expect(CleanupBackendError.timeout.logDescription == "таймаут")
+        #expect(CleanupBackendError.unavailable.logDescription == "нет соединения")
+        #expect(CleanupBackendError.empty.logDescription == "пустой ответ")
     }
 
     @Test func shortPhraseSkipsBackend() async {

@@ -18,6 +18,13 @@ struct FallbackNoticeTests {
                 == String(localized: "ИИ не настроен"))
     }
 
+    @Test func providerErrorsAreNotReportedAsUnavailable() {
+        #expect(FallbackNotice.message(for: .providerError(401), providerID: "corporate", engine: .external)
+                == String(localized: "Ошибка шлюза"))
+        #expect(FallbackNotice.message(for: .providerError(500), providerID: "openai", engine: .external)
+                == String(localized: "Ошибка ИИ"))
+    }
+
     @Test func silentReasonsShowNothing() {
         for reason: FallbackReason? in [nil, .shortPhrase, .hardware, .emptyResponse, .rejected("x")] {
             #expect(FallbackNotice.message(for: reason, providerID: "corporate", engine: .external) == nil)

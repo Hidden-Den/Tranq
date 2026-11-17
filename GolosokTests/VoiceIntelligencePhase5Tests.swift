@@ -132,12 +132,13 @@ struct VoiceIntelligencePhase5Tests {
         for sample in samples {
             totalEvaluated += 1
             let cleanStageOne = DisfluencyPrefilter.filter(sample.rawSpeech)
+            // Проверка получает текст после префильтра: звуки вроде «uh» из речи к ней не доходят
 
             let candidateOutput = cleanStageOne
 
             // Корректный синтезированный результат: сохраненный очищенный текст
             let result = GroundingValidator.validate(
-                input: sample.rawSpeech,
+                input: cleanStageOne,
                 output: candidateOutput,
                 level: sample.level
             )

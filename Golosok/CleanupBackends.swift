@@ -73,6 +73,8 @@ struct ExternalBackend: CleanupBackend {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
+            let code = (error as? URLError)?.code.rawValue
+            AppLogger.shared.warn("Synthesizer", "Ошибка соединения с провайдером", details: "\(config.baseURL), код \(code.map(String.init) ?? "?"), \(error.localizedDescription)")
             throw CleanupBackendError.unavailable
         }
 

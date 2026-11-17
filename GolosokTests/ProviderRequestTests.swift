@@ -54,6 +54,24 @@ struct ProviderRequestTests {
         #expect(try body(ChatRequestBuilder.streamRequest(config: classic, system: "s", user: "u"))["reasoning_effort"] == nil)
     }
 
+    @Test func gatewayProxyingOpenAIReasoningModelsRunsWithoutReasoning() throws {
+        for model in ["gpt-6-luna", "gpt-6.1-terra", "gpt-6-sol-2026-09-15", "GPT-6-Luna"] {
+            let config = AIProviderConfig(baseURL: "https://llm.corp.local/v1", apiKey: "k", model: model, providerID: "corporate")
+            #expect(try body(ChatRequestBuilder.streamRequest(config: config, system: "s", user: "u"))["reasoning_effort"] as? String == "none", "\(model)")
+        }
+        for model in ["gpt-6.1-sol", "gpt-6-astra", "gpt-4o-mini", "llama-3.3-70b"] {
+            let config = AIProviderConfig(baseURL: "https://llm.corp.local/v1", apiKey: "k", model: model, providerID: "corporate")
+            #expect(try body(ChatRequestBuilder.streamRequest(config: config, system: "s", user: "u"))["reasoning_effort"] == nil, "\(model)")
+        }
+    }
+
+    @Test func anthropicAndOpenRouterNeverGetReasoningEffort() throws {
+        let anthropic = AIProviderConfig(baseURL: "https://api.anthropic.com/v1", apiKey: "k", model: "gpt-6-luna", providerID: "anthropic")
+        #expect(try body(ChatRequestBuilder.streamRequest(config: anthropic, system: "s", user: "u"))["reasoning_effort"] == nil)
+        let router = AIProviderConfig(baseURL: "https://openrouter.ai/api/v1", apiKey: "k", model: "openai/gpt-6-luna", providerID: "openrouter")
+        #expect(try body(ChatRequestBuilder.streamRequest(config: router, system: "s", user: "u"))["reasoning_effort"] == nil)
+    }
+
     @Test func corporatePresetStartsUnconfigured() {
         let store = AIProviderStore.shared
         let saved = (store.providerID, store.baseURL, store.model)

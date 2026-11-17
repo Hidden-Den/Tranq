@@ -129,6 +129,14 @@ public struct GroundingValidator {
                 }
                 return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
             }
+
+            // Латинские термины речи, как и числа, обязаны дожить до результата
+            if isClean || isRewrite {
+                let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
+                if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) }) {
+                    return .rejected(reason: "Пропущен исходный термин \(missing)")
+                }
+            }
         }
 
         // 7. Дифференцированная проверка длины по стилям

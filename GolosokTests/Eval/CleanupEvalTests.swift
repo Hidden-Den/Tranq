@@ -10,9 +10,9 @@ struct CleanupEvalTests {
 
     @Test func summarizeComputesMetrics() {
         let runs = [
-            EvalRun(evalCase: makeCase("встреча в 15 в CRM раз два три"),
+            EvalRun(evalCase: makeCase("встреча в 15 в CRM ну как бы"),
                     result: CleanupResult(text: "встреча в 15 в CRM", fallback: nil), seconds: 1),
-            EvalRun(evalCase: makeCase("встреча в 16 раз два три четыре"),
+            EvalRun(evalCase: makeCase("встреча в 16 ну как бы потом"),
                     result: CleanupResult(text: "встреча", fallback: .rejected("r")), seconds: 3),
         ]
         let summary = CleanupEval.summarize(runs)
@@ -23,6 +23,26 @@ struct CleanupEvalTests {
         #expect(abs(summary.medianCompression - (5.0 / 8.0 + 1.0 / 7.0) / 2.0) < 0.001)
         #expect(summary.p50 == 1)
         #expect(summary.p95 == 3)
+    }
+
+    @Test func numbersAreComparedAfterNormalizingSpelledOutNumbers() {
+        let kept = EvalRun(evalCase: makeCase("встреча в пятнадцать часов"),
+                           result: CleanupResult(text: "встреча в 15 часов", fallback: nil), seconds: 1)
+        let lost = EvalRun(evalCase: makeCase("встреча в пятнадцать часов"),
+                           result: CleanupResult(text: "встреча в часов", fallback: nil), seconds: 1)
+        #expect(CleanupEval.summarize([kept]).numbersKeptShare == 1.0)
+        #expect(CleanupEval.summarize([lost]).numbersKeptShare == 0.0)
+    }
+
+    @Test func shortPhrasesAreNotCountedAgainstAcceptance() {
+        let runs = [
+            EvalRun(evalCase: makeCase("ну привет"), result: CleanupResult(text: "ну привет", fallback: .shortPhrase), seconds: 0.1),
+            EvalRun(evalCase: makeCase("давай перенесём встречу на четверг"),
+                    result: CleanupResult(text: "Давай перенесём встречу на четверг", fallback: nil), seconds: 1),
+        ]
+        let summary = CleanupEval.summarize(runs)
+        #expect(summary.total == 2)
+        #expect(summary.acceptedShare == 1.0)
     }
 
     @Test func summarizeOfNothingIsZero() {

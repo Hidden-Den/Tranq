@@ -7,6 +7,9 @@ enum FallbackNotice {
         case .providerUnavailable:
             if engine == .external, providerID == "corporate" { return String(localized: "Шлюз недоступен") }
             return String(localized: "ИИ недоступен")
+        case .providerError:
+            if engine == .external, providerID == "corporate" { return String(localized: "Ошибка шлюза") }
+            return String(localized: "Ошибка ИИ")
         case .timeout:
             return String(localized: "ИИ не ответил")
         case .notConfigured:

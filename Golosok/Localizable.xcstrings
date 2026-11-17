@@ -4383,6 +4383,38 @@
         }
       }
     },
+    "Ошибка шлюза" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gateway error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ошибка шлюза"
+          }
+        }
+      }
+    },
+    "Ошибка ИИ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ошибка ИИ"
+          }
+        }
+      }
+    },
     "Умная речь" : {
       "localizations" : {
         "en" : {

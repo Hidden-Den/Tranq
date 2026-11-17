@@ -7,11 +7,14 @@ extension AIProviderConfig {
         return host == "openrouter.ai" || host.hasSuffix(".openrouter.ai")
     }
 
-    /// Модели OpenAI, которым нужно явно отключить рассуждение: по умолчанию оно среднее и тормозит ответ.
+    /// Модели OpenAI, которым нужно явно отключить рассуждение: по умолчанию оно среднее, тормозит ответ
+    /// и запрещает температуру. Имя проверяется у любого адреса формата OpenAI, шлюз тоже отдаёт такие модели.
+    /// Astra и 6.1 Sol режим none не поддерживают.
     var needsReasoningOff: Bool {
-        guard providerID == "openai" else { return false }
+        guard !isAnthropic, !isOpenRouter else { return false }
         let name = model.lowercased()
-        return name.contains("luna") || name.contains("terra") || name == "gpt-6-sol"
+        guard name.hasPrefix("gpt-6") else { return false }
+        return name.contains("luna") || name.contains("terra") || name.hasPrefix("gpt-6-sol")
     }
 }
 

@@ -16,7 +16,7 @@ struct EvalRun {
 
 struct EvalSummary: Equatable {
     let total: Int
-    /// Доля ответов модели, принятых проверкой.
+    /// Доля ответов модели, принятых проверкой, без коротких фраз.
     let acceptedShare: Double
     /// Доля случаев, где все числа речи есть в результате.
     let numbersKeptShare: Double
@@ -39,8 +39,11 @@ enum CleanupEval {
                                medianCompression: 0, p50: 0, p95: 0)
         }
         let total = Double(runs.count)
-        let accepted = runs.filter { $0.result.fallback == nil }.count
-        let numbersKept = runs.filter { kept(numbers(in: $0.evalCase.raw), in: $0.result.text) }.count
+        // Короткие фразы не доходят до модели, их принятие или отказ ничего не измеряет
+        let modelRuns = runs.filter { $0.result.fallback != .shortPhrase }
+        let accepted = modelRuns.filter { $0.result.fallback == nil }.count
+        // Речь распознавателя пишет числа словами, поэтому числа берутся после нормализации
+        let numbersKept = runs.filter { kept(numbers(in: ThoughtSynthesizer.stageOne($0.evalCase.raw)), in: $0.result.text) }.count
         let latinKept = runs.filter { kept(latinWords(in: $0.evalCase.raw), in: $0.result.text) }.count
         let compressions = runs.map { run -> Double in
             let rawWords = max(1, wordCount(run.evalCase.raw))
@@ -49,7 +52,7 @@ enum CleanupEval {
         let seconds = runs.map(\.seconds)
         return EvalSummary(
             total: runs.count,
-            acceptedShare: Double(accepted) / total,
+            acceptedShare: modelRuns.isEmpty ? 0 : Double(accepted) / Double(modelRuns.count),
             numbersKeptShare: Double(numbersKept) / total,
             latinKeptShare: Double(latinKept) / total,
             medianCompression: median(compressions),

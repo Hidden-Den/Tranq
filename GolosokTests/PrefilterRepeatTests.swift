@@ -18,6 +18,15 @@ struct PrefilterRepeatTests {
         #expect(DisfluencyPrefilter.filter("Это сделал он. Он сказал.") == "Это сделал он. Он сказал.")
     }
 
+    @Test func keepsOneWordSentenceBeforeLongerOne() {
+        #expect(DisfluencyPrefilter.filter("Иван. Иван Петров пришёл.") == "Иван. Иван Петров пришёл.")
+        #expect(DisfluencyPrefilter.filter("Москва. Москва-сити.") == "Москва. Москва-сити.")
+    }
+
+    @Test func collapsesRepeatFollowedByComma() {
+        #expect(DisfluencyPrefilter.filter("Да. Да, конечно.") == "Да, конечно.")
+    }
+
     @Test func cleanCallsModelWithoutFillers() async {
         let stub = StubBackend(reply: "Давай перенесём встречу на четверг")
         _ = await ThoughtSynthesizer.shared.clean(
