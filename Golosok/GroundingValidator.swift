@@ -152,7 +152,65 @@ public struct GroundingValidator {
             return .rejected(reason: "Выход модели превысил допустимый объем генерации для выбранного стиля")
         }
 
+        // 8. Чистая мысль только удаляет мусор: пересказ своими словами отклоняется
+        if style == .clean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms) {
+            return .rejected(reason: reason)
+        }
+
         return .valid(sanitizedText: sanitizedOutput)
+    }
+
+    // MARK: - Защита от пересказа
+
+    /// Доля слов результата, которых не было в речи, выше которой ответ считается пересказом.
+    static let maxNovelWordShare = 0.2
+    /// Минимальная доля слов речи, которая должна остаться в результате.
+    static let minRetainedWordShare = 0.5
+
+    /// Сравнивает слова речи и результата без учёта порядка: перестановка «успеем ли мы» не пересказ.
+    /// Числа не учитываются, их сверяет проверка чисел. Возвращает причину отказа, если модель добавила
+    /// много новых слов или выбросила большую часть речи.
+    static func rewriteViolation(input: String, output: String, customTerms: Set<String> = []) -> String? {
+        let inputWords = comparableWords(input).filter { !containsDigit($0) }
+        let outputWords = comparableWords(output).filter { !containsDigit($0) }
+        guard !inputWords.isEmpty, !outputWords.isEmpty else { return nil }
+
+        let allowed = Set(customTerms.flatMap { comparableWords($0) })
+        var remaining = Dictionary(inputWords.map { ($0, 1) }, uniquingKeysWith: +)
+        var kept = 0
+        var novel = 0
+        for word in outputWords {
+            if let count = remaining[word], count > 0 {
+                remaining[word] = count - 1
+                kept += 1
+            } else if !allowed.contains(word) {
+                novel += 1
+            }
+        }
+
+        let novelBudget = max(1, Int((Double(outputWords.count) * maxNovelWordShare).rounded(.down)))
+        if novel > novelBudget {
+            return "Модель переписала речь своими словами: \(novel) новых слов из \(outputWords.count)"
+        }
+
+        // Короткие фразы целиком могут быть самоисправлением, поэтому порог потерь только для длинных
+        if inputWords.count >= 8, Double(kept) / Double(inputWords.count) < minRetainedWordShare {
+            return "Модель выбросила большую часть речи: сохранено \(kept) из \(inputWords.count) слов"
+        }
+        return nil
+    }
+
+    /// Слова в нижнем регистре без знаков препинания по краям; «ё» приравнивается к «е».
+    static func comparableWords(_ text: String) -> [String] {
+        text.lowercased()
+            .replacingOccurrences(of: "ё", with: "е")
+            .split(whereSeparator: { $0.isWhitespace || $0 == "—" || $0 == "–" })
+            .map { $0.trimmingCharacters(in: .punctuationCharacters.union(.symbols)) }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func containsDigit(_ word: String) -> Bool {
+        word.contains(where: \.isNumber)
     }
 
     // MARK: - Вспомогательные методы

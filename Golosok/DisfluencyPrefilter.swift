@@ -61,6 +61,41 @@ public struct DisfluencyPrefilter {
         return result
     }
 
+    // MARK: - Нужна ли языковая модель
+
+    /// Слова-паразиты, которые префильтр не трогает: они бывают и значимыми, поэтому решает модель.
+    private static let softFillerWords: Set<String> = [
+        "короче", "типа", "ну", "вот", "значит", "блин", "слушай", "смотри", "кстати",
+        "like", "basically", "actually", "literally",
+    ]
+
+    /// Фразы-паразиты и маркеры самоисправления «в понедельник, ой, во вторник».
+    private static let cleanupPhrases: [[String]] = [
+        ["как", "бы"], ["в", "общем"], ["в", "общем-то"], ["это", "самое"], ["так", "сказать"],
+        ["то", "есть"], ["в", "смысле"], ["ой"], ["вернее"], ["точнее"], ["стоп"], ["нет", "не"],
+        ["you", "know"], ["i", "mean"], ["sort", "of"], ["kind", "of"], ["sorry"], ["no", "wait"],
+    ]
+
+    /// Есть ли в тексте после префильтра то, что умеет убрать только модель.
+    /// Если нет, стиль «Чистая мысль» отдаёт текст распознавателя без вызова модели.
+    public static func needsCleanup(_ text: String) -> Bool {
+        let words = text.lowercased()
+            .replacingOccurrences(of: "ё", with: "е")
+            .split(whereSeparator: { $0.isWhitespace })
+            .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+            .filter { !$0.isEmpty }
+        guard !words.isEmpty else { return false }
+        if words.contains(where: softFillerWords.contains) { return true }
+        for phrase in cleanupPhrases where phrase.count <= words.count {
+            for start in 0...(words.count - phrase.count) where Array(words[start..<start + phrase.count]) == phrase {
+                return true
+            }
+        }
+        // Оборванные слова «пое- поедем» тоже правит модель
+        if text.range(of: #"[а-яёa-z]-(\s|$)"#, options: [.regularExpression, .caseInsensitive]) != nil { return true }
+        return false
+    }
+
     private static func normalizeWhitespaceAndPunctuation(_ text: String) -> String {
         // Убираем двойные пробелы
         var cleaned = text.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)

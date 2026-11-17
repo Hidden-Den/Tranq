@@ -40,6 +40,13 @@ public final class ThoughtSynthesizer {
             return
         }
 
+        // Чистой мысли нечего чистить: вызов модели только рискует переписать речь
+        if style == .clean && !DisfluencyPrefilter.needsCleanup(stageOneText) {
+            AppLogger.shared.info("Pipeline", "Этап 2 пропущен: в речи нет паразитов и самоисправлений", details: "Отдан текст распознавателя: «\(stageOneText)»")
+            completion(stageOneText, true)
+            return
+        }
+
         let settings = VoiceIntelligenceSettings.shared
         let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
         let messages = buildMessages(for: stageOneText, style: style, targetBundleId: targetBundleId, dictionaryHint: dictionaryHint)
