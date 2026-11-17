@@ -33,6 +33,8 @@ final class TranscriptionPipeline {
         let stageOneText: String
         let finalText: String
         let isTransformedByAI: Bool
+        /// Почему вместо ответа модели вставлен текст без ИИ; пусто, если откатов не было.
+        let fallback: FallbackReason?
         let words: [TimedWord]
         let audioSeconds: Double
         let speedup: Double
@@ -205,12 +207,12 @@ final class TranscriptionPipeline {
                 targetBundleId: target?.bundleIdentifier
             )
 
-            func deliver(finalText: String, transformed: Bool, isFallback: Bool) {
+            func deliver(finalText: String, transformed: Bool, fallback: FallbackReason?) {
                 TranscriptJournal.shared.updateFinal(
                     id: noteId,
                     stageOneText: stageOneText,
                     finalText: finalText,
-                    isFallback: isFallback
+                    isFallback: fallback != nil
                 )
                 completion(.success(Output(
                     noteId: noteId,
@@ -218,6 +220,7 @@ final class TranscriptionPipeline {
                     stageOneText: stageOneText,
                     finalText: finalText,
                     isTransformedByAI: transformed,
+                    fallback: fallback,
                     words: recognized.words,
                     audioSeconds: recognized.audioSeconds,
                     speedup: speedup,
@@ -230,7 +233,7 @@ final class TranscriptionPipeline {
             guard let level = job.level else {
                 let direct = dictionary.text
                 AppLogger.shared.info("Pipeline", "Этап 2 пропущен: импорт файла", details: "Итог: «\(direct)»")
-                deliver(finalText: direct, transformed: false, isFallback: false)
+                deliver(finalText: direct, transformed: false, fallback: nil)
                 return
             }
 
@@ -262,7 +265,7 @@ final class TranscriptionPipeline {
                     }
                     let isFallback = cleaned.fallback != nil
                     AppLogger.shared.info("Pipeline", "✔ Пайплайн завершён: \(isFallback ? "откат на распознанный текст" : "очистка выполнена")", details: "Финальный текст: «\(resolved)»")
-                    deliver(finalText: resolved, transformed: level != .verbatim && !isFallback, isFallback: isFallback)
+                    deliver(finalText: resolved, transformed: level != .verbatim && !isFallback, fallback: cleaned.fallback)
                 }
             }
         }

@@ -4287,6 +4287,102 @@
         }
       }
     },
+    "Только звуки и заикания, без ИИ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fillers and stutters only, no AI"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Только звуки и заикания, без ИИ"
+          }
+        }
+      }
+    },
+    "Адрес шлюза компании" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Company gateway address"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адрес шлюза компании"
+          }
+        }
+      }
+    },
+    "Шлюз недоступен" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gateway unavailable"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Шлюз недоступен"
+          }
+        }
+      }
+    },
+    "ИИ недоступен" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI unavailable"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ИИ недоступен"
+          }
+        }
+      }
+    },
+    "ИИ не ответил" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI did not respond"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ИИ не ответил"
+          }
+        }
+      }
+    },
+    "ИИ не настроен" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI not configured"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ИИ не настроен"
+          }
+        }
+      }
+    },
     "Умная речь" : {
       "localizations" : {
         "en" : {

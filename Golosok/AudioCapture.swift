@@ -278,9 +278,15 @@ final class AudioCapture: ObservableObject {
     private func insert(_ output: TranscriptionPipeline.Output, isFileImport: Bool, target: FocusSnapshot?, then next: @escaping () -> Void) {
         transcribedText = output.finalText
         isSuccessDone = true
+        let fallbackNotice = isFileImport ? nil : FallbackNotice.message(
+            for: output.fallback,
+            providerID: AIProviderStore.shared.providerID,
+            engine: VoiceIntelligenceSettings.shared.engine
+        )
 
         if isFileImport || !preferences.autoPasteEnabled {
             InsertionService.shared.copyToPasteboard(text: output.finalText, markTransient: false)
+            hudStatusMessage = fallbackNotice
             SoundEffect.playSuccess()
             next()
             return
@@ -289,7 +295,7 @@ final class AudioCapture: ObservableObject {
             DispatchQueue.main.async {
                 switch result {
                 case .pasted:
-                    break
+                    self?.hudStatusMessage = fallbackNotice
                 case .copied, .focusChanged:
                     self?.hudStatusMessage = String(localized: "Скопировано")
                 case .secureInput:
