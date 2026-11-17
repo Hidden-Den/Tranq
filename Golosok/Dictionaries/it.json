@@ -1,0 +1,2066 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kubernetes",
+      "variants" : {
+        "en" : [
+          "cooper netties",
+          "kuber netties"
+        ],
+        "ru" : [
+          "кубер",
+          "кубернетис",
+          "кубернейтс",
+          "кубернетес",
+          "кубернайт",
+          "кубере"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "K8s",
+      "variants" : {
+        "en" : [
+          "k eights",
+          "kay eights"
+        ],
+        "ru" : [
+          "кейтс",
+          "кей восемь эс",
+          "кей эйт эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Docker",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Docker Compose",
+      "variants" : {
+        "en" : [
+          "docker compose"
+        ],
+        "ru" : [
+          "докер композ",
+          "докер компоуз"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Podman",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "подман"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Helm",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хелм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Istio",
+      "variants" : {
+        "en" : [
+          "east io",
+          "is tio"
+        ],
+        "ru" : [
+          "истио",
+          "исти о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Argo CD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PostgreSQL",
+      "variants" : {
+        "en" : [
+          "post gress",
+          "post gres"
+        ],
+        "ru" : [
+          "постгрес",
+          "постгри",
+          "постгре",
+          "постгресс",
+          "постгрескюэль",
+          "постгрес кью эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "MySQL",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "майэскюэль",
+          "май эс кью эл",
+          "маэскюэль",
+          "майсиквел"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SQLite",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эскюлайт",
+          "эс кью лайт",
+          "сиквелайт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MongoDB",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "монго дибэ",
+          "монгодб",
+          "монго ди би",
+          "монгодибэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Redis",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Memcached",
+      "variants" : {
+        "en" : [
+          "mem cached",
+          "mem cash d"
+        ],
+        "ru" : [
+          "мемкэшд",
+          "мем кэшд",
+          "мемкеш"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Cassandra",
+      "variants" : {
+        "en" : [
+          "cass andra"
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DynamoDB",
+      "variants" : {
+        "en" : [
+          "dyna mo db"
+        ],
+        "ru" : [
+          "динамо дибэ",
+          "динамодб"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ClickHouse",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кликхаус"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Elasticsearch",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эластик сёрч",
+          "эластиксерч",
+          "эластик серч"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OpenSearch",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "опен сёрч",
+          "опенсёрч",
+          "опен серч"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kafka",
+      "variants" : {
+        "en" : [
+          "calf ka",
+          "kaf ka"
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RabbitMQ",
+      "variants" : {
+        "en" : [
+          "rabbit mq"
+        ],
+        "ru" : [
+          "рэббит эм кью",
+          "рэббитэмкью",
+          "раббит эм кью",
+          "рэббит эмкью"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "nginx",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "энджиникс",
+          "энджин икс",
+          "нгинкс",
+          "энжинкс",
+          "энджинкс",
+          "нджинкс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Apache",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "n8n",
+      "variants" : {
+        "en" : [
+          "n eight n",
+          "n 8 n"
+        ],
+        "ru" : [
+          "но8м",
+          "но8",
+          "эн8эн",
+          "эн восемь эн",
+          "эн восемь",
+          "но восемь эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GitHub",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гитхаб",
+          "гитхабе"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "GitLab",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гитлаб",
+          "гит лаб",
+          "гитлабе"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Bitbucket",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "битбакет",
+          "бит бакет"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Git",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Jira",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джира",
+          "джиру"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Confluence",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "конфлюенс",
+          "конфлюэнс",
+          "конфлюенсе"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Notion",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ноушен",
+          "ноушн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Python",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пайтон",
+          "пайтен"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "TypeScript",
+      "variants" : {
+        "en" : [
+          "type script"
+        ],
+        "ru" : [
+          "тайпскрипт",
+          "тайп скрипт",
+          "тайпскрипте"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "JavaScript",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джаваскрипт",
+          "джаваскрипте"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "JS",
+      "variants" : {
+        "en" : [
+          "j s"
+        ],
+        "ru" : [
+          "джейэс",
+          "джей эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Golang",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "голанг",
+          "го ланг"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Swift",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SwiftUI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "свифт юай",
+          "свифтюай",
+          "свифт ю ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Xcode",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хкод",
+          "икскод",
+          "экскод"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kotlin",
+      "variants" : {
+        "en" : [
+          "cot lin"
+        ],
+        "ru" : [
+          "котлин",
+          "котлен"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Rust",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Ruby",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Rails",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "рейлс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PHP",
+      "variants" : {
+        "en" : [
+          "p h p"
+        ],
+        "ru" : [
+          "пэхапэ",
+          "пи эйч пи",
+          "пхп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Laravel",
+      "variants" : {
+        "en" : [
+          "lara vel"
+        ],
+        "ru" : [
+          "ларавель",
+          "ларавел"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Node.js",
+      "variants" : {
+        "en" : [
+          "node js"
+        ],
+        "ru" : [
+          "нод джей эс",
+          "ноуд джей эс",
+          "нода джей эс",
+          "нодэжс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Next.js",
+      "variants" : {
+        "en" : [
+          "next js"
+        ],
+        "ru" : [
+          "некст джей эс",
+          "некстжс",
+          "некст жс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "React",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "реакт",
+          "риакт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Vue.js",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вью жс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Angular",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ангуляр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Svelte",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "свелт",
+          "свэлт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Django",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джэнго"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Flask",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фласк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FastAPI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фастапи",
+          "фаст эй пи ай",
+          "фаст апи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Spring Boot",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "спринг бут"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GraphQL",
+      "variants" : {
+        "en" : [
+          "graph ql"
+        ],
+        "ru" : [
+          "графкюэль",
+          "граф кью эл",
+          "графкьюэл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "gRPC",
+      "variants" : {
+        "en" : [
+          "g rpc",
+          "g r p c"
+        ],
+        "ru" : [
+          "джирписи",
+          "жрпц",
+          "джи эр пи си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "REST",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "API",
+      "variants" : {
+        "en" : [
+          "a p i"
+        ],
+        "ru" : [
+          "апи",
+          "эй пи ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SDK",
+      "variants" : {
+        "en" : [
+          "s d k"
+        ],
+        "ru" : [
+          "эс ди кей",
+          "эсдика"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "CLI",
+      "variants" : {
+        "en" : [
+          "c l i"
+        ],
+        "ru" : [
+          "си эл ай",
+          "сли"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IDE",
+      "variants" : {
+        "en" : [
+          "i d e"
+        ],
+        "ru" : [
+          "айди и"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SQL",
+      "variants" : {
+        "en" : [
+          "s q l"
+        ],
+        "ru" : [
+          "эс кью эл",
+          "эскюэль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NoSQL",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ноу эс кью эл",
+          "ноуэскюэль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "JSON",
+      "variants" : {
+        "en" : [
+          "j son"
+        ],
+        "ru" : [
+          "джсон",
+          "джейсона"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "YAML",
+      "variants" : {
+        "en" : [
+          "y a m l"
+        ],
+        "ru" : [
+          "ямл",
+          "яммл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "XML",
+      "variants" : {
+        "en" : [
+          "x m l"
+        ],
+        "ru" : [
+          "икс эм эл",
+          "иксэмэль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "HTML",
+      "variants" : {
+        "en" : [
+          "h t m l"
+        ],
+        "ru" : [
+          "эйч ти эм эл",
+          "хтмл",
+          "аш тэ эм эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "CSS",
+      "variants" : {
+        "en" : [
+          "c s s"
+        ],
+        "ru" : [
+          "цсс",
+          "сиэсэс",
+          "си эс эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "HTTP",
+      "variants" : {
+        "en" : [
+          "h t t p"
+        ],
+        "ru" : [
+          "эйч ти ти пи",
+          "хттп",
+          "аш тэ тэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "HTTPS",
+      "variants" : {
+        "en" : [
+          "h t t p s"
+        ],
+        "ru" : [
+          "эйч ти ти пи эс",
+          "хттпс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OAuth",
+      "variants" : {
+        "en" : [
+          "o auth"
+        ],
+        "ru" : [
+          "оаут",
+          "оаус",
+          "о аут"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "JWT",
+      "variants" : {
+        "en" : [
+          "j w t"
+        ],
+        "ru" : [
+          "джей дабл ю ти",
+          "джейдаблюти",
+          "дживи ти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SSH",
+      "variants" : {
+        "en" : [
+          "s s h"
+        ],
+        "ru" : [
+          "эс эс эйч",
+          "эсэсаш",
+          "ссш"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "VPN",
+      "variants" : {
+        "en" : [
+          "v p n"
+        ],
+        "ru" : [
+          "ви пи эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "DNS",
+      "variants" : {
+        "en" : [
+          "d n s"
+        ],
+        "ru" : [
+          "днс",
+          "ди эн эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "TCP",
+      "variants" : {
+        "en" : [
+          "t c p"
+        ],
+        "ru" : [
+          "ти си пи",
+          "тцп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UDP",
+      "variants" : {
+        "en" : [
+          "u d p"
+        ],
+        "ru" : [
+          "юдп",
+          "ю ди пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CDN",
+      "variants" : {
+        "en" : [
+          "c d n"
+        ],
+        "ru" : [
+          "сидиэн",
+          "си ди эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SaaS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "саас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "AWS",
+      "variants" : {
+        "en" : [
+          "a w s"
+        ],
+        "ru" : [
+          "эйдаблюэс",
+          "авс",
+          "эй дабл ю эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GCP",
+      "variants" : {
+        "en" : [
+          "g c p"
+        ],
+        "ru" : [
+          "джисипи",
+          "джи си пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Azure",
+      "variants" : {
+        "en" : [
+          "a zure"
+        ],
+        "ru" : [
+          "эйжур"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Cloudflare",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "клаудфлер",
+          "клауд флер",
+          "клаудфлэр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Vercel",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "версел",
+          "вёрсел"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Netlify",
+      "variants" : {
+        "en" : [
+          "net lify"
+        ],
+        "ru" : [
+          "нетлифай",
+          "нет лифай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Heroku",
+      "variants" : {
+        "en" : [
+          "he roku"
+        ],
+        "ru" : [
+          "хероку",
+          "героку"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DigitalOcean",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "диджитал оушен",
+          "диджиталоушен"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Supabase",
+      "variants" : {
+        "en" : [
+          "supa base"
+        ],
+        "ru" : [
+          "супабейс",
+          "супа бейс",
+          "супабэйс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Firebase",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "файрбейс",
+          "файер бейс",
+          "фаербейс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Terraform",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "терраформ",
+          "тераформ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Ansible",
+      "variants" : {
+        "en" : [
+          "ann sible"
+        ],
+        "ru" : [
+          "ансибл",
+          "ансибль"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Jenkins",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дженкинс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GitHub Actions",
+      "variants" : {
+        "en" : [
+          "github actions"
+        ],
+        "ru" : [
+          "гитхаб экшенс",
+          "гитхаб экшнс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CI/CD",
+      "variants" : {
+        "en" : [
+          "ci cd",
+          "c i c d"
+        ],
+        "ru" : [
+          "сиай сиди",
+          "си ай си ди"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Grafana",
+      "variants" : {
+        "en" : [
+          "gra fana"
+        ],
+        "ru" : [
+          "графана",
+          "графаны"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Prometheus",
+      "variants" : {
+        "en" : [
+          "prome theus"
+        ],
+        "ru" : [
+          "прометеус"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Sentry",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сентри"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Datadog",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "датадог"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Linux",
+      "variants" : {
+        "en" : [
+          "lin ux"
+        ],
+        "ru" : [
+          "линух"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Ubuntu",
+      "variants" : {
+        "en" : [
+          "oo boon too"
+        ],
+        "ru" : [
+          "убунту",
+          "убунта"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Debian",
+      "variants" : {
+        "en" : [
+          "deb ian"
+        ],
+        "ru" : [
+          "дебиан",
+          "дебиана"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "macOS",
+      "variants" : {
+        "en" : [
+          "mac o s"
+        ],
+        "ru" : [
+          "макос",
+          "мак ос"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "iOS",
+      "variants" : {
+        "en" : [
+          "i o s"
+        ],
+        "ru" : [
+          "ай ос"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Android",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Windows",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "VS Code",
+      "variants" : {
+        "en" : [
+          "v s code"
+        ],
+        "ru" : [
+          "ви эс код",
+          "вскод"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Vim",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вим"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Neovim",
+      "variants" : {
+        "en" : [
+          "neo vim"
+        ],
+        "ru" : [
+          "неовим",
+          "нео вим"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IntelliJ",
+      "variants" : {
+        "en" : [
+          "intelli j"
+        ],
+        "ru" : [
+          "интеллидж",
+          "интелиджей",
+          "интеллиджей"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PyCharm",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пайчарм",
+          "пай чарм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WebStorm",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вебсторм",
+          "веб сторм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Postman",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "постман"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Swagger",
+      "variants" : {
+        "en" : [
+          "swag ger"
+        ],
+        "ru" : [
+          "свагер",
+          "свэггер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OpenAPI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "опенапи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Webpack",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вебпак"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Vite",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вайт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "npm",
+      "variants" : {
+        "en" : [
+          "n p m"
+        ],
+        "ru" : [
+          "нпм",
+          "эн пи эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "pnpm",
+      "variants" : {
+        "en" : [
+          "p n p m"
+        ],
+        "ru" : [
+          "пнпм",
+          "пи эн пи эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Yarn",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ярн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Homebrew",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хоумбрю",
+          "хомбрю"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Bash",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Zsh",
+      "variants" : {
+        "en" : [
+          "z s h"
+        ],
+        "ru" : [
+          "зэд эс эйч",
+          "зш"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PowerShell",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пауэршелл",
+          "пауэр шелл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WebSocket",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вебсокет"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WebAssembly",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "веб ассембли",
+          "вебассембли"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "C++",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сиплюсплюс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "C#",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "си шарп",
+          "сишарп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : ".NET",
+      "variants" : {
+        "en" : [
+          "dotnet"
+        ],
+        "ru" : [
+          "дотнет"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Unity",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "юнити"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Raspberry Pi",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "распберри пай",
+          "распбери пай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Arduino",
+      "variants" : {
+        "en" : [
+          "are dweeno"
+        ],
+        "ru" : [
+          "ардуино",
+          "ардуина"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "JetBrains",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джетбрейнс",
+          "джет брейнс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Stack Overflow",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "стэк оверфлоу",
+          "стек оверфлоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OpenRouter",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "опэнроутер",
+          "опенроутер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Ollama",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "оллама",
+          "олама"
+        ]
+      }
+    }
+  ],
+  "id" : "it",
+  "title" : {
+    "en" : "IT & Development",
+    "ru" : "IT и разработка"
+  },
+  "version" : 1
+}

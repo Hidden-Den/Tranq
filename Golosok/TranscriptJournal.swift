@@ -49,10 +49,7 @@ public final class TranscriptJournal: ObservableObject {
     private let maxFileBytes: UInt64 = 5 * 1024 * 1024 // 5 MB ротация
 
     private var journalFileURL: URL? {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let dir = appSupport.appendingPathComponent("Golosok", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("transcript_journal.jsonl")
+        AppEnvironment.dataDirectory.appendingPathComponent("transcript_journal.jsonl")
     }
 
     private init() {

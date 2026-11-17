@@ -47,6 +47,8 @@ final class LanguageSettings: ObservableObject {
         process.arguments = ["-c", script]
         try? process.run()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // exit не рассылает willTerminate, поэтому отложенная запись словаря сохраняется явно
+            DictionaryStore.shared.flush()
             exit(0)
         }
     }

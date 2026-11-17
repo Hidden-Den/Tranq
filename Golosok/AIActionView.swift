@@ -65,10 +65,7 @@ final class AICache {
     }
 
     private var fileURL: URL? {
-        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let dir = base.appendingPathComponent("Golosok", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("ai_cache.json")
+        AppEnvironment.dataDirectory.appendingPathComponent("ai_cache.json")
     }
 
     func result(noteID: UUID, templateID: String, scopeID: String = "", for text: String) -> String? {
@@ -141,26 +138,26 @@ struct AIResultSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
                 Image(systemName: request.template.icon)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.ui(.body, weight: .semibold))
                     .foregroundColor(.uiInk)
                 Text(LocalizedStringKey(request.template.title))
-                    .font(UIStyleFont.display(size: 15, weight: .bold))
+                    .font(.ui(.callout, weight: .bold))
                     .foregroundColor(.uiInk)
                 if request.scope.isSelection {
                     Text("ВЫДЕЛЕННЫЙ ФРАГМЕНТ")
-                        .font(UIStyleFont.body(size: 10, weight: .semibold))
+                        .font(.ui(.micro, weight: .semibold))
                         .tracking(0.6)
                         .foregroundColor(.uiMidGray)
                         .padding(.vertical, 4)
                         .padding(.horizontal, 8)
                         .background(Color.uiCanvas)
-                        .cornerRadius(10)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.uiHairline, lineWidth: 1))
+                        .cornerRadius(UIRadius.md)
+                        .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(Color.uiHairline, lineWidth: 1))
                 }
                 Spacer()
                 Button(action: { dismiss() }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .foregroundColor(.uiMidGray)
                         .frame(width: 28, height: 28)
                         .background(Color.uiSidebar)
@@ -197,7 +194,7 @@ struct AIResultSheet: View {
             VStack(spacing: 16) {
                 AIThinkingOrb(icon: request.template.icon)
                 Text("Генерация…")
-                    .font(UIStyleFont.body(size: 12, weight: .regular))
+                    .font(.ui(.footnote))
                     .foregroundColor(.uiMidGray)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -205,10 +202,10 @@ struct AIResultSheet: View {
         case .error:
             VStack(spacing: 14) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 24))
+                    .font(.ui(.largeTitle))
                     .foregroundColor(.uiEmber)
                 Text(errorText ?? String(localized: "Ошибка"))
-                    .font(UIStyleFont.body(size: 13, weight: .medium))
+                    .font(.ui(.body, weight: .medium))
                     .foregroundColor(.uiInk)
                     .multilineTextAlignment(.center)
                 UIOutlineButton(title: "Повторить") { run() }
@@ -225,8 +222,8 @@ struct AIResultSheet: View {
                         .padding(14)
                 }
                 .background(Color.uiSidebar)
-                .cornerRadius(16)
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.lg)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
             }
         }
     }
@@ -250,27 +247,27 @@ struct AIResultSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Text(titleKey)
-                    .font(UIStyleFont.body(size: 11, weight: .bold))
+                    .font(.ui(.caption, weight: .bold))
                     .tracking(0.7)
                     .foregroundColor(accent ? Color.dynamic(light: "#ffffff", dark: "#000000") : .uiInk)
                     .padding(.vertical, 3)
                     .padding(.horizontal, 8)
                     .background(accent ? Color.uiInk : Color.uiCanvas)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(accent ? Color.uiInk : Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(accent ? Color.uiInk : Color.uiHairline, lineWidth: 1))
                 Spacer()
             }
             ScrollView {
                 Text(attributedString)
-                    .font(UIStyleFont.body(size: 14, weight: .regular))
+                    .font(.ui(.callout))
                     .foregroundColor(.uiInk)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(14)
             }
             .background(Color.uiSidebar)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.uiHairline, lineWidth: 1))
+            .cornerRadius(UIRadius.lg)
+            .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(Color.uiHairline, lineWidth: 1))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -278,7 +275,7 @@ struct AIResultSheet: View {
     @ViewBuilder
     private var markdownText: some View {
         Text(renderedMarkdown(from: resultText))
-            .font(UIStyleFont.body(size: 14, weight: .regular))
+            .font(.ui(.callout))
             .foregroundColor(.uiInk)
             .textSelection(.enabled)
     }
@@ -358,34 +355,34 @@ struct AIResultSheet: View {
         HStack(spacing: 8) {
             if case .selection(let range, _) = request.scope {
                 UIPrimaryButton(title: "Заменить выделение") {
-                    AudioCapture.shared.replaceRangeInNote(id: request.noteID, range: range, newText: resultText)
+                    HistoryStore.shared.replaceRangeInNote(id: request.noteID, range: range, newText: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                 }
                 UIOutlineButton(title: "Вставить ниже") {
-                    AudioCapture.shared.appendTextToNote(id: request.noteID, text: resultText)
+                    HistoryStore.shared.appendTextToNote(id: request.noteID, text: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                 }
                 UIOutlineButton(title: "Новая заметка") {
-                    let newID = AudioCapture.shared.addNote(text: resultText)
+                    let newID = HistoryStore.shared.addNote(text: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                     onOpenNewNote(newID)
                 }
             } else {
                 UIPrimaryButton(title: "Вставить ниже") {
-                    AudioCapture.shared.appendTextToNote(id: request.noteID, text: resultText)
+                    HistoryStore.shared.appendTextToNote(id: request.noteID, text: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                 }
                 UIOutlineButton(title: "Заменить") {
-                    AudioCapture.shared.replaceNoteText(id: request.noteID, text: resultText)
+                    HistoryStore.shared.replaceNoteText(id: request.noteID, text: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                 }
                 UIOutlineButton(title: "Новая заметка") {
-                    let newID = AudioCapture.shared.addNote(text: resultText)
+                    let newID = HistoryStore.shared.addNote(text: resultText)
                     SoundEffect.playSuccess()
                     dismiss()
                     onOpenNewNote(newID)
@@ -395,16 +392,16 @@ struct AIResultSheet: View {
             Button(action: copy) {
                 HStack(spacing: 5) {
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.ui(.caption, weight: .medium))
                     Text(copied ? "Готово!" : "Копировать")
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                 }
-                .foregroundColor(copied ? Color(hex: "#10B981") : .uiInk)
+                .foregroundColor(copied ? Color.uiSuccess : .uiInk)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 14)
                 .background(Color.uiPaper)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(copied ? Color(hex: "#10B981").opacity(0.5) : Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.lg)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.lg).stroke(copied ? Color.uiSuccess.opacity(0.5) : Color.uiHairline, lineWidth: 1))
             }
             .buttonStyle(TactileButtonStyle())
         }
@@ -455,24 +452,24 @@ struct AIResultSheet: View {
     private var cacheBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 11, weight: .medium))
+                .font(.ui(.caption, weight: .medium))
                 .foregroundColor(.uiMidGray)
             Text("Взято из кэша")
-                .font(UIStyleFont.body(size: 12, weight: .regular))
+                .font(.ui(.footnote))
                 .foregroundColor(.uiMidGray)
             Spacer()
             Button("Перегенерировать") {
                 regenerate()
             }
-            .font(UIStyleFont.body(size: 12, weight: .medium))
+            .font(.ui(.footnote, weight: .medium))
             .foregroundColor(.uiInk)
             .buttonStyle(.plain)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 10)
         .background(Color.uiSidebar)
-        .cornerRadius(14)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.uiHairline, lineWidth: 1))
+        .cornerRadius(UIRadius.md)
+        .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(Color.uiHairline, lineWidth: 1))
     }
 
     private func copy() {
@@ -492,7 +489,7 @@ struct AIThinkingOrb: View {
         ZStack {
             Circle().fill(Color.uiInk.opacity(0.05)).frame(width: 64, height: 64)
             Image(systemName: icon)
-                .font(.system(size: 22, weight: .medium))
+                .font(.ui(.title, weight: .medium))
                 .foregroundColor(.uiInk)
             Circle()
                 .stroke(Color.uiInk.opacity(0.25), lineWidth: 1.5)

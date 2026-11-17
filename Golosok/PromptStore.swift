@@ -12,10 +12,7 @@ final class PromptStore: ObservableObject {
     private init() { load() }
 
     private var fileURL: URL? {
-        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let dir = base.appendingPathComponent("Golosok", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("prompts.json")
+        AppEnvironment.dataDirectory.appendingPathComponent("prompts.json")
     }
 
     // MARK: - Public API

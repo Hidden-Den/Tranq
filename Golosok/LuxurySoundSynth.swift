@@ -25,37 +25,37 @@ final class LuxurySoundSynth {
     }
     
     func playStart() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         startSound?.play()
     }
     
     func playSuccess() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         successSound?.play()
     }
     
     func playCancel() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         cancelSound?.play()
     }
     
     func playCopy() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         copySound?.play()
     }
     
     func playDelete() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         deleteSound?.play()
     }
     
     func playWarning() {
-        guard AudioCapture.shared.soundEnabled else { return }
+        guard AppPreferences.shared.soundEnabled else { return }
         stopAll()
         warningSound?.play()
     }

@@ -1,104 +1,96 @@
 import Foundation
 
+/// Локальный синтез мысли на моделях GGUF: Вихрь, Qwen, Llama.
+///
+/// Основной путь — постоянный `LocalLLMServer`: модель уже в памяти, ответ за доли
+/// секунды. Если сервер ещё загружается или недоступен, запрос выполняется через
+/// `llama-cli`, как раньше, а сервер тем временем догружается для следующих диктовок.
 public final class LocalSynthServiceClient: ObservableObject {
     public static let shared = LocalSynthServiceClient()
 
-    /// Мок-сервис для тестирования или встраиваемого инференса
+    /// Подмена исполнителя в тестах.
     public var mockService: GolosokSynthProtocol?
 
-    /// Путь к доступному исполняемому файлу llama-cli
+    /// Разрешён ли запуск llama-cli как резервного пути.
+    public var isCLIEnabled: Bool = true
+
+    /// Путь к доступному исполняемому файлу llama-cli.
     public static var llamaCLIPath: String? {
         if let bundlePath = Bundle.main.path(forResource: "llama-cli", ofType: nil),
            FileManager.default.isExecutableFile(atPath: bundlePath) {
             return bundlePath
         }
-        let searchPaths = [
-            "/opt/homebrew/bin/llama-cli",
-            "/usr/local/bin/llama-cli",
-            "/usr/bin/llama-cli"
-        ]
-        for path in searchPaths {
-            if FileManager.default.isExecutableFile(atPath: path) {
-                return path
-            }
-        }
-        return nil
+        let searchPaths = ["/opt/homebrew/bin/llama-cli", "/usr/local/bin/llama-cli", "/usr/bin/llama-cli"]
+        return searchPaths.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
-    /// Флаг разрешения прямого CLI инференса
-    public var isCLIEnabled: Bool = true
+    /// Подключён ли внешний исполнитель вместо встроенных llama-server и llama-cli.
+    public var isServiceAvailable: Bool { mockService != nil }
 
-    /// Проверка доступности локального XPC-демона
-    public var isXPCAvailable: Bool {
-        if let xpcURL = Bundle.main.url(forResource: "com.nuter.Golosok.SynthService", withExtension: "xpc", subdirectory: "XPCServices") {
-            return FileManager.default.fileExists(atPath: xpcURL.path)
-        }
-        let altURL = Bundle.main.bundleURL.appendingPathComponent("Contents/XPCServices/com.nuter.Golosok.SynthService.xpc")
-        return FileManager.default.fileExists(atPath: altURL.path)
-    }
-
-    /// Проверка физического присутствия скомпилированного XPC-демона в бандле приложения
-    public var isServiceAvailable: Bool {
-        if mockService != nil {
-            return true
-        }
-        return isXPCAvailable
-    }
-
-    /// Проверка наличия любого доступного исполнителя (CLI или XPC)
+    /// Есть ли хоть один способ выполнить локальный инференс.
     public var isEngineAvailable: Bool {
-        mockService != nil || (isCLIEnabled && Self.llamaCLIPath != nil) || isXPCAvailable
+        mockService != nil || LocalLLMServer.isAvailable || (isCLIEnabled && Self.llamaCLIPath != nil)
     }
-
-    private var connection: NSXPCConnection?
-    private let connectionLock = NSLock()
-    private var idleTimer: Timer?
-    private let idleTimeoutSeconds: TimeInterval = 300 // 5 минут простоя -> выгрузка
 
     private init() {}
 
-    /// Выполнение синтеза мысли через локальный исполнитель (llama-cli на Metal или XPC)
     public func synthesize(
         transcript: String,
         stylePrompt: String,
         modelPath: String? = nil,
         timeout: TimeInterval = 4.0
     ) async -> String? {
-        // Проверка аппаратной безопасности перед инференсом
-        let safety = HardwareWatchdog.evaluateInferenceSafety()
-        guard safety == .allowed else {
-            return nil
-        }
+        guard HardwareWatchdog.evaluateInferenceSafety() == .allowed else { return nil }
 
         if let mock = mockService {
             return await executeMockService(mock, transcript: transcript, stylePrompt: stylePrompt, timeout: timeout)
         }
 
-        // Если доступен бинарник llama-cli и передан существующий файл модели — нативный локальный инференс на Metal
-        if isCLIEnabled, let cliPath = Self.llamaCLIPath, let targetPath = modelPath, FileManager.default.fileExists(atPath: targetPath) {
-            AppLogger.shared.info(
-                "LocalSynthClient",
-                "Запуск локального инференса через llama-cli Metal",
-                details: "Модель: \(URL(fileURLWithPath: targetPath).lastPathComponent)"
-            )
-            return await runCLISynthesis(
-                cliPath: cliPath,
-                modelPath: targetPath,
-                transcript: transcript,
-                stylePrompt: stylePrompt,
-                timeout: timeout
-            )
+        guard let modelPath, FileManager.default.fileExists(atPath: modelPath) else {
+            AppLogger.shared.info("LocalSynthClient", "Локальная модель не передана — мгновенный откат на этап 1")
+            return nil
+        }
+        let prompt = "<transcript>\n\(transcript)\n</transcript>"
+        let modelName = URL(fileURLWithPath: modelPath).lastPathComponent
+
+        if LocalLLMServer.isAvailable {
+            if LocalLLMServer.shared.isReady(for: modelPath) {
+                AppLogger.shared.info("LocalSynthClient", "Инференс через llama-server", details: "Модель: \(modelName)")
+                if let raw = await LocalLLMServer.shared.complete(system: stylePrompt, user: prompt, modelPath: modelPath, timeout: timeout) {
+                    return Self.cleanModelOutput(raw)
+                }
+            } else {
+                // Сервер догружается в фоне; эту диктовку обслужит llama-cli
+                LocalLLMServer.shared.prewarm(modelPath: modelPath)
+                AppLogger.shared.info("LocalSynthClient", "llama-server ещё загружается — запрос через llama-cli")
+            }
         }
 
-        // Если скомпилирован XPC-демон
-        if isXPCAvailable, let service = getService() {
-            resetIdleTimer()
-            return await executeXPCService(service, transcript: transcript, stylePrompt: stylePrompt, timeout: timeout)
+        guard isCLIEnabled, let cliPath = Self.llamaCLIPath else {
+            AppLogger.shared.info("LocalSynthClient", "Локальный исполнитель недоступен — откат на этап 1")
+            return nil
         }
-
-        AppLogger.shared.info("LocalSynthClient", "Локальный исполнитель инференса не подключен — мгновенный откат на этап 1")
-        return nil
+        AppLogger.shared.info("LocalSynthClient", "Инференс через llama-cli", details: "Модель: \(modelName)")
+        return await Task.detached(priority: .userInitiated) {
+            Self.runCLISynthesis(cliPath: cliPath, modelPath: modelPath, prompt: prompt, stylePrompt: stylePrompt, timeout: timeout)
+        }.value
     }
+
+    /// Поднимает модель заранее, пока человек ещё говорит.
+    public func prewarm(modelPath: String) {
+        guard HardwareWatchdog.evaluateInferenceSafety() == .allowed,
+              LocalLLMServer.isAvailable,
+              FileManager.default.fileExists(atPath: modelPath) else { return }
+        LocalLLMServer.shared.prewarm(modelPath: modelPath)
+    }
+
+    /// Выгружает модель из памяти.
+    public func unload() {
+        LocalLLMServer.shared.stop()
+        AppLogger.shared.info("LocalSynthClient", "Модель выгружена, память освобождена")
+    }
+
+    // MARK: - Исполнители
 
     private func executeMockService(
         _ service: GolosokSynthProtocol,
@@ -116,13 +108,9 @@ public final class LocalSynthServiceClient: ObservableObject {
                 isResumed = true
                 continuation.resume(returning: result)
             }
-
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                safeResume(nil)
-            }
-
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { safeResume(nil) }
             service.synthesize(prompt: transcript, systemPrompt: stylePrompt, options: [:]) { result, error in
-                if let error = error {
+                if let error {
                     AppLogger.shared.warn("LocalSynthClient", "Ошибка mock синтеза: \(error.localizedDescription)")
                     safeResume(nil)
                 } else {
@@ -132,247 +120,72 @@ public final class LocalSynthServiceClient: ObservableObject {
         }
     }
 
-    private func executeXPCService(
-        _ service: GolosokSynthProtocol,
-        transcript: String,
-        stylePrompt: String,
-        timeout: TimeInterval
-    ) async -> String? {
-        await withCheckedContinuation { continuation in
-            var isResumed = false
-            let resumeLock = NSLock()
-            let safeResume: (String?) -> Void = { result in
-                resumeLock.lock()
-                defer { resumeLock.unlock() }
-                guard !isResumed else { return }
-                isResumed = true
-                continuation.resume(returning: result)
-            }
-
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
-                safeResume(nil)
-            }
-
-            service.synthesize(prompt: transcript, systemPrompt: stylePrompt, options: [:]) { result, error in
-                if let error = error {
-                    AppLogger.shared.warn("LocalSynthClient", "Ошибка XPC синтеза: \(error.localizedDescription)")
-                    safeResume(nil)
-                } else {
-                    safeResume(result)
-                }
-            }
+    private static func runCLISynthesis(cliPath: String, modelPath: String, prompt: String, stylePrompt: String, timeout: TimeInterval) -> String? {
+        let arguments = [
+            "-m", modelPath,
+            "-sys", stylePrompt,
+            "-p", prompt,
+            "-n", "256",
+            "--temp", "0.0",
+            "-ngl", "99",
+            "-st",
+            "--no-display-prompt",
+            "--simple-io"
+        ]
+        guard let result = ProcessRunner.run(cliPath, arguments: arguments, timeout: timeout) else {
+            AppLogger.shared.error("LocalSynthClient", "Ошибка запуска llama-cli")
+            return nil
         }
-    }
-
-    private func runCLISynthesis(
-        cliPath: String,
-        modelPath: String,
-        transcript: String,
-        stylePrompt: String,
-        timeout: TimeInterval
-    ) async -> String? {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let task = Process()
-                task.executableURL = URL(fileURLWithPath: cliPath)
-                let prompt = "<transcript>\n\(transcript)\n</transcript>"
-                task.arguments = [
-                    "-m", modelPath,
-                    "-sys", stylePrompt,
-                    "-p", prompt,
-                    "-n", "256",
-                    "--temp", "0.0",
-                    "-ngl", "99",
-                    "-st",
-                    "--no-display-prompt",
-                    "--simple-io"
-                ]
-                let pipe = Pipe()
-                task.standardOutput = pipe
-                task.standardError = Pipe()
-
-                var isCompleted = false
-                let lock = NSLock()
-                let finish: (String?) -> Void = { res in
-                    lock.lock()
-                    defer { lock.unlock() }
-                    guard !isCompleted else { return }
-                    isCompleted = true
-                    continuation.resume(returning: res)
-                }
-
-                let watchdog = DispatchWorkItem {
-                    if task.isRunning {
-                        task.terminate()
-                    }
-                    finish(nil)
-                }
-                DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: watchdog)
-
-                do {
-                    try task.run()
-                    task.waitUntilExit()
-                    watchdog.cancel()
-
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    guard let output = String(data: data, encoding: .utf8), !output.isEmpty else {
-                        finish(nil)
-                        return
-                    }
-
-                    let lines = output.components(separatedBy: .newlines)
-                    let hasInteractivePrompt = lines.contains { $0.hasPrefix("> ") }
-                    var resultLines: [String] = []
-
-                    if hasInteractivePrompt {
-                        var recording = false
-                        for line in lines {
-                            if line.hasPrefix("> ") {
-                                recording = true
-                                continue
-                            }
-                            if recording {
-                                if line.hasPrefix("[ Prompt:") || line.hasPrefix("Exiting...") {
-                                    break
-                                }
-                                resultLines.append(line)
-                            }
-                        }
-                    } else {
-                        for line in lines {
-                            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-                            if trimmedLine.hasPrefix("[ Prompt:") ||
-                               trimmedLine.hasPrefix("Exiting...") ||
-                               trimmedLine.hasPrefix("system_info:") ||
-                               trimmedLine.hasPrefix("llama_") {
-                                continue
-                            }
-                            resultLines.append(line)
-                        }
-                    }
-
-                    var cleanResult = resultLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if cleanResult.contains("</transcript>") {
-                        let parts = cleanResult.components(separatedBy: "</transcript>")
-                        cleanResult = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? cleanResult
-                    }
-
-                    // Извлечение секции «Очищенный текст:» / «Результат:», если модель сначала продублировала «Исходный текст:»
-                    let sectionPatterns = [
-                        #"(?is).*(?:очищенный|исправленный|отредактированный)\s+текст\s*:\s*"#,
-                        #"(?is).*результат\s*:\s*"#
-                    ]
-                    for pattern in sectionPatterns {
-                        if let match = cleanResult.range(of: pattern, options: .regularExpression) {
-                            let extracted = String(cleanResult[match.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !extracted.isEmpty {
-                                cleanResult = extracted
-                                break
-                            }
-                        }
-                    }
-
-                    if (cleanResult.hasPrefix("\"") && cleanResult.hasSuffix("\"")) ||
-                       (cleanResult.hasPrefix("«") && cleanResult.hasSuffix("»")) {
-                        if cleanResult.count >= 2 {
-                            cleanResult = String(cleanResult.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                    }
-
-                    if cleanResult.isEmpty {
-                        finish(nil)
-                    } else {
-                        finish(cleanResult)
-                    }
-                } catch {
-                    AppLogger.shared.error("LocalSynthClient", "Ошибка запуска llama-cli: \(error.localizedDescription)")
-                    finish(nil)
-                }
-            }
-        }
-    }
-
-    /// Прогрев локальной модели при старте записи
-    public func prewarm(modelPath: String) {
-        guard HardwareWatchdog.evaluateInferenceSafety() == .allowed else { return }
-        guard let service = getService() else { return }
-        service.prewarmModel(modelPath: modelPath) { _ in }
-        resetIdleTimer()
-    }
-
-    /// Принудительная выгрузка модели из памяти
-    public func unload() {
-        connectionLock.lock()
-        defer { connectionLock.unlock() }
-
-        if let service = connection?.remoteObjectProxy as? GolosokSynthProtocol {
-            service.unloadModel {}
-        }
-        connection?.invalidate()
-        connection = nil
-        idleTimer?.invalidate()
-        idleTimer = nil
-        AppLogger.shared.info("LocalSynthClient", "Модель выгружена, память освобождена (0 МБ)")
-    }
-
-    // MARK: - Вспомогательное подключение
-
-    private func getService() -> GolosokSynthProtocol? {
-        if let mock = mockService {
-            return mock
-        }
-        guard isServiceAvailable else {
+        guard !result.timedOut, !result.stdout.isEmpty else {
+            if result.timedOut { AppLogger.shared.warn("LocalSynthClient", "llama-cli не уложился в \(Int(timeout)) с") }
             return nil
         }
 
-        connectionLock.lock()
-        defer { connectionLock.unlock() }
-
-        if let conn = connection {
-            return conn.remoteObjectProxyWithErrorHandler { [weak self] error in
-                AppLogger.shared.warn("LocalSynthClient", "XPC соединение прервано: \(error.localizedDescription)")
-                self?.connectionLock.lock()
-                self?.connection = nil
-                self?.connectionLock.unlock()
-            } as? GolosokSynthProtocol
-        }
-
-        // Проверяем наличие запущенного или зарегистрированного сервиса
-        let newConn = NSXPCConnection(serviceName: "com.nuter.Golosok.SynthService")
-        newConn.remoteObjectInterface = NSXPCInterface(with: GolosokSynthProtocol.self)
-
-        newConn.interruptionHandler = { [weak self] in
-            AppLogger.shared.info("LocalSynthClient", "XPC прерван")
-            self?.connectionLock.lock()
-            self?.connection = nil
-            self?.connectionLock.unlock()
-        }
-
-        newConn.invalidationHandler = { [weak self] in
-            AppLogger.shared.info("LocalSynthClient", "XPC инвалидирован")
-            self?.connectionLock.lock()
-            self?.connection = nil
-            self?.connectionLock.unlock()
-        }
-
-        newConn.resume()
-        self.connection = newConn
-
-        return newConn.remoteObjectProxyWithErrorHandler { [weak self] error in
-            AppLogger.shared.info("LocalSynthClient", "XPC сервис недоступен: \(error.localizedDescription)")
-            self?.connectionLock.lock()
-            self?.connection = nil
-            self?.connectionLock.unlock()
-        } as? GolosokSynthProtocol
-    }
-
-    private func resetIdleTimer() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.idleTimer?.invalidate()
-            self.idleTimer = Timer.scheduledTimer(withTimeInterval: self.idleTimeoutSeconds, repeats: false) { [weak self] _ in
-                self?.unload()
+        let lines = result.stdout.components(separatedBy: .newlines)
+        var resultLines: [String] = []
+        if lines.contains(where: { $0.hasPrefix("> ") }) {
+            var recording = false
+            for line in lines {
+                if line.hasPrefix("> ") { recording = true; continue }
+                if recording {
+                    if line.hasPrefix("[ Prompt:") || line.hasPrefix("Exiting...") { break }
+                    resultLines.append(line)
+                }
+            }
+        } else {
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("[ Prompt:") || trimmed.hasPrefix("Exiting...")
+                    || trimmed.hasPrefix("system_info:") || trimmed.hasPrefix("llama_") { continue }
+                resultLines.append(line)
             }
         }
+        return cleanModelOutput(resultLines.joined(separator: "\n"))
+    }
+
+    /// Убирает повтор исходника, служебные заголовки и обрамляющие кавычки из ответа модели.
+    static func cleanModelOutput(_ raw: String) -> String? {
+        var clean = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if clean.contains("</transcript>") {
+            clean = clean.components(separatedBy: "</transcript>").last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? clean
+        }
+        let sectionPatterns = [
+            #"(?is).*(?:очищенный|исправленный|отредактированный)\s+текст\s*:\s*"#,
+            #"(?is).*результат\s*:\s*"#
+        ]
+        for pattern in sectionPatterns {
+            if let match = clean.range(of: pattern, options: .regularExpression) {
+                let extracted = String(clean[match.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !extracted.isEmpty {
+                    clean = extracted
+                    break
+                }
+            }
+        }
+        if clean.count >= 2,
+           (clean.hasPrefix("\"") && clean.hasSuffix("\"")) || (clean.hasPrefix("«") && clean.hasSuffix("»")) {
+            clean = String(clean.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return clean.isEmpty ? nil : clean
     }
 }

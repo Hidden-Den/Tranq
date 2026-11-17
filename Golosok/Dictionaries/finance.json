@@ -1,0 +1,860 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "НДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эн дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "НДФЛ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эн дэ эф эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЕГРЮЛ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эгрюл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭДО",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭЦП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "э цэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "УКЭП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ИП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "ООО",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "АО",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОКВЭД",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "УСН",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "у эс эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "РСВ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эр эс вэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СФР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эс эф эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФНС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эф эн эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФСС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эф эс эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ПФР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пэ эф эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОФД",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о эф дэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ККТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ка ка тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "1С",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "один эс",
+          "одинэс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "1С:ЗУП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "один эс зуп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "1С:ERP",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "один эс эрп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Контур.Экстерн",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "контур экстерн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СБИС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Диадок",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IFRS",
+      "variants" : {
+        "en" : [
+          "i f r s"
+        ],
+        "ru" : [
+          "айфрс",
+          "и эф эр эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "МСФО",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "РСБУ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GAAP",
+      "variants" : {
+        "en" : [
+          "g a a p"
+        ],
+        "ru" : [
+          "гап",
+          "гэап"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "P&L",
+      "variants" : {
+        "en" : [
+          "p and l"
+        ],
+        "ru" : [
+          "пи энд эл",
+          "пэ энд эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ROI",
+      "variants" : {
+        "en" : [
+          "r o i"
+        ],
+        "ru" : [
+          "эр о ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "ROE",
+      "variants" : {
+        "en" : [
+          "r o e"
+        ],
+        "ru" : [
+          "эр о и"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ROA",
+      "variants" : {
+        "en" : [
+          "r o a"
+        ],
+        "ru" : [
+          "эр о эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IRR",
+      "variants" : {
+        "en" : [
+          "i r r"
+        ],
+        "ru" : [
+          "ай эр эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NPV",
+      "variants" : {
+        "en" : [
+          "n p v"
+        ],
+        "ru" : [
+          "эн пи ви"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DCF",
+      "variants" : {
+        "en" : [
+          "d c f"
+        ],
+        "ru" : [
+          "ди си эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WACC",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вэк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EBIT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эбит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "EPS",
+      "variants" : {
+        "en" : [
+          "e p s"
+        ],
+        "ru" : [
+          "и пи эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "P/E",
+      "variants" : {
+        "en" : [
+          "p e ratio"
+        ],
+        "ru" : [
+          "пи на и",
+          "пэ на е"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FCF",
+      "variants" : {
+        "en" : [
+          "f c f"
+        ],
+        "ru" : [
+          "эф си эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ДДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дэ дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "БДР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бэ дэ эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "БДДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бэ дэ дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SEPA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сепа"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IBAN",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "айбан",
+          "ибан"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BIC",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "KYC",
+      "variants" : {
+        "en" : [
+          "k y c"
+        ],
+        "ru" : [
+          "кей вай си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "AML",
+      "variants" : {
+        "en" : [
+          "a m l"
+        ],
+        "ru" : [
+          "эй эм эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FATCA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фатка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ETF",
+      "variants" : {
+        "en" : [
+          "e t f"
+        ],
+        "ru" : [
+          "и ти эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "S&P 500",
+      "variants" : {
+        "en" : [
+          "s and p five hundred"
+        ],
+        "ru" : [
+          "эс энд пи пятьсот"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "NASDAQ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "насдак"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЦБ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "це бэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Revolut",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "револют"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Binance",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бинанс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Coinbase",
+      "variants" : {
+        "en" : [
+          "coin base"
+        ],
+        "ru" : [
+          "коинбейс",
+          "коин бейс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Bitcoin",
+      "variants" : {
+        "en" : [
+          "bit coin"
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Ethereum",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эфириум",
+          "этериум"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "USDT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "юсдт",
+          "ю эс ди ти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "QuickBooks",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "квикбукс",
+          "квик букс"
+        ]
+      }
+    }
+  ],
+  "id" : "finance",
+  "title" : {
+    "en" : "Finance",
+    "ru" : "Финансы"
+  },
+  "version" : 1
+}

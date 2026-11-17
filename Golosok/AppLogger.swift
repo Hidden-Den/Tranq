@@ -39,14 +39,9 @@ final class AppLogger: ObservableObject {
     private var fileHandle: FileHandle?
 
     private init() {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-        var url: URL?
-        if let base {
-            let dir = base.appendingPathComponent("Golosok/Logs", isDirectory: true)
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            url = dir.appendingPathComponent("app.log")
-        }
-        self.fileURL = url
+        let dir = AppEnvironment.dataDirectory.appendingPathComponent("Logs", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        self.fileURL = dir.appendingPathComponent("app.log")
         loadTailFromFile()
     }
 

@@ -3,7 +3,7 @@ import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        AudioCapture.shared.applyActivationPolicy()
+        AppPreferences.shared.applyActivationPolicy()
         let mic = PermissionManager.shared.isMicGranted
         let ax = PermissionManager.shared.isAccessibilityGranted
         AppLogger.shared.info("App", "Запуск Golosok",
@@ -27,7 +27,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         hotKey.register()
-        
+
+        // Словарь создаётся на главном потоке при запуске: загрузка и сборка индекса
+        // успевают до первой диктовки, а не выполняются на очереди конвейера посреди неё
+        if !AppEnvironment.isRunningTests {
+            SpellCommonWordChecker.shared.warmUp()
+            _ = DictionaryStore.shared
+        }
+
         DispatchQueue.main.async {
             if let window = NSApp.windows.first(where: {
                 !($0 is NSPanel) &&

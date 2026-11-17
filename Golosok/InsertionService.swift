@@ -45,8 +45,8 @@ public final class InsertionService {
     }
 
     /// Помещение текста в буфер с системными флагами transient (скрытие из менеджеров буфера)
-    public func copyToPasteboard(text: String, markTransient: Bool = true) {
-        let pb = NSPasteboard.general
+    /// - Parameter pb: целевой буфер; тесты передают именованный буфер, чтобы не трогать системный
+    public func copyToPasteboard(text: String, markTransient: Bool = true, pasteboard pb: NSPasteboard = .general) {
         pb.clearContents()
 
         if markTransient {

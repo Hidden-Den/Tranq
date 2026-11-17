@@ -1,0 +1,797 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "B2B",
+      "variants" : {
+        "en" : [
+          "b two b"
+        ],
+        "ru" : [
+          "би ту би",
+          "би два би"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "B2C",
+      "variants" : {
+        "en" : [
+          "b two c"
+        ],
+        "ru" : [
+          "би ту си",
+          "би два си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "B2G",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "би ту джи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "D2C",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ди ту си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "P2P",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пи ту пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PaaS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IaaS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "иас"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SWOT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "свот"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PESTEL",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пестел"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CAC",
+      "variants" : {
+        "en" : [
+          "c a c"
+        ],
+        "ru" : [
+          "кэк",
+          "си эй си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LTV",
+      "variants" : {
+        "en" : [
+          "l t v"
+        ],
+        "ru" : [
+          "эл ти ви"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ARPU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "арпу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ARPPU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "арппу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MRR",
+      "variants" : {
+        "en" : [
+          "m r r"
+        ],
+        "ru" : [
+          "эм эр эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ARR",
+      "variants" : {
+        "en" : [
+          "a r r"
+        ],
+        "ru" : [
+          "эй эр эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MAU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DAU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WAU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Churn",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CJM",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "си джей эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "JTBD",
+      "variants" : {
+        "en" : [
+          "j t b d"
+        ],
+        "ru" : [
+          "джей ти би ди"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GTM",
+      "variants" : {
+        "en" : [
+          "g t m"
+        ],
+        "ru" : [
+          "джи ти эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "USP",
+      "variants" : {
+        "en" : [
+          "u s p"
+        ],
+        "ru" : [
+          "ю эс пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "UVP",
+      "variants" : {
+        "en" : [
+          "u v p"
+        ],
+        "ru" : [
+          "ю ви пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PMF",
+      "variants" : {
+        "en" : [
+          "p m f"
+        ],
+        "ru" : [
+          "пи эм эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ICP",
+      "variants" : {
+        "en" : [
+          "i c p"
+        ],
+        "ru" : [
+          "ай си пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NPS",
+      "variants" : {
+        "en" : [
+          "n p s"
+        ],
+        "ru" : [
+          "эн пи эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CSAT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "си сат"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CRM",
+      "variants" : {
+        "en" : [
+          "c r m"
+        ],
+        "ru" : [
+          "си эр эм",
+          "црм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ERP",
+      "variants" : {
+        "en" : [
+          "e r p"
+        ],
+        "ru" : [
+          "эр пи",
+          "эрп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "BPM",
+      "variants" : {
+        "en" : [
+          "b p m"
+        ],
+        "ru" : [
+          "би пи эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BPMN",
+      "variants" : {
+        "en" : [
+          "b p m n"
+        ],
+        "ru" : [
+          "би пи эм эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EBITDA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эбитда",
+          "эбит да"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CAPEX",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "капекс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OPEX",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "опекс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IPO",
+      "variants" : {
+        "en" : [
+          "i p o"
+        ],
+        "ru" : [
+          "ай пи оу",
+          "ай пи о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "M&A",
+      "variants" : {
+        "en" : [
+          "m and a"
+        ],
+        "ru" : [
+          "эм энд эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "VC",
+      "variants" : {
+        "en" : [
+          "v c"
+        ],
+        "ru" : [
+          "ви си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SPV",
+      "variants" : {
+        "en" : [
+          "s p v"
+        ],
+        "ru" : [
+          "эс пи ви"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Due Diligence",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дью дилидженс",
+          "дью дилиженс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Y Combinator",
+      "variants" : {
+        "en" : [
+          "why combinator"
+        ],
+        "ru" : [
+          "ай комбинатор",
+          "уай комбинатор"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Techstars",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тек старс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Sequoia",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Andreessen Horowitz",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "андрессен хоровиц",
+          "андриссен хоровиц"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "a16z",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эй шестнадцать зет"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Crunchbase",
+      "variants" : {
+        "en" : [
+          "crunch base"
+        ],
+        "ru" : [
+          "крунчбейс",
+          "кранчбейс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Product Hunt",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "продакт хант"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BATNA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "батна"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Salesforce",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "сейлзфорс",
+          "сейлс форс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HubSpot",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хабспот",
+          "хаб спот"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Pipedrive",
+      "variants" : {
+        "en" : [
+          "pipe drive"
+        ],
+        "ru" : [
+          "пайпдрайв",
+          "пайп драйв"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Zendesk",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "зендеск",
+          "зен деск"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Intercom",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Freshdesk",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фрешдеск",
+          "фреш деск"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DocuSign",
+      "variants" : {
+        "en" : [
+          "docu sign"
+        ],
+        "ru" : [
+          "докусайн",
+          "доку сайн"
+        ]
+      }
+    }
+  ],
+  "id" : "business",
+  "title" : {
+    "en" : "Business",
+    "ru" : "Бизнес"
+  },
+  "version" : 1
+}

@@ -230,7 +230,8 @@ struct DashboardCalculator: Equatable {
 }
 
 struct DashboardView: View {
-    @ObservedObject var audioCapture = AudioCapture.shared
+    @ObservedObject var historyStore = HistoryStore.shared
+    @ObservedObject var updates = UpdateService.shared
     @State private var chartRange: StatsRange = .week
     @State private var stats: DashboardCalculator = DashboardCalculator.empty
     
@@ -242,35 +243,35 @@ struct DashboardView: View {
             VStack(spacing: 16) {
                 HStack {
                     Text("УРОВЕНЬ:")
-                        .font(UIStyleFont.body(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .tracking(1.0)
                         .foregroundColor(.uiMidGray)
                     UIBadge(text: stats.levelName)
                     
                     Spacer()
-                    if let update = audioCapture.updateInfo {
+                    if let update = updates.updateInfo {
                         HStack(spacing: 6) {
-                            if audioCapture.isDownloadingUpdate {
+                            if updates.isDownloadingUpdate {
                                 ProgressView().scaleEffect(0.6)
-                                Text(audioCapture.updateProgressText.isEmpty ? LocalizedStringKey("Скачивание...") : LocalizedStringKey(audioCapture.updateProgressText))
-                                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                                Text(updates.updateProgressText.isEmpty ? LocalizedStringKey("Скачивание...") : LocalizedStringKey(updates.updateProgressText))
+                                    .font(.ui(.micro, weight: .bold))
                                     .foregroundColor(.white)
-                                Button(action: { audioCapture.cancelUpdateDownload() }) {
+                                Button(action: { updates.cancelUpdateDownload() }) {
                                     Image(systemName: "xmark.circle.fill").foregroundColor(.white.opacity(0.8))
                                 }.buttonStyle(.plain)
                             } else {
-                                Button(action: { audioCapture.downloadAndInstallUpdate() }) {
+                                Button(action: { updates.downloadAndInstallUpdate() }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "arrow.down.circle.fill")
                                         Text(String(format: String(localized: "Доступна %@"), update.codename))
                                     }
-                                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                                    .font(.ui(.micro, weight: .bold))
                                     .foregroundColor(.white)
                                 }.buttonStyle(.plain)
                             }
                         }
                         .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Color.uiWarn).cornerRadius(12)
+                        .background(Color.uiWarn).cornerRadius(UIRadius.md)
                     }
                 }
                 
@@ -285,7 +286,7 @@ struct DashboardView: View {
                         
                         if stats.hoursSaved != "0" && stats.hoursSaved != "0.00" && stats.hoursSaved != "0,00" {
                             Text("ЧАСОВ СОХРАНЕНО")
-                                .font(UIStyleFont.body(size: 11, weight: .bold))
+                                .font(.ui(.caption, weight: .bold))
                                 .tracking(1.2)
                                 .foregroundColor(primaryTextColor.opacity(0.7))
                         }
@@ -300,8 +301,8 @@ struct DashboardView: View {
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(cardBackground)
-                .cornerRadius(24)
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.xl)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.xl).stroke(Color.uiHairline, lineWidth: 1))
                 
                 DashboardChartsSection(stats: stats, chartRange: $chartRange)
                     .equatable()
@@ -310,15 +311,15 @@ struct DashboardView: View {
         }
         .background(Color.uiCanvas)
         .onAppear { apply() }
-        .onChange(of: audioCapture.history.count) { _ in apply() }
+        .onChange(of: historyStore.items.count) { _ in apply() }
         .onChange(of: chartRange) { _ in apply() }
     }
     
     private func apply() {
         let store = DashboardStatsStore.shared
-        let s = store.value(for: audioCapture.history, range: chartRange)
+        let s = store.value(for: historyStore.items, range: chartRange)
         if s != stats { stats = s }
-        store.refresh(history: audioCapture.history)
+        store.refresh(history: historyStore.items)
     }
 }
 
@@ -370,7 +371,7 @@ struct DashboardChartsSection: View, Equatable {
             // ПЕРЕКЛЮЧАТЕЛЬ ДИАПАЗОНА
             HStack(spacing: 12) {
                 Text("ДИАПАЗОН")
-                    .font(UIStyleFont.body(size: 11, weight: .bold))
+                    .font(.ui(.caption, weight: .bold))
                     .tracking(1.2)
                     .foregroundColor(.uiMidGray)
                 Spacer()
@@ -383,7 +384,7 @@ struct DashboardChartsSection: View, Equatable {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         Text("НЕДЕЛЬНЫЙ ТРЕНД")
-                            .font(UIStyleFont.body(size: 11, weight: .bold))
+                            .font(.ui(.caption, weight: .bold))
                             .tracking(1.2)
                             .foregroundColor(.uiMidGray)
                         
@@ -404,11 +405,11 @@ struct DashboardChartsSection: View, Equatable {
                             y: .value("Показатель", yVal)
                         )
                         .foregroundStyle(Color.uiInk)
-                        .cornerRadius(4)
+                        .cornerRadius(UIRadius.xs)
                         .annotation(position: .top, alignment: .center) {
                             if yVal > 0 {
                                 Text("\(yVal)")
-                                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                                    .font(.ui(.micro, weight: .bold))
                                     .foregroundColor(.uiMidGray)
                             }
                         }
@@ -420,7 +421,7 @@ struct DashboardChartsSection: View, Equatable {
                         AxisMarks(values: .automatic) { value in
                             AxisValueLabel() {
                                 if let str = value.as(String.self) {
-                                    Text(str).font(UIStyleFont.body(size: 11, weight: .semibold)).foregroundColor(.uiMidGray)
+                                    Text(str).font(.ui(.caption, weight: .semibold)).foregroundColor(.uiMidGray)
                                 }
                             }
                         }
@@ -467,11 +468,11 @@ struct StatCard: View {
         UICard {
             VStack(alignment: .leading, spacing: 6) {
                 Text(value)
-                    .font(UIStyleFont.display(size: 26, weight: .bold))
+                    .font(.ui(.largeTitle, weight: .bold))
                     .foregroundColor(.uiInk)
                     .tracking(-0.5)
                 Text(label)
-                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .tracking(0.8)
                     .foregroundColor(.uiMidGray)
             }
@@ -490,7 +491,7 @@ struct AnimatedNumberText: View {
 
     var body: some View {
         Text(String(format: "%.2f", displayed))
-            .font(UIStyleFont.display(size: size, weight: .bold))
+            .font(.system(size: size, weight: .bold))
             .foregroundColor(tint)
             .tracking(-1.5)
             .monospacedDigit()

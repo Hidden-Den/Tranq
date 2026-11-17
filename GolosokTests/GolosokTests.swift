@@ -230,7 +230,7 @@ struct GolosokTests {
 
     @Test func interpolateTimingsSpreadsAcrossRange() {
         let words = timedWords(["а", "б", "в"])
-        let result = AudioCapture.interpolateTimings(words, from: 1.0, to: 4.0)
+        let result = WordTimings.interpolate(words, from: 1.0, to: 4.0)
         #expect(result.count == 3)
         #expect(result[0].start == 1.0)
         #expect(result[2].end <= 4.001)
@@ -242,7 +242,7 @@ struct GolosokTests {
 
     @Test func interpolateTimingsPreservesOrder() {
         let words = timedWords(["один", "два", "три"])
-        let result = AudioCapture.interpolateTimings(words, from: 0, to: 3.0)
+        let result = WordTimings.interpolate(words, from: 0, to: 3.0)
         #expect(result.map(\.text) == ["один", "два", "три"])
         #expect(result[0].start == 0)
         #expect(result.last?.end == 3.0)
@@ -252,14 +252,14 @@ struct GolosokTests {
 
     @Test func millisecondTimingsAreConvertedToSeconds() {
         let words = [TimedWord(text: "Привет", start: 0, end: 7650.5), TimedWord(text: "мир", start: 7650.5, end: 8000)]
-        let result = AudioCapture.normalizedWords(words, duration: 7.6)
+        let result = WordTimings.normalized(words, duration: 7.6)
         #expect(result[0].end == 7.6505)
         #expect(result[1].start == 7.6505)
     }
 
     @Test func secondTimingsStayUntouched() {
         let words = [TimedWord(text: "Так,", start: 0.76, end: 1.04), TimedWord(text: "звук", start: 1.2, end: 1.48)]
-        let result = AudioCapture.normalizedWords(words, duration: 6.6)
+        let result = WordTimings.normalized(words, duration: 6.6)
         #expect(result == words)
     }
 
@@ -272,7 +272,7 @@ struct GolosokTests {
             TimedWord(text: "Как", start: 1.5, end: 1.7),
             TimedWord(text: "дела?", start: 1.7, end: 2.2)
         ]
-        let cues = AudioCapture.makeSubtitleCues(from: words)
+        let cues = SubtitleExporter.makeCues(from: words)
         #expect(cues.count == 2)
         #expect(cues[0].text == "Привет, мир.")
         #expect(cues[0].start == 0.0)
@@ -282,7 +282,7 @@ struct GolosokTests {
     }
 
     @Test func subtitleCuesFromTextFallsBack() {
-        let cues = AudioCapture.makeSubtitleCuesFromText("Первое. Второе.")
+        let cues = SubtitleExporter.makeCues(fromText: "Первое. Второе.")
         #expect(cues.count == 2)
         #expect(cues[0].text == "Первое.")
         #expect(cues[0].end >= cues[0].start)
@@ -290,30 +290,30 @@ struct GolosokTests {
 
     @Test func srtContentFormatsCorrectly() {
         let cues = [SubtitleCue(start: 0.0, end: 2.36, text: "Привет, это проверка")]
-        let srt = AudioCapture.srtContent(cues: cues)
+        let srt = SubtitleExporter.srtContent(cues: cues)
         #expect(srt == "1\n00:00:00,000 --> 00:00:02,360\nПривет, это проверка\n\n")
     }
 
     @Test func vttContentHasHeaderAndDotTime() {
         let cues = [SubtitleCue(start: 1.5, end: 3.0, text: "Текст")]
-        let vtt = AudioCapture.vttContent(cues: cues)
+        let vtt = SubtitleExporter.vttContent(cues: cues)
         #expect(vtt.hasPrefix("WEBVTT\n\n"))
         #expect(vtt.contains("00:00:01.500 --> 00:00:03.000"))
     }
 
     @Test func subtitleTimestampsFormat() {
-        #expect(AudioCapture.srtTime(3661.5) == "01:01:01,500")
-        #expect(AudioCapture.vttTime(3661.5) == "01:01:01.500")
+        #expect(SubtitleExporter.srtTime(3661.5) == "01:01:01,500")
+        #expect(SubtitleExporter.vttTime(3661.5) == "01:01:01.500")
     }
 
     // MARK: - Version comparison (update check)
 
     @Test func versionComparisonHandlesSuffixes() {
-        #expect(AudioCapture.compareVersions("v1.12.2", "1.12.1") == .orderedDescending)
-        #expect(AudioCapture.compareVersions("1.10.0", "1.12.1") == .orderedAscending)
-        #expect(AudioCapture.compareVersions("1.12.1", "1.12.1") == .orderedSame)
-        #expect(AudioCapture.compareVersions("2.0", "1.99.9") == .orderedDescending)
-        #expect(AudioCapture.compareVersions("1.0", "1.0.1") == .orderedAscending)
+        #expect(UpdateService.compareVersions("v1.12.2", "1.12.1") == .orderedDescending)
+        #expect(UpdateService.compareVersions("1.10.0", "1.12.1") == .orderedAscending)
+        #expect(UpdateService.compareVersions("1.12.1", "1.12.1") == .orderedSame)
+        #expect(UpdateService.compareVersions("2.0", "1.99.9") == .orderedDescending)
+        #expect(UpdateService.compareVersions("1.0", "1.0.1") == .orderedAscending)
     }
 
     // MARK: - Transcript search (⌘ + F)
@@ -421,30 +421,32 @@ struct AISelectionStatefulTests {
         #expect(cache.result(noteID: noteID, templateID: templateID, scopeID: "sel_3_5", for: noteText) == nil)
     }
 
+    /// История во временной папке: тесты не трогают настоящие заметки пользователя.
+    static func makeIsolatedHistoryStore() -> HistoryStore {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("golosok-tests-\(UUID().uuidString)", isDirectory: true)
+        return HistoryStore(directory: dir)
+    }
+
     @Test func replaceRangeSwapsOnlyFragment() {
-        let store = AudioCapture.shared
-        let snapshot = store.history
-        defer { store.history = snapshot }
+        let store = Self.makeIsolatedHistoryStore()
         let initial = "Первоначальный текст-фрагмент. Соседний абзац остаётся как есть."
         let id = store.addNote(text: initial)
         let ns = initial as NSString
         let range = ns.range(of: "фрагмент")
         #expect(range.location != NSNotFound)
         store.replaceRangeInNote(id: id, range: range, newText: "кусок")
-        #expect(store.history.first(where: { $0.id == id })?.text == "Первоначальный текст-кусок. Соседний абзац остаётся как есть.")
+        #expect(store.items.first(where: { $0.id == id })?.text == "Первоначальный текст-кусок. Соседний абзац остаётся как есть.")
     }
 
     @Test func replaceRangeWithInvalidRangeIsNoOp() {
-        let store = AudioCapture.shared
-        let snapshot = store.history
-        defer { store.history = snapshot }
+        let store = Self.makeIsolatedHistoryStore()
         let initial = "Тестовый текст остаётся нетронутым."
         let id = store.addNote(text: initial)
         store.replaceRangeInNote(id: id, range: NSRange(location: 9999, length: 5), newText: "Вторжение")
-        #expect(store.history.first(where: { $0.id == id })?.text == initial)
+        #expect(store.items.first(where: { $0.id == id })?.text == initial)
 
         store.replaceRangeInNote(id: id, range: NSRange(location: NSNotFound, length: 5), newText: "Вторжение")
-        #expect(store.history.first(where: { $0.id == id })?.text == initial)
+        #expect(store.items.first(where: { $0.id == id })?.text == initial)
     }
 
     // MARK: - ModelStore
@@ -470,7 +472,7 @@ struct AISelectionStatefulTests {
 
 struct WindowAndDockSettingsTests {
     @Test @MainActor func hideInDockPersistence() {
-        let store = AudioCapture.shared
+        let store = AppPreferences.shared
         let originalHideInDock = store.hideInDock
         defer {
             store.hideInDock = originalHideInDock
@@ -478,11 +480,11 @@ struct WindowAndDockSettingsTests {
 
         store.hideInDock = true
         #expect(store.hideInDock == true)
-        #expect(UserDefaults.standard.bool(forKey: "hideInDock") == true)
+        #expect(AppEnvironment.defaults.bool(forKey: "hideInDock") == true)
 
         store.hideInDock = false
         #expect(store.hideInDock == false)
-        #expect(UserDefaults.standard.bool(forKey: "hideInDock") == false)
+        #expect(AppEnvironment.defaults.bool(forKey: "hideInDock") == false)
     }
 
     @Test @MainActor func mainWindowControllerInterception() {

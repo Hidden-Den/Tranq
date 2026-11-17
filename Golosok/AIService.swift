@@ -121,7 +121,7 @@ final class AIProviderStore: ObservableObject {
     @Published var installedModels: [String] = []
     @Published var isLoadingModels = false
 
-    private static let defaults = UserDefaults.standard
+    private static let defaults = AppEnvironment.defaults
 
     private init() {
         // One-time cleanup for removed account credentials

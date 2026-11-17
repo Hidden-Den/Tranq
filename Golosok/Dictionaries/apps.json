@@ -1,0 +1,1081 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Slack",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "слэк",
+          "слак"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Telegram",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WhatsApp",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вотсап",
+          "вацап"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Zoom",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Microsoft Teams",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "майкрософт тимс",
+          "майкрософт тим"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Meet",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл мит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Discord",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дискорд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Skype",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Viber",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вайбер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Gmail",
+      "variants" : {
+        "en" : [
+          "g mail"
+        ],
+        "ru" : [
+          "джимейл",
+          "джи мейл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Outlook",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "аутлук"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Docs",
+      "variants" : {
+        "en" : [
+          "google docs"
+        ],
+        "ru" : [
+          "гугл докс",
+          "гугл документы"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Sheets",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл шитс",
+          "гугл таблицы",
+          "гугл таблицах"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Drive",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл драйв",
+          "гугл диск"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Calendar",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл календарь"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Google Workspace",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гугл воркспейс",
+          "гугл ворк спейс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Microsoft 365",
+      "variants" : {
+        "en" : [
+          "microsoft three six five"
+        ],
+        "ru" : [
+          "майкрософт триста шестьдесят пять"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Excel",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ексель"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PowerPoint",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пауэрпоинт",
+          "пауэр поинт",
+          "повер поинт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OneDrive",
+      "variants" : {
+        "en" : [
+          "one drive"
+        ],
+        "ru" : [
+          "ван драйв"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SharePoint",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "шерпоинт",
+          "шер поинт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Dropbox",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дроп бокс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Obsidian",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Evernote",
+      "variants" : {
+        "en" : [
+          "ever note"
+        ],
+        "ru" : [
+          "эверноут",
+          "эвер ноут"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Airtable",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эйртейбл",
+          "эйр тейбл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Trello",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "трелло"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Asana",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ClickUp",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "кликап",
+          "клик ап"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Monday.com",
+      "variants" : {
+        "en" : [
+          "monday dot com"
+        ],
+        "ru" : [
+          "манди ком",
+          "монди ком"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Miro",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Figma",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фигма"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Canva",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Loom",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Calendly",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "календли",
+          "календлай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Zapier",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "запир",
+          "запиер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Typeform",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тайпформ",
+          "тайп форм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Tilda",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Webflow",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вебфлоу",
+          "веб флоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WordPress",
+      "variants" : {
+        "en" : [
+          "word press"
+        ],
+        "ru" : [
+          "вордпресс",
+          "ворд пресс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Shopify",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "шопифай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Wix",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "викс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Todoist",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тудуист",
+          "ту дуист"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Bitrix24",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "битрикс двадцать четыре",
+          "битрикс 24"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "amoCRM",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "амо црм",
+          "амо си эр эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "YouTube",
+      "variants" : {
+        "en" : [
+          "you tube"
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Instagram",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "TikTok",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тикток",
+          "тик ток"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "LinkedIn",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "линкедин",
+          "линкед ин"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Twitter",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Facebook",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Pinterest",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пинтерест"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Reddit",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "реддит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Twitch",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "твич"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Spotify",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "спотифай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Netflix",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "нетфликс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Uber",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Airbnb",
+      "variants" : {
+        "en" : [
+          "air b n b"
+        ],
+        "ru" : [
+          "эйрбиэнби",
+          "эйр би эн би"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Booking.com",
+      "variants" : {
+        "en" : [
+          "booking dot com"
+        ],
+        "ru" : [
+          "букинг ком"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PayPal",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пэйпал",
+          "пей пал"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Stripe",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "страйп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Apple Music",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эпл мьюзик"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "iCloud",
+      "variants" : {
+        "en" : [
+          "i cloud"
+        ],
+        "ru" : [
+          "айклауд",
+          "ай клауд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "iMessage",
+      "variants" : {
+        "en" : [
+          "i message"
+        ],
+        "ru" : [
+          "аймессадж",
+          "ай мессадж"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FaceTime",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "фейс тайм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Safari",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Chrome",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Firefox",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "файрфокс",
+          "фаерфокс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "1Password",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ван пассворд",
+          "ванпассворд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Bitwarden",
+      "variants" : {
+        "en" : [
+          "bit warden"
+        ],
+        "ru" : [
+          "битвардэн",
+          "бит вардэн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Raycast",
+      "variants" : {
+        "en" : [
+          "ray cast"
+        ],
+        "ru" : [
+          "рейкаст",
+          "рэйкаст"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "VK",
+      "variants" : {
+        "en" : [
+          "v k"
+        ],
+        "ru" : [
+          "вэ ка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Rutube",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "рутуб"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Zoho",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "зохо"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Mailchimp",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "мейлчимп",
+          "мейл чимп"
+        ]
+      }
+    }
+  ],
+  "id" : "apps",
+  "title" : {
+    "en" : "Apps & Services",
+    "ru" : "Приложения и сервисы"
+  },
+  "version" : 1
+}

@@ -90,7 +90,7 @@ struct LevelProgress: Equatable {
 struct ChartEmptyView: View {
     var body: some View {
         Text("НЕТ ДАННЫХ")
-            .font(UIStyleFont.body(size: 11, weight: .bold))
+            .font(.ui(.caption, weight: .bold))
             .tracking(1.2)
             .foregroundColor(.uiMidGray)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -114,7 +114,7 @@ struct ChartCardHeader<Trailing: View>: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(UIStyleFont.body(size: 11, weight: .bold))
+                .font(.ui(.caption, weight: .bold))
                 .tracking(1.2)
                 .foregroundColor(.uiMidGray)
             Spacer()
@@ -171,11 +171,11 @@ struct TimeOfDayChart: View {
         .overlay(
             VStack(spacing: 0) {
                 Text(String(localized: "ПИК"))
-                    .font(UIStyleFont.body(size: 9, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .tracking(1.0)
                     .foregroundColor(.uiWarn)
                 Text(LocalizedStringKey(peak))
-                    .font(UIStyleFont.display(size: 16, weight: .bold))
+                    .font(.ui(.callout, weight: .bold))
                     .foregroundColor(.uiInk)
             }
         )
@@ -198,11 +198,11 @@ struct TimeOfDayChart: View {
                 HStack(spacing: 8) {
                     Circle().fill(i == peakIndex ? Color.uiWarn : palette[i]).frame(width: 8, height: 8)
                     Text(LocalizedStringKey(stats[i].label))
-                        .font(UIStyleFont.body(size: 11, weight: .semibold))
+                        .font(.ui(.caption, weight: .semibold))
                         .foregroundColor(.uiInk)
                     Spacer()
                     Text("\(stats[i].count)")
-                        .font(UIStyleFont.body(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .foregroundColor(.uiMidGray)
                 }
             }
@@ -331,11 +331,11 @@ struct SizeDonutChart: View {
         .overlay(
             VStack(spacing: 0) {
                 Text(String(localized: "ЧАЩЕ"))
-                    .font(UIStyleFont.body(size: 9, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .tracking(1.0)
                     .foregroundColor(.uiWarn)
                 Text(buckets[topIndex].label)
-                    .font(UIStyleFont.display(size: 15, weight: .bold))
+                    .font(.ui(.callout, weight: .bold))
                     .foregroundColor(.uiInk)
             }
         )
@@ -358,11 +358,11 @@ struct SizeDonutChart: View {
                 HStack(spacing: 8) {
                     Circle().fill(i == topIndex ? Color.uiWarn : palette[i % palette.count]).frame(width: 8, height: 8)
                     Text(buckets[i].label)
-                        .font(UIStyleFont.body(size: 11, weight: .semibold))
+                        .font(.ui(.caption, weight: .semibold))
                         .foregroundColor(.uiInk)
                     Spacer()
                     Text("\(buckets[i].count)")
-                        .font(UIStyleFont.body(size: 11, weight: .bold))
+                        .font(.ui(.caption, weight: .bold))
                         .foregroundColor(.uiMidGray)
                 }
             }
@@ -391,11 +391,11 @@ struct WeekdayRhythmChart: View {
                             y: .value("Заметки", revealed ? d.count : 0)
                         )
                         .foregroundStyle(Color.uiInk)
-                        .cornerRadius(4)
+                        .cornerRadius(UIRadius.xs)
                         .annotation(position: .top, alignment: .center) {
                             if d.count > 0 {
                                 Text("\(revealed ? d.count : 0)")
-                                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                                    .font(.ui(.micro, weight: .bold))
                                     .foregroundColor(.uiMidGray)
                             }
                         }
@@ -404,7 +404,7 @@ struct WeekdayRhythmChart: View {
                         AxisMarks(values: .automatic) { value in
                             AxisValueLabel() {
                                 if let str = value.as(String.self) {
-                                    Text(str).font(UIStyleFont.body(size: 10, weight: .semibold)).foregroundColor(.uiMidGray)
+                                    Text(str).font(.ui(.micro, weight: .semibold)).foregroundColor(.uiMidGray)
                                 }
                             }
                         }
@@ -437,11 +437,11 @@ struct ActivityChart: View {
                 ChartCardHeader(title: "АКТИВНОСТЬ") {
                     HStack(spacing: 6) {
                         Text("\(total)")
-                            .font(UIStyleFont.display(size: 12, weight: .bold))
+                            .font(.ui(.footnote, weight: .bold))
                             .foregroundColor(.uiInk)
                             .contentTransition(.numericText())
                         Text(String(localized: "ЗАМЕТОК"))
-                            .font(UIStyleFont.body(size: 10, weight: .bold))
+                            .font(.ui(.micro, weight: .bold))
                             .tracking(0.6)
                             .foregroundColor(.uiMidGray)
                     }
@@ -480,7 +480,7 @@ struct ActivityChart: View {
                             .symbolSize(100)
                             .annotation(position: .top, alignment: .center) {
                                 Text("\(peak)")
-                                    .font(UIStyleFont.body(size: 10, weight: .bold))
+                                    .font(.ui(.micro, weight: .bold))
                                     .foregroundColor(.uiWarn)
                                     .padding(.horizontal, 4)
                                     .padding(.vertical, 2)
@@ -498,7 +498,7 @@ struct ActivityChart: View {
                             AxisValueLabel {
                                 if let date = value.as(Date.self) {
                                     Text(Self.dayFormatter.string(from: date))
-                                        .font(UIStyleFont.body(size: 9, weight: .semibold))
+                                        .font(.ui(.micro, weight: .semibold))
                                         .foregroundColor(.uiMidGray)
                                 }
                             }
@@ -511,7 +511,7 @@ struct ActivityChart: View {
                             AxisValueLabel {
                                 if let n = value.as(Int.self) {
                                     Text("\(n)")
-                                        .font(UIStyleFont.body(size: 9, weight: .semibold))
+                                        .font(.ui(.micro, weight: .semibold))
                                         .foregroundColor(.uiMidGray)
                                 }
                             }
@@ -560,11 +560,11 @@ struct RecentNotesChart: View {
             VStack(alignment: .leading, spacing: 12) {
                 ChartCardHeader(title: "ПОСЛЕДНИЕ ЗАМЕТКИ") {
                     Text(String(localized: "СИМВОЛОВ"))
-                        .font(UIStyleFont.body(size: 10, weight: .bold))
+                        .font(.ui(.micro, weight: .bold))
                         .tracking(0.6)
                         .foregroundColor(.uiMidGray)
                     Text("\(totalChars)")
-                        .font(UIStyleFont.display(size: 20, weight: .bold))
+                        .font(.ui(.title, weight: .bold))
                         .foregroundColor(.uiInk)
                         .contentTransition(.numericText())
                 }
@@ -589,11 +589,11 @@ struct RecentNotesChart: View {
 
                 HStack(spacing: 4) {
                     Text(String(localized: "НАЧАЛО ПЕРИОДА"))
-                        .font(UIStyleFont.body(size: 9, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                     Spacer()
                     Text(String(localized: "СЕЙЧАС"))
-                        .font(UIStyleFont.body(size: 9, weight: .medium))
+                        .font(.ui(.micro, weight: .medium))
                         .foregroundColor(.uiMidGray)
                 }
             }
@@ -617,10 +617,10 @@ struct LevelProgressChart: View {
                 if progress.isMaxed {
                     HStack(spacing: 10) {
                         Text("\(progress.current)")
-                            .font(UIStyleFont.display(size: 30, weight: .bold))
+                            .font(.ui(.display, weight: .bold))
                             .foregroundColor(.uiInk)
                         Text(String(localized: "ВЫ ДОСТИГЛИ ВЕРШИНЫ"))
-                            .font(UIStyleFont.body(size: 10, weight: .bold))
+                            .font(.ui(.micro, weight: .bold))
                             .tracking(0.8)
                             .foregroundColor(.uiWarn)
                     }
@@ -628,14 +628,14 @@ struct LevelProgressChart: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .lastTextBaseline, spacing: 6) {
                             Text("\(progress.current)")
-                                .font(UIStyleFont.display(size: 30, weight: .bold))
+                                .font(.ui(.display, weight: .bold))
                                 .foregroundColor(.uiInk)
                             Text("/ \(progress.nextThreshold)")
-                                .font(UIStyleFont.body(size: 13, weight: .regular))
+                                .font(.ui(.body))
                                 .foregroundColor(.uiMidGray)
                             Spacer()
                             Text("\(String(localized: "ОСТАЛОСЬ")) \(max(0, progress.nextThreshold - progress.current)) \(String(localized: "ДО")) \(progress.nextLevel)")
-                                .font(UIStyleFont.body(size: 10, weight: .bold))
+                                .font(.ui(.micro, weight: .bold))
                                 .tracking(0.5)
                                 .foregroundColor(.uiWarn)
                         }

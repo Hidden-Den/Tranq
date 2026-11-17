@@ -11,21 +11,21 @@ struct AISelectionToolbarContent: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.ui(.caption, weight: .semibold))
                     .foregroundColor(Color.uiAccent)
                 Text("AI-действия с выделением")
-                    .font(UIStyleFont.body(size: 11, weight: .semibold))
+                    .font(.ui(.caption, weight: .semibold))
                     .foregroundColor(.uiInk)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 Image(systemName: "rectangle.stack.fill")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .foregroundColor(.uiMidGray)
                     .padding(.vertical, 2)
                     .padding(.horizontal, 5)
                     .background(Color.uiCanvas)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.uiHairline, lineWidth: 1))
+                    .cornerRadius(UIRadius.sm)
+                    .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
                     .help(String(localized: "Только выделенный фрагмент"))
             }
             .padding(.horizontal, 10)
@@ -48,14 +48,14 @@ struct AISelectionToolbarContent: View {
         }
         .frame(width: 260, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous)
                 .fill(Color.uiPaper)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous)
                 .stroke(Color.uiHairline, lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: UIRadius.md, style: .continuous))
         .shadow(color: .black.opacity(0.10), radius: 14, x: 0, y: 6)
     }
 }
@@ -69,16 +69,16 @@ private struct AISelectionToolbarRow: View {
         Button(action: onPick) {
             HStack(spacing: 10) {
                 Image(systemName: template.icon)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(Color.uiAccent.opacity(0.85))
                     .frame(width: 16)
                 Text(LocalizedStringKey(template.title))
-                    .font(UIStyleFont.body(size: 12, weight: .medium))
+                    .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(.uiInk)
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .foregroundColor(Color.uiAccent.opacity(0.6))
                     .opacity(hover ? 1 : 0)
             }

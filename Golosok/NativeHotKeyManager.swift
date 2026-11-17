@@ -54,14 +54,14 @@ public class NativeHotKeyManager {
 
     public var trigger: HotKeyTrigger {
         get {
-            guard let type = UserDefaults.standard.string(forKey: "hotkey.type") else {
+            guard let type = AppEnvironment.defaults.string(forKey: "hotkey.type") else {
                 return .none
             }
             if type == "none" {
                 return .none
             }
             if type == "modifier" {
-                let keyCode = UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifierKeyCode"))
+                let keyCode = UInt32(AppEnvironment.defaults.integer(forKey: "hotkey.modifierKeyCode"))
                 if let key = SingleModifierKey.from(keyCode: keyCode) {
                     return .singleModifier(key)
                 }
@@ -80,23 +80,23 @@ public class NativeHotKeyManager {
 
     public var keyCode: UInt32 {
         get {
-            guard UserDefaults.standard.object(forKey: "hotkey.keyCode") != nil else { return 49 }
-            return UInt32(UserDefaults.standard.integer(forKey: "hotkey.keyCode"))
+            guard AppEnvironment.defaults.object(forKey: "hotkey.keyCode") != nil else { return 49 }
+            return UInt32(AppEnvironment.defaults.integer(forKey: "hotkey.keyCode"))
         }
-        set { UserDefaults.standard.set(Int(newValue), forKey: "hotkey.keyCode") }
+        set { AppEnvironment.defaults.set(Int(newValue), forKey: "hotkey.keyCode") }
     }
 
     public var modifierFlags: UInt32 {
         get {
-            guard UserDefaults.standard.object(forKey: "hotkey.modifiers") != nil else { return UInt32(optionKey) }
-            return UInt32(UserDefaults.standard.integer(forKey: "hotkey.modifiers"))
+            guard AppEnvironment.defaults.object(forKey: "hotkey.modifiers") != nil else { return UInt32(optionKey) }
+            return UInt32(AppEnvironment.defaults.integer(forKey: "hotkey.modifiers"))
         }
-        set { UserDefaults.standard.set(Int(newValue), forKey: "hotkey.modifiers") }
+        set { AppEnvironment.defaults.set(Int(newValue), forKey: "hotkey.modifiers") }
     }
 
     public var mode: HotKeyMode {
-        get { HotKeyMode(rawValue: UserDefaults.standard.string(forKey: "hotkey.mode") ?? "") ?? .toggle }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: "hotkey.mode") }
+        get { HotKeyMode(rawValue: AppEnvironment.defaults.string(forKey: "hotkey.mode") ?? "") ?? .toggle }
+        set { AppEnvironment.defaults.set(newValue.rawValue, forKey: "hotkey.mode") }
     }
 
     public func setTrigger(_ trigger: HotKeyTrigger) {
@@ -160,12 +160,12 @@ public class NativeHotKeyManager {
     private func saveTrigger(_ trigger: HotKeyTrigger) {
         switch trigger {
         case .none:
-            UserDefaults.standard.set("none", forKey: "hotkey.type")
+            AppEnvironment.defaults.set("none", forKey: "hotkey.type")
         case .singleModifier(let key):
-            UserDefaults.standard.set("modifier", forKey: "hotkey.type")
-            UserDefaults.standard.set(Int(key.rawValue), forKey: "hotkey.modifierKeyCode")
+            AppEnvironment.defaults.set("modifier", forKey: "hotkey.type")
+            AppEnvironment.defaults.set(Int(key.rawValue), forKey: "hotkey.modifierKeyCode")
         case .combination(let kCode, let mods):
-            UserDefaults.standard.set("combo", forKey: "hotkey.type")
+            AppEnvironment.defaults.set("combo", forKey: "hotkey.type")
             self.keyCode = kCode
             self.modifierFlags = mods
         }

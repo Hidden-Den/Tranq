@@ -94,18 +94,22 @@ xattr -cr /Applications/Golosok.app
 git clone https://github.com/Nuteres/Golosok.git
 cd Golosok
 
-# 2. Скачать веса модели GigaAM
-curl -L -o Golosok/gigaam.gguf https://huggingface.co/memoravox/gigaam-v3-e2e-rnnt-gguf/resolve/main/gigaam-v3-e2e-rnnt-Q8_0.gguf
+# 2. Скачать модель GigaAM и llama-server; версии и контрольные суммы SHA-256 зафиксированы в скрипте
+scripts/fetch-deps.sh
 
 # 3. Открыть проект в Xcode
 open Golosok.xcodeproj
 ```
 
-Для сборки и запуска нажмите `⌘ + R` в Xcode, либо соберите через терминал:
+Для сборки и запуска нажмите `⌘ + R` в Xcode. Движок transcribe.cpp Xcode скачает сам как Swift-пакет.
+
+Релизный DMG с ad-hoc подписью и hardened runtime:
 
 ```bash
-xcodebuild -project Golosok.xcodeproj -target Golosok -configuration Release build
+scripts/build-dmg.sh
 ```
+
+Unit-тесты также запускаются в GitHub Actions при каждом пуше в `main` и в пулл-реквестах. Модели и бинарники им не нужны.
 
 ---
 

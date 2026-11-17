@@ -29,7 +29,7 @@ struct LogsView: View {
                 VStack(spacing: 8) {
                     Spacer()
                     Text("Пока нет записей")
-                        .font(UIStyleFont.body(size: 13, weight: .medium))
+                        .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiMidGray)
                     Spacer()
                 }
@@ -59,7 +59,7 @@ struct LogsView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Text("Логи приложения")
-                .font(UIStyleFont.display(size: 16, weight: .semibold))
+                .font(.ui(.callout, weight: .semibold))
                 .foregroundColor(.uiInk)
             Spacer()
 
@@ -77,12 +77,12 @@ struct LogsView: View {
     private func levelButton(tint: Color, symbol: String, isOn: Bool, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.ui(.body, weight: .semibold))
                 .foregroundColor(isOn ? tint : .uiMidGray.opacity(0.6))
                 .frame(width: 28, height: 26)
                 .background(isOn ? tint.opacity(0.14) : Color.uiCanvas)
-                .cornerRadius(13)
-                .overlay(RoundedRectangle(cornerRadius: 13).stroke(isOn ? tint.opacity(0.4) : Color.uiHairline, lineWidth: 1))
+                .cornerRadius(UIRadius.md)
+                .overlay(RoundedRectangle(cornerRadius: UIRadius.md).stroke(isOn ? tint.opacity(0.4) : Color.uiHairline, lineWidth: 1))
         }
         .buttonStyle(TactileButtonStyle())
         .help(help)
@@ -123,23 +123,23 @@ struct LogRow: View {
             HStack(spacing: 6) {
                 Circle().fill(color).frame(width: 7, height: 7)
                 Text(entry.level.label)
-                    .font(UIStyleFont.body(size: 9, weight: .bold))
+                    .font(.ui(.micro, weight: .bold))
                     .foregroundColor(color)
                 Text(timeString)
-                    .font(UIStyleFont.body(size: 10, weight: .regular))
+                    .font(.ui(.micro))
                     .foregroundColor(.uiMidGray)
                 Text(entry.source)
-                    .font(UIStyleFont.body(size: 10, weight: .semibold))
+                    .font(.ui(.micro, weight: .semibold))
                     .foregroundColor(.uiInkSoft)
             }
             Text(entry.message)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.ui(.caption, design: .monospaced))
                 .foregroundColor(.uiInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
             if let details = entry.details {
                 Text(details)
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.ui(.micro, design: .monospaced))
                     .foregroundColor(.uiMidGray)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)

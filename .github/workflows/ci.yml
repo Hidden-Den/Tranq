@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Сборка и unit-тесты
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Версия Xcode
+        run: xcodebuild -version
+
+      # Модели и CLI-бинарники не нужны: без них проект собирается,
+      # а тесты, которым нужна модель GigaAM, пропускаются.
+      - name: Сборка и тесты
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild test \
+            -project Golosok.xcodeproj \
+            -scheme Golosok \
+            -destination 'platform=macOS' \
+            -only-testing:GolosokTests \
+            -derivedDataPath build/DerivedData-ci \
+            CODE_SIGN_IDENTITY=- \
+            | tee build/xcodebuild.log | grep -E "error:|Test run with|\*\* TEST" || true
+          grep -q "\*\* TEST SUCCEEDED \*\*" build/xcodebuild.log
+
+      - name: Отчёт о тестах
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/DerivedData-ci/Logs/Test/*.xcresult
+            build/xcodebuild.log
+          retention-days: 7

@@ -1,0 +1,716 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OKR",
+      "variants" : {
+        "en" : [
+          "o k r",
+          "o k r s"
+        ],
+        "ru" : [
+          "о кей ар",
+          "окиар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "KPI",
+      "variants" : {
+        "en" : [
+          "k p i"
+        ],
+        "ru" : [
+          "кей пи ай",
+          "кипиай",
+          "капиай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "KPIs",
+      "variants" : {
+        "en" : [
+          "k p i s"
+        ],
+        "ru" : [
+          "кей пи ай эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SMART",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Agile",
+      "variants" : {
+        "en" : [
+          "a jile"
+        ],
+        "ru" : [
+          "эджайл",
+          "аджайл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Scrum",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "скрам"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Kanban",
+      "variants" : {
+        "en" : [
+          "can ban"
+        ],
+        "ru" : [
+          "канбан"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Lean",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Six Sigma",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "шесть сигма",
+          "сикс сигма"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PMBOK",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пимбок",
+          "пи эм бок"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PMP",
+      "variants" : {
+        "en" : [
+          "p m p"
+        ],
+        "ru" : [
+          "пи эм пи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PRINCE2",
+      "variants" : {
+        "en" : [
+          "prince two"
+        ],
+        "ru" : [
+          "принс два",
+          "принс ту"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Waterfall",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "вотерфол"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Gantt",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RACI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "раси",
+          "рейси"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MoSCoW",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "москоу"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "RICE",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WBS",
+      "variants" : {
+        "en" : [
+          "w b s"
+        ],
+        "ru" : [
+          "вэ бэ эс",
+          "даблю би эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MVP",
+      "variants" : {
+        "en" : [
+          "m v p"
+        ],
+        "ru" : [
+          "эм ви пи",
+          "эмвипи"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PMO",
+      "variants" : {
+        "en" : [
+          "p m o"
+        ],
+        "ru" : [
+          "пи эм о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CTO",
+      "variants" : {
+        "en" : [
+          "c t o"
+        ],
+        "ru" : [
+          "си ти о",
+          "сити о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CEO",
+      "variants" : {
+        "en" : [
+          "c e o"
+        ],
+        "ru" : [
+          "си и о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "COO",
+      "variants" : {
+        "en" : [
+          "c o o"
+        ],
+        "ru" : [
+          "си о о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CFO",
+      "variants" : {
+        "en" : [
+          "c f o"
+        ],
+        "ru" : [
+          "си эф о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CMO",
+      "variants" : {
+        "en" : [
+          "c m o"
+        ],
+        "ru" : [
+          "си эм о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPO",
+      "variants" : {
+        "en" : [
+          "c p o"
+        ],
+        "ru" : [
+          "си пи о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CIO",
+      "variants" : {
+        "en" : [
+          "c i o"
+        ],
+        "ru" : [
+          "си ай о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RFC",
+      "variants" : {
+        "en" : [
+          "r f c"
+        ],
+        "ru" : [
+          "эр эф си"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ADR",
+      "variants" : {
+        "en" : [
+          "a d r"
+        ],
+        "ru" : [
+          "эй ди эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SLA",
+      "variants" : {
+        "en" : [
+          "s l a"
+        ],
+        "ru" : [
+          "эс эл эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "SLO",
+      "variants" : {
+        "en" : [
+          "s l o"
+        ],
+        "ru" : [
+          "эс эл о"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "1-on-1",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ван он ван"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Jira Service Management",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джира сервис менеджмент"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "YouTrack",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ютрек",
+          "ю трек"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Redmine",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "редмайн",
+          "ред майн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Basecamp",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бейскемп",
+          "бэйс кэмп"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Wrike",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "райк"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Smartsheet",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "смартшит",
+          "смарт шит"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Microsoft Project",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "майкрософт проджект"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Productboard",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "продактборд",
+          "продакт борд"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Mural",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FigJam",
+      "variants" : {
+        "en" : [
+          "fig jam"
+        ],
+        "ru" : [
+          "фиджем",
+          "фиг джем"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Lucidchart",
+      "variants" : {
+        "en" : [
+          "lucid chart"
+        ],
+        "ru" : [
+          "люсидчарт",
+          "люсид чарт"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Bitrix",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "битрикс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Megaplan",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "мегаплан"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Scrum Master",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "скрам мастер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Product Owner",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "продукт оунер"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Jira Align",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джира алайн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Azure DevOps",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "азур девопс",
+          "ажур девопс"
+        ]
+      }
+    }
+  ],
+  "id" : "management",
+  "title" : {
+    "en" : "Management",
+    "ru" : "Менеджмент"
+  },
+  "version" : 1
+}
