@@ -125,7 +125,7 @@ struct HotKeyTriggerTests {
         manager.mode = .toggle
 
         var pressedCount = 0
-        manager.onHotKeyPressed = {
+        manager.onHotKeyPressed = { _ in
             pressedCount += 1
         }
         manager.onHotKeyReleased = {}
@@ -169,7 +169,7 @@ struct HotKeyTriggerTests {
 
         var pressedCount = 0
         var releasedCount = 0
-        manager.onHotKeyPressed = {
+        manager.onHotKeyPressed = { _ in
             pressedCount += 1
         }
         manager.onHotKeyReleased = {

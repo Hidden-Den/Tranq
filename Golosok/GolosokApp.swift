@@ -12,13 +12,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey.isExternalRecordingActive = {
             AudioCapture.shared.isRecording
         }
-        hotKey.onHotKeyPressed = {
+        hotKey.onHotKeyPressed = { promptRequested in
             if hotKey.mode == .pushToTalk {
                 if !AudioCapture.shared.isRecording {
-                    AudioCapture.shared.startRecording()
+                    AudioCapture.shared.startRecording(promptRequested: promptRequested)
                 }
             } else {
-                AudioCapture.shared.toggleRecording()
+                AudioCapture.shared.toggleRecording(promptRequested: promptRequested)
             }
         }
         hotKey.onHotKeyReleased = {

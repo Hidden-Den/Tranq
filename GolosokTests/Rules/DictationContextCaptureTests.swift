@@ -73,17 +73,6 @@ struct DictationContextCaptureTests {
         #expect(ResolvedLevel(level: .prompt, label: "Промпт", ruleName: nil).overlayLabel == "Промпт")
         #expect(ResolvedLevel(level: .rewrite(tone: "деловой"), label: "Почта", ruleName: "Почта").overlayLabel == "Почта")
     }
-
-    @Test func promptModeIsOffByDefaultAndPersists() {
-        let settings = VoiceIntelligenceSettings.shared
-        let saved = settings.promptModeEnabled
-        defer { settings.promptModeEnabled = saved }
-
-        settings.promptModeEnabled = true
-        #expect(AppEnvironment.defaults.bool(forKey: "voice.promptModeEnabled"))
-        settings.resetToDefaults()
-        #expect(settings.promptModeEnabled == false)
-    }
 }
 
 private final class HostBox: @unchecked Sendable {

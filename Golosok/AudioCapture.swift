@@ -51,12 +51,13 @@ final class AudioCapture: ObservableObject {
 
     // MARK: - Запись
 
-    func toggleRecording() {
+    /// `promptRequested` действует только при начале записи; остановка от него не зависит.
+    func toggleRecording(promptRequested: Bool = false) {
         if isProcessingFile {
             SoundEffect.playCancel()
             return
         }
-        if isRecording { stopRecording() } else { startRecording() }
+        if isRecording { stopRecording() } else { startRecording(promptRequested: promptRequested) }
     }
 
     /// `promptRequested` включает режим промпта на одну диктовку, если он разрешён в настройках.
