@@ -51,6 +51,9 @@ public struct GroundingValidator {
             }
         }
 
+        // 0. Служебные метки шаблона чата, которые модель иногда выдаёт вместе с ответом
+        sanitizedOutput = stripChatTemplateTokens(sanitizedOutput)
+
         // 1. Очистка внешних кавычек если модель их добавила
         if (sanitizedOutput.hasPrefix("\"") && sanitizedOutput.hasSuffix("\"")) ||
            (sanitizedOutput.hasPrefix("«") && sanitizedOutput.hasSuffix("»")) {
@@ -93,28 +96,27 @@ public struct GroundingValidator {
         }
 
         // 4. Проверка чисел (Strict Numbers Grounding)
-        let inputNumbers = extractNumbers(from: trimmedInput)
-        let outputNumbers = extractNumbers(from: sanitizedOutput)
+        // Оба текста сравниваются после одной нормализации: «четвёртом» и «4», «12:00» и «12» равны
+        let inputNumbers = Set(normalizedNumbers(in: trimmedInput).map(\.value))
+        let outputNumbers = Set(normalizedNumbers(in: sanitizedOutput).map(\.value))
 
-        // На уровнях очистки и переписывания все исходные числа должны сохраняться
+        // На уровнях очистки и переписывания исходные числа сохраняются,
+        // кроме тех, что говорящий сам исправил: «10 процентов, нет, 15»
         if isClean || isRewrite {
-            for num in inputNumbers {
-                if !outputNumbers.contains(num) {
-                    return .rejected(reason: "Пропущено исходное число \(num)")
-                }
+            let corrected = correctedNumbers(in: trimmedInput)
+            for num in inputNumbers.sorted() where !outputNumbers.contains(num) && !corrected.contains(num) {
+                return .rejected(reason: "Пропущено исходное число \(num)")
             }
         }
 
-        for num in outputNumbers {
-            if !inputNumbers.contains(num) {
-                return .rejected(reason: "Модель придумала число \(num), отсутствовавшее в речи")
-            }
+        for num in outputNumbers.sorted() where !inputNumbers.contains(num) {
+            return .rejected(reason: "Модель придумала число \(num), отсутствовавшее в речи")
         }
 
         // 5. Проверка латиницы и пользовательского словаря терминов
         if level != .prompt {
-            let inputLatinLower = Set(extractLatinTokens(from: trimmedInput).map { $0.lowercased() })
-            let outputLatin = extractLatinTokens(from: sanitizedOutput)
+            let inputLatinLower = Set(extractLatinTokens(from: withoutNumberSign(trimmedInput)).map { $0.lowercased() })
+            let outputLatin = extractLatinTokens(from: withoutNumberSign(sanitizedOutput))
             var customTermsTokens = Set<String>()
             for term in customTerms {
                 for tok in extractLatinTokens(from: term) {
@@ -209,35 +211,109 @@ public struct GroundingValidator {
 
     // MARK: - Вспомогательные методы
 
+    /// Паразиты и обращения в начале фразы, после которых ищется вопросительное слово.
+    /// «Как бы» стоит первым: иначе оно читается как вопрос «как».
+    private static let leadingFillers = [
+        "как бы", "ну", "э-э", "эээ", "ээ", "ммм", "так", "слушай", "короче", "типа", "подскажи", "скажи"
+    ]
+
     private static func hasLeadingQuestionKeyword(_ text: String) -> Bool {
-        let lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        let keywords = ["как ", "почему ", "где ", "когда ", "сколько ", "зачем ", "что такое", "кто такой"]
-        if keywords.contains(where: { lower.hasPrefix($0) }) {
-            return true
-        }
-        let conversationalPrefixes = ["подскажи, ", "подскажи ", "скажи, ", "скажи ", "слушай, ", "слушай "]
-        for prefix in conversationalPrefixes {
-            if lower.hasPrefix(prefix) {
-                let remainder = String(lower.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
-                if keywords.contains(where: { remainder.hasPrefix($0) }) {
-                    return true
-                }
+        var lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        var stripped = true
+        while stripped {
+            stripped = false
+            for filler in leadingFillers where lower.hasPrefix(filler) {
+                let rest = lower.dropFirst(filler.count)
+                guard let next = rest.first, next == "," || next == " " || next == "." else { continue }
+                lower = String(rest).trimmingCharacters(in: CharacterSet(charactersIn: ",. "))
+                stripped = true
+                break
             }
         }
-        return false
+        let keywords = ["как ", "почему ", "где ", "когда ", "сколько ", "зачем ", "что такое", "кто такой"]
+        return keywords.contains(where: { lower.hasPrefix($0) })
     }
 
-    private static func extractNumbers(from text: String) -> Set<String> {
-        let processedText = text
-        let pattern = #"(?<![\d.,])\d+(?:[.,]\d+)?(?![\d.,])"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-        let nsString = processedText as NSString
-        let matches = regex.matches(in: processedText, options: [], range: NSRange(location: 0, length: nsString.length))
-        var numbers = Set<String>()
-        for m in matches {
-            numbers.insert(nsString.substring(with: m.range))
+    private static func stripChatTemplateTokens(_ text: String) -> String {
+        text.replacingOccurrences(of: #"<\|[^|>]{1,40}\|>|<start_of_turn>|<end_of_turn>|<eos>"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// «No 9» и «N 9» — знак номера из распознавания, а не латинский термин.
+    private static func withoutNumberSign(_ text: String) -> String {
+        text.replacingOccurrences(of: #"\b(?:No|N)\.?\s*(?=\d)"#, with: "", options: .regularExpression)
+    }
+
+    // MARK: - Числа
+
+    struct NumberToken: Equatable {
+        let value: String
+        /// Номер слова в нормализованном тексте, нужен для поиска самоисправлений.
+        let index: Int
+    }
+
+    /// Собирательные числительные, которых нет в NumberNormalizer: «трое прошли в финал».
+    private static let collectiveNumerals: [String: String] = [
+        "двое": "2", "трое": "3", "четверо": "4", "пятеро": "5", "шестеро": "6",
+        "семеро": "7", "восьмеро": "8", "девятеро": "9", "десятеро": "10"
+    ]
+
+    /// Слова текста после той же нормализации, что у входа модели: «ё» как «е», числительные цифрами.
+    static func normalizedWords(_ text: String) -> [String] {
+        let lowered = text.lowercased().replacingOccurrences(of: "ё", with: "е")
+        let collective = lowered.split(separator: " ", omittingEmptySubsequences: false).map { word -> String in
+            let core = word.trimmingCharacters(in: .punctuationCharacters)
+            guard let digit = collectiveNumerals[core] else { return String(word) }
+            return String(word).replacingOccurrences(of: core, with: digit)
+        }.joined(separator: " ")
+        return NumberNormalizer.normalize(collective)
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+    }
+
+    /// Числа текста после нормализации. Время «H:MM» даёт часы и минуты: «14:30» равно «14 часов 30 минут»,
+    /// а «12:00» равно «12».
+    static func normalizedNumbers(in text: String) -> [NumberToken] {
+        var tokens: [NumberToken] = []
+        let edge = CharacterSet.punctuationCharacters.union(.symbols).subtracting(CharacterSet(charactersIn: ":"))
+        for (index, raw) in normalizedWords(text).enumerated() {
+            let word = raw.trimmingCharacters(in: edge.union(CharacterSet(charactersIn: ":")))
+            guard let first = word.unicodeScalars.first, CharacterSet.decimalDigits.contains(first) else { continue }
+            if let time = word.range(of: #"^\d{1,2}:\d{2}"#, options: .regularExpression) {
+                let parts = word[time].split(separator: ":")
+                tokens.append(NumberToken(value: String(Int(parts[0]) ?? 0), index: index))
+                if parts[1] != "00" { tokens.append(NumberToken(value: String(parts[1]), index: index)) }
+                continue
+            }
+            if let number = word.range(of: #"^\d+(?:[.,]\d+)?"#, options: .regularExpression) {
+                tokens.append(NumberToken(value: word[number].replacingOccurrences(of: ".", with: ","), index: index))
+            }
         }
-        return numbers
+        return tokens
+    }
+
+    /// Слова, которыми говорящий отменяет только что сказанное число.
+    private static let correctionMarkers: Set<String> = [
+        "нет", "ой", "точнее", "вернее", "подожди", "стоп", "извини", "ну", "есть"
+    ]
+
+    /// Числа речи, которые говорящий сам исправил: за числом не дальше шести слов идёт
+    /// маркер исправления, а за маркером не дальше четырёх слов — другое число.
+    /// «есть» в маркерах ловит «то есть».
+    static func correctedNumbers(in input: String) -> Set<String> {
+        let words = normalizedWords(input).map { $0.trimmingCharacters(in: .punctuationCharacters) }
+        let numbers = normalizedNumbers(in: input)
+        var corrected = Set<String>()
+        for number in numbers {
+            let markerRange = (number.index + 1)...min(number.index + 6, max(number.index + 1, words.count - 1))
+            guard let marker = markerRange.first(where: { index in
+                guard index < words.count, correctionMarkers.contains(words[index]) else { return false }
+                return words[index] != "есть" || (index > 0 && words[index - 1] == "то")
+            }) else { continue }
+            let replaced = numbers.contains { $0.index > marker && $0.index <= marker + 4 && $0.value != number.value }
+            if replaced { corrected.insert(number.value) }
+        }
+        return corrected
     }
 
     private static func extractLatinTokens(from text: String) -> Set<String> {

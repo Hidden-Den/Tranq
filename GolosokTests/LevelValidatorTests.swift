@@ -81,4 +81,63 @@ struct LevelValidatorTests {
     @Test func verbatimIsNotValidated() {
         #expect(GroundingValidator.validate(input: "а", output: "что угодно 42", level: .verbatim) == .valid(sanitizedText: "что угодно 42"))
     }
+
+    // MARK: - Ложные отказы из замера 17 ноября 2026
+
+    @Test func numberCorrectedBySpeakerMayBeDropped() {
+        #expect(isValid("Скидка 10 процентов, нет, 15, мы так договорились.", "Скидка 15 процентов, мы так договорились."))
+        #expect(isValid("Бронируй зал на 10 человек, ой, на 12.", "Бронируй зал на 12 человек."))
+        #expect(isValid("Перенесли уже 3 сервиса из 5, ой, нет, 4 из 5.", "Перенесли уже 4 сервиса из 5."))
+        #expect(isValid("Корпоратив в 7 вечера, ну, в 19:00.", "Корпоратив в 19:00."))
+    }
+
+    @Test func numberDroppedWithoutCorrectionIsRejected() {
+        #expect(!isValid("Бюджет 500 и 600 на рекламу.", "Бюджет 600 на рекламу."))
+        #expect(!isValid("Скидка 10 процентов.", "Скидка 15 процентов."))
+        #expect(!isValid("Скидка 10 процентов, нет, 15.", "Скидка 10 процентов."))
+        #expect(!isValid("У нас есть 3 варианта, есть 4 идеи.", "У нас есть 4 идеи."))
+        #expect(isValid("Отправим 5, то есть 6 коробок.", "Отправим 6 коробок."))
+    }
+
+    @Test func numberAtSentenceEndIsChecked() {
+        #expect(!isValid("Рост 7,3% за квартал.", "Рост 7% за квартал."))
+        #expect(!isValid("Совещание в 9:45.", "Совещание в 9:30."))
+    }
+
+    @Test func ordinalAndCountWordsMatchDigits() {
+        #expect(isValid("Встреча на 3 этаже, ой, на 4, в большой переговорке.", "Встреча на четвёртом этаже, в большой переговорке."))
+        #expect(isValid("Из них 3 прошли в финал.", "Из них трое прошли в финал."))
+        #expect(isValid("Я нашёл 2 поставщиков.", "Я нашёл двух поставщиков."))
+    }
+
+    @Test func timeIsOneNumber() {
+        #expect(isValid("Созвон в 12, извини.", "Созвон в 12:00."))
+        #expect(isValid("Совещание в 9:45, ну, без опозданий.", "Совещание в 9:45, без опозданий."))
+        #expect(!isValid("Совещание в 9:45.", "Совещание в 9:30."))
+    }
+
+    @Test func fillerKakByIsNotAQuestion() {
+        #expect(isValid("Как бы, нам нужно обновить прайс до конца месяца.", "Нам нужно обновить прайс до конца месяца."))
+        #expect(isValid("Как бы, ну, я не против, но типа надо спросить у финансов.", "Я не против, но надо спросить у финансов."))
+        #expect(!isValid("Как настроить уведомления в телеграме?", "Настройте уведомления в настройках."))
+    }
+
+    @Test func numberSignIsNotATerm() {
+        #expect(isValid("Поезд в 6 утра, вагон No 9, место 23.", "Поезд в 6 утра, вагон 9, место 23."))
+    }
+
+    @Test func chatTemplateTokensAreStripped() {
+        #expect(sanitized("Я заберу ноутбук.<|im_end|>") == "Я заберу ноутбук.")
+        #expect(sanitized("<|channel|>Я заберу ноутбук.<end_of_turn>") == "Я заберу ноутбук.")
+    }
+
+    private func isValid(_ input: String, _ output: String) -> Bool {
+        if case .valid = GroundingValidator.validate(input: input, output: output, level: .clean) { return true }
+        return false
+    }
+
+    private func sanitized(_ output: String) -> String? {
+        if case .valid(let text) = GroundingValidator.validate(input: "Я заберу ноутбук.", output: output, level: .clean) { return text }
+        return nil
+    }
 }
