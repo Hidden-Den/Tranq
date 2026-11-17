@@ -14,8 +14,8 @@
     {
       "layers": [
         {
-          "image-name": "q.svg",
-          "name": "q",
+          "image-name": "tq.svg",
+          "name": "tq",
           "position": {
             "scale": 0.62,
             "translation-in-points": [
@@ -31,8 +31,8 @@
           ]
         },
         {
-          "image-name": "q-light.svg",
-          "name": "q-light",
+          "image-name": "tq-light.svg",
+          "name": "tq-light",
           "position": {
             "scale": 0.62,
             "translation-in-points": [

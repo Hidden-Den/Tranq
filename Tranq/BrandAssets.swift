@@ -2,16 +2,16 @@ import AppKit
 
 /// Ресурсы бренда, которым нужен размер в точках.
 enum BrandAssets {
-    /// Высота значка в строке меню в точках.
-    static let menuBarGlyphHeight: CGFloat = 16
+    /// Высота знака в строке меню в точках.
+    static let menuBarMarkHeight: CGFloat = 16
 
-    /// Буква Q для строки меню: шаблонное изображение, цвет подбирает система.
+    /// Монограмма Tq для строки меню: шаблонное изображение, цвет подбирает система.
     /// Исходный контур большой, поэтому размер задаётся явно, с сохранением пропорций.
-    static func menuBarGlyph() -> NSImage {
-        guard let source = NSImage(named: "MenuBarQ"), source.size.height > 0 else { return NSImage() }
+    static func menuBarMark() -> NSImage {
+        guard let source = NSImage(named: "MenuBarMark"), source.size.height > 0 else { return NSImage() }
         let glyph = (source.copy() as? NSImage) ?? source
         let ratio = source.size.width / source.size.height
-        glyph.size = NSSize(width: menuBarGlyphHeight * ratio, height: menuBarGlyphHeight)
+        glyph.size = NSSize(width: menuBarMarkHeight * ratio, height: menuBarMarkHeight)
         glyph.isTemplate = true
         return glyph
     }

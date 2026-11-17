@@ -127,7 +127,7 @@ struct TranqApp: App {
             if audioCapture.isRecording {
                 Image(systemName: "record.circle.fill")
             } else {
-                Image(nsImage: BrandAssets.menuBarGlyph())
+                Image(nsImage: BrandAssets.menuBarMark())
             }
         }
     }
