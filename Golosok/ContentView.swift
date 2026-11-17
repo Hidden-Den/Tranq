@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-enum MainTab { case vocabulary, history, dashboard, settings }
+enum MainTab { case vocabulary, history, settings }
 
 struct NoteSelection: Equatable {
     let noteID: UUID
@@ -546,7 +546,6 @@ struct ContentView: View {
         switch currentTab {
         case .vocabulary: return String(localized: "Словарь")
         case .history: return String(localized: "История")
-        case .dashboard: return String(localized: "Борд")
         case .settings: return String(localized: "Настройки")
         }
     }
@@ -676,7 +675,6 @@ struct ContentView: View {
                     switch currentTab {
                     case .vocabulary: DictionaryView()
                     case .history: historyDetailView
-                    case .dashboard: DashboardView()
                     case .settings: SettingsView()
                     }
                 }
@@ -735,10 +733,6 @@ struct ContentView: View {
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
                     currentTab = .history
                     selectedItemId = nil
-                }
-                SidebarTabButton(title: "Борд", icon: "chart.bar.fill", isActive: currentTab == .dashboard) {
-                    currentTab = .dashboard
-                    searchText = ""
                 }
                 SidebarTabButton(title: "Настройки", icon: "gearshape.fill", isActive: currentTab == .settings) {
                     currentTab = .settings

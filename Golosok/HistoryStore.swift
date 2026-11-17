@@ -37,7 +37,6 @@ final class HistoryStore: ObservableObject {
         didSet {
             guard !isLoading else { return }
             scheduleSave()
-            DashboardStatsStore.shared.refresh(history: items)
         }
     }
 

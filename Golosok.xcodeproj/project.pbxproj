@@ -12,7 +12,6 @@
 		C4F2FF3B30166B56006F9170 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF3A30166B56006F9170 /* PermissionManager.swift */; };
 		C4F2FF3D30166B6D006F9170 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */; };
 		C4F2FF3F30166DA8006F9170 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C4F2FF3E30166DA1006F9170 /* README.md */; };
-		C4F2FF4130168DD0006F9170 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF4030168DD0006F9170 /* DashboardView.swift */; };
 		C4AA00012FFF000000000001 /* CTranscribe in Frameworks */ = {isa = PBXBuildFile; productRef = C4AA00012FFF000000000002 /* CTranscribe */; };
 		C4AA00012FFF000000000005 /* llama in Embed llama-server */ = {isa = PBXBuildFile; fileRef = C4AA00012FFF000000000004 /* llama */; };
 /* End PBXBuildFile section */
@@ -58,7 +57,6 @@
 		C4F2FF3A30166B56006F9170 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		C4F2FF3E30166DA1006F9170 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		C4F2FF4030168DD0006F9170 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -110,7 +108,6 @@
 			children = (
 				C457EFF43017853C007F26A1 /* NativeHotKeyManager.swift */,
 				C4F2FF3E30166DA1006F9170 /* README.md */,
-				C4F2FF4030168DD0006F9170 /* DashboardView.swift */,
 				C4F2FF383016646A006F9170 /* OverlayPanel.swift */,
 				C4F2FF3A30166B56006F9170 /* PermissionManager.swift */,
 				C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */,
