@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C457EFF53017853C007F26A1 /* NativeHotKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C457EFF43017853C007F26A1 /* NativeHotKeyManager.swift */; };
-		C4F2FF393016646A006F9170 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF383016646A006F9170 /* OverlayPanel.swift */; };
-		C4F2FF3B30166B56006F9170 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF3A30166B56006F9170 /* PermissionManager.swift */; };
-		C4F2FF3D30166B6D006F9170 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */; };
-		C4F2FF3F30166DA8006F9170 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C4F2FF3E30166DA1006F9170 /* README.md */; };
 		C4AA00012FFF000000000001 /* CTranscribe in Frameworks */ = {isa = PBXBuildFile; productRef = C4AA00012FFF000000000002 /* CTranscribe */; };
 		C4AA00012FFF000000000005 /* llama in Embed llama-server */ = {isa = PBXBuildFile; fileRef = C4AA00012FFF000000000004 /* llama */; };
 /* End PBXBuildFile section */
@@ -49,14 +44,9 @@
 
 /* Begin PBXFileReference section */
 		C4AA00012FFF000000000004 /* llama */ = {isa = PBXFileReference; lastKnownFileType = folder; name = llama; path = Vendor/llama; sourceTree = "<group>"; };
-		C457EFF43017853C007F26A1 /* NativeHotKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHotKeyManager.swift; sourceTree = "<group>"; };
 		C4F2FEF930165037006F9170 /* Golosok.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Golosok.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F2FF0730165038006F9170 /* GolosokTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GolosokTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4F2FF1130165038006F9170 /* GolosokUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GolosokUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4F2FF383016646A006F9170 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
-		C4F2FF3A30166B56006F9170 /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
-		C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		C4F2FF3E30166DA1006F9170 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -106,11 +96,6 @@
 		C4F2FEF030165037006F9170 = {
 			isa = PBXGroup;
 			children = (
-				C457EFF43017853C007F26A1 /* NativeHotKeyManager.swift */,
-				C4F2FF3E30166DA1006F9170 /* README.md */,
-				C4F2FF383016646A006F9170 /* OverlayPanel.swift */,
-				C4F2FF3A30166B56006F9170 /* PermissionManager.swift */,
-				C4F2FF3C30166B6D006F9170 /* OnboardingView.swift */,
 				C4F2FEFB30165037006F9170 /* Golosok */,
 				C4F2FF0A30165038006F9170 /* GolosokTests */,
 				C4F2FF1430165038006F9170 /* GolosokUITests */,
@@ -262,7 +247,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C4F2FF3F30166DA8006F9170 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

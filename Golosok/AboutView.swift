@@ -26,7 +26,7 @@ struct AboutView: View {
             }
             
             // 2. ОПИСАНИЕ
-            Text("Автоматический ввод надиктованного текста и расшифровка аудиофайлов. Локальная обработка речи без передачи данных посторонним.")
+            Text("Голосовая диктовка для macOS. Речь распознаётся на вашем Mac, без передачи данных посторонним.")
                 .font(.ui(.footnote))
                 .multilineTextAlignment(.center)
                 .foregroundColor(.uiMidGray)
@@ -50,11 +50,6 @@ struct AboutView: View {
                     AboutLinkButton(title: "GitHub", icon: "terminal.fill") {
                         openURL(URL(string: "https://github.com/Nuteres/Golosok")!)
                     }
-                    AboutLinkButton(title: "Сайт", icon: "globe", isEnabled: false) { }
-                }
-                
-                HStack(spacing: 8) {
-                    AboutLinkButton(title: "Поддержка", icon: "envelope", isEnabled: false) { }
                     AboutLinkButton(title: "Релизы", icon: "doc.text") {
                         openURL(URL(string: "https://github.com/Nuteres/Golosok/releases")!)
                     }

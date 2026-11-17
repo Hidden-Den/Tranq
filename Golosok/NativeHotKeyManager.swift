@@ -3,11 +3,6 @@ import Carbon
 import AppKit
 import CoreGraphics
 
-public enum HotKeyKey: String {
-    case space = "space"
-    case command = "command"
-}
-
 public enum HotKeyMode: String, CaseIterable, Identifiable {
     case toggle = "toggle"
     case pushToTalk = "pushToTalk"
@@ -353,16 +348,6 @@ public class NativeHotKeyManager {
         }
 
         return Unmanaged.passUnretained(event)
-    }
-
-    public func setHotKey(keyCode: UInt32, modifiers: UInt32) -> Bool {
-        let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
-        var testRef: EventHotKeyRef?
-        let status = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &testRef)
-        if status != noErr { return false }
-        UnregisterEventHotKey(testRef!)
-        self.trigger = .combination(keyCode: keyCode, modifiers: modifiers)
-        return true
     }
 
     public func unregister() {

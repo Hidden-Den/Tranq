@@ -107,12 +107,13 @@ final class HistoryStore: ObservableObject {
         ioQueue.async { [self] in ids.forEach(deleteFilesSync) }
     }
 
-    // MARK: - Аудио и тайминги заметок
+    // MARK: - Аудио заметок
 
     func audioURL(for id: UUID) -> URL {
         audioDirectory.appendingPathComponent("\(id.uuidString).wav")
     }
 
+    /// Файл таймингов старых заметок: новые не пишутся, но при удалении заметки он убирается.
     private func timingsURL(for id: UUID) -> URL {
         audioDirectory.appendingPathComponent("\(id.uuidString).segments.json")
     }
@@ -132,20 +133,6 @@ final class HistoryStore: ObservableObject {
         } else {
             try? fm.copyItem(at: source, to: dest)
         }
-    }
-
-    func storeTimings(for id: UUID, words: [TimedWord], duration: Double) {
-        guard let data = try? JSONEncoder().encode(TimingFilePayload(words: words, duration: duration)) else { return }
-        try? FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: true)
-        try? data.write(to: timingsURL(for: id), options: .atomic)
-        AppLogger.shared.info("Recognition", "Тайминги слов сохранены", details: "\(words.count) слов, длительность \(String(format: "%.1f с", duration))")
-    }
-
-    func timings(for id: UUID) -> (words: [TimedWord], duration: Double)? {
-        guard let data = try? Data(contentsOf: timingsURL(for: id)),
-              let payload = try? JSONDecoder().decode(TimingFilePayload.self, from: data),
-              !payload.words.isEmpty else { return nil }
-        return (WordTimings.normalized(payload.words, duration: payload.duration), payload.duration)
     }
 
     private func deleteFiles(for id: UUID) {

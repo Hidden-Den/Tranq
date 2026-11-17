@@ -1,31 +1,26 @@
 import Foundation
-import AppKit
 
-struct UpdateInfo: Codable {
+struct UpdateInfo: Codable, Equatable {
     let version: String
-    let codename: String
+    /// Страница релиза на GitHub: оттуда скачивается DMG.
     let url: URL
 }
 
-/// Проверка новых релизов на GitHub и скачивание DMG.
-final class UpdateService: NSObject, ObservableObject, URLSessionDownloadDelegate {
+/// Проверка новых релизов на GitHub. Скачивание и установка идут по ссылке на страницу релиза.
+final class UpdateService: ObservableObject {
     static let shared = UpdateService()
 
     @Published private(set) var updateInfo: UpdateInfo?
-    @Published private(set) var isDownloadingUpdate = false
-    @Published private(set) var updateProgressText = ""
-    @Published private(set) var downloadProgress: Double = 0
 
-    private var downloadTask: URLSessionDownloadTask?
     private let releasesURL = URL(string: "https://api.github.com/repos/Nuteres/Golosok/releases/latest")!
+    private static let releasesPage = URL(string: "https://github.com/Nuteres/Golosok/releases")!
     private let checkInterval: TimeInterval = 4 * 3600
 
     private var currentVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
     }
 
-    override init() {
-        super.init()
+    private init() {
         let defaults = UserDefaults.standard
         if let lastActive = defaults.string(forKey: "lastActiveVersion"), lastActive != currentVersion {
             defaults.removeObject(forKey: "cachedUpdateInfo")
@@ -68,28 +63,26 @@ final class UpdateService: NSObject, ObservableObject, URLSessionDownloadDelegat
                 defaults.set(etag, forKey: "updateCheckETag")
             }
             defer { defaults.set(Date(), forKey: "lastUpdateCheckAt") }
-            guard let data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let tagName = json["tag_name"] as? String, let releaseName = json["name"] as? String,
-                  let assets = json["assets"] as? [[String: Any]],
-                  let dmgAsset = assets.first(where: { ($0["name"] as? String)?.hasSuffix(".dmg") == true }),
-                  let downloadString = dmgAsset["browser_download_url"] as? String,
-                  let downloadURL = URL(string: downloadString) else { return }
+            guard let data else { return }
 
-            let result: UpdateInfo?
-            if Self.compareVersions(tagName, currentVer) == .orderedDescending {
-                let codename = releaseName.components(separatedBy: " ").last ?? "UPDATE"
-                result = UpdateInfo(version: tagName, codename: codename.uppercased(), url: downloadURL)
-            } else {
-                result = nil
-                defaults.removeObject(forKey: "updateCheckETag")
-            }
+            let result = Self.parseRelease(data, currentVersion: currentVer)
             if let result, let encoded = try? JSONEncoder().encode(result) {
                 defaults.set(encoded, forKey: "cachedUpdateInfo")
             } else {
                 defaults.removeObject(forKey: "cachedUpdateInfo")
+                defaults.removeObject(forKey: "updateCheckETag")
             }
             DispatchQueue.main.async { self.updateInfo = result }
         }.resume()
+    }
+
+    /// Ответ GitHub о последнем релизе: данные об обновлении, если версия новее текущей.
+    static func parseRelease(_ data: Data, currentVersion: String) -> UpdateInfo? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let tag = json["tag_name"] as? String,
+              compareVersions(tag, currentVersion) == .orderedDescending else { return nil }
+        let page = (json["html_url"] as? String).flatMap(URL.init(string:)) ?? releasesPage
+        return UpdateInfo(version: tag, url: page)
     }
 
     static func compareVersions(_ a: String, _ b: String) -> ComparisonResult {
@@ -101,60 +94,5 @@ final class UpdateService: NSObject, ObservableObject, URLSessionDownloadDelegat
             if av != bv { return av < bv ? .orderedAscending : .orderedDescending }
         }
         return .orderedSame
-    }
-
-    func cancelUpdateDownload() {
-        downloadTask?.cancel()
-        downloadTask = nil
-        DispatchQueue.main.async {
-            self.isDownloadingUpdate = false
-            self.updateProgressText = ""
-            self.downloadProgress = 0
-        }
-    }
-
-    func downloadAndInstallUpdate() {
-        guard let updateURL = updateInfo?.url else { return }
-        isDownloadingUpdate = true
-        updateProgressText = String(localized: "Подключение...")
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
-        downloadTask = session.downloadTask(with: updateURL)
-        downloadTask?.resume()
-    }
-
-    // MARK: - URLSessionDownloadDelegate
-
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard totalBytesExpectedToWrite > 0 else { return }
-        let progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-        let text = String(
-            format: "%.0f / %.0f МБ (%d%%)",
-            Double(totalBytesWritten) / 1_048_576,
-            Double(totalBytesExpectedToWrite) / 1_048_576,
-            Int(progress * 100)
-        )
-        DispatchQueue.main.async {
-            self.downloadProgress = progress
-            self.updateProgressText = text
-        }
-    }
-
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        let dest = FileManager.default.temporaryDirectory.appendingPathComponent("Golosok_Update.dmg")
-        try? FileManager.default.removeItem(at: dest)
-        do {
-            try FileManager.default.moveItem(at: location, to: dest)
-            DispatchQueue.main.async {
-                self.isDownloadingUpdate = false
-                self.updateProgressText = String(localized: "Открытие...")
-                NSWorkspace.shared.open(dest)
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.isDownloadingUpdate = false
-                self.updateProgressText = String(localized: "Ошибка")
-            }
-        }
-        session.finishTasksAndInvalidate()
     }
 }

@@ -386,23 +386,6 @@
         }
       }
     },
-    "Groq" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Groq"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Groq"
-          }
-        }
-      }
-    },
     "HotKey.CapsLockUnsupported" : {
       "localizations" : {
         "en" : {
@@ -739,22 +722,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Автоматически открывать свежую заметку по завершении расшифровки"
-          }
-        }
-      }
-    },
-    "Автоматический ввод надиктованного текста и расшифровка аудиофайлов. Локальная обработка речи без передачи данных посторонним." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatic input of dictated text and transcription of audio files. Local speech processing without sending data to third parties."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Автоматический ввод надиктованного текста и расшифровка аудиофайлов. Локальная обработка речи без передачи данных посторонним."
           }
         }
       }
@@ -1660,23 +1627,6 @@
         }
       }
     },
-    "Открытие..." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Opening..."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Открытие..."
-          }
-        }
-      }
-    },
     "Открыть" : {
       "localizations" : {
         "en" : {
@@ -1850,22 +1800,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Печатать расшифровку прямо в место курсора"
-          }
-        }
-      }
-    },
-    "Поддержка" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Support"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Поддержка"
           }
         }
       }
@@ -2252,6 +2186,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Разрешите доступ к микрофону для записи речи.\nОстальные опции можно настроить позже."
+          }
+        }
+      }
+    },
+    "Доступна %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступна %@"
+          }
+        }
+      }
+    },
+    "Промпт" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prompt"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Промпт"
+          }
+        }
+      }
+    },
+    "Дословно" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbatim"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дословно"
+          }
+        }
+      }
+    },
+    "Чисто" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чисто"
+          }
+        }
+      }
+    },
+    "Голосовая диктовка для macOS. Речь распознаётся на вашем Mac, без передачи данных посторонним." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice dictation for macOS. Speech is recognized on your Mac, with no data shared."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Голосовая диктовка для macOS. Речь распознаётся на вашем Mac, без передачи данных посторонним."
           }
         }
       }

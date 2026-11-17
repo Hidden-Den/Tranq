@@ -63,21 +63,6 @@ struct GolosokTests {
         #expect(result.last?.end == 3.0)
     }
 
-    // MARK: - Whisper ms→s migration
-
-    @Test func millisecondTimingsAreConvertedToSeconds() {
-        let words = [TimedWord(text: "Привет", start: 0, end: 7650.5), TimedWord(text: "мир", start: 7650.5, end: 8000)]
-        let result = WordTimings.normalized(words, duration: 7.6)
-        #expect(result[0].end == 7.6505)
-        #expect(result[1].start == 7.6505)
-    }
-
-    @Test func secondTimingsStayUntouched() {
-        let words = [TimedWord(text: "Так,", start: 0.76, end: 1.04), TimedWord(text: "звук", start: 1.2, end: 1.48)]
-        let result = WordTimings.normalized(words, duration: 6.6)
-        #expect(result == words)
-    }
-
     // MARK: - Version comparison (update check)
 
     @Test func versionComparisonHandlesSuffixes() {
@@ -103,21 +88,6 @@ struct HistoryAndModelTests {
 
     // MARK: - ModelStore
 
-    @Test func gigaAMModelConfiguration() {
-        let giga = RecognitionModel.russianGigaAM
-        #expect(giga.id == "ru_giga")
-        #expect(giga.systemName == "GigaAM")
-        #expect(giga.languageCode == "ru")
-        #expect(giga.isBundled == true)
-        #expect(giga.fileName == "gigaam")
-    }
-
-    @Test func modelStoreCatalogContainsGigaAM() {
-        let store = ModelStore.shared
-        let model = store.model(named: "ru_giga")
-        #expect(model != nil)
-        #expect(model?.systemName == "GigaAM")
-    }
 }
 
 // MARK: - Window and Dock / MenuBar settings

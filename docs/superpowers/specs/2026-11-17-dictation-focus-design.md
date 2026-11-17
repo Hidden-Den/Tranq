@@ -217,7 +217,7 @@ struct DictationRule: Codable, Identifiable {
 6. Рекомендация офлайн-модели по памяти.
 7. Словари и правило написания терминов.
 8. Упрощение истории и удаление лишних функций.
-9. Обновить `README_RU.md`, `README.md` и пометить `VOICE_INTELLIGENCE_PLAN.md` устаревшим.
+9. Обновить `README_RU.md` и `README.md`; устаревший `VOICE_INTELLIGENCE_PLAN.md` удалён.
 
 ## 13. Вне рамок
 

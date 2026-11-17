@@ -41,9 +41,6 @@ public enum VoiceEngine: String, CaseIterable, Identifiable {
         case .external: return String(localized: "Сервис по API из блока ИИ-провайдер")
         }
     }
-
-    public static let openRouter: VoiceEngine = .external
-    public static let ollama: VoiceEngine = .external
 }
 
 public final class VoiceIntelligenceSettings: ObservableObject {

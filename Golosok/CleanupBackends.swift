@@ -42,28 +42,19 @@ struct ExternalBackend: CleanupBackend {
             var stripper = StreamingThinkTagStripper()
             var gotFirstToken = false
             for try await line in bytes.lines {
-                guard line.hasPrefix("data: ") else { continue }
-                let payload = String(line.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
-                if payload == "[DONE]" { break }
-                guard let data = payload.data(using: .utf8),
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
-                if (json["type"] as? String) == "message_stop" { break }
-
-                let chunk: String?
-                if let choices = json["choices"] as? [[String: Any]],
-                   let delta = choices.first?["delta"] as? [String: Any] {
-                    chunk = delta["content"] as? String
-                } else if let delta = json["delta"] as? [String: Any] {
-                    chunk = delta["text"] as? String
-                } else {
-                    chunk = nil
+                switch Self.parseStreamLine(line) {
+                case .skip: continue
+                case .done: break
+                case .failure: throw CleanupBackendError.unavailable
+                case .text(let piece):
+                    if !gotFirstToken {
+                        gotFirstToken = true
+                        AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен за %.2f с", CFAbsoluteTimeGetCurrent() - started))
+                    }
+                    if let clean = stripper.feed(piece) { accumulated.append(clean) }
+                    continue
                 }
-                guard let piece = chunk, !piece.isEmpty else { continue }
-                if !gotFirstToken {
-                    gotFirstToken = true
-                    AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен за %.2f с", CFAbsoluteTimeGetCurrent() - started))
-                }
-                if let clean = stripper.feed(piece) { accumulated.append(clean) }
+                break
             }
             if let rest = stripper.finish() { accumulated.append(rest) }
         } catch let error as CleanupBackendError {
@@ -71,6 +62,9 @@ struct ExternalBackend: CleanupBackend {
         } catch let error as URLError where error.code == .timedOut {
             throw CleanupBackendError.timeout
         } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            // Поток оборвала задача с таймером, настоящей ошибки соединения нет
             throw CancellationError()
         } catch {
             let code = (error as? URLError)?.code.rawValue
@@ -81,5 +75,36 @@ struct ExternalBackend: CleanupBackend {
         let text = accumulated.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw CleanupBackendError.empty }
         return text
+    }
+}
+
+extension ExternalBackend {
+    enum StreamEvent: Equatable {
+        case text(String)
+        case done
+        /// Провайдер прислал ошибку посреди потока.
+        case failure
+        case skip
+    }
+
+    /// Одна строка потока ответа: формат OpenAI или Anthropic.
+    static func parseStreamLine(_ line: String) -> StreamEvent {
+        guard line.hasPrefix("data: ") else { return .skip }
+        let payload = String(line.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+        if payload == "[DONE]" { return .done }
+        guard let data = payload.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return .skip }
+        let type = json["type"] as? String
+        if type == "message_stop" { return .done }
+        if type == "error" || json["error"] != nil { return .failure }
+        if let choices = json["choices"] as? [[String: Any]],
+           let delta = choices.first?["delta"] as? [String: Any] {
+            if let piece = delta["content"] as? String, !piece.isEmpty { return .text(piece) }
+            return .skip
+        }
+        if let delta = json["delta"] as? [String: Any], let piece = delta["text"] as? String, !piece.isEmpty {
+            return .text(piece)
+        }
+        return .skip
     }
 }

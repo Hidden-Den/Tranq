@@ -127,8 +127,6 @@ final class AIProviderStore: ObservableObject {
     @Published var isTesting = false
     @Published var testResult: String?
     @Published var testOK = false
-    @Published var installedModels: [String] = []
-    @Published var isLoadingModels = false
 
     private static let defaults = AppEnvironment.defaults
 
@@ -188,23 +186,6 @@ final class AIProviderStore: ObservableObject {
         testResult = nil
         testOK = false
         AppLogger.shared.info("AI", "Выбран провайдер \(preset.name)", details: preset.baseURL)
-    }
-
-    func refreshModels() {
-        isLoadingModels = true
-        installedModels = []
-        AIService.shared.listModels(using: config) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.isLoadingModels = false
-                switch result {
-                case .success(let models):
-                    self.installedModels = models.sorted()
-                case .failure:
-                    self.installedModels = []
-                }
-            }
-        }
     }
 
     func testConnection() {
@@ -444,39 +425,6 @@ final class AIService {
                 let message = (data.flatMap { Self.extractError(from: $0) }) ?? "HTTP \(http.statusCode)"
                 completion(.failure(.http(http.statusCode, message)))
             }
-        }.resume()
-    }
-
-    func listModels(using config: AIProviderConfig, completion: @escaping (Result<[String], AIError>) -> Void) {
-        guard let url = url(config.baseURL, path: "models") else {
-            completion(.failure(.invalidURL))
-            return
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 15
-        ChatRequestBuilder.applyAuth(&request, config: config)
-        session.dataTask(with: request) { data, response, error in
-            if let error {
-                completion(.failure(.network(error.localizedDescription)))
-                return
-            }
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), let data else {
-                completion(.failure(.emptyResponse))
-                return
-            }
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                completion(.failure(.parse("не JSON")))
-                return
-            }
-            var names: [String] = []
-            if let dataArr = json["data"] as? [[String: Any]] {
-                names = dataArr.compactMap { $0["id"] as? String }
-            }
-            if names.isEmpty, let models = json["models"] as? [[String: Any]] {
-                names = models.compactMap { $0["name"] as? String }
-            }
-            completion(.success(names))
         }.resume()
     }
 

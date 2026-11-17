@@ -218,11 +218,6 @@ public struct NumberNormalizer {
         return false
     }
 
-    private static func isNumberWord(_ word: String) -> Bool {
-        units[word] != nil || teens[word] != nil || tens[word] != nil ||
-        hundreds[word] != nil || scales[word] != nil || ordinals[word] != nil
-    }
-
     private static func valueOfWord(_ word: String) -> Int? {
         units[word] ?? teens[word] ?? tens[word] ?? hundreds[word] ?? ordinals[word]
     }

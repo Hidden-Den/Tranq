@@ -125,10 +125,10 @@ public final class ThoughtSynthesizer {
     public func prewarmConnection(for engine: VoiceEngine) {
         switch engine {
         case .airGapped:
-            let selectedId = VoiceIntelligenceSettings.shared.localModel
-            let model = SLMModelStore.shared.activeDownloadedModel(preferredId: selectedId) ?? SLMModelStore.catalog[0]
-            let modelPath = SLMModelStore.shared.localFileURL(for: model).path
-            LocalSynthServiceClient.shared.prewarm(modelPath: modelPath)
+            // Прогревается только выбранная и скачанная модель, как в `clean`: чужая заняла бы гигабайты памяти зря
+            guard let model = SLMModelStore.shared.model(named: VoiceIntelligenceSettings.shared.localModel),
+                  SLMModelStore.shared.isModelDownloaded(model) else { return }
+            LocalSynthServiceClient.shared.prewarm(modelPath: SLMModelStore.shared.localFileURL(for: model).path)
 
         case .external:
             let config = AIProviderStore.shared.config
@@ -141,8 +141,9 @@ public final class ThoughtSynthesizer {
                 request.httpMethod = "HEAD"
                 ChatRequestBuilder.applyAuth(&request, config: config)
                 request.timeoutInterval = 2.0
-                _ = try? await URLSession.shared.data(for: request)
-                AppLogger.shared.info("Synthesizer", "TLS сессия к внешнему провайдеру успешно прогрета", details: config.baseURL)
+                if (try? await URLSession.shared.data(for: request)) != nil {
+                    AppLogger.shared.info("Synthesizer", "Соединение с внешним провайдером прогрето", details: config.baseURL)
+                }
             }
         }
     }

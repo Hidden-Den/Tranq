@@ -21,6 +21,7 @@ struct ContentView: View {
     @ObservedObject var playback = PlaybackController.shared
     @ObservedObject var preferences = AppPreferences.shared
     @ObservedObject var permissions = PermissionManager.shared
+    @ObservedObject var updates = UpdateService.shared
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     
@@ -282,9 +283,21 @@ struct ContentView: View {
     }
     
     private var sidebarFooter: some View {
-        HStack {
-            Circle().fill(audioCapture.isRecording ? Color.uiEmber : Color.green).frame(width: 8, height: 8)
-            Text(audioCapture.isRecording ? LocalizedStringKey("Запись...") : LocalizedStringKey("Готов к работе")).font(.ui(.footnote)).foregroundColor(.uiMidGray)
+        VStack(alignment: .leading, spacing: 8) {
+            if let update = updates.updateInfo {
+                Button { NSWorkspace.shared.open(update.url) } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.circle.fill").font(.ui(.footnote))
+                        Text(String(format: String(localized: "Доступна %@"), update.version)).font(.ui(.footnote, weight: .medium))
+                    }
+                    .foregroundColor(.uiInk)
+                }
+                .buttonStyle(.plain)
+            }
+            HStack {
+                Circle().fill(audioCapture.isRecording ? Color.uiEmber : Color.green).frame(width: 8, height: 8)
+                Text(audioCapture.isRecording ? LocalizedStringKey("Запись...") : LocalizedStringKey("Готов к работе")).font(.ui(.footnote)).foregroundColor(.uiMidGray)
+            }
         }.padding(.horizontal, 16).padding(.bottom, 16)
     }
     

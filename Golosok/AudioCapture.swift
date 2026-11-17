@@ -241,10 +241,6 @@ final class AudioCapture: ObservableObject {
             spokenText: output.rawText
         )
         history.storeAudio(for: item.id, from: output.audioURL, move: output.ownsAudioFile)
-        // Тайминги слов храним только для текста без ИИ: модель переставляет и убирает слова
-        if !output.isTransformedByAI && !output.words.isEmpty {
-            history.storeTimings(for: item.id, words: output.words, duration: output.audioSeconds)
-        }
         history.insert(item)
         NotificationCenter.default.post(name: NSNotification.Name("AutoSelectNote"), object: item.id)
     }

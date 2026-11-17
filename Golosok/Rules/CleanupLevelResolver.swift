@@ -33,15 +33,15 @@ enum CleanupLevelResolver {
         promptModeEnabled: Bool
     ) -> ResolvedLevel {
         if context.promptRequested && promptModeEnabled {
-            return ResolvedLevel(level: .prompt, label: "Промпт", ruleName: nil)
+            return ResolvedLevel(level: .prompt, label: String(localized: "Промпт"), ruleName: nil)
         }
         if mode == .direct {
-            return ResolvedLevel(level: .verbatim, label: "Дословно", ruleName: nil)
+            return ResolvedLevel(level: .verbatim, label: String(localized: "Дословно"), ruleName: nil)
         }
         if let rule = siteRule(for: context.host, in: rules) ?? appRule(for: context.bundleId, in: rules) {
             return ResolvedLevel(level: .rewrite(tone: rule.tone.instruction), label: rule.displayName, ruleName: rule.displayName)
         }
-        return ResolvedLevel(level: .clean, label: "Чисто", ruleName: nil)
+        return ResolvedLevel(level: .clean, label: String(localized: "Чисто"), ruleName: nil)
     }
 
     private static func siteRule(for host: String?, in rules: [DictationRule]) -> DictationRule? {

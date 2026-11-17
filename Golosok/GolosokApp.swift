@@ -64,6 +64,7 @@ struct GolosokApp: App {
         LanguageSettings.shared.apply()
         ThemeSettings.shared.apply()
         Task.detached(priority: .utility) {
+            LegacyCleanup.run()
             SLMModelStore.shared.removeRetiredModels()
         }
     }

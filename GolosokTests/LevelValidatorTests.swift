@@ -190,3 +190,11 @@ struct LevelValidatorTests {
         return nil
     }
 }
+
+/// Числа и время при сравнении речи с ответом.
+struct TimeNumberTests {
+    @Test func timeMinutesKeepOneFormWithSpokenMinutes() {
+        #expect(GroundingValidator.normalizedNumbers(in: "встреча в 9:05").map(\.value) == ["9", "5"])
+        #expect(GroundingValidator.normalizedNumbers(in: "встреча в 14:30").map(\.value) == ["14", "30"])
+    }
+}

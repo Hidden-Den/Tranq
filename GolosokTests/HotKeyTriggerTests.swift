@@ -20,13 +20,6 @@ struct HotKeyTriggerTests {
         #expect(SingleModifierKey.from(keyCode: 999) == nil)
     }
 
-    @Test func singleModifierDisplayNames() {
-        #expect(SingleModifierKey.fn.displayName == "Fn")
-        #expect(SingleModifierKey.rightOption.displayName == "Правый ⌥")
-        #expect(SingleModifierKey.leftOption.displayName == "Левый ⌥")
-        #expect(SingleModifierKey.rightCommand.displayName == "Правый ⌘")
-    }
-
     @Test func singleModifierFlagDistinction() {
         // Holding Left Option: device bit 0x20 is set, 0x40 is not
         let leftOptionFlags = CGEventFlags(rawValue: 0x00080020)
@@ -37,13 +30,6 @@ struct HotKeyTriggerTests {
         let rightOptionFlags = CGEventFlags(rawValue: 0x00080040)
         #expect(SingleModifierKey.rightOption.isPressed(flags: rightOptionFlags) == true)
         #expect(SingleModifierKey.leftOption.isPressed(flags: rightOptionFlags) == false)
-    }
-
-    @Test func hotKeyTriggerDisplayName() {
-        let fnTrigger = HotKeyTrigger.singleModifier(.fn)
-        #expect(fnTrigger.displayName == "Fn")
-        let comboTrigger = HotKeyTrigger.combination(keyCode: 49, modifiers: 2048)
-        #expect(comboTrigger.displayName.contains("Space"))
     }
 
     @Test func nativeHotKeyManagerTriggerPersistence() {
@@ -62,22 +48,6 @@ struct HotKeyTriggerTests {
         manager.trigger = .combination(keyCode: 49, modifiers: 2048)
         #expect(manager.trigger == .combination(keyCode: 49, modifiers: 2048))
         #expect(manager.displayName().contains("Space"))
-    }
-
-    @Test func hotKeySettingsPresets() {
-        let settings = HotKeySettings.shared
-        let original = settings.trigger
-        defer { settings.setPreset(original) }
-
-        settings.setPreset(.singleModifier(.fn))
-        #expect(settings.hotKeyName == "Fn")
-
-        settings.setPreset(.singleModifier(.rightOption))
-        #expect(settings.hotKeyName == SingleModifierKey.rightOption.displayName)
-
-        settings.reset()
-        #expect(settings.trigger == .none)
-        #expect(settings.hotKeyName == "Не назначено")
     }
 
     @Test func pendingTriggerHandling() {

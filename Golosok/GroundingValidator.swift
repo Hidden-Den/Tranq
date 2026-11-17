@@ -18,11 +18,6 @@ public struct GroundingValidator {
         "исходный текст"
     ]
 
-    private static let promptStructuralTokens: Set<String> = [
-        "role", "task", "constraints", "context", "input", "output", "prompt",
-        "instructions", "goal", "example", "steps", "rules", "format"
-    ]
-
     /// Полная детерминированная валидация сгенерированного текста с учетом дифференцированных порогов стилей
     public static func validate(
         input: String,
@@ -301,7 +296,7 @@ public struct GroundingValidator {
             if let time = word.range(of: #"^\d{1,2}:\d{2}"#, options: .regularExpression) {
                 let parts = word[time].split(separator: ":")
                 tokens.append(NumberToken(value: String(Int(parts[0]) ?? 0), index: index))
-                if parts[1] != "00" { tokens.append(NumberToken(value: String(parts[1]), index: index)) }
+                if parts[1] != "00" { tokens.append(NumberToken(value: String(Int(parts[1]) ?? 0), index: index)) }
                 continue
             }
             if let number = word.range(of: #"^\d+(?:[.,]\d+)?"#, options: .regularExpression) {

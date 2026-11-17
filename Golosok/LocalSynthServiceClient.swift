@@ -1,6 +1,6 @@
 import Foundation
 
-/// Локальный синтез мысли на моделях GGUF: Вихрь, Qwen, Llama.
+/// Локальная очистка речи на моделях GGUF из каталога.
 ///
 /// Основной путь — постоянный `LocalLLMServer`: модель уже в памяти, ответ за доли
 /// секунды. Если сервер ещё загружается или недоступен, запрос выполняется через
@@ -29,7 +29,7 @@ public final class LocalSynthServiceClient: ObservableObject {
 
     /// Есть ли хоть один способ выполнить локальный инференс.
     public var isEngineAvailable: Bool {
-        mockService != nil || LocalLLMServer.isAvailable || (isCLIEnabled && Self.llamaCLIPath != nil)
+        mockService != nil || LocalLLMServer.isAvailable
     }
 
     private init() {}
@@ -92,12 +92,6 @@ public final class LocalSynthServiceClient: ObservableObject {
               LocalLLMServer.isAvailable,
               FileManager.default.fileExists(atPath: modelPath) else { return }
         LocalLLMServer.shared.prewarm(modelPath: modelPath)
-    }
-
-    /// Выгружает модель из памяти.
-    public func unload() {
-        LocalLLMServer.shared.stop()
-        AppLogger.shared.info("LocalSynthClient", "Модель выгружена, память освобождена")
     }
 
     // MARK: - Исполнители
