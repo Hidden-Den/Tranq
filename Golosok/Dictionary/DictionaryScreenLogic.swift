@@ -83,6 +83,15 @@ enum DictionaryScreenLogic {
         }
     }
 
+    /// Удаление варианта удалит запись целиком: выученная запись теряет последний вариант.
+    static func removalDeletesEntry(_ entry: DictionaryEntry, variant: String, language: DictionaryLanguage) -> Bool {
+        guard entry.source == .learned else { return false }
+        let lowered = variant.lowercased()
+        return entry.variants.allSatisfy { lang, list in
+            list.allSatisfy { lang == language && $0.lowercased() == lowered }
+        }
+    }
+
     /// Нормализованный вариант, введённый вручную, или nil: правила наборов, письменность языка, без повторов.
     static func typedVariant(
         _ raw: String, spelling: String, language: DictionaryLanguage, existing: [String], checker: CommonWordChecking
@@ -127,6 +136,12 @@ struct AddWordDraft: Equatable {
         return ((suggested[language] ?? []) + (recorded[language] ?? [])).filter {
             !removed.contains(Self.key($0, language)) && seen.insert($0.lowercased()).inserted
         }
+    }
+
+    /// Сохраняется только то, что пользователь видел: варианты показанного языка.
+    func variantsToSave(shown language: DictionaryLanguage) -> [DictionaryLanguage: [String]] {
+        let list = variants(for: language)
+        return list.isEmpty ? [:] : [language: list]
     }
 
     var allVariants: [DictionaryLanguage: [String]] {

@@ -75,7 +75,7 @@ struct DictionaryAddWordSheet: View {
 
     private func add() {
         guard !trimmed.isEmpty else { return }
-        store.addEntry(spelling: trimmed, variants: draft.allVariants, source: .manual)
+        store.addEntry(spelling: trimmed, variants: draft.variantsToSave(shown: language), source: .manual)
         dismiss()
     }
 }
@@ -149,6 +149,7 @@ struct WordProbeControl: View {
     private func start() {
         guard !spelling.isEmpty else { return }
         phase = .listening
+        probe.onInterrupted = { phase = .idle }
         probe.start(spelling: spelling) { outcome in
             phase = .result(DictionaryScreenLogic.probeResult(outcome))
         }

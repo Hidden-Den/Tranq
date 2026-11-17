@@ -297,6 +297,7 @@ struct DictionaryWordRow: View {
     @State private var addingLanguage: DictionaryLanguage?
     @State private var newVariant = ""
     @State private var rejected = false
+    @State private var pendingRemoval: (variant: String, language: DictionaryLanguage)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -343,6 +344,31 @@ struct DictionaryWordRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .alert("Удалить слово", isPresented: Binding(
+            get: { pendingRemoval != nil },
+            set: { if !$0 { pendingRemoval = nil } }
+        )) {
+            Button("Удалить", role: .destructive) {
+                if let pending = pendingRemoval { removeVariant(pending.variant, language: pending.language) }
+                pendingRemoval = nil
+            }
+            Button("Отмена", role: .cancel) { pendingRemoval = nil }
+        } message: {
+            Text("Это последний вариант")
+        }
+    }
+
+    /// Последний вариант выученного слова удаляет слово целиком, поэтому сначала спрашиваем.
+    private func requestRemoval(_ variant: String, language lang: DictionaryLanguage) {
+        if DictionaryScreenLogic.removalDeletesEntry(entry, variant: variant, language: lang) {
+            pendingRemoval = (variant, lang)
+        } else {
+            removeVariant(variant, language: lang)
+        }
+    }
+
+    private func removeVariant(_ variant: String, language lang: DictionaryLanguage) {
+        store.removeVariant(variant, language: lang, fromEntryKey: "user/\(entry.id.uuidString)")
     }
 
     private func languageLine(_ lang: DictionaryLanguage) -> some View {
@@ -353,9 +379,7 @@ struct DictionaryWordRow: View {
                 .frame(width: 22, alignment: .leading)
             FlowLayout(spacing: 6) {
                 ForEach(entry.variants[lang] ?? [], id: \.self) { variant in
-                    VariantChip(text: variant) {
-                        store.removeVariant(variant, language: lang, fromEntryKey: "user/\(entry.id.uuidString)")
-                    }
+                    VariantChip(text: variant) { requestRemoval(variant, language: lang) }
                 }
                 if addingLanguage == lang {
                     TextField("", text: $newVariant)

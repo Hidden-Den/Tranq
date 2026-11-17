@@ -5347,6 +5347,38 @@
         }
       }
     },
+    "Удалить слово" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete word"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить слово"
+          }
+        }
+      }
+    },
+    "Это последний вариант" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the last variant"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это последний вариант"
+          }
+        }
+      }
+    },
     "Удалить" : {
       "localizations" : {
         "en" : {

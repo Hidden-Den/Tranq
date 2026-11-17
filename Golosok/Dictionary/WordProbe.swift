@@ -21,6 +21,22 @@ final class WordProbe: ObservableObject {
     private var active = false
     private var deadline: DispatchWorkItem?
 
+    /// Вызывается на главном потоке, когда запись прервала запись другого слова.
+    var onInterrupted: (() -> Void)?
+
+    /// Записывает только одна проба: новая прерывает предыдущую. Только главный поток.
+    private static weak var owner: WordProbe?
+
+    static func claim(_ probe: WordProbe) {
+        guard let previous = owner, previous !== probe else {
+            owner = probe
+            return
+        }
+        owner = probe
+        previous.cancel()
+        previous.onInterrupted?()
+    }
+
     deinit {
         deadline?.cancel()
         recorder.cancel()
@@ -36,7 +52,8 @@ final class WordProbe: ObservableObject {
     static func evaluate(recognized: String, spelling: String, peakDb: Float, language: DictionaryLanguage) -> WordProbeOutcome {
         if peakDb < quietDb { return .tooQuiet }
         let cleaned = clean(DisfluencyPrefilter.filter(recognized))
-        if cleaned.isEmpty { return .noise }
+        // Одна буква годится для слишком многих слов, вариантом её не делаем.
+        if cleaned.count < 2 { return .noise }
         if cleaned.split(separator: " ").count > 3 { return .tooManyWords }
         if cleaned == spelling.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) { return .alreadyCorrect }
         return .variant(cleaned)
@@ -56,6 +73,7 @@ final class WordProbe: ObservableObject {
     func start(spelling: String, completion: @escaping (WordProbeOutcome) -> Void) {
         dispatchPrecondition(condition: .onQueue(.main))
         cancel()
+        Self.claim(self)
         let session = UUID()
         token = session
         peakDb = -160
@@ -90,6 +108,7 @@ final class WordProbe: ObservableObject {
 
     /// Безопасно в любом состоянии: останавливает запись и удаляет файл, результат не доставляется.
     func cancel() {
+        if Self.owner === self { Self.owner = nil }
         token = UUID()
         active = false
         deadline?.cancel()
@@ -100,6 +119,7 @@ final class WordProbe: ObservableObject {
 
     private func finish(spelling: String, session: UUID, completion: @escaping (WordProbeOutcome) -> Void) {
         active = false
+        if Self.owner === self { Self.owner = nil }
         deadline?.cancel()
         deadline = nil
         let peak = peakDb

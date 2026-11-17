@@ -122,6 +122,31 @@ final class DictionaryScreenLogicTests: XCTestCase {
         XCTAssertEqual(draft.allVariants, [.ru: ["кубер нетис", "кубер"]])
     }
 
+    func testDraftSavesOnlyShownLanguage() {
+        var draft = AddWordDraft()
+        draft.applySuggestions([.ru: ["кубернетес"], .en: ["cooper netties"]])
+        draft.addRecorded("кубер", language: .ru)
+        XCTAssertEqual(draft.variantsToSave(shown: .ru), [.ru: ["кубернетес", "кубер"]])
+        XCTAssertEqual(draft.variantsToSave(shown: .en), [.en: ["cooper netties"]])
+        var empty = AddWordDraft()
+        empty.applySuggestions([.en: ["cooper netties"]])
+        XCTAssertEqual(empty.variantsToSave(shown: .ru), [:])
+    }
+
+    // MARK: - Удаление варианта
+
+    func testRemovingLastVariantOfLearnedEntryDeletesIt() {
+        func entry(_ source: DictionaryEntry.Source, _ variants: [DictionaryLanguage: [String]]) -> DictionaryEntry {
+            DictionaryEntry(id: UUID(), spelling: "Kubernetes", variants: variants, source: source,
+                            forceCase: false, createdAt: Date(), hits: 0, lastUsed: nil)
+        }
+        XCTAssertTrue(DictionaryScreenLogic.removalDeletesEntry(entry(.learned, [.ru: ["кубер"]]), variant: "кубер", language: .ru))
+        XCTAssertTrue(DictionaryScreenLogic.removalDeletesEntry(entry(.learned, [.ru: ["Кубер"], .en: []]), variant: "кубер", language: .ru))
+        XCTAssertFalse(DictionaryScreenLogic.removalDeletesEntry(entry(.learned, [.ru: ["кубер", "кубернетес"]]), variant: "кубер", language: .ru))
+        XCTAssertFalse(DictionaryScreenLogic.removalDeletesEntry(entry(.learned, [.ru: ["кубер"], .en: ["kuber"]]), variant: "кубер", language: .ru))
+        XCTAssertFalse(DictionaryScreenLogic.removalDeletesEntry(entry(.manual, [.ru: ["кубер"]]), variant: "кубер", language: .ru))
+    }
+
     func testDraftRemovingRecordedVariantDropsIt() {
         var draft = AddWordDraft()
         draft.addRecorded("кубер", language: .ru)
