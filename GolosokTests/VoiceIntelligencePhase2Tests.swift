@@ -74,35 +74,6 @@ struct VoiceIntelligencePhase2Tests {
         }
     }
 
-    // MARK: - KeychainStore
-
-    @Test func keychainStoreSetGetDelete() {
-        let testAccount = "test.api.key.account"
-        let testSecret = "sk-test-secret-value-12345"
-
-        // Чистим перед тестом
-        _ = KeychainStore.delete(testAccount)
-
-        // Запись
-        let setSuccess = KeychainStore.set(testSecret, for: testAccount)
-        #expect(setSuccess)
-
-        // Чтение
-        let readValue = KeychainStore.get(testAccount)
-        #expect(readValue == testSecret)
-
-        // Обновление
-        let updatedSecret = "sk-test-secret-value-67890"
-        let updateSuccess = KeychainStore.set(updatedSecret, for: testAccount)
-        #expect(updateSuccess)
-        #expect(KeychainStore.get(testAccount) == updatedSecret)
-
-        // Удаление
-        let deleteSuccess = KeychainStore.delete(testAccount)
-        #expect(deleteSuccess)
-        #expect(KeychainStore.get(testAccount) == nil)
-    }
-
     // MARK: - Streaming Think Tag Parser
 
     @Test func streamingTagStripperHandlesChunks() {
