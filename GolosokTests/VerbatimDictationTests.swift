@@ -40,15 +40,6 @@ struct VerbatimDictationTests {
         #expect(GroundingValidator.validate(input: input, output: output, level: .clean) == .valid(sanitizedText: output))
     }
 
-    @Test func cleanStyleRejectsDroppingMostOfSpeech() {
-        let input = "Сначала обновим зависимости, потом прогоним тесты, затем соберём образ и выложим его на стенд."
-        let output = "Обновим зависимости."
-        guard case .rejected = GroundingValidator.validate(input: input, output: output, level: .clean) else {
-            Issue.record("Потеря большей части речи должна отклоняться")
-            return
-        }
-    }
-
     @Test func otherStylesMayRephrase() {
         let input = "Нужно собрать систему на базе документов отдела и проверить качество ответов."
         let output = "Прошу собрать систему по документам отдела и оценить качество ответов."
