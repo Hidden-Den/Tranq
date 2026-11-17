@@ -28,9 +28,9 @@ struct AIProviderSection: View {
                     }
                 }
 
-                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.currentPreset?.baseURL ?? "https://api.openai.com/v1")
+                AIInputField(title: "Base URL", text: $store.baseURL, placeholder: store.providerID == "corporate" ? "https://gateway.company.ru/v1" : (store.currentPreset?.baseURL ?? "https://api.openai.com/v1"))
                 AIInputField(title: "API-ключ", text: $store.apiKey, placeholder: "sk-…", isSecure: true)
-                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset?.defaultModel ?? "gpt-4o-mini")
+                AIInputField(title: "Модель", text: $store.model, placeholder: store.currentPreset?.defaultModel ?? "gpt-6-luna")
 
                 HStack(spacing: 10) {
                     UIOutlineButton(title: "Проверить") {
@@ -115,6 +115,7 @@ struct AIInputField: View {
 
 struct VoiceIntelligenceSection: View {
     @ObservedObject var settings = VoiceIntelligenceSettings.shared
+    @ObservedObject var hotKey = HotKeySettings.shared
 
     var body: some View {
         UICard {
@@ -134,7 +135,7 @@ struct VoiceIntelligenceSection: View {
                         Text("Умная речь")
                             .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
-                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Дословная расшифровка без изменений")
+                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Только звуки и заикания, без ИИ")
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                     }
@@ -148,24 +149,6 @@ struct VoiceIntelligenceSection: View {
                 }
 
                 if settings.mode == .smart {
-                    Divider().background(Color.uiHairline)
-
-                    // Стиль мысли
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Стиль текста")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Формат оформления очищенной мысли")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        UIDropdownPicker(selection: $settings.style, options: VoiceStyle.allCases.map { s in
-                            .init(LocalizedStringKey(s.title), value: s)
-                        }, width: 160)
-                    }
-
                     Divider().background(Color.uiHairline)
 
                     // Движок обработки
@@ -199,30 +182,12 @@ struct VoiceIntelligenceSection: View {
                             }
                             Spacer()
                             UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
-                                .init(LocalizedStringKey(m.name), value: m.id)
-                            }, width: 210)
+                                .init(LocalizedStringKey(SLMRecommendation.pickerLabel(for: m)), value: m.id)
+                            }, width: 240)
                         }
 
                         ActiveSLMModelStatusRow(modelID: settings.localModel)
                             .padding(.vertical, 4)
-                    }
-
-                    Divider().background(Color.uiHairline)
-
-                    // Адаптация под приложения
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Адаптация под приложения")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Учет контекста активного окна")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        Toggle(String(localized: "Адаптация под приложения"), isOn: $settings.adaptiveAppProfilesEnabled)
-                            .labelsHidden()
-                            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                     }
 
                     Divider().background(Color.uiHairline)
@@ -270,7 +235,44 @@ struct VoiceIntelligenceSection: View {
                             .accessibilityLabel(Text("Инструкция модели"))
                     }
                 }
+
+                Divider().background(Color.uiHairline)
+
+                promptModeRow
             }
+        }
+    }
+
+    /// Режим промпта: основная клавиша с Shift запускает одну диктовку как запрос к нейросети.
+    private var promptModeRow: some View {
+        let hint = PromptModeHint.make(for: hotKey.trigger)
+        let isAvailable: Bool = { if case .available = hint { return true } else { return false } }()
+        return HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Режим промпта")
+                    .font(.ui(.body, weight: .medium))
+                    .foregroundColor(.uiInk)
+                Group {
+                    switch hint {
+                    case .available(let combo): Text("\(combo) на одну диктовку")
+                    case .unavailableShift: Text("Недоступно с клавишей Shift")
+                    case .noHotKey: Text("Нет горячей клавиши")
+                    }
+                }
+                .font(.ui(.caption))
+                .foregroundColor(.uiMidGray)
+            }
+            Spacer()
+            Toggle(String(localized: "Режим промпта"), isOn: Binding(
+                get: { settings.promptModeEnabled },
+                set: { newValue in
+                    settings.promptModeEnabled = newValue
+                    NativeHotKeyManager.shared.refreshPromptRegistration()
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
+            .disabled(!isAvailable && !settings.promptModeEnabled)
         }
     }
 }
@@ -283,10 +285,17 @@ struct ActiveSLMModelStatusRow: View {
         if let model = slmStore.model(named: modelID) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(LocalizedStringKey(model.name))
-                        .font(.ui(.body, weight: .medium))
-                        .foregroundColor(.uiInk)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(LocalizedStringKey(model.name))
+                            .font(.ui(.body, weight: .medium))
+                            .foregroundColor(.uiInk)
+                            .lineLimit(1)
+                        if SLMRecommendation.isRecommended(model) {
+                            Text("Рекомендуем")
+                                .font(.ui(.micro))
+                                .foregroundColor(.uiSuccess)
+                        }
+                    }
                     Text("\(model.sizeMB) МБ — Apple Metal")
                         .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)

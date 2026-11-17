@@ -17,6 +17,20 @@ final class PhoneticsTests: XCTestCase {
         XCTAssertLessThan(Phonetics.similarity(token: "kitchen", spelling: "Kubernetes", language: .en), 0.8)
     }
 
+    func testSoundKey() {
+        XCTAssertEqual(Phonetics.soundKey("IPI"), "p")
+        XCTAssertEqual(Phonetics.soundKey("API"), "p")
+        XCTAssertEqual(Phonetics.soundKey("эй пи ай"), "p")
+        XCTAssertEqual(Phonetics.soundKey("BB"), "pp")
+        XCTAssertEqual(Phonetics.soundKey("B2B"), "pp")
+        XCTAssertEqual(Phonetics.soundKey("жиру"), "jr")
+        XCTAssertEqual(Phonetics.soundKey("Jira"), "jr")
+        XCTAssertEqual(Phonetics.soundKey("ГИД"), "kt")
+        XCTAssertEqual(Phonetics.soundKey("Git"), "kt")
+        XCTAssertEqual(Phonetics.soundKey("Power B"), "pfrp")
+        XCTAssertEqual(Phonetics.soundKey("эс кью эл"), "skl")
+    }
+
     func testDistanceEdgeCases() {
         XCTAssertEqual(Phonetics.normalizedDistance("", ""), 0)
         XCTAssertEqual(Phonetics.normalizedDistance("abc", ""), 1)

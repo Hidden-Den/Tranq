@@ -10,6 +10,17 @@ struct PackValidationTests {
     static let loanwordBlocklist: Set<String> = [
         "спринт", "оффер", "деплой", "онбординг", "оффбординг", "бэклог", "ретро", "стендап", "дейли", "синк",
         "хотфикс", "фронтенд", "бэкенд", "тимлид", "продакт", "роадмап", "питчдек", "кастдев",
+        "задеплоить", "митинг", "фича", "фичи", "запушить", "смерджить",
+    ]
+
+    /// Слова с русскими окончаниями пишутся кириллицей: вариант-глагол не может вести в латинское написание.
+    static let russianVerbEndings = ["ить", "ать", "ять", "еть", "уть", "ться", "тся", "ишь", "ешь", "ил", "ила", "или", "ило"]
+    /// Существительные и числительные с похожими окончаниями, проверенные вручную:
+    /// «майкрософт триста шестьдесят пять», «битрикс двадцать четыре».
+    static let verbLikeNouns: Set<String> = [
+        "пять", "шесть", "семь", "восемь", "девять", "десять",
+        "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать",
+        "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать", "двадцать", "тридцать",
     ]
 
     static let annotateHint = "запустите scripts/annotate-dictionaries.swift"
@@ -99,6 +110,20 @@ struct PackValidationTests {
         for item in allVariants where item.variant.lowercased() != item.spelling.lowercased() {
             #expect(!spellings.contains(item.variant.lowercased()), "\(item.pack)/\(item.spelling): вариант «\(item.variant)» совпадает с написанием другой записи")
         }
+    }
+
+    @Test func testNoRussianVerbFormMapsToLatinSpelling() {
+        for item in allVariants where item.language == .ru && VariantRules.isLatin(item.spelling) {
+            for word in item.variant.split(whereSeparator: \.isWhitespace) where !Self.verbLikeNouns.contains(String(word)) {
+                #expect(!Self.russianVerbEndings.contains { word.hasSuffix($0) },
+                        "\(item.pack)/\(item.spelling): глагольная форма «\(item.variant)» должна остаться кириллицей")
+            }
+        }
+    }
+
+    @Test func testTermsFromSpecArePresent() {
+        let spellings = Set(packs.flatMap { $0.entries.map(\.spelling) })
+        #expect(spellings.isSuperset(of: ["staging", "pull request", "Git", "C&B", "CRM", "B2B", "B2C", "Power BI"]))
     }
 
     @Test func testNoLoanwordsFromBlocklist() {

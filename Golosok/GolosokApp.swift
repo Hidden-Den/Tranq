@@ -12,13 +12,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey.isExternalRecordingActive = {
             AudioCapture.shared.isRecording
         }
-        hotKey.onHotKeyPressed = {
+        hotKey.onHotKeyPressed = { promptRequested in
             if hotKey.mode == .pushToTalk {
                 if !AudioCapture.shared.isRecording {
-                    AudioCapture.shared.startRecording()
+                    AudioCapture.shared.startRecording(promptRequested: promptRequested)
                 }
             } else {
-                AudioCapture.shared.toggleRecording()
+                AudioCapture.shared.toggleRecording(promptRequested: promptRequested)
             }
         }
         hotKey.onHotKeyReleased = {
@@ -63,6 +63,13 @@ struct GolosokApp: App {
     init() {
         LanguageSettings.shared.apply()
         ThemeSettings.shared.apply()
+        // Под тестами уборка тронула бы настоящие данные пользователя
+        if !AppEnvironment.isRunningTests {
+            Task.detached(priority: .utility) {
+                LegacyCleanup.run()
+                SLMModelStore.shared.removeRetiredModels()
+            }
+        }
     }
     
     var body: some Scene {
@@ -88,36 +95,13 @@ struct GolosokApp: App {
                 }
             }
 
-            CommandGroup(replacing: .newItem) {
-                Button("Открыть аудиофайл...") {
-                    AudioCapture.shared.importAndTranscribeFile()
-                }
-                .keyboardShortcut("o", modifiers: .command)
-            }
+            CommandGroup(replacing: .newItem) {}
 
             CommandGroup(after: .pasteboard) {
                 Button(String(localized: "Вставить оригинал речи")) {
                     TranscriptJournal.shared.pasteOriginal { _ in }
                 }
                 .keyboardShortcut("z", modifiers: [.command, .option])
-            }
-
-            CommandGroup(after: .textEditing) {
-                Button("Найти в стенограмме…") {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NotificationCenter.default.post(name: NSNotification.Name("ToggleTranscriptSearch"), object: nil)
-                }
-                .keyboardShortcut("f", modifiers: .command)
-
-                Button("Найти далее") {
-                    NotificationCenter.default.post(name: NSNotification.Name("FindNextInTranscript"), object: nil)
-                }
-                .keyboardShortcut("g", modifiers: .command)
-
-                Button("Найти ранее") {
-                    NotificationCenter.default.post(name: NSNotification.Name("FindPreviousInTranscript"), object: nil)
-                }
-                .keyboardShortcut("g", modifiers: [.command, .shift])
             }
         }
 

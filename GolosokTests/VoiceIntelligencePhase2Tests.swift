@@ -42,6 +42,17 @@ struct VoiceIntelligencePhase2Tests {
         #expect(normalized.contains("15:30") || normalized.contains("15 30"))
     }
 
+    @Test func normalizerKeepsOrdinalsOutsideDatesAsWords() {
+        #expect(NumberNormalizer.normalize("Я бы взял вторую кандидатку.") == "Я бы взял вторую кандидатку.")
+        #expect(NumberNormalizer.normalize("Не работает уже третий день.") == "Не работает уже третий день.")
+        #expect(NumberNormalizer.normalize("Дедлайн первое марта.").contains("1 марта"))
+    }
+
+    @Test func normalizerKeepsScaleAfterFractionWord() {
+        #expect(NumberNormalizer.normalize("Бюджет полтора миллиона.") == "Бюджет полтора миллиона.")
+        #expect(NumberNormalizer.normalize("Бюджет два миллиона.").contains("2000000"))
+    }
+
     @Test func normalizerPreservesExistingDigits() {
         let input = "Счет номер 40817810 и сумма 500 рублей."
         let normalized = NumberNormalizer.normalize(input)
@@ -54,42 +65,13 @@ struct VoiceIntelligencePhase2Tests {
         let normalized = NumberNormalizer.normalize(rawSpeech)
         // Модель на выходе дала текст с цифрой 25
         let modelOutput = "Отправь 25 документов на почту."
-        let result = GroundingValidator.validate(input: normalized, output: modelOutput, style: .clean)
+        let result = GroundingValidator.validate(input: normalized, output: modelOutput, level: .clean)
         switch result {
         case .valid(let text):
             #expect(text == "Отправь 25 документов на почту.")
         case .rejected(let reason):
             Issue.record("Expected valid because normalized input has 25, got rejected: \(reason)")
         }
-    }
-
-    // MARK: - KeychainStore
-
-    @Test func keychainStoreSetGetDelete() {
-        let testAccount = "test.api.key.account"
-        let testSecret = "sk-test-secret-value-12345"
-
-        // Чистим перед тестом
-        _ = KeychainStore.delete(testAccount)
-
-        // Запись
-        let setSuccess = KeychainStore.set(testSecret, for: testAccount)
-        #expect(setSuccess)
-
-        // Чтение
-        let readValue = KeychainStore.get(testAccount)
-        #expect(readValue == testSecret)
-
-        // Обновление
-        let updatedSecret = "sk-test-secret-value-67890"
-        let updateSuccess = KeychainStore.set(updatedSecret, for: testAccount)
-        #expect(updateSuccess)
-        #expect(KeychainStore.get(testAccount) == updatedSecret)
-
-        // Удаление
-        let deleteSuccess = KeychainStore.delete(testAccount)
-        #expect(deleteSuccess)
-        #expect(KeychainStore.get(testAccount) == nil)
     }
 
     // MARK: - Streaming Think Tag Parser

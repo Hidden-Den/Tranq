@@ -76,7 +76,7 @@ struct HistoryStoreTests {
         #expect(reloaded.items.first?.text.contains("Дополнение") == true)
     }
 
-    @Test func storesAudioAndTimingsAndDeletesThemWithNote() {
+    @Test func storesAudioAndDeletesItWithNote() {
         let dir = makeDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
         let store = HistoryStore(directory: dir, saveDelay: 0)
@@ -85,16 +85,13 @@ struct HistoryStoreTests {
         #expect(AudioPCM.writeWav(samples: [Float](repeating: 0, count: 1600), to: source))
         let id = store.addNote(text: "С аудио")
         store.storeAudio(for: id, from: source, move: true)
-        store.storeTimings(for: id, words: [TimedWord(text: "С", start: 0, end: 0.1)], duration: 0.1)
 
         #expect(store.hasAudio(for: id))
         #expect(!FileManager.default.fileExists(atPath: source.path), "при move исходный файл переносится")
-        #expect(store.timings(for: id)?.words.count == 1)
 
         store.deleteItem(at: 0)
         store.flush()
         #expect(!store.hasAudio(for: id))
-        #expect(store.timings(for: id) == nil)
     }
 }
 
@@ -168,15 +165,12 @@ struct GigaAMIntegrationTests {
     @Test(.enabled(if: ModelStore.shared.localModelPath(for: RecognitionModel.russianGigaAM.id) != nil, "нет модели gigaam.gguf"))
     func recognizesSynthesizedRussianSpeech() throws {
         let aiff = TempFiles.makeURL(prefix: "say", ext: "aiff")
-        let wav = TempFiles.makeURL(prefix: "say", ext: "wav")
-        defer { TempFiles.remove(aiff); TempFiles.remove(wav) }
+        defer { TempFiles.remove(aiff) }
 
         guard let say = ProcessRunner.run("/usr/bin/say", arguments: ["-v", "Milena", "-o", aiff.path, "Завтра в десять утра созвонимся с командой"], timeout: 30),
               say.succeeded else { return }
 
-        #expect(AudioPCM.convertMediaToWav(aiff, output: wav))
-        let reader = try #require(AudioChunkReader(url: wav))
-        let samples = try #require(reader.samples(fromSecond: 0, length: reader.durationSeconds))
+        let samples = try #require(AudioPCM.loadSamples(from: aiff))
 
         let result = GigaAMEngine.shared.recognize(samples: samples)
         let text = result.text.lowercased()

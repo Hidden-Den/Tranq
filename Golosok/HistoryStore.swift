@@ -7,14 +7,17 @@ struct TranscriptionItem: Identifiable, Codable, Hashable {
     let duration: String
     var speedup: Double?
     var isUnread: Bool? = false
+    /// Сырая расшифровка до очистки; пусто у ручных заметок и у заметок прошлых версий.
+    var spokenText: String?
 
-    var formattedSpeedup: String {
-        if let s = speedup, s > 0 { return String(format: "x%.0f", s) }
-        return "x1"
+    /// Показывать ли переключатель «Итог / Сказано»: только если сказанное отличается от итога.
+    var showsSpokenToggle: Bool {
+        guard let spoken = spokenText?.trimmingCharacters(in: .whitespacesAndNewlines), !spoken.isEmpty else { return false }
+        return spoken != text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func withText(_ newText: String) -> TranscriptionItem {
-        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread)
+        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread, spokenText: spokenText)
     }
 
     static let dateFormat = "dd.MM.yyyy, HH:mm"
@@ -37,7 +40,6 @@ final class HistoryStore: ObservableObject {
         didSet {
             guard !isLoading else { return }
             scheduleSave()
-            DashboardStatsStore.shared.refresh(history: items)
         }
     }
 
@@ -93,21 +95,6 @@ final class HistoryStore: ObservableObject {
         DictionaryLearning.shared.learn(original: oldText, edited: text, noteId: id)
     }
 
-    func replaceRangeInNote(id: UUID, range: NSRange, newText: String) {
-        guard let idx = items.firstIndex(where: { $0.id == id }) else { return }
-        let oldText = items[idx].text
-        let nsText = oldText as NSString
-        guard range.location != NSNotFound,
-              range.location >= 0,
-              range.length >= 0,
-              range.location <= nsText.length,
-              range.length <= nsText.length - range.location else { return }
-        let result = nsText.replacingCharacters(in: range, with: newText)
-        guard result != oldText else { return }
-        items[idx] = items[idx].withText(result)
-        DictionaryLearning.shared.learn(original: oldText, edited: result, noteId: id)
-    }
-
     func deleteItem(at index: Int) {
         guard items.indices.contains(index) else { return }
         let item = items.remove(at: index)
@@ -120,12 +107,13 @@ final class HistoryStore: ObservableObject {
         ioQueue.async { [self] in ids.forEach(deleteFilesSync) }
     }
 
-    // MARK: - Аудио и тайминги заметок
+    // MARK: - Аудио заметок
 
     func audioURL(for id: UUID) -> URL {
         audioDirectory.appendingPathComponent("\(id.uuidString).wav")
     }
 
+    /// Файл таймингов старых заметок: новые не пишутся, но при удалении заметки он убирается.
     private func timingsURL(for id: UUID) -> URL {
         audioDirectory.appendingPathComponent("\(id.uuidString).segments.json")
     }
@@ -145,20 +133,6 @@ final class HistoryStore: ObservableObject {
         } else {
             try? fm.copyItem(at: source, to: dest)
         }
-    }
-
-    func storeTimings(for id: UUID, words: [TimedWord], duration: Double) {
-        guard let data = try? JSONEncoder().encode(TimingFilePayload(words: words, duration: duration)) else { return }
-        try? FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: true)
-        try? data.write(to: timingsURL(for: id), options: .atomic)
-        AppLogger.shared.info("Recognition", "Тайминги слов сохранены", details: "\(words.count) слов, длительность \(String(format: "%.1f с", duration))")
-    }
-
-    func timings(for id: UUID) -> (words: [TimedWord], duration: Double)? {
-        guard let data = try? Data(contentsOf: timingsURL(for: id)),
-              let payload = try? JSONDecoder().decode(TimingFilePayload.self, from: data),
-              !payload.words.isEmpty else { return nil }
-        return (WordTimings.normalized(payload.words, duration: payload.duration), payload.duration)
     }
 
     private func deleteFiles(for id: UUID) {

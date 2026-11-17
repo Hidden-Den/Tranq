@@ -28,17 +28,25 @@ enum AIProviderPresets {
         AIProviderPreset(
             id: "openai",
             name: "OpenAI",
-            hint: "ChatGPT, gpt-4o-mini, gpt-4o",
+            hint: "ChatGPT, gpt-6-luna, gpt-6.1-terra",
             baseURL: "https://api.openai.com/v1",
-            defaultModel: "gpt-4o-mini",
+            defaultModel: "gpt-6-luna",
             needsKey: true
         ),
         AIProviderPreset(
             id: "anthropic",
             name: "Anthropic",
-            hint: "claude-3-5-haiku, claude-3-7-sonnet",
+            hint: "claude-haiku-5-5, claude-sonnet-5-5",
             baseURL: "https://api.anthropic.com/v1",
-            defaultModel: "claude-3-5-haiku-20241022",
+            defaultModel: "claude-haiku-5-5",
+            needsKey: true
+        ),
+        AIProviderPreset(
+            id: "corporate",
+            name: "Корпоративный шлюз",
+            hint: "Адрес шлюза компании",
+            baseURL: "",
+            defaultModel: "",
             needsKey: true
         ),
         AIProviderPreset(
@@ -70,8 +78,9 @@ struct AIProviderConfig {
     let model: String
     var providerID: String = ""
 
+    /// Формат Anthropic определяется только выбранным пресетом, не адресом.
     var isAnthropic: Bool {
-        baseURL.contains("anthropic.com") || providerID == "anthropic"
+        providerID == "anthropic"
     }
 }
 
@@ -118,8 +127,6 @@ final class AIProviderStore: ObservableObject {
     @Published var isTesting = false
     @Published var testResult: String?
     @Published var testOK = false
-    @Published var installedModels: [String] = []
-    @Published var isLoadingModels = false
 
     private static let defaults = AppEnvironment.defaults
 
@@ -181,23 +188,6 @@ final class AIProviderStore: ObservableObject {
         AppLogger.shared.info("AI", "Выбран провайдер \(preset.name)", details: preset.baseURL)
     }
 
-    func refreshModels() {
-        isLoadingModels = true
-        installedModels = []
-        AIService.shared.listModels(using: config) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.isLoadingModels = false
-                switch result {
-                case .success(let models):
-                    self.installedModels = models.sorted()
-                case .failure:
-                    self.installedModels = []
-                }
-            }
-        }
-    }
-
     func testConnection() {
         guard isConfigured else {
             testOK = false
@@ -254,6 +244,7 @@ final class AIService {
         let temperature: Double?
         let reasoning: ReasoningConfig?
         let provider: ProviderConfig?
+        let reasoning_effort: String?
     }
 
     func chat(messages: [AIChatMessage], using config: AIProviderConfig, completion: @escaping (Result<String, AIError>) -> Void) {
@@ -266,10 +257,7 @@ final class AIService {
             request.httpMethod = "POST"
             request.timeoutInterval = 180
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+            ChatRequestBuilder.applyAuth(&request, config: config)
 
             var systemPrompt: String? = nil
             var anthropicMessages: [[String: String]] = []
@@ -354,15 +342,13 @@ final class AIService {
         request.httpMethod = "POST"
         request.timeoutInterval = 180
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !config.apiKey.isEmpty {
-            request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-        }
-        if config.baseURL.contains("openrouter.ai") {
+        ChatRequestBuilder.applyAuth(&request, config: config)
+        if config.isOpenRouter {
             request.setValue("https://github.com/Nuteres/Golosok", forHTTPHeaderField: "HTTP-Referer")
             request.setValue("Golosok", forHTTPHeaderField: "X-Title")
         }
 
-        let isOpenRouter = config.baseURL.contains("openrouter.ai")
+        let isOpenRouter = config.isOpenRouter
         let reasoning = isOpenRouter ? ReasoningConfig(effort: "none", exclude: true) : nil
         let provider = isOpenRouter ? ProviderConfig(sort: "latency") : nil
         // Для OpenRouter опускаем поле temperature (nil), чтобы исключить HTTP 400 на моделях с фиксированной температурой
@@ -373,7 +359,8 @@ final class AIService {
             messages: messages,
             temperature: temp,
             reasoning: reasoning,
-            provider: provider
+            provider: provider,
+            reasoning_effort: config.needsReasoningOff ? "none" : nil
         )
         guard let data = try? JSONEncoder().encode(body) else {
             completion(.failure(.parse("кодирование запроса")))
@@ -424,16 +411,7 @@ final class AIService {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 15
-        if config.isAnthropic {
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        } else {
-            if !config.apiKey.isEmpty {
-                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-            }
-        }
+        ChatRequestBuilder.applyAuth(&request, config: config)
         session.dataTask(with: request) { data, response, error in
             if let error {
                 completion(.failure(.network(error.localizedDescription)))
@@ -449,48 +427,6 @@ final class AIService {
                 let message = (data.flatMap { Self.extractError(from: $0) }) ?? "HTTP \(http.statusCode)"
                 completion(.failure(.http(http.statusCode, message)))
             }
-        }.resume()
-    }
-
-    func listModels(using config: AIProviderConfig, completion: @escaping (Result<[String], AIError>) -> Void) {
-        guard let url = url(config.baseURL, path: "models") else {
-            completion(.failure(.invalidURL))
-            return
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 15
-        if config.isAnthropic {
-            if !config.apiKey.isEmpty {
-                request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
-            }
-            request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        } else {
-            if !config.apiKey.isEmpty {
-                request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
-            }
-        }
-        session.dataTask(with: request) { data, response, error in
-            if let error {
-                completion(.failure(.network(error.localizedDescription)))
-                return
-            }
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), let data else {
-                completion(.failure(.emptyResponse))
-                return
-            }
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                completion(.failure(.parse("не JSON")))
-                return
-            }
-            var names: [String] = []
-            if let dataArr = json["data"] as? [[String: Any]] {
-                names = dataArr.compactMap { $0["id"] as? String }
-            }
-            if names.isEmpty, let models = json["models"] as? [[String: Any]] {
-                names = models.compactMap { $0["name"] as? String }
-            }
-            completion(.success(names))
         }.resume()
     }
 

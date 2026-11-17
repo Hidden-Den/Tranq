@@ -3,11 +3,6 @@ import Carbon
 import AppKit
 import CoreGraphics
 
-public enum HotKeyKey: String {
-    case space = "space"
-    case command = "command"
-}
-
 public enum HotKeyMode: String, CaseIterable, Identifiable {
     case toggle = "toggle"
     case pushToTalk = "pushToTalk"
@@ -18,14 +13,24 @@ public class NativeHotKeyManager {
     public static let shared = NativeHotKeyManager()
 
     private var hotKeyRef: EventHotKeyRef?
+    private var promptHotKeyRef: EventHotKeyRef?
+    static let plainHotKeyID: UInt32 = 1
+    static let promptHotKeyID: UInt32 = 2
     private var eventHandlerRef: EventHandlerRef?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var isModifierActive: Bool = false
-    public private(set) var pendingTrigger: HotKeyTrigger?
+    public private(set) var pendingTrigger: HotKeyTrigger? {
+        didSet { updatePendingRetry() }
+    }
+    private var pendingRetryTimer: Timer?
+    private var wasTrustedOnLastRetry = false
 
-    public var onHotKeyPressed: (() -> Void)?
+    /// Аргумент `true`, если нажато сочетание для режима промпта: основная клавиша с Shift.
+    public var onHotKeyPressed: ((_ promptRequested: Bool) -> Void)?
     public var onHotKeyReleased: (() -> Void)?
+    /// Включён ли режим промпта. Тесты подменяют, чтобы не трогать общие настройки.
+    var isPromptModeEnabled: () -> Bool = { VoiceIntelligenceSettings.shared.promptModeEnabled }
     public var isExternalRecordingActive: (() -> Bool)?
 
     private init() {
@@ -35,9 +40,16 @@ public class NativeHotKeyManager {
         ]
         InstallEventHandler(GetApplicationEventTarget(), { (_, eventRef, _) -> OSStatus in
             guard let eventRef else { return noErr }
+            var hotKeyID = EventHotKeyID(signature: 0, id: NativeHotKeyManager.plainHotKeyID)
+            let status = GetEventParameter(
+                eventRef, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
+                nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID
+            )
+            // Не удалось прочитать id: ведём себя как раньше, без режима промпта
+            let id = status == noErr ? hotKeyID.id : NativeHotKeyManager.plainHotKeyID
             switch GetEventKind(eventRef) {
-            case UInt32(kEventHotKeyPressed): NativeHotKeyManager.shared.onHotKeyPressed?()
-            case UInt32(kEventHotKeyReleased): NativeHotKeyManager.shared.onHotKeyReleased?()
+            case UInt32(kEventHotKeyPressed): NativeHotKeyManager.shared.handleCarbonHotKey(id: id, pressed: true)
+            case UInt32(kEventHotKeyReleased): NativeHotKeyManager.shared.handleCarbonHotKey(id: id, pressed: false)
             default: break
             }
             return noErr
@@ -132,7 +144,7 @@ public class NativeHotKeyManager {
             AppLogger.shared.info("HotKey", "Горячая клавиша не назначена")
             return true
         case .combination(let kCode, let mods):
-            let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
+            let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: Self.plainHotKeyID)
             let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
             if status != noErr {
                 AppLogger.shared.error("HotKey", "Не удалось зарегистрировать горячую клавишу", details: "status \(status), комбинация \(trigger.displayName)")
@@ -140,11 +152,71 @@ public class NativeHotKeyManager {
                 return false
             } else {
                 AppLogger.shared.info("HotKey", "Горячая клавиша зарегистрирована", details: trigger.displayName)
+                registerPromptHotKey(for: trigger)
                 return true
             }
         case .singleModifier(let key):
             return registerEventTap(for: key)
         }
+    }
+
+    public var isPromptHotKeyRegistered: Bool { promptHotKeyRef != nil }
+
+    /// Нужно вызывать при смене клавиши и переключателя режима промпта.
+    public func refreshPromptRegistration() {
+        registerPromptHotKey(for: trigger)
+    }
+
+    /// Второе сочетание Carbon, основная клавиша с Shift, только если режим включён и Shift свободен.
+    private func registerPromptHotKey(for trigger: HotKeyTrigger) {
+        unregisterPromptHotKey()
+        guard isPromptModeEnabled(),
+              case .combination = trigger,
+              case .combination(let kCode, let mods)? = trigger.promptVariant else { return }
+        let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: Self.promptHotKeyID)
+        let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &promptHotKeyRef)
+        if status != noErr {
+            promptHotKeyRef = nil
+            AppLogger.shared.warn("HotKey", "Не удалось зарегистрировать сочетание для промпта", details: "status \(status)")
+        }
+    }
+
+    private func unregisterPromptHotKey() {
+        if let ref = promptHotKeyRef {
+            UnregisterEventHotKey(ref)
+            promptHotKeyRef = nil
+        }
+    }
+
+    /// Нажатие или отпускание зарегистрированного сочетания Carbon. Id 2 это сочетание с Shift.
+    func handleCarbonHotKey(id: UInt32, pressed: Bool) {
+        if pressed {
+            onHotKeyPressed?(id == Self.promptHotKeyID)
+        } else {
+            onHotKeyReleased?()
+        }
+    }
+
+    /// Пока клавиша ждёт доступа, права проверяются по таймеру: система обновляет их с задержкой,
+    /// а активация окна может прийти раньше и больше не повториться.
+    private func updatePendingRetry() {
+        guard pendingTrigger != nil else {
+            pendingRetryTimer?.invalidate()
+            pendingRetryTimer = nil
+            return
+        }
+        guard pendingRetryTimer == nil else { return }
+        wasTrustedOnLastRetry = false
+        let timer = Timer(timeInterval: pendingRetryInterval, repeats: true) { [weak self] _ in
+            guard let self, self.pendingTrigger != nil else { return }
+            // Одна попытка на каждое появление прав: иначе при сбое тапа ошибка писалась бы каждую секунду
+            let trusted = self.isAccessibilityTrusted()
+            defer { self.wasTrustedOnLastRetry = trusted }
+            guard trusted, !self.wasTrustedOnLastRetry else { return }
+            self.register()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        pendingRetryTimer = timer
     }
 
     public func register() {
@@ -173,19 +245,28 @@ public class NativeHotKeyManager {
 
     private var hasLoggedAccessibilityWarning = false
 
-    private func registerEventTap(for key: SingleModifierKey) -> Bool {
-        if isTestEnvironment {
-            return true
-        }
+    /// Как часто проверять права, пока клавиша ждёт доступа. Тесты ставят меньше.
+    var pendingRetryInterval: TimeInterval = 1
 
-        guard AXIsProcessTrusted() else {
+    /// Доверяет ли система этому процессу. Под тестами всегда да; тесты подменяют, чтобы смоделировать отказ.
+    var isAccessibilityTrusted: () -> Bool = {
+        AppEnvironment.isRunningTests || AXIsProcessTrusted()
+    }
+
+    private func registerEventTap(for key: SingleModifierKey) -> Bool {
+        guard isAccessibilityTrusted() else {
             if !hasLoggedAccessibilityWarning {
                 hasLoggedAccessibilityWarning = true
-                AppLogger.shared.warn("HotKey", "Ожидание прав Универсального доступа", details: key.displayName)
+                // Путь нужен для диагностики: права привязаны к конкретной сборке, а копий приложения может быть несколько
+                AppLogger.shared.warn("HotKey", "Ожидание прав Универсального доступа", details: "\(key.displayName), \(Bundle.main.bundlePath)")
             }
             return false
         }
         hasLoggedAccessibilityWarning = false
+
+        if isTestEnvironment {
+            return true
+        }
 
         let mask = (1 << CGEventType.flagsChanged.rawValue)
         let observer = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
@@ -250,8 +331,12 @@ public class NativeHotKeyManager {
                 let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
                 if key == .fn || eventKeyCode == key.rawValue || (event.flags.rawValue & key.deviceMask) != 0 {
                     isModifierActive = true
+                    // Shift нужно зажать до клавиши; сама клавиша Shift режим промпта не запускает
+                    let promptRequested = isPromptModeEnabled()
+                        && HotKeyTrigger.singleModifier(key).promptVariant != nil
+                        && event.flags.contains(.maskShift)
                     dispatchToMain { [weak self] in
-                        self?.onHotKeyPressed?()
+                        self?.onHotKeyPressed?(promptRequested)
                     }
                 }
             } else {
@@ -265,17 +350,8 @@ public class NativeHotKeyManager {
         return Unmanaged.passUnretained(event)
     }
 
-    public func setHotKey(keyCode: UInt32, modifiers: UInt32) -> Bool {
-        let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: 1)
-        var testRef: EventHotKeyRef?
-        let status = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &testRef)
-        if status != noErr { return false }
-        UnregisterEventHotKey(testRef!)
-        self.trigger = .combination(keyCode: keyCode, modifiers: modifiers)
-        return true
-    }
-
     public func unregister() {
+        unregisterPromptHotKey()
         if let ref = hotKeyRef {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil

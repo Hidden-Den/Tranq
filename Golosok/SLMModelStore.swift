@@ -7,6 +7,10 @@ public struct SLMModel: Identifiable, Equatable {
     public let sizeMB: Int
     public let downloadURLs: [URL]
     public let description: String
+    /// Класс памяти Mac, для которого модель рассчитана: 8 или 16 ГБ.
+    public let memoryClassGB: Int
+    /// Модель работает только через llama-server: встроенный llama-cli может не знать её архитектуру.
+    public let requiresServer: Bool
 
     public var downloadURL: URL? {
         downloadURLs.first
@@ -18,7 +22,9 @@ public struct SLMModel: Identifiable, Equatable {
         fileName: String,
         sizeMB: Int,
         downloadURLs: [URL],
-        description: String
+        description: String,
+        memoryClassGB: Int = 8,
+        requiresServer: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -26,6 +32,8 @@ public struct SLMModel: Identifiable, Equatable {
         self.sizeMB = sizeMB
         self.downloadURLs = downloadURLs
         self.description = description
+        self.memoryClassGB = memoryClassGB
+        self.requiresServer = requiresServer
     }
 
     public init(
@@ -34,7 +42,9 @@ public struct SLMModel: Identifiable, Equatable {
         fileName: String,
         sizeMB: Int,
         downloadURL: URL?,
-        description: String
+        description: String,
+        memoryClassGB: Int = 8,
+        requiresServer: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -42,6 +52,8 @@ public struct SLMModel: Identifiable, Equatable {
         self.sizeMB = sizeMB
         self.downloadURLs = downloadURL.map { [$0] } ?? []
         self.description = description
+        self.memoryClassGB = memoryClassGB
+        self.requiresServer = requiresServer
     }
 }
 
@@ -50,76 +62,76 @@ public final class SLMModelStore: NSObject, ObservableObject {
 
     public static let catalog: [SLMModel] = [
         SLMModel(
-            id: "vikhr_1.5b",
-            name: "QVikhr 2.5 1.5B SMPO Q4",
-            fileName: "QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M.gguf",
-            sizeMB: 985,
+            id: "gemma_4_e4b_qat",
+            name: "Gemma 4 E4B",
+            fileName: "gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
+            sizeMB: 4210,
             downloadURLs: [
-                URL(string: "https://huggingface.co/Vikhrmodels/QVikhr-2.5-1.5B-Instruct-SMPO_GGUF/resolve/main/QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/mradermacher/QVikhr-2.5-1.5B-Instruct-SMPO-GGUF/resolve/main/QVikhr-2.5-1.5B-Instruct-SMPO.Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/itlwas/QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M-GGUF/resolve/main/qvikhr-2.5-1.5b-instruct-smpo-q4_k_m.gguf")!
+                URL(string: "https://huggingface.co/unsloth/gemma-4-E4B-it-qat-GGUF/resolve/main/gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf")!
             ],
-            description: "Обновленная модель Вихрь с алгоритмом выравнивания SMPO"
+            description: "Точная очистка, быстрая",
+            memoryClassGB: 16,
+            requiresServer: true
         ),
         SLMModel(
-            id: "qvikhr_3_4b",
-            name: "QVikhr 3 4B Q4",
-            fileName: "QVikhr-3-4B-Instruction-Q4_K_M.gguf",
-            sizeMB: 2497,
+            id: "tlite_2.1",
+            name: "T-lite 2.1",
+            fileName: "T-lite-it-2.1-Q4_K_M.gguf",
+            sizeMB: 5030,
             downloadURLs: [
-                URL(string: "https://huggingface.co/Vikhrmodels/QVikhr-3-4B-Instruction-GGUF/resolve/main/QVikhr-3-4B-Instruction-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/mradermacher/QVikhr-3-4B-Instruction-GGUF/resolve/main/QVikhr-3-4B-Instruction.Q4_K_M.gguf")!
+                URL(string: "https://huggingface.co/t-tech/T-lite-it-2.1-GGUF/resolve/main/T-lite-it-2.1-Q4_K_M.gguf")!
             ],
-            description: "Новое поколение Вихря на архитектуре Qwen 3 для 16 ГБ RAM"
+            description: "Сильна в терминах",
+            memoryClassGB: 16,
+            requiresServer: true
         ),
         SLMModel(
-            id: "vikhr_0.5b",
-            name: "Vikhr 0.5B Q4",
-            fileName: "Vikhr-Qwen-2.5-0.5B-instruct-Q4_K_M.gguf",
-            sizeMB: 398,
+            id: "gemma_4_e2b",
+            name: "Gemma 4 E2B",
+            fileName: "gemma-4-E2B-it-Q4_K_M.gguf",
+            sizeMB: 3110,
             downloadURLs: [
-                URL(string: "https://huggingface.co/Vikhrmodels/Vikhr-Qwen-2.5-0.5B-instruct-GGUF/resolve/main/Vikhr-Qwen-2.5-0.5B-instruct-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/QuantFactory/Vikhr-Qwen-2.5-0.5b-Instruct-GGUF/resolve/main/Vikhr-Qwen-2.5-0.5b-Instruct.Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/itlwas/Vikhr-Qwen-2.5-0.5b-Instruct-Q4_K_M-GGUF/resolve/main/vikhr-qwen-2.5-0.5b-instruct-q4_k_m.gguf")!
+                URL(string: "https://huggingface.co/unsloth/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q4_K_M.gguf")!
             ],
-            description: "Русскоязычный тюнинг в ультракомпактном размере"
-        ),
-        SLMModel(
-            id: "qwen_3.5_0.8b",
-            name: "Qwen 3.5 0.8B Q4",
-            fileName: "Qwen3.5-0.8B-Q4_K_M.gguf",
-            sizeMB: 532,
-            downloadURLs: [
-                URL(string: "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/ggml-org/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_0.gguf")!
-            ],
-            description: "Новейшая ультралегкая модель поколения Qwen 3.5"
-        ),
-        SLMModel(
-            id: "qwen_3.5_2b",
-            name: "Qwen 3.5 2B Q4",
-            fileName: "Qwen3.5-2B-Q4_K_M.gguf",
-            sizeMB: 1280,
-            downloadURLs: [
-                URL(string: "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF/resolve/main/Qwen_Qwen3.5-2B-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/lmstudio-community/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf")!
-            ],
-            description: "Новейшая сбалансированная модель поколения Qwen 3.5"
-        ),
-        SLMModel(
-            id: "llama_3.2_1b",
-            name: "Llama 3.2 1B Q4",
-            fileName: "Llama-3.2-1B-Instruct-Q4_K_M.gguf",
-            sizeMB: 808,
-            downloadURLs: [
-                URL(string: "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf")!,
-                URL(string: "https://huggingface.co/hugging-quants/Llama-3.2-1B-Instruct-Q4_K_M-GGUF/resolve/main/llama-3.2-1b-instruct-q4_k_m.gguf")!,
-                URL(string: "https://huggingface.co/lmstudio-community/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf")!
-            ],
-            description: "Компактная быстрая мультиязычная модель от Meta"
+            description: "Лёгкая и быстрая",
+            memoryClassGB: 8,
+            requiresServer: true
         )
     ]
+
+    /// Файлы моделей, выведенных из каталога по замеру. Удаляются при запуске.
+    static let retiredFileNames: [String] = [
+        "QVikhr-2.5-1.5B-Instruct-SMPO-Q4_K_M.gguf",
+        "QVikhr-3-4B-Instruction-Q4_K_M.gguf",
+        "Vikhr-Qwen-2.5-0.5B-instruct-Q4_K_M.gguf",
+        "Qwen3.5-0.8B-Q4_K_M.gguf",
+        "Qwen3.5-2B-Q4_K_M.gguf",
+        "Llama-3.2-1B-Instruct-Q4_K_M.gguf"
+    ]
+
+    /// ID выведенных моделей и старые ключи настроек: выбор переходит на лёгкую рекомендуемую модель.
+    static let retiredIDs: Set<String> = [
+        "vikhr_1.5b", "qvikhr_3_4b", "vikhr_0.5b", "qwen_3.5_0.8b", "qwen_3.5_2b", "llama_3.2_1b",
+        "qwen_0.5b", "qwen_1.5b", "qwen_3.5_1.5b"
+    ]
+
+    static func retiredFiles(in directory: URL, retired: [String] = retiredFileNames) -> [URL] {
+        let names = Set(retired)
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        return files.filter { names.contains($0.lastPathComponent) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    /// Удаляет файлы выведенных моделей из каталога моделей приложения.
+    func removeRetiredModels() {
+        for file in Self.retiredFiles(in: modelsDirectory) {
+            do {
+                try FileManager.default.removeItem(at: file)
+                AppLogger.shared.info("SLMModelStore", "Удалена выведенная модель", details: file.lastPathComponent)
+            } catch {
+                AppLogger.shared.warn("SLMModelStore", "Не удалось удалить выведенную модель \(file.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+    }
 
     @Published public var downloadingID: String?
     @Published public var downloadProgress: Double = 0.0
@@ -216,16 +228,18 @@ public final class SLMModelStore: NSObject, ObservableObject {
         AppLogger.shared.info("SLMModelStore", "Загрузка \(model.name) из источника \(sourceIndex + 1)/\(model.downloadURLs.count): \(targetURL.absoluteString)")
     }
 
+    /// Модель каталога по пути к её файлу.
+    static func model(forPath path: String) -> SLMModel? {
+        let name = URL(fileURLWithPath: path).lastPathComponent
+        return catalog.first { $0.fileName == name }
+    }
+
     /// Поиск модели в каталоге по ID или имени файла с поддержкой legacy ключей
     public func model(named id: String) -> SLMModel? {
-        switch id {
-        case "qwen_0.5b":
-            return Self.catalog.first(where: { $0.id == "qwen_3.5_0.8b" })
-        case "qwen_1.5b", "qwen_3.5_1.5b":
-            return Self.catalog.first(where: { $0.id == "qwen_3.5_2b" })
-        default:
-            return Self.catalog.first(where: { $0.id == id || $0.fileName == id })
+        if Self.retiredIDs.contains(id) {
+            return Self.catalog.first(where: { $0.id == SLMRecommendation.smallID })
         }
+        return Self.catalog.first(where: { $0.id == id || $0.fileName == id })
     }
 
     /// Отмена текущей загрузки модели

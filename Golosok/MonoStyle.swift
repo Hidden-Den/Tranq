@@ -25,30 +25,6 @@ extension NSColor {
         }
         self.init(red: CGFloat(r) / 255, green: CGFloat(g) / 255, blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
     }
-
-    static let transcriptHighlight: NSColor = NSColor(name: nil) { appearance in
-        if appearance.name == .darkAqua {
-            return NSColor.systemBlue.withAlphaComponent(0.5)
-        } else {
-            return NSColor.blue.withAlphaComponent(0.18)
-        }
-    }
-
-    static let searchMatch: NSColor = NSColor(name: nil) { appearance in
-        if appearance.name == .darkAqua {
-            return NSColor.systemYellow.withAlphaComponent(0.30)
-        } else {
-            return NSColor.systemYellow.withAlphaComponent(0.40)
-        }
-    }
-
-    static let searchCurrentMatch: NSColor = NSColor(name: nil) { appearance in
-        if appearance.name == .darkAqua {
-            return NSColor.systemYellow.withAlphaComponent(0.55)
-        } else {
-            return NSColor.systemYellow.withAlphaComponent(0.70)
-        }
-    }
 }
 
 // MARK: - Hex & Dynamic Initializers for SwiftUI Color
@@ -71,7 +47,6 @@ extension Color {
     static let uiCanvas = dynamic(light: "#ffffff", dark: "#000000")
     static let uiPaper = dynamic(light: "#f8f8fa", dark: "#141417")
     static let uiSidebar = dynamic(light: "#ffffff", dark: "#000000")
-    static let uiGraphite = dynamic(light: "#ffffff", dark: "#000000")
     static let uiInk = dynamic(light: "#0a0a0a", dark: "#fafafa")
     static let uiInkSoft = dynamic(light: "#171717", dark: "#d4d4d8")
     static let uiMidGray = dynamic(light: "#737373", dark: "#a1a1aa")
@@ -79,22 +54,16 @@ extension Color {
     static let uiWarn = dynamic(light: "#FF9F0A", dark: "#F59E0B")
     static let uiEmber = dynamic(light: "#e7000b", dark: "#ef4444")
     
-    static let uiInverseBlock = dynamic(light: "#0a0a0a", dark: "#18181b")
-    static let uiInverseBorder = dynamic(light: "#0a0a0a", dark: "#27272a")
 
     // MARK: - Семантические цвета состояний
     // Акценты используются точечно: успех, предупреждение, работа ИИ, обработка, ссылки.
     static let uiSuccess = Color(hex: "#10B981")
     static let uiSuccessLight = Color(hex: "#34D399")
-    static let uiSuccessPale = Color(hex: "#A7F3D0")
     static let uiSuccessDeep = Color(hex: "#059669")
-    static let uiSuccessShade = Color(hex: "#064E3B")
     static let uiSuccessText = dynamic(light: "#047857", dark: "#10B981")
     static let uiAmber = Color(hex: "#F59E0B")
     static let uiAI = Color(hex: "#C084FC")
-    static let uiAIDeep = Color(hex: "#8B5CF6")
     static let uiProcessing = Color(hex: "#6366F1")
-    static let uiInfo = Color(hex: "#3B82F6")
     static let uiInfoLight = Color(hex: "#38BDF8")
 }
 

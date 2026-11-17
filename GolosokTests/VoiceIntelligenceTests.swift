@@ -46,7 +46,7 @@ extension SharedSettingsSuites {
         @Test func validatorPassesCleanOutput() {
             let input = "Мы должны отправить отчет в пятницу до 18:00."
             let output = "Отправить отчет в пятницу до 18:00."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             switch result {
             case .valid(let text):
                 #expect(text == "Отправить отчет в пятницу до 18:00.")
@@ -58,7 +58,7 @@ extension SharedSettingsSuites {
         @Test func validatorRejectsHallucinatedNumbers() {
             let input = "Стоимость подписки составляет 500 рублей в месяц."
             let output = "Стоимость подписки составляет 999 рублей в месяц."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             switch result {
             case .valid:
                 Issue.record("Expected rejection for hallucinated number")
@@ -70,7 +70,7 @@ extension SharedSettingsSuites {
         @Test func validatorRejectsHallucinatedLatinWords() {
             let input = "Нам нужно обновить серверную часть приложения."
             let output = "Нам нужно обновить серверную часть с использованием Kubernetes и Docker."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             switch result {
             case .valid:
                 Issue.record("Expected rejection for hallucinated Latin keywords")
@@ -82,7 +82,7 @@ extension SharedSettingsSuites {
         @Test func validatorRejectsChatbotConversationalPreambles() {
             let input = "Купи молоко и хлеб."
             let output = "Конечно! Вот отредактированный текст: Купи молоко и хлеб."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             switch result {
             case .valid:
                 Issue.record("Expected rejection for conversational preamble")
@@ -94,7 +94,7 @@ extension SharedSettingsSuites {
         @Test func validatorRejectsAnswersToQuestionsInCleanStyle() {
             let input = "Сколько сейчас времени в Токио?"
             let output = "В Токио сейчас 9 часов вечера."
-            let result = GroundingValidator.validate(input: input, output: output, style: .clean)
+            let result = GroundingValidator.validate(input: input, output: output, level: .clean)
             switch result {
             case .valid:
                 Issue.record("Expected rejection because question was turned into an answer")
@@ -142,31 +142,5 @@ extension SharedSettingsSuites {
 
         // MARK: - VoiceIntelligenceSettings
 
-        @Test func defaultSettingsAreCorrect() {
-            let settings = VoiceIntelligenceSettings.shared
-            // resetToDefaults пишет в настоящие настройки пользователя — возвращаем всё как было
-            let saved = (settings.mode, settings.style, settings.engine, settings.openRouterModel, settings.localModel,
-                         settings.adaptiveTimeoutSeconds, settings.adaptiveAppProfilesEnabled, settings.customSystemPrompt)
-            settings.resetToDefaults()
-            defer {
-                settings.mode = saved.0
-                settings.style = saved.1
-                settings.engine = saved.2
-                settings.openRouterModel = saved.3
-                settings.localModel = saved.4
-                settings.adaptiveTimeoutSeconds = saved.5
-                settings.adaptiveAppProfilesEnabled = saved.6
-                settings.customSystemPrompt = saved.7
-            }
-
-            #expect(settings.mode == .smart)
-            #expect(settings.style == .clean)
-            #expect(settings.engine == .external)
-            #expect(settings.adaptiveTimeoutSeconds == 3.0)
-            #expect(VoiceInputMode.smart.title == "Умная речь")
-            #expect(VoiceStyle.clean.title == "Чистая мысль")
-            #expect(VoiceEngine.airGapped.title == "Air-Gapped")
-            #expect(VoiceEngine.external.title == "Внешний")
-        }
     }
 }

@@ -6,7 +6,6 @@ xcuserdata/
 .superpowers/
 Golosok/whisper-cli
 Golosok/llama-cli
-Golosok/ffmpeg
 build/
 Vendor/llama/*
 !Vendor/llama/.gitkeep

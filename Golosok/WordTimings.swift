@@ -6,11 +6,6 @@ struct TimedWord: Codable, Hashable {
     let end: Double
 }
 
-struct TimingFilePayload: Codable {
-    let words: [TimedWord]
-    let duration: Double
-}
-
 /// Сборка и нормализация таймингов слов, общая для всех движков распознавания.
 enum WordTimings {
     /// Склейка подсловных токенов SentencePiece в слова: «▁» отмечает начало слова.
@@ -61,12 +56,6 @@ enum WordTimings {
             result[last] = TimedWord(text: result[last].text, start: result[last].start, end: result[last].start + 0.3)
         }
         return result
-    }
-
-    /// Старые записи хранили миллисекунды — приводим к секундам.
-    static func normalized(_ words: [TimedWord], duration: Double) -> [TimedWord] {
-        guard let last = words.last, last.end > duration * 100 else { return words }
-        return words.map { TimedWord(text: $0.text, start: $0.start / 1000, end: $0.end / 1000) }
     }
 
     /// Равномерно распределяет слова по интервалу пропорционально их длине.

@@ -1,10 +1,10 @@
 import Foundation
 
-/// Локальный синтез мысли на моделях GGUF: Вихрь, Qwen, Llama.
+/// Локальная очистка речи на моделях GGUF из каталога.
 ///
 /// Основной путь — постоянный `LocalLLMServer`: модель уже в памяти, ответ за доли
-/// секунды. Если сервер ещё загружается или недоступен, запрос выполняется через
-/// `llama-cli`, как раньше, а сервер тем временем догружается для следующих диктовок.
+/// секунды. Если сервер ещё загружается или недоступен, диктовка идёт без очистки, а сервер
+/// догружается для следующих. `llama-cli` остаётся запасным путём только для моделей без `requiresServer`.
 public final class LocalSynthServiceClient: ObservableObject {
     public static let shared = LocalSynthServiceClient()
 
@@ -29,7 +29,7 @@ public final class LocalSynthServiceClient: ObservableObject {
 
     /// Есть ли хоть один способ выполнить локальный инференс.
     public var isEngineAvailable: Bool {
-        mockService != nil || LocalLLMServer.isAvailable || (isCLIEnabled && Self.llamaCLIPath != nil)
+        mockService != nil || LocalLLMServer.isAvailable
     }
 
     private init() {}
@@ -60,12 +60,16 @@ public final class LocalSynthServiceClient: ObservableObject {
                     return Self.cleanModelOutput(raw)
                 }
             } else {
-                // Сервер догружается в фоне; эту диктовку обслужит llama-cli
+                // Сервер догружается в фоне; эту диктовку обслужит llama-cli, если модель это позволяет
                 LocalLLMServer.shared.prewarm(modelPath: modelPath)
-                AppLogger.shared.info("LocalSynthClient", "llama-server ещё загружается — запрос через llama-cli")
+                AppLogger.shared.info("LocalSynthClient", "llama-server ещё загружается")
             }
         }
 
+        guard allowsCLIFallback(modelPath: modelPath) else {
+            AppLogger.shared.info("LocalSynthClient", "Модель работает только через llama-server — откат на этап 1", details: "Модель: \(modelName)")
+            return nil
+        }
         guard isCLIEnabled, let cliPath = Self.llamaCLIPath else {
             AppLogger.shared.info("LocalSynthClient", "Локальный исполнитель недоступен — откат на этап 1")
             return nil
@@ -76,18 +80,18 @@ public final class LocalSynthServiceClient: ObservableObject {
         }.value
     }
 
+    /// Запасной путь через llama-cli закрыт для моделей, которые работают только через llama-server:
+    /// встроенный llama-cli может не знать их архитектуру и шаблон чата.
+    func allowsCLIFallback(modelPath: String) -> Bool {
+        SLMModelStore.model(forPath: modelPath)?.requiresServer != true
+    }
+
     /// Поднимает модель заранее, пока человек ещё говорит.
     public func prewarm(modelPath: String) {
         guard HardwareWatchdog.evaluateInferenceSafety() == .allowed,
               LocalLLMServer.isAvailable,
               FileManager.default.fileExists(atPath: modelPath) else { return }
         LocalLLMServer.shared.prewarm(modelPath: modelPath)
-    }
-
-    /// Выгружает модель из памяти.
-    public func unload() {
-        LocalLLMServer.shared.stop()
-        AppLogger.shared.info("LocalSynthClient", "Модель выгружена, память освобождена")
     }
 
     // MARK: - Исполнители

@@ -283,6 +283,14 @@ final class DictionaryStore: ObservableObject {
         return prefix + spellings.joined(separator: ", ")
     }
 
+    /// Подсказка модели к словам, которые распознавание могло исказить из терминов. Пустая строка без подозрений.
+    func termHint(_ suspects: [TermSuspect]) -> String {
+        guard !suspects.isEmpty else { return "" }
+        let lines = suspects.map { "«\($0.token)»: " + $0.candidates.joined(separator: ", ") }
+        return (["Распознавание могло исказить термины. Замени слово на термин, только если он подходит по смыслу фразы."] + lines)
+            .joined(separator: "\n")
+    }
+
     /// Написания пользовательских записей от недавних к старым через запятую: подсказка распознавателю,
     /// который принимает начальный контекст, например Whisper. Пустая строка, если записей нет.
     func recognizerPrompt(limit: Int = 40) -> String {

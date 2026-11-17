@@ -81,6 +81,8 @@ public struct NumberNormalizer {
         "тридцатый": 30, "тридцатого": 30
     ]
 
+    private static let fractionWords: Set<String> = ["полтора", "полторы", "пол"]
+
     private static let monthNames: Set<String> = [
         "января", "февраля", "марта", "апреля", "мая", "июня",
         "июля", "августа", "сентября", "октября", "ноября", "декабря"
@@ -139,6 +141,19 @@ public struct NumberNormalizer {
                     if hasPunct {
                         break
                     }
+                }
+
+                // Порядковые вне дат остаются словами: «вторую кандидатку» не «2 кандидатку».
+                // Иначе модель читает цифру как количество и пишет «двух кандидаток».
+                let words = tokens[i..<j].map { $0.word.lowercased() }
+                let hasOrdinal = words.contains { ordinals[$0] != nil }
+                // «Полтора миллиона» — не «полтора 1000000»
+                let previous = i > 0 ? tokens[i - 1].word.lowercased() : ""
+                let loneScaleAfterFraction = words.allSatisfy { scales[$0] != nil } && fractionWords.contains(previous)
+                if hasOrdinal || loneScaleAfterFraction {
+                    resultTokens.append(contentsOf: tokens[i..<j].map(\.raw))
+                    i = j
+                    continue
                 }
 
                 if !numberTokens.isEmpty {
@@ -201,11 +216,6 @@ public struct NumberNormalizer {
         if prev == .hundred && (next == .ten || next == .teen || next == .unit) { return true }
         if prev == .ten && next == .unit { return true }
         return false
-    }
-
-    private static func isNumberWord(_ word: String) -> Bool {
-        units[word] != nil || teens[word] != nil || tens[word] != nil ||
-        hundreds[word] != nil || scales[word] != nil || ordinals[word] != nil
     }
 
     private static func valueOfWord(_ word: String) -> Int? {

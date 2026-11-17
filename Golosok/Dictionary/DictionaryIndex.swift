@@ -7,6 +7,17 @@ struct FuzzyHit: Equatable {
     let similarity: Double
 }
 
+/// Слово распознавания, похожее на искажённый термин, и термины словаря, похожие на него по звучанию.
+public struct TermSuspect: Equatable {
+    public let token: String
+    public let candidates: [String]
+
+    public init(token: String, candidates: [String]) {
+        self.token = token
+        self.candidates = candidates
+    }
+}
+
 /// Точная замена по вариантам, словоформы и исправление регистра.
 /// Строится один раз из записей и наборов, `apply` делает один проход по словам фразы.
 struct DictionaryIndex {
@@ -17,6 +28,11 @@ struct DictionaryIndex {
     /// Кандидаты нечёткого поиска: язык, затем первая буква ключа.
     private let fuzzyGroups: [DictionaryLanguage: [FuzzyGroupKey: [FuzzyCandidate]]]
     private let checker: CommonWordChecking
+    /// Звуковые ключи написаний и их русских вариантов для подсказки модели.
+    private let soundTerms: [SoundTerm]
+    /// Написания и их отдельные слова в нижнем регистре: такие слова не подозрительны.
+    private let approvedLower: Set<String>
+    private let approvedWordsLower: Set<String>
 
     /// Окончания словоформ для русского.
     private static let endings: Set<String> = ["а", "у", "е", "ом", "ой", "ы", "ов", "ам", "ами", "ах", "и", "ю", "я", "ей"]
@@ -40,6 +56,16 @@ struct DictionaryIndex {
         var spellings = Set<String>()
         var fuzzy: [DictionaryLanguage: [FuzzyGroupKey: [FuzzyCandidate]]] = [:]
 
+        var sounds: [SoundTerm] = []
+        func addSound(_ spelling: String, ruVariants: [String]) {
+            let keys = Set(([spelling] + ruVariants).map(Phonetics.soundKey)).filter { !$0.isEmpty }
+            guard !keys.isEmpty else { return }
+            sounds.append(SoundTerm(
+                spelling: spelling, lowered: spelling.lowercased(), keys: keys.map { Array($0) },
+                letters: Phonetics.latinLetters(spelling), ordinal: sounds.count
+            ))
+        }
+
         var ordinal = 0
         func addFuzzy(_ spelling: String) {
             defer { ordinal += 1 }
@@ -55,6 +81,7 @@ struct DictionaryIndex {
         for entry in userEntries {
             spellings.insert(entry.spelling)
             addFuzzy(entry.spelling)
+            addSound(entry.spelling, ruVariants: entry.variants[.ru] ?? [])
             let key = "user/\(entry.id.uuidString)"
             let caseFix = entry.forceCase || !checker.isCommonWord(entry.spelling, language: .en)
             for language in DictionaryLanguage.allCases {
@@ -71,6 +98,9 @@ struct DictionaryIndex {
                 guard !disabledPackWords.contains(key) else { continue }
                 spellings.insert(entry.spelling)
                 addFuzzy(entry.spelling)
+                addSound(entry.spelling, ruVariants: (entry.variants[.ru] ?? []).filter {
+                    !disabledPackVariants.contains("\(key)/\($0)")
+                })
                 // Отменённое исправление регистра выключает вариант «<packId>/<spelling>/<spelling в нижнем регистре>».
                 let caseFixDisabled = disabledPackVariants.contains("\(key)/\(entry.spelling.lowercased())")
                 for language in DictionaryLanguage.allCases {
@@ -90,6 +120,11 @@ struct DictionaryIndex {
         tables = builders
         fuzzyGroups = fuzzy
         approvedSpellings = spellings
+        soundTerms = sounds
+        approvedLower = Set(spellings.map { $0.lowercased() })
+        approvedWordsLower = Set(spellings.flatMap {
+            $0.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        })
     }
 
     func apply(to text: String, language: DictionaryLanguage) -> (text: String, replacements: [AppliedReplacement]) {
@@ -148,6 +183,121 @@ struct DictionaryIndex {
         guard !replacements.isEmpty else { return (text, [], handled) }
         output += text[cursor...]
         return (output, replacements, handled)
+    }
+
+    // MARK: - Подозрительные слова
+
+    private static let maxSuspects = 3
+    private static let maxCandidates = 6
+    private static let suspectPattern = try! NSRegularExpression(pattern: "[A-Za-z][A-Za-z0-9&]*|[А-ЯЁа-яё]+")
+
+    /// Слова, которые распознавание могло исказить из термина, с кандидатами по звуковому ключу.
+    /// Только для русской диктовки: не больше трёх слов, у каждого не больше шести кандидатов.
+    func termSuspects(in text: String, language: DictionaryLanguage) -> [TermSuspect] {
+        guard language == .ru, !text.isEmpty, !soundTerms.isEmpty else { return [] }
+        var result: [TermSuspect] = []
+        var seen = Set<String>()
+        for word in Self.suspectWords(in: text) where result.count < Self.maxSuspects {
+            guard seen.insert(word.lowercased()).inserted, isSuspect(word) else { continue }
+            let candidates = candidates(for: word)
+            if !candidates.isEmpty { result.append(TermSuspect(token: word, candidates: candidates)) }
+        }
+        return result
+    }
+
+    /// Латинские и кириллические слова по порядку. Однобуквенное латинское слово склеивается
+    /// с предыдущим латинским через пробел, как «Power B», а без такого соседа пропускается.
+    static func suspectWords(in text: String) -> [String] {
+        let ns = text as NSString
+        var words: [String] = []
+        var previous: (range: NSRange, latin: Bool)?
+        for match in suspectPattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let word = ns.substring(with: match.range)
+            let latin = word.unicodeScalars.first.map { $0.isASCII } ?? false
+            guard latin, word.count == 1 else {
+                words.append(word)
+                previous = (match.range, latin)
+                continue
+            }
+            // Пропущенная буква не соседка: в «привет A B» буква B не склеивается с «привет»
+            if let prev = previous, prev.latin, let last = words.last {
+                let gapStart = prev.range.location + prev.range.length
+                let gap = ns.substring(with: NSRange(location: gapStart, length: match.range.location - gapStart))
+                if gap == " " {
+                    words[words.count - 1] = last + " " + word
+                    previous = (match.range, true)
+                    continue
+                }
+            }
+            previous = nil
+        }
+        return words
+    }
+
+    private func isSuspect(_ word: String) -> Bool {
+        let lower = word.lowercased()
+        guard !approvedLower.contains(lower) else { return false }
+        if word.unicodeScalars.first?.isASCII == true {
+            if word.contains(" ") { return true }
+            guard !approvedWordsLower.contains(lower) else { return false }
+            // Две буквы не заглавными слишком мало говорят о термине: «Sk» модель меняла то на SQL, то на SDK
+            if word.count <= 2 && word != word.uppercased() { return false }
+            // Проверка орфографии принимает короткие аббревиатуры вроде «BB» за слова
+            let shortAcronym = word.count <= 4 && word == word.uppercased()
+            return shortAcronym || !checker.isCommonWord(word, language: .en)
+        }
+        // Кириллица в первую версию не входит: «СМИ», «МВД», «НДС» — обычные слова рабочей речи,
+        // а по звуку и буквам они близки к SMM и MVP. Верная находка в замере была одна: «ГИД» → Git.
+        return false
+    }
+
+    private func candidates(for word: String) -> [String] {
+        let key = Array(Phonetics.soundKey(word))
+        guard !key.isEmpty else { return [] }
+        // Один согласный звук совпадает почти с чем угодно: такой ключ годится только аббревиатуре вроде «IPI»
+        guard key.count > 1 || word == word.uppercased() else { return [] }
+        let letters = Phonetics.latinLetters(word)
+        let lower = word.lowercased()
+        // Латиница заглавными — аббревиатура, её буквы мало говорят о сказанном. Остальным словам
+        // кандидат нужен близкий и по буквам, не дальше двух третей: иначе Ozon получит Asana.
+        let isLatin = word.unicodeScalars.first?.isASCII == true
+        let maxLetterShare: Double? = isLatin && word == word.uppercased() ? nil : 2.0 / 3.0
+        var scored: [(similarity: Double, distance: Double, ordinal: Int, spelling: String)] = []
+        for term in soundTerms where term.lowered != lower {
+            var best: Double?
+            for termKey in term.keys {
+                let longest = max(key.count, termKey.count)
+                let limit = longest <= 2 ? 0 : (longest <= 5 ? 1 : 2)
+                let distance = Self.levenshtein(key, termKey)
+                if distance <= limit { best = max(best ?? 0, 1 - Double(distance) / Double(longest)) }
+            }
+            if let best {
+                let letterDistance = Phonetics.normalizedDistance(letters, term.letters)
+                if let maxLetterShare, letterDistance > maxLetterShare + 1e-9 { continue }
+                scored.append((best, Phonetics.normalizedDistance(letters, term.letters), term.ordinal, term.spelling))
+            }
+        }
+        scored.sort {
+            if $0.similarity != $1.similarity { return $0.similarity > $1.similarity }
+            if $0.distance != $1.distance { return $0.distance < $1.distance }
+            return $0.ordinal < $1.ordinal
+        }
+        var seen = Set<String>()
+        return scored.map(\.spelling).filter { seen.insert($0.lowercased()).inserted }.prefix(Self.maxCandidates).map { $0 }
+    }
+
+    private static func levenshtein(_ a: [Character], _ b: [Character]) -> Int {
+        if a.isEmpty { return b.count }
+        if b.isEmpty { return a.count }
+        var prev = Array(0...b.count)
+        for i in 1...a.count {
+            var cur = [i] + Array(repeating: 0, count: b.count)
+            for j in 1...b.count {
+                cur[j] = min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1))
+            }
+            prev = cur
+        }
+        return prev[b.count]
     }
 
     // MARK: - Fuzzy
@@ -326,6 +476,15 @@ struct DictionaryIndex {
     }
 
     // MARK: - Tables
+
+    private struct SoundTerm {
+        let spelling: String
+        let lowered: String
+        let keys: [[Character]]
+        let letters: String
+        /// Порядок добавления: сначала пользовательские записи, затем наборы.
+        let ordinal: Int
+    }
 
     private struct FuzzyGroupKey: Hashable {
         let first: Character

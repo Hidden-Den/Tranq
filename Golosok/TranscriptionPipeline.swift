@@ -11,20 +11,12 @@ final class TranscriptionPipeline {
     enum Source {
         /// Запись микрофона: WAV 16 кГц моно, удаляется вызывающим.
         case recording(URL, duration: TimeInterval)
-        /// Импортированный файл любого поддерживаемого формата.
-        case mediaFile(URL)
-
-        var isFileImport: Bool {
-            if case .mediaFile = self { return true }
-            return false
-        }
     }
 
     struct Job {
         let source: Source
         let focusTarget: FocusSnapshot?
-        /// Включать ли этап языковой модели; для импорта файлов всегда выключен.
-        let synthesize: Bool
+        let level: CleanupLevel
     }
 
     struct Output {
@@ -33,6 +25,8 @@ final class TranscriptionPipeline {
         let stageOneText: String
         let finalText: String
         let isTransformedByAI: Bool
+        /// Почему вместо ответа модели вставлен текст без ИИ; пусто, если откатов не было.
+        let fallback: FallbackReason?
         let words: [TimedWord]
         let audioSeconds: Double
         let speedup: Double
@@ -92,14 +86,6 @@ final class TranscriptionPipeline {
         case .recording(let url, _):
             audioURL = url
             ownsAudioFile = false
-        case .mediaFile(let url):
-            let converted = TempFiles.makeURL(prefix: "import", ext: "wav")
-            guard AudioPCM.convertMediaToWav(url, output: converted) else {
-                TempFiles.remove(converted)
-                return .failure(.audioUnreadable)
-            }
-            audioURL = converted
-            ownsAudioFile = true
         }
 
         guard let reader = AudioChunkReader(url: audioURL) else {
@@ -205,12 +191,12 @@ final class TranscriptionPipeline {
                 targetBundleId: target?.bundleIdentifier
             )
 
-            func deliver(finalText: String, transformed: Bool, isFallback: Bool) {
+            func deliver(finalText: String, transformed: Bool, fallback: FallbackReason?) {
                 TranscriptJournal.shared.updateFinal(
                     id: noteId,
                     stageOneText: stageOneText,
                     finalText: finalText,
-                    isFallback: isFallback
+                    isFallback: fallback != nil
                 )
                 completion(.success(Output(
                     noteId: noteId,
@@ -218,6 +204,7 @@ final class TranscriptionPipeline {
                     stageOneText: stageOneText,
                     finalText: finalText,
                     isTransformedByAI: transformed,
+                    fallback: fallback,
                     words: recognized.words,
                     audioSeconds: recognized.audioSeconds,
                     speedup: speedup,
@@ -227,27 +214,22 @@ final class TranscriptionPipeline {
                 DictionaryStage.shadowFuzzy(finalText, language: language)
             }
 
-            guard job.synthesize else {
-                let direct = dictionary.text
-                AppLogger.shared.info("Pipeline", "Этап 2 пропущен: \(job.source.isFileImport ? "импорт файла" : "режим прямого ввода")", details: "Итог: «\(direct)»")
-                deliver(finalText: direct, transformed: false, isFallback: false)
-                return
-            }
-
+            let level = job.level
             let settings = VoiceIntelligenceSettings.shared
-            AppLogger.shared.info("Pipeline", "Этап 2: Запуск языковой модели — \(settings.engine.title)", details: "стиль: \(settings.style.title)")
-            onStageTwoStarted()
-            ThoughtSynthesizer.shared.synthesize(
-                rawText: dictionary.text,
-                style: settings.style,
-                targetBundleId: target?.bundleIdentifier,
-                firedSpellings: dictionary.fired,
-                language: language
-            ) { finalText, isFallback in
+            AppLogger.shared.info("Pipeline", level == .verbatim ? "Этап 2: без модели" : "Этап 2: очистка речи, движок \(settings.engine.title)", details: "уровень: \(level)")
+            if level != .verbatim { onStageTwoStarted() }
+            Task {
+                let cleaned = await ThoughtSynthesizer.shared.clean(
+                    dictionary.text,
+                    level: level,
+                    targetBundleId: target?.bundleIdentifier,
+                    firedSpellings: dictionary.fired,
+                    language: language
+                )
                 DispatchQueue.main.async {
                     // Повторный проход страхует от вариантов, которые вернула модель
                     var resolved = DictionaryStage.apply(
-                        finalText.trimmingCharacters(in: .whitespacesAndNewlines), noteId: noteId, language: language,
+                        cleaned.text.trimmingCharacters(in: .whitespacesAndNewlines), noteId: noteId, language: language,
                         warnIfNotReady: false
                     ).text
                     if resolved.isEmpty {
@@ -259,8 +241,9 @@ final class TranscriptionPipeline {
                         completion(.failure(.nothingRecognized(audioSeconds: recognized.audioSeconds)))
                         return
                     }
-                    AppLogger.shared.info("Pipeline", "✔ Пайплайн завершён: \(isFallback ? "откат на распознанный текст" : "преобразован языковой моделью")", details: "Финальный текст: «\(resolved)»")
-                    deliver(finalText: resolved, transformed: !isFallback, isFallback: isFallback)
+                    let isFallback = cleaned.fallback != nil
+                    AppLogger.shared.info("Pipeline", "✔ Пайплайн завершён: \(isFallback ? "откат на распознанный текст" : "очистка выполнена")", details: "Финальный текст: «\(resolved)»")
+                    deliver(finalText: resolved, transformed: level != .verbatim && !isFallback, fallback: cleaned.fallback)
                 }
             }
         }
