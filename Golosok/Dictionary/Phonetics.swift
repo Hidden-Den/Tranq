@@ -84,6 +84,55 @@ enum Phonetics {
         return 1 - normalizedDistance(lhs, rhs)
     }
 
+    private static let cyrillicToLatin: [Character: String] = [
+        "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e", "э": "e", "ж": "zh",
+        "з": "z", "и": "i", "ы": "i", "й": "i", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o",
+        "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "ts", "ч": "ch",
+        "ш": "sh", "щ": "sh", "ь": "", "ъ": "", "ю": "u", "я": "a"
+    ]
+
+    /// Порядок важен: сначала многобуквенные звуки, `C` и `S` — заглушки для «ч» и «ш».
+    private static let soundReplacements: [(String, String)] = [
+        ("dzh", "j"), ("zh", "j"), ("dj", "j"), ("ch", "C"), ("sh", "S"), ("ph", "f"),
+        ("ck", "k"), ("th", "t"), ("q", "k"), ("x", "ks"), ("w", "v"), ("c", "s")
+    ]
+
+    private static let devoiced: [Character: Character] = ["b": "p", "d": "t", "g": "k", "v": "f", "z": "s"]
+    private static let soundVowels: Set<Character> = ["a", "e", "i", "o", "u", "y", "h"]
+
+    /// Скелет согласных, общий для латиницы и кириллицы: «IPI», «API» и «эй пи ай» дают `p`.
+    /// Цифры и знаки выбрасываются, звонкие оглушаются, гласные удаляются, сдвоенные остаются.
+    static func soundKey(_ text: String) -> String {
+        var latin = ""
+        for ch in text.lowercased() {
+            if let mapped = cyrillicToLatin[ch] {
+                latin += mapped
+            } else if ch.isASCII, ch.isLetter {
+                latin.append(ch)
+            }
+        }
+        for (from, to) in soundReplacements {
+            latin = latin.replacingOccurrences(of: from, with: to)
+        }
+        return String(latin.compactMap { ch -> Character? in
+            let sound = devoiced[ch] ?? ch
+            return soundVowels.contains(sound) ? nil : sound
+        })
+    }
+
+    /// Буквы слова в латинице без знаков: для сравнения написаний разных алфавитов.
+    static func latinLetters(_ text: String) -> String {
+        var latin = ""
+        for ch in text.lowercased() {
+            if let mapped = cyrillicToLatin[ch] {
+                latin += mapped
+            } else if ch.isASCII, ch.isLetter {
+                latin.append(ch)
+            }
+        }
+        return latin
+    }
+
     private static func collapseDoubles(_ chars: [Character]) -> String {
         var out: [Character] = []
         for ch in chars where out.last != ch { out.append(ch) }
