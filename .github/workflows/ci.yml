@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Проверка имени
+        run: bash scripts/check-brand.sh
+
       - name: Версия Xcode
         run: xcodebuild -version
 

@@ -19,4 +19,9 @@ struct BrandingTests {
     @Test func builtInPacksStillLoad() {
         #expect(DictionaryStore.loadPacks(from: .main).count == 10)
     }
+
+    @Test func marketingVersionIsThreeX() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        #expect(version?.hasPrefix("3.") == true)
+    }
 }
