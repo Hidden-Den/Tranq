@@ -2,18 +2,10 @@ import Testing
 import AppKit
 @testable import Tranq
 
-/// Ресурсы бренда: буква Q для строки меню и логотипа.
+/// Ресурсы бренда: строчная q для строки меню.
 struct BrandAssetsTests {
     @Test func menuBarMarkExists() {
         #expect(NSImage(named: "MenuBarMark") != nil)
-    }
-
-    @Test func appLogoExists() {
-        #expect(NSImage(named: "AppLogo") != nil)
-    }
-
-    @Test func appLogoIsTemplate() {
-        #expect(NSImage(named: "AppLogo")?.isTemplate == true)
     }
 
     @Test func menuBarMarkIsTemplate() {
@@ -28,8 +20,8 @@ struct BrandAssetsTests {
     }
 
     /// Одна строчная q даёт отношение сторон около 0.78, монограмма Tq около 0.93.
-    @Test func menuBarMarkIsWiderThanSingleLetter() {
+    @Test func menuBarMarkIsSingleLetterQ() {
         let glyph = BrandAssets.menuBarMark()
-        #expect(glyph.size.width / glyph.size.height > 0.85)
+        #expect(glyph.size.width / glyph.size.height < 0.85)
     }
 }
