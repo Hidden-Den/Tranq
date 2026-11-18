@@ -22,7 +22,7 @@ Swift и Go следуют этому файлу буквально.
 | `words` | `list_user_words` | нет | `[{"spelling","variants":{"ru":[…],"en":[…]},"source":"manual\|learned\|mcp","hits","last_used"}]`, `last_used` — ISO 8601 или `null` |
 | `set_pack` | `set_pack_enabled` | `{"id","enabled"}` | объект набора как в `packs` |
 | `add_words` | `add_words` | `{"words":[{"spelling","variants":{"ru":[…],"en":[…]},"force_case"}]}` | `{"added":["…"],"skipped":{"<написание>":"<причина>"}}` |
-| `remove_words` | `remove_words` | `{"spellings":["…"]}` | та же форма, что у `add_words` |
+| `remove_words` | `remove_words` | `{"spellings":["…"]}` | `{"removed":["…"],"skipped":{"<написание>":"<причина>"}}` |
 | `revert_agent_words` | `revert_agent_words` | нет | `{"removed_words":N,"removed_variants":M}` |
 | `dictations` | `list_dictations` | `{"limit":20}` | `[{"date","spoken","text"}]`, `date` — строка как в истории |
 
@@ -30,5 +30,6 @@ Swift и Go следуют этому файлу буквально.
 
 - `set_pack` с `enabled: false` — это выключение набора, оно требует полного доступа. Дверь выводит это из `enabled`, отдельного флага в запросе нет.
 - `add_words` больше 50 слов отклоняется целиком. Пустой список — тоже.
+- Слово с негодным вариантом, равным написанию или короче двух символов, добавляется без этого варианта. Причина идёт в `skipped` под ключом `"<написание> / <вариант>"`, а само слово остаётся в `added`.
 - `dictations`: `limit` по умолчанию 20, больше 100 обрезается до 100, ноль и отрицательное дают 20. Заметки без сырой расшифровки пропускаются.
 - Сокет принимает несколько соединений одновременно, ответ уходит только своему клиенту.
