@@ -18,13 +18,15 @@ public final class ThoughtSynthesizer {
     /// и причину в `fallback`.
     /// - Parameters:
     ///   - backend: исполнитель; `nil` выбирает по настройке движка
+    ///   - telemetry: хранилище замеров; `nil` берёт общее, подмена нужна тестам
     func clean(
         _ text: String,
         level: CleanupLevel,
         targetBundleId: String?,
         firedSpellings: [String],
         language: DictionaryLanguage,
-        backend: CleanupBackend? = nil
+        backend: CleanupBackend? = nil,
+        telemetry: CleanupTelemetry? = nil
     ) async -> CleanupResult {
         let stageOne = Self.stageOne(text)
         // Речь из одних звуков: модель не нужна, а текст не от неё
@@ -44,8 +46,10 @@ public final class ThoughtSynthesizer {
         let settings = VoiceIntelligenceSettings.shared
         let resolvedBackend: CleanupBackend
         let timeout: TimeInterval
+        let modelName: String
         if let backend {
             resolvedBackend = backend
+            modelName = String(describing: type(of: backend))
             timeout = max(1.5, settings.adaptiveTimeoutSeconds)
         } else {
             switch settings.engine {
@@ -63,6 +67,7 @@ public final class ThoughtSynthesizer {
                     return CleanupResult(text: stageOne, fallback: .hardware)
                 }
                 resolvedBackend = LocalBackend(modelPath: SLMModelStore.shared.localFileURL(for: slmModel).path)
+                modelName = settings.localModel
                 timeout = max(6.0, settings.adaptiveTimeoutSeconds)
 
             case .external:
@@ -74,6 +79,7 @@ public final class ThoughtSynthesizer {
                     return CleanupResult(text: stageOne, fallback: .notConfigured)
                 }
                 resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config)
+                modelName = AIProviderStore.shared.config.model
                 timeout = max(1.5, settings.adaptiveTimeoutSeconds)
             }
         }
@@ -88,10 +94,17 @@ public final class ThoughtSynthesizer {
             AppLogger.shared.info("Pipeline", "Этап 2: подсказка терминов", details: termHint)
         }
 
+        let store: CleanupTelemetry
+        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
+        let attemptStarted = CFAbsoluteTimeGetCurrent()
+        await store.begin(model: modelName)
+
         let reply: String
         do {
             reply = try await resolvedBackend.complete(system: system, user: stageOne, timeout: timeout)
+            await store.finish(outcome: .success, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
         } catch let error as CleanupBackendError {
+            await store.finish(outcome: error == .timeout ? .timeout : .error, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
             let reason: FallbackReason
             switch error {
             case .timeout: reason = .timeout
@@ -102,6 +115,7 @@ public final class ThoughtSynthesizer {
             AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, \(error.logDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: reason)
         } catch {
+            await store.finish(outcome: .error, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
             AppLogger.shared.warn("Pipeline", "Этап 2: ошибка модели \(error.localizedDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: .providerUnavailable)
         }

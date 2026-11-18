@@ -53,9 +53,12 @@ enum ChatRequestBuilder {
             if config.isOpenRouter {
                 body["reasoning"] = ["effort": "none", "exclude": true]
                 body["provider"] = ["sort": "latency"]
+                // Расход токенов для телеметрии: без этого поток его не присылает
+                body["usage"] = ["include": true]
             } else {
                 body["temperature"] = 0.1
                 if config.needsReasoningOff { body["reasoning_effort"] = "none" }
+                body["stream_options"] = ["include_usage": true]
             }
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

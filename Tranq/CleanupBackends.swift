@@ -15,6 +15,8 @@ struct LocalBackend: CleanupBackend {
 /// Внешний API: формат OpenAI или Anthropic, ответ принимается потоком.
 struct ExternalBackend: CleanupBackend {
     let config: AIProviderConfig
+    /// Куда писать замеры потока; `nil` берёт общее хранилище, подмена нужна тестам.
+    var telemetry: CleanupTelemetry?
 
     func complete(system: String, user: String, timeout: TimeInterval) async throws -> String {
         try await withThrowingTaskGroup(of: String.self) { group in
@@ -32,6 +34,8 @@ struct ExternalBackend: CleanupBackend {
     private func stream(system: String, user: String) async throws -> String {
         let request = try ChatRequestBuilder.streamRequest(config: config, system: system, user: "<transcript>\(user)</transcript>")
 
+        let store: CleanupTelemetry
+        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
         let started = CFAbsoluteTimeGetCurrent()
         var accumulated = ""
         do {
@@ -40,16 +44,22 @@ struct ExternalBackend: CleanupBackend {
             guard http.statusCode == 200 else { throw CleanupBackendError.http(http.statusCode) }
 
             var stripper = StreamingThinkTagStripper()
+            var usage = UsageAccumulator()
             var gotFirstToken = false
             for try await line in bytes.lines {
                 switch Self.parseStreamLine(line) {
                 case .skip: continue
                 case .done: break
                 case .failure: throw CleanupBackendError.unavailable
+                case .usage(let input, let output):
+                    usage.apply(input: input, output: output)
+                    continue
                 case .text(let piece):
                     if !gotFirstToken {
                         gotFirstToken = true
-                        AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен за %.2f с", CFAbsoluteTimeGetCurrent() - started))
+                        let elapsed = CFAbsoluteTimeGetCurrent() - started
+                        AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен за %.2f с", elapsed))
+                        await store.noteFirstToken(seconds: elapsed)
                     }
                     if let clean = stripper.feed(piece) { accumulated.append(clean) }
                     continue
@@ -57,6 +67,12 @@ struct ExternalBackend: CleanupBackend {
                 break
             }
             if let rest = stripper.finish() { accumulated.append(rest) }
+            // Провайдер мог не прислать расход: тогда оценка по символам с пометкой
+            await store.noteUsage(
+                input: usage.input ?? CleanupTelemetry.estimateTokens(system + user),
+                output: usage.output ?? CleanupTelemetry.estimateTokens(accumulated),
+                estimated: usage.input == nil || usage.output == nil
+            )
         } catch let error as CleanupBackendError {
             throw error
         } catch let error as URLError where error.code == .timedOut {
@@ -84,6 +100,8 @@ extension ExternalBackend {
         case done
         /// Провайдер прислал ошибку посреди потока.
         case failure
+        /// Расход токенов, который провайдер прислал отдельной строкой. Любое из чисел может отсутствовать.
+        case usage(input: Int?, output: Int?)
         case skip
     }
 
@@ -97,14 +115,38 @@ extension ExternalBackend {
         let type = json["type"] as? String
         if type == "message_stop" { return .done }
         if type == "error" || json["error"] != nil { return .failure }
+        // Текст важнее расхода: часть шлюзов шлёт usage в каждом куске, и ответ терять нельзя
         if let choices = json["choices"] as? [[String: Any]],
            let delta = choices.first?["delta"] as? [String: Any] {
             if let piece = delta["content"] as? String, !piece.isEmpty { return .text(piece) }
-            return .skip
+            return usageEvent(in: json) ?? .skip
         }
         if let delta = json["delta"] as? [String: Any], let piece = delta["text"] as? String, !piece.isEmpty {
             return .text(piece)
         }
-        return .skip
+        // У последнего куска OpenAI массив choices пуст, у Anthropic usage лежит в message_start и message_delta
+        return usageEvent(in: json) ?? .skip
+    }
+
+    private static func usageEvent(in json: [String: Any]) -> StreamEvent? {
+        let usage = (json["usage"] as? [String: Any])
+            ?? ((json["message"] as? [String: Any])?["usage"] as? [String: Any])
+        guard let usage else { return nil }
+        let input = (usage["prompt_tokens"] as? Int) ?? (usage["input_tokens"] as? Int)
+        let output = (usage["completion_tokens"] as? Int) ?? (usage["output_tokens"] as? Int)
+        guard input != nil || output != nil else { return nil }
+        return .usage(input: input, output: output)
+    }
+}
+
+/// Складывает расход из потока. Anthropic присылает usage дважды, в `message_start` и в `message_delta`:
+/// входные токены берутся первым значением, выходные последним, поэтому они не складываются вдвое.
+struct UsageAccumulator {
+    private(set) var input: Int?
+    private(set) var output: Int?
+
+    mutating func apply(input newInput: Int?, output newOutput: Int?) {
+        if input == nil { input = newInput }
+        if let newOutput { output = newOutput }
     }
 }

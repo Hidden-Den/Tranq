@@ -50,6 +50,8 @@ struct AIProviderSection: View {
                     }
                     Spacer()
                 }
+
+                TelemetryDisclosure()
             }
         }
     }
