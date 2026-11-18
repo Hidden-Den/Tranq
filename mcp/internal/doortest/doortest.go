@@ -26,6 +26,7 @@ type Door struct {
 
 	mu       sync.Mutex
 	requests []string
+	accepted int
 	conns    map[net.Conn]struct{}
 	wg       sync.WaitGroup
 }
@@ -91,6 +92,15 @@ func (d *Door) Requests() []string {
 	return append([]string(nil), d.requests...)
 }
 
+// Connections returns how many connections the door has accepted so far,
+// whether or not a request came over them. A test uses it to show that a tool
+// refused a call without ever reaching the door.
+func (d *Door) Connections() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.accepted
+}
+
 func (d *Door) record(line string) {
 	d.mu.Lock()
 	d.requests = append(d.requests, line)
@@ -114,6 +124,7 @@ func start(t testing.TB, path string, serve func(*Door, net.Conn)) *Door {
 			}
 			d.mu.Lock()
 			d.conns[conn] = struct{}{}
+			d.accepted++
 			d.mu.Unlock()
 			d.wg.Add(1)
 			go func() {

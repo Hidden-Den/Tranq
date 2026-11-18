@@ -27,6 +27,7 @@ type Door interface {
 // Register adds every tool of the server to s.
 func Register(s *mcp.Server, d Door) {
 	registerRead(s, d)
+	registerWrite(s, d)
 }
 
 // ask sends a command to the door and returns the data as the text of a tool

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -104,6 +105,142 @@ func TestEndToEndReadTools(t *testing.T) {
 	}
 	if got := len(d.Requests()); got != 2 {
 		t.Fatalf("door got %d requests, want 2: %q", got, d.Requests())
+	}
+}
+
+// writeCase is one write tool called through the whole server: the agent's
+// arguments, the exact line the door must receive, and the data it answers.
+type writeCase struct {
+	tool    string
+	args    any
+	request string
+	data    string
+}
+
+var writeCases = []writeCase{
+	{
+		tool:    "set_pack_enabled",
+		args:    map[string]any{"id": "medicine", "enabled": false},
+		request: `{"cmd":"set_pack","args":{"id":"medicine","enabled":false}}`,
+		data:    `{"id":"medicine","title":"Медицина","word_count":80,"enabled":false}`,
+	},
+	{
+		tool: "add_words",
+		args: map[string]any{"words": []any{
+			map[string]any{"spelling": "арипипразол", "variants": map[string]any{"ru": []any{"ари пипразол", "а"}}},
+			map[string]any{"spelling": "iOS", "force_case": true},
+		}},
+		request: `{"cmd":"add_words","args":{"words":[` +
+			`{"spelling":"арипипразол","variants":{"ru":["ари пипразол","а"],"en":[]},"force_case":false},` +
+			`{"spelling":"iOS","variants":{"ru":[],"en":[]},"force_case":true}]}}`,
+		data: `{"added":["арипипразол","iOS"],"skipped":{"арипипразол / а":"вариант «а» короче двух символов"}}`,
+	},
+	{
+		tool:    "remove_words",
+		args:    map[string]any{"spellings": []any{"арипипразол", "Tranq"}},
+		request: `{"cmd":"remove_words","args":{"spellings":["арипипразол","Tranq"]}}`,
+		data:    `{"removed":["арипипразол"],"skipped":{"Tranq":"слово добавил человек"}}`,
+	},
+	{
+		tool:    "revert_agent_words",
+		args:    nil,
+		request: `{"cmd":"revert_agent_words","args":{}}`,
+		data:    `{"removed_words":12,"removed_variants":3}`,
+	},
+}
+
+func TestEndToEndWriteTools(t *testing.T) {
+	for _, tc := range writeCases {
+		t.Run(tc.tool, func(t *testing.T) {
+			d := doortest.Serve(t, reply(`{"ok":true,"data":`+tc.data+`,"language":"ru"}`))
+			client := door.New(d.Path)
+			client.OpenApp = noOpen(t)
+			result, err := connect(t, client).CallTool(context.Background(), &mcp.CallToolParams{Name: tc.tool, Arguments: tc.args})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.IsError {
+				t.Fatalf("tool error: %s", text(t, result))
+			}
+			if got := text(t, result); got != tc.data {
+				t.Fatalf("text = %s, want the door's data %s", got, tc.data)
+			}
+			if got := d.Requests(); len(got) != 1 || got[0] != tc.request {
+				t.Fatalf("door received %q, want exactly %q", got, tc.request)
+			}
+		})
+	}
+}
+
+func TestEndToEndWriteToolsAreListed(t *testing.T) {
+	d := doortest.Serve(t, reply(`{"ok":true,"data":null,"language":"ru"}`))
+	client := door.New(d.Path)
+	client.OpenApp = noOpen(t)
+	listed, err := connect(t, client).ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]bool{}
+	for _, tool := range listed.Tools {
+		names[tool.Name] = true
+	}
+	for _, want := range []string{
+		"list_dictionary_packs", "list_user_words",
+		"set_pack_enabled", "add_words", "remove_words", "revert_agent_words",
+	} {
+		if !names[want] {
+			t.Errorf("tool %s is not listed; listed: %v", want, names)
+		}
+	}
+	if len(d.Requests()) != 0 {
+		t.Fatalf("listing tools reached the door: %q", d.Requests())
+	}
+}
+
+func TestEndToEndWriteRefusalComesBackAsIs(t *testing.T) {
+	const message = "Выключение набора требует полного доступа. Включите его в настройках Tranq."
+	for _, tc := range writeCases {
+		t.Run(tc.tool, func(t *testing.T) {
+			d := doortest.Serve(t, reply(`{"ok":false,"error":"`+message+`","language":"ru"}`))
+			client := door.New(d.Path)
+			client.OpenApp = noOpen(t)
+			result, err := connect(t, client).CallTool(context.Background(), &mcp.CallToolParams{Name: tc.tool, Arguments: tc.args})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !result.IsError || text(t, result) != message {
+				t.Fatalf("IsError = %v, text = %q, want a tool error with %q", result.IsError, text(t, result), message)
+			}
+			if got := d.Requests(); len(got) != 1 || got[0] != tc.request {
+				t.Fatalf("door received %q, want exactly %q", got, tc.request)
+			}
+		})
+	}
+}
+
+func TestEndToEndAddWordsRefusalsNeverReachTheDoor(t *testing.T) {
+	long := make([]any, 51)
+	for i := range long {
+		long[i] = map[string]any{"spelling": fmt.Sprintf("слово%d", i)}
+	}
+	for name, words := range map[string][]any{"empty list": {}, "fifty one words": long} {
+		t.Run(name, func(t *testing.T) {
+			d := doortest.Serve(t, reply(`{"ok":true,"data":{"added":[],"skipped":{}},"language":"ru"}`))
+			client := door.New(d.Path)
+			client.OpenApp = noOpen(t)
+			result, err := connect(t, client).CallTool(context.Background(), &mcp.CallToolParams{
+				Name: "add_words", Arguments: map[string]any{"words": words},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !result.IsError || text(t, result) == "" {
+				t.Fatalf("IsError = %v, text = %q, want a refusal with a reason", result.IsError, text(t, result))
+			}
+			if got := d.Connections(); got != 0 {
+				t.Fatalf("the door took %d connections, want none: a refusal made on this side must not reach it", got)
+			}
+		})
 	}
 }
 
