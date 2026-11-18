@@ -16,6 +16,12 @@ extension AIProviderConfig {
         guard name.hasPrefix("gpt-6") else { return false }
         return name.contains("luna") || name.contains("terra") || name.hasPrefix("gpt-6-sol")
     }
+
+    /// Серверы, у которых проверена поддержка `stream_options`. Строгий шлюз отвечает 400 на неизвестное поле,
+    /// и очистка пропала бы ради отладочной цифры, поэтому остальным поле не уходит, а токены оцениваются.
+    var supportsStreamUsageOption: Bool {
+        providerID == "openai" || providerID == "deepseek"
+    }
 }
 
 /// Сборка запросов к внешним провайдерам: формат OpenAI или Anthropic.
@@ -58,7 +64,7 @@ enum ChatRequestBuilder {
             } else {
                 body["temperature"] = 0.1
                 if config.needsReasoningOff { body["reasoning_effort"] = "none" }
-                body["stream_options"] = ["include_usage": true]
+                if config.supportsStreamUsageOption { body["stream_options"] = ["include_usage": true] }
             }
         }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

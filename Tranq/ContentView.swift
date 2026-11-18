@@ -260,8 +260,15 @@ struct ContentView: View {
                         isOverSidebarEdge = inside
                         if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
                     }
+                    // Сайдбар скрыли клавишей над ручкой: onHover не придёт, а курсор должен вернуться
+                    .onDisappear {
+                        guard isOverSidebarEdge else { return }
+                        isOverSidebarEdge = false
+                        NSCursor.pop()
+                    }
                     .gesture(
-                        DragGesture(minimumDistance: 0)
+                        // Глобальные координаты: ручка едет за мышью, и в локальных сдвиг считался бы от уехавшей точки
+                        DragGesture(minimumDistance: 0, coordinateSpace: .global)
                             .onChanged { value in
                                 let start = dragStartSidebarWidth ?? sidebarWidth
                                 if dragStartSidebarWidth == nil { dragStartSidebarWidth = start }

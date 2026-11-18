@@ -21,6 +21,20 @@ struct ChatRequestBuilderUsageTests {
         #expect(usage?["include"] as? Bool == true)
     }
 
+    @Test func deepSeekAsksForUsage() throws {
+        let config = AIProviderConfig(baseURL: "https://api.deepseek.com/v1", apiKey: "k", model: "deepseek-chat", providerID: "deepseek")
+        let options = try body(config)["stream_options"] as? [String: Any]
+        #expect(options?["include_usage"] as? Bool == true)
+    }
+
+    @Test func corporateGatewayGetsNoUsageFields() throws {
+        // Строгий шлюз отвечает 400 на неизвестное поле, и очистка пропала бы ради отладочной цифры
+        let config = AIProviderConfig(baseURL: "https://gateway.company.ru/v1", apiKey: "k", model: "gpt-6-luna", providerID: "corporate")
+        let dict = try body(config)
+        #expect(dict["stream_options"] == nil)
+        #expect(dict["usage"] == nil)
+    }
+
     @Test func anthropicSendsNoUsageField() throws {
         let config = AIProviderConfig(baseURL: "https://api.anthropic.com", apiKey: "k", model: "claude-opus-5", providerID: "anthropic")
         let dict = try body(config)
