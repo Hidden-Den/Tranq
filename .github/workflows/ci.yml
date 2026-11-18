@@ -20,6 +20,32 @@ jobs:
       - name: Проверка имени
         run: bash scripts/check-brand.sh
 
+      # Go нужен и тестам MCP-сервера, и сборке Xcode: фаза приложения
+      # собирает tranq-mcp и без Go падает.
+      - name: Установка Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: mcp/go.mod
+          cache: false
+
+      - name: Форматирование Go
+        working-directory: mcp
+        run: |
+          unformatted=$(gofmt -l main.go main_test.go door tools internal)
+          if [ -n "$unformatted" ]; then
+            echo "Не отформатировано gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Проверка Go
+        working-directory: mcp
+        run: go vet ./...
+
+      - name: Тесты Go
+        working-directory: mcp
+        run: go test -mod=vendor -race ./...
+
       - name: Версия Xcode
         run: xcodebuild -version
 
