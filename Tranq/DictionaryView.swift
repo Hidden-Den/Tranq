@@ -44,15 +44,11 @@ struct DictionaryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.uiCanvas)
         .sheet(isPresented: $addingWord) { DictionaryAddWordSheet() }
+        // Второе окно подтверждения висит на разделе «Мои слова»: два `.alert` на одном виде
+        // SwiftUI не показывает оба.
         .alert("Сбросить выученное", isPresented: $confirmingReset) {
             Button("Сбросить", role: .destructive) { store.resetLearned() }
             Button("Отмена", role: .cancel) {}
-        }
-        .alert("Снять слова агента", isPresented: $confirmingAgentRevert) {
-            Button("Снять", role: .destructive) { store.revertAgentChanges() }
-            Button("Отмена", role: .cancel) {}
-        } message: {
-            Text("Удалятся слова и варианты агента. Ваши останутся.")
         }
     }
 
@@ -149,6 +145,12 @@ struct DictionaryView: View {
                 }
                 .dictionarySectionBox()
             }
+        }
+        .alert("Снять слова агента", isPresented: $confirmingAgentRevert) {
+            Button("Снять", role: .destructive) { store.revertAgentChanges() }
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            Text("Удалятся слова и варианты агента. Ваши останутся.")
         }
     }
 

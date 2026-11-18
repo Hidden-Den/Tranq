@@ -68,9 +68,15 @@ func untouched(t *testing.T, d *fakeDoor) {
 
 func TestWriteToolsAreRegisteredWithHints(t *testing.T) {
 	byName := listTools(t, connect(t, &fakeDoor{}))
-	// Deleting and disabling are destructive; adding is not; switching a pack to
-	// a state it already has changes nothing, so only that one is idempotent.
+	// Deleting and disabling are destructive; adding is not.
 	destructive := map[string]bool{"set_pack_enabled": true, "add_words": false, "remove_words": true, "revert_agent_words": true}
+	// Idempotent means that repeating a call with the same arguments has no
+	// further effect, not that the answer is the same. All four are: a repeated
+	// add_words only skips what the first one added, a repeated remove_words
+	// only reports words that are already gone, a repeated revert_agent_words
+	// finds nothing left to revert, and a pack switched to the state it already
+	// has stays as it is.
+	idempotent := map[string]bool{"set_pack_enabled": true, "add_words": true, "remove_words": true, "revert_agent_words": true}
 	for _, name := range writeToolNames {
 		tool, ok := byName[name]
 		if !ok {
@@ -88,8 +94,8 @@ func TestWriteToolsAreRegisteredWithHints(t *testing.T) {
 		if a.DestructiveHint == nil || *a.DestructiveHint != destructive[name] {
 			t.Errorf("%s: DestructiveHint = %v, want %v", name, a.DestructiveHint, destructive[name])
 		}
-		if want := name == "set_pack_enabled"; a.IdempotentHint != want {
-			t.Errorf("%s: IdempotentHint = %v, want %v", name, a.IdempotentHint, want)
+		if a.IdempotentHint != idempotent[name] {
+			t.Errorf("%s: IdempotentHint = %v, want %v", name, a.IdempotentHint, idempotent[name])
 		}
 		if a.OpenWorldHint == nil || *a.OpenWorldHint {
 			t.Errorf("%s: OpenWorldHint = %v, want false: the tool talks only to the local app", name, a.OpenWorldHint)

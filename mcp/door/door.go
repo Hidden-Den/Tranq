@@ -35,6 +35,10 @@ const unavailableText = "Откройте Tranq и включите доступ
 // be read by a human.
 var ErrUnavailable = errors.New(unavailableText)
 
+// errNotResponding means the door was there but did not answer within
+// Client.Timeout, whether while connecting or while exchanging the line.
+var errNotResponding = errors.New("Tranq не отвечает. Перезапустите Tranq и повторите.")
+
 // Refusal is the door's own "no": an answer with ok false. Its text is written
 // for a human and goes to the agent as is.
 type Refusal struct {
@@ -130,6 +134,11 @@ func (c *Client) Call(ctx context.Context, cmd string, args any) (json.RawMessag
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
+		// Out of time while dialing: the door did not answer, which is not
+		// an absent app, so the caller must not launch it again.
+		if callCtx.Err() != nil {
+			return nil, errNotResponding
+		}
 		return nil, ErrUnavailable
 	}
 	defer conn.Close()
@@ -142,7 +151,7 @@ func (c *Client) Call(ctx context.Context, cmd string, args any) (json.RawMessag
 			return nil, ctx.Err()
 		}
 		if callCtx.Err() != nil {
-			return nil, errors.New("Tranq не отвечает. Перезапустите Tranq и повторите.")
+			return nil, errNotResponding
 		}
 		return nil, err
 	}

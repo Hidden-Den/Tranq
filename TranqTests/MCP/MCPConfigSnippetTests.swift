@@ -8,8 +8,12 @@ struct MCPConfigSnippetTests {
     private func parsed(_ text: String) -> (server: String, command: String)? {
         guard let data = text.data(using: .utf8),
               let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              let servers = root["mcpServers"] as? [String: Any],
-              let name = servers.keys.first,
+              let servers = root["mcpServers"] as? [String: Any] else { return nil }
+        guard servers.count == 1 else {
+            Issue.record("В mcpServers ожидался один сервер, найдено \(servers.count): \(servers.keys.sorted())")
+            return nil
+        }
+        guard let name = servers.keys.first,
               let entry = servers[name] as? [String: Any],
               let command = entry["command"] as? String else { return nil }
         return (name, command)

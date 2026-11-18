@@ -227,6 +227,9 @@ func TestToolReportsAppThatDoesNotCome(t *testing.T) {
 	if got, want := text(t, result), "Откройте Tranq и включите доступ для нейронок в настройках"; got != want {
 		t.Fatalf("text = %q, want %q", got, want)
 	}
+	if d.ensured != 1 {
+		t.Fatalf("EnsureApp called %d times, want 1: the app must be asked to start before giving up", d.ensured)
+	}
 	if len(d.calls) != 1 {
 		t.Fatalf("the door was asked %d times, want 1: no retry when the app did not come", len(d.calls))
 	}

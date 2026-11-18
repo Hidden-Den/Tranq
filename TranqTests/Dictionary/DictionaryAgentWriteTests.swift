@@ -294,6 +294,21 @@ final class DictionaryAgentWriteTests {
         #expect(entry(store, "Terraform")?.variants[.ru] == ["терраформ", "тераформ"])
     }
 
+    @Test func вариантСнятыйЧеловекомВЗаписиАгентаЗабираетЕёСебе() {
+        let store = makeStore()
+        store.addFromAgent([AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ", "тераформ"]], forceCase: false)])
+        let agent = entry(store, "Terraform")!
+
+        store.removeVariant("тераформ", language: .ru, fromEntryKey: "user/\(agent.id.uuidString)")
+
+        #expect(entry(store, "Terraform")?.source == .manual)
+        store.revertAgentChanges()
+
+        #expect(entry(store, "Terraform")?.id == agent.id)
+        #expect(entry(store, "Terraform")?.source == .manual)
+        #expect(entry(store, "Terraform")?.variants[.ru] == ["терраформ"])
+    }
+
     @Test func обновлениеТолькоСчётчиковОставляетЗаписьАгенту() {
         let store = makeStore()
         store.addFromAgent([AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ"]], forceCase: false)])

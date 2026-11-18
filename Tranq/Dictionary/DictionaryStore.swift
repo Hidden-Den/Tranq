@@ -206,6 +206,7 @@ final class DictionaryStore: ObservableObject {
 
     /// Убирает вариант по ключу записи из `AppliedReplacement.entryKey`.
     /// Пользовательская запись теряет вариант, а выученная без вариантов удаляется целиком.
+    /// Запись агента после снятия варианта становится ручной, и откат её не тронет.
     /// У набора вариант выключается ключом `<packId>/<spelling>/<variant>`; для исправления регистра
     /// вариантом служит написание в нижнем регистре.
     func removeVariant(_ variant: String, language: DictionaryLanguage, fromEntryKey entryKey: String) {
@@ -218,6 +219,8 @@ final class DictionaryStore: ObservableObject {
                 if entry.source == .learned, entry.variants.values.allSatisfy(\.isEmpty) {
                     userEntries.remove(at: i)
                 } else if entry != userEntries[i] {
+                    // Как и в `updateEntry`: человек, снявший вариант у записи агента, забирает её себе.
+                    if entry.source == .mcp { entry.source = .manual }
                     userEntries[i] = entry
                 } else {
                     return

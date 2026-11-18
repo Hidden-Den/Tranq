@@ -234,7 +234,11 @@ func nonNil(list []string) []string {
 
 // writing marks a tool that changes the dictionary and talks only to the
 // local app. destructive tells deleting and switching off from adding;
-// idempotent that doing it twice changes nothing more than doing it once.
+// idempotent that a repeated call with the same arguments changes nothing
+// more than the first one. All four write tools are: a repeated add_words
+// finds every word and variant already there, a repeated remove_words finds
+// nothing left to remove, a repeated revert_agent_words has nothing left to
+// revert, and a pack switched to the state it has stays as it is.
 func writing(title string, destructive, idempotent bool) *mcp.ToolAnnotations {
 	closedWorld := false
 	return &mcp.ToolAnnotations{
@@ -259,7 +263,7 @@ func registerWrite(s *mcp.Server, d Door) {
 		Name:        "add_words",
 		Description: addWordsDescription,
 		InputSchema: addWordsSchema(),
-		Annotations: writing("Add dictionary words", false, false),
+		Annotations: writing("Add dictionary words", false, true),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in addWordsInput) (*mcp.CallToolResult, any, error) {
 		// These refusals are the tool's own, so they are written for the person
 		// who reads them through the agent, in Russian. Nothing is sent to the app.
@@ -277,7 +281,7 @@ func registerWrite(s *mcp.Server, d Door) {
 		Name:        "remove_words",
 		Description: removeWordsDescription,
 		InputSchema: removeWordsSchema(),
-		Annotations: writing("Remove dictionary words", true, false),
+		Annotations: writing("Remove dictionary words", true, true),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in removeWordsInput) (*mcp.CallToolResult, any, error) {
 		return ask(ctx, d, "remove_words", doorSpellings{Spellings: nonNil(in.Spellings)})
 	})
@@ -286,7 +290,7 @@ func registerWrite(s *mcp.Server, d Door) {
 		Name:        "revert_agent_words",
 		Description: revertAgentWordsDescription,
 		InputSchema: noInputSchema(),
-		Annotations: writing("Revert words added by agents", true, false),
+		Annotations: writing("Revert words added by agents", true, true),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ noArguments) (*mcp.CallToolResult, any, error) {
 		return ask(ctx, d, "revert_agent_words", nil)
 	})

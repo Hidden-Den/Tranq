@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -61,13 +62,17 @@ func text(t *testing.T, result *mcp.CallToolResult) string {
 	return content.Text
 }
 
+// readRequests are the exact lines the read tools must send: no arguments,
+// so args is an empty object. Anything else gets an unknown command.
+var readRequests = map[string]string{
+	`{"cmd":"packs","args":{}}`: packsData,
+	`{"cmd":"words","args":{}}`: wordsData,
+}
+
 func TestEndToEndReadTools(t *testing.T) {
 	d := doortest.Serve(t, func(request string) string {
-		switch {
-		case strings.Contains(request, `"cmd":"packs"`):
-			return `{"ok":true,"data":` + packsData + `,"language":"ru"}`
-		case strings.Contains(request, `"cmd":"words"`):
-			return `{"ok":true,"data":` + wordsData + `,"language":"ru"}`
+		if data, ok := readRequests[request]; ok {
+			return `{"ok":true,"data":` + data + `,"language":"ru"}`
 		}
 		return `{"ok":false,"error":"Неизвестная команда.","language":"ru"}`
 	})
@@ -105,8 +110,10 @@ func TestEndToEndReadTools(t *testing.T) {
 			t.Fatalf("%s: text = %s, want %s", name, got, want)
 		}
 	}
-	if got := len(d.Requests()); got != 2 {
-		t.Fatalf("door got %d requests, want 2: %q", got, d.Requests())
+	got := d.Requests()
+	sort.Strings(got)
+	if want := []string{`{"cmd":"packs","args":{}}`, `{"cmd":"words","args":{}}`}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("door received %q, want exactly %q", got, want)
 	}
 }
 

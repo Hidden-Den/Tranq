@@ -191,6 +191,32 @@ func TestCallTimesOutOnSilentDoor(t *testing.T) {
 	}
 }
 
+func TestCallDialOutOfTimeIsNotAbsentApp(t *testing.T) {
+	// The timeout runs out before the dial gets to the socket: the door did
+	// not answer in time, which is not the same as no app. ErrUnavailable
+	// would make the caller launch the app again.
+	c := newClient(t, filepath.Join(doortest.ShortDir(t), "mcp.sock"))
+	c.Timeout = time.Nanosecond
+	_, err := c.Call(context.Background(), "packs", nil)
+	if errors.Is(err, ErrUnavailable) {
+		t.Fatalf("error = %v, want the door not responding, not an absent app", err)
+	}
+	if err == nil || err.Error() != "Tranq не отвечает. Перезапустите Tranq и повторите." {
+		t.Fatalf("error = %v, want the not responding text", err)
+	}
+}
+
+func TestCallDialAfterCallerContextEndedReturnsContextError(t *testing.T) {
+	c := newClient(t, filepath.Join(doortest.ShortDir(t), "mcp.sock"))
+	c.Timeout = time.Nanosecond
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := c.Call(ctx, "packs", nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want the caller's context error first", err)
+	}
+}
+
 func TestCallRunsInParallel(t *testing.T) {
 	d := doortest.Serve(t, func(string) string { return `{"ok":true,"data":1,"language":"ru"}` })
 	c := newClient(t, d.Path)
