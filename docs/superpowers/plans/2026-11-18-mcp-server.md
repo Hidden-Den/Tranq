@@ -186,7 +186,7 @@ final class MCPAccess: ObservableObject {
 - Все три флага по умолчанию выключены, живут в `AppEnvironment.defaults`.
 - `enabled` выключен → любая команда получает `deny` с текстом «Доступ для нейронок выключен. Включите его в настройках Tranq.»
 - `dictations` без `historyAccess` → `deny` с текстом про доступ к истории.
-- `setPack` с `disablingPack: true` и `removeWords` без `fullAccess` → `deny` с текстом про полный доступ. Включение набора разрешено всегда.
+- `setPack` с `disablingPack: true` без `fullAccess` → `deny` с текстом про полный доступ. Включение набора разрешено всегда. `removeWords` при включённом `enabled` разрешён всегда: без полного доступа сам стор снимает только слова агента, `removeFromAgent(spellings:fullAccess:)`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -194,7 +194,8 @@ final class MCPAccess: ObservableObject {
 @Test func поУмолчаниюВсёВыключено()
 @Test func безДоступаЛюбаяКомандаОтклоняется()
 @Test func историяТребуетСвоегоРазрешения()
-@Test func выключениеНабораИУдалениеТребуютПолногоДоступа()
+@Test func выключениеНабораТребуетПолногоДоступа()
+@Test func удалениеСловДоступноБезПолногоДоступа()
 @Test func включениеНабораРазрешеноБезПолногоДоступа()
 ```
 
