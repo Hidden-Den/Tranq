@@ -53,6 +53,20 @@ class PermissionManager: ObservableObject {
         }
     }
     
+    /// Запрашивает микрофон, а если в доступе уже отказано, открывает системные настройки:
+    /// повторный запрос macOS молча отклонит, и пользователь останется без объяснения.
+    func resolveMicPermission() {
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined else {
+            checkPermissions()
+            if !isMicGranted,
+               let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+                NSWorkspace.shared.open(url)
+            }
+            return
+        }
+        requestMicPermission()
+    }
+
     func requestAccessibilityPermission() {
         if AXIsProcessTrusted() {
             DispatchQueue.main.async {

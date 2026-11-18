@@ -4,6 +4,13 @@ import UniformTypeIdentifiers
 
 enum MainTab { case vocabulary, history, settings }
 
+/// Наименьший размер главного окна. Одно значение на окно и на содержимое:
+/// раньше они расходились, и окно упиралось в больший из двух пределов.
+enum WindowMetrics {
+    static let minWidth: CGFloat = 860
+    static let minHeight: CGFloat = 560
+}
+
 struct DateFormattingHelper {
     private static let inputFormatter: DateFormatter = { let df = DateFormatter(); df.dateFormat = "dd.MM.yyyy"; return df }()
     private static let outputFormatter: DateFormatter = { let df = DateFormatter(); df.locale = Locale.current; df.dateFormat = "d MMMM yyyy"; return df }()
@@ -24,6 +31,14 @@ struct ContentView: View {
     @ObservedObject var updates = UpdateService.shared
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
+    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
+
+    /// Границы ширины списка: уже — обрезает даты, шире — душит содержимое.
+    static let sidebarMinWidth: Double = 220
+    static let sidebarMaxWidth: Double = 420
+
+    @State private var dragStartSidebarWidth: Double?
+    @State private var isOverSidebarEdge = false
     
     @State private var currentTab: MainTab = .history
     @State private var selectedItemId: UUID?
@@ -143,11 +158,13 @@ struct ContentView: View {
             
             HStack(spacing: 0) {
                 sidebarColumn
-                    .frame(width: 260)
+                    .frame(width: sidebarWidth)
                     .offset(x: isSidebarVisible ? 0 : -40)
                     .opacity(isSidebarVisible ? 1.0 : 0.0)
-                    .frame(width: isSidebarVisible ? 260 : 0, alignment: .leading)
+                    .frame(width: isSidebarVisible ? sidebarWidth : 0, alignment: .leading)
                     .clipped()
+
+                if isSidebarVisible { sidebarResizeHandle }
                 
                 Group {
                     switch currentTab {
@@ -159,7 +176,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .frame(minWidth: 840, minHeight: 520)
+        .frame(minWidth: WindowMetrics.minWidth, minHeight: WindowMetrics.minHeight)
         .background(Color.uiCanvas)
         .ignoresSafeArea()
     }
@@ -223,19 +240,46 @@ struct ContentView: View {
             sidebarFooter
         }
         .padding(.top, 4)
-        .frame(width: 260)
+        .frame(width: sidebarWidth)
         .background(Color.uiCanvas)
     }
+
+    /// Граница между списком и содержимым. Тонкая линия, тянется мышью.
+    private var sidebarResizeHandle: some View {
+        Rectangle()
+            .fill(Color.uiHairline)
+            .frame(width: 1)
+            .overlay(
+                Color.clear
+                    .frame(width: 11)
+                    .contentShape(Rectangle())
+                    .onHover { inside in
+                        // Курсор-стрелка подсказывает, что за край можно взяться.
+                        // Флаг держит push и pop в паре: лишний pop ломает курсор всего приложения.
+                        guard inside != isOverSidebarEdge else { return }
+                        isOverSidebarEdge = inside
+                        if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                let start = dragStartSidebarWidth ?? sidebarWidth
+                                if dragStartSidebarWidth == nil { dragStartSidebarWidth = start }
+                                sidebarWidth = min(Self.sidebarMaxWidth, max(Self.sidebarMinWidth, start + value.translation.width))
+                            }
+                            .onEnded { _ in dragStartSidebarWidth = nil }
+                    )
+            )
+    }
     
+    /// Только название. Версия живёт в «О программе»: в рабочем экране она
+    /// ничего не решает и спорит со знаком бренда за внимание.
     private var sidebarHeader: some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: -2) {
-                Text("Tranq").font(.brand(22)).foregroundColor(.uiInk)
-                HStack(spacing: 4) {
-                    let versionStr = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-                    Text(versionStr).font(.ui(.micro, weight: .medium)).foregroundColor(.uiMidGray)
-                }
-            }
+            Text("Tranq")
+                .font(.brand(28))
+                .foregroundColor(.uiInk)
+                .padding(.bottom, 2)
             Spacer()
         }.padding(.horizontal, 16)
     }
@@ -293,11 +337,46 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
             }
-            HStack {
-                Circle().fill(audioCapture.isRecording ? Color.uiEmber : Color.green).frame(width: 8, height: 8)
-                Text(audioCapture.isRecording ? LocalizedStringKey("Запись...") : LocalizedStringKey("Готов к работе")).font(.ui(.footnote)).foregroundColor(.uiMidGray)
+            if let issue = permissionIssue {
+                Button { issue.resolve() } label: {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color.uiAmber).frame(width: 8, height: 8)
+                        Text(issue.title).font(.ui(.footnote, weight: .medium))
+                    }
+                    .foregroundColor(.uiInk)
+                }
+                .buttonStyle(.plain)
+                .help(Text("Открыть настройки macOS"))
             }
         }.padding(.horizontal, 16).padding(.bottom, 16)
+    }
+
+    /// Что мешает диктовке прямо сейчас. Пусто, когда всё в порядке:
+    /// постоянная надпись «готов» ничего не сообщает и только занимает место.
+    private var permissionIssue: PermissionIssue? {
+        if !permissions.isMicGranted { return .microphone }
+        if preferences.autoPasteEnabled && !permissions.isAccessibilityGranted { return .accessibility }
+        return nil
+    }
+
+    /// Нехватка доступа, которую можно починить одним нажатием.
+    enum PermissionIssue {
+        case microphone
+        case accessibility
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .microphone: return "Нет доступа к микрофону"
+            case .accessibility: return "Нет универсального доступа"
+            }
+        }
+
+        func resolve() {
+            switch self {
+            case .microphone: PermissionManager.shared.resolveMicPermission()
+            case .accessibility: PermissionManager.shared.requestAccessibilityPermission()
+            }
+        }
     }
     
     var historyDetailView: some View {

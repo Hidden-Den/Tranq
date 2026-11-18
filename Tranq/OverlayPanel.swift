@@ -14,7 +14,7 @@ class OverlayPanelManager {
             
             if self.panel == nil {
                 let newPanel = NSPanel(
-                    contentRect: NSRect(x: 0, y: 0, width: 220, height: 60),
+                    contentRect: NSRect(x: 0, y: 0, width: OverlayMetrics.panelWidth, height: 60),
                     styleMask: [.borderless, .nonactivatingPanel],
                     backing: .buffered,
                     defer: false
@@ -40,8 +40,11 @@ class OverlayPanelManager {
                 self.panel = newPanel
             }
             
+            // Тема могла смениться, пока панель жила скрытой.
+            self.panel?.appearance = NSApp.effectiveAppearance
+
             if let screen = NSScreen.main {
-                let panelWidth: CGFloat = 240
+                let panelWidth = OverlayMetrics.panelWidth
                 let x = screen.frame.midX - (panelWidth / 2.0)
                 let targetY = screen.visibleFrame.maxY - 44
                 
@@ -114,223 +117,217 @@ class OverlayPanelManager {
     }
 }
 
-struct RotatingGlowBorder: View {
-    var body: some View {
-        GeometryReader { geo in
-            let size = max(geo.size.width, geo.size.height) * 2.0
-            TimelineView(.animation) { timeline in
-                let angle = (timeline.date.timeIntervalSince1970 * 360.0 / 1.5).truncatingRemainder(dividingBy: 360)
-                ZStack {
-                    AngularGradient(
-                        gradient: Gradient(colors: [Color.uiAI, Color.uiProcessing, Color.uiInfoLight, Color.uiSuccess, Color.uiAI]),
-                        center: .center
-                    )
-                    .frame(width: size, height: size)
-                    .rotationEffect(.degrees(angle))
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .mask(Capsule().stroke(lineWidth: 1.5))
-            }
-        }
-    }
+/// Размеры плавающего окошка диктовки. Плашка меряется по содержимому,
+/// панель заведомо шире, поэтому ничего не обрезается.
+enum OverlayMetrics {
+    /// Ширина панели под самую длинную плашку.
+    static let panelWidth: CGFloat = 520
+    /// Высота плашки.
+    static let height: CGFloat = 38
+    /// Скругление плашки по шкале проекта.
+    static let radius: CGFloat = UIRadius.md
+    /// Боковые отступы содержимого.
+    static let inset: CGFloat = 14
+    /// Высота полос уровня.
+    static let barHeight: CGFloat = 16
+    /// Дальше метка режима обрезается по многоточию.
+    static let labelMaxWidth: CGFloat = 220
 }
 
-struct SuccessCheckView: View {
-    @State private var appeared = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.uiSuccessLight.opacity(0.45), lineWidth: 2)
-                .frame(width: 24, height: 24)
-            Image(systemName: "checkmark")
-                .font(.ui(.body, weight: .bold))
-                .foregroundColor(.white)
-        }
-        .scaleEffect(appeared ? 1.0 : 0.2)
-        .offset(y: appeared ? 0 : -10)
-        .opacity(appeared ? 1 : 0)
-        .onAppear {
-            appeared = false
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.52)) {
-                appeared = true
-            }
-        }
-    }
+/// Цвета плашки. Поверхность плотная, а не стеклянная: под окном может быть
+/// любой фон, и текст должен читаться и в светлой теме, и в тёмной.
+enum OverlayPalette {
+    static let surface = Color.dynamic(light: "#ffffff", dark: "#1d1e22")
+    static let border = Color.dynamic(light: "#d9d9de", dark: "#3a3b42")
+    /// Полосы уровня: монохром, разницу несёт высота.
+    static let bar = Color.dynamic(light: "#52525b", dark: "#d4d4d8")
+    static let recording = Color.dynamic(light: "#047857", dark: "#34d399")
+    static let processing = Color.dynamic(light: "#4338ca", dark: "#818cf8")
+    static let synthesis = Color.dynamic(light: "#7e22ce", dark: "#c084fc")
+    static let warning = Color.dynamic(light: "#b45309", dark: "#fbbf24")
 }
 
+/// Плашка диктовки: спокойная поверхность, волосяная граница, без свечения.
 struct FloatingWidgetView: View {
     @ObservedObject var audioCapture = AudioCapture.shared
-    @Environment(\.colorScheme) private var colorScheme
     @State private var isAppeared = false
-    
-    let greenGradient = LinearGradient(colors: [Color.uiSuccessLight, Color.uiSuccessDeep], startPoint: .top, endPoint: .bottom)
-    let purpleGradient = LinearGradient(colors: [Color.uiAI, Color.uiProcessing], startPoint: .top, endPoint: .bottom)
-    let glassBorderGradient = LinearGradient(colors: [Color.white.opacity(0.85), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
-    
+
     var body: some View {
-        ZStack {
-            Color.clear
-            
-            Capsule()
-                .fill(getGlowColor())
-                .frame(width: getWidth() - 10, height: 28)
-                .blur(radius: 12)
-                .opacity(0.4)
-            
-            HStack(alignment: .center, spacing: 10) {
-                if let warningText = audioCapture.warningMessage {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.ui(.body, weight: .bold))
-                            .foregroundColor(Color.uiAmber)
-                        Text(warningText)
-                            .font(.ui(.footnote, weight: .semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                    }
-                } else if !audioCapture.isRecording && audioCapture.isSynthesizingThought {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles")
-                            .font(.ui(.body, weight: .bold))
-                            .foregroundColor(Color.uiAI)
-                        let synthLabel = VoiceIntelligenceSettings.shared.engine == .airGapped ? String(localized: "Синтез мысли SLM...") : String(localized: "Синтез мысли...")
-                        Text(synthLabel)
-                            .font(.ui(.footnote, weight: .semibold))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                    }
-                } else if audioCapture.transcribedText == String(localized: "Расшифровка...") {
-                    HStack(spacing: 2.0) {
-                        TimelineView(.animation) { timeline in
-                            let time = timeline.date.timeIntervalSince1970 * 4.5
-                            HStack(spacing: 2.0) {
-                                ForEach(0..<18, id: \.self) { i in
-                                    let height = sin(time + Double(i) * 0.5) * 7 + 11
-                                    RoundedRectangle(cornerRadius: 1).fill(purpleGradient).frame(width: 2.0, height: height)
-                                }
-                            }
-                        }
-                    }
-                } else if audioCapture.isSuccessDone {
-                    if let status = audioCapture.hudStatusMessage {
-                        HStack(spacing: 6) {
-                            Image(systemName: "doc.on.clipboard.fill")
-                                .font(.ui(.footnote, weight: .bold))
-                                .foregroundColor(Color.uiSuccessLight)
-                            Text(status)
-                                .font(.ui(.footnote, weight: .semibold))
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-                        }
-                        .transition(.opacity)
-                    } else {
-                        SuccessCheckView()
-                            .transition(.opacity)
-                    }
-                } else {
-                    RecordingLevelView(timerColor: timerColor, barGradient: greenGradient, modeLabel: audioCapture.modeLabel)
+        content
+            .padding(.horizontal, OverlayMetrics.inset)
+            .frame(height: OverlayMetrics.height)
+            .fixedSize(horizontal: true, vertical: false)
+            .background {
+                let shape = RoundedRectangle(cornerRadius: OverlayMetrics.radius, style: .continuous)
+                ZStack {
+                    shape.fill(.regularMaterial)
+                    shape.fill(OverlayPalette.surface.opacity(0.88))
                 }
             }
-            .padding(.horizontal, 14)
-            .frame(width: getWidth(), height: 36)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
             .overlay(
-                Group {
-                    if audioCapture.transcribedText == String(localized: "Расшифровка...") || (!audioCapture.isRecording && audioCapture.isSynthesizingThought) {
-                        RotatingGlowBorder()
-                    } else if audioCapture.warningMessage != nil {
-                        Capsule().stroke(Color.uiAmber.opacity(0.6), lineWidth: 1.2)
-                    } else if audioCapture.isSuccessDone {
-                        Capsule().stroke(Color.uiSuccessLight.opacity(0.75), lineWidth: 1.2)
-                    } else {
-                        Capsule().stroke(glassBorderGradient, lineWidth: 1.0)
-                    }
-                }
+                RoundedRectangle(cornerRadius: OverlayMetrics.radius, style: .continuous)
+                    .strokeBorder(OverlayPalette.border, lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 4)
-            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: getWidth())
-        }
-        .scaleEffect(isAppeared ? 1.0 : 0.65)
-        .offset(y: isAppeared ? 0 : -14)
-        .onAppear {
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.55)) {
-                isAppeared = true
+            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 3)
+            .animation(.spring(response: 0.32, dampingFraction: 0.86), value: stateKey)
+            .opacity(isAppeared ? 1 : 0)
+            .offset(y: isAppeared ? 0 : -6)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.18)) { isAppeared = true }
             }
-        }
-        .onDisappear {
-            isAppeared = false
-        }
-        .frame(width: 240, height: 60)
-    }
-    
-    private func getWidth() -> CGFloat {
-        if audioCapture.warningMessage != nil { return 210 }
-        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return 180 }
-        if audioCapture.isRecording { return audioCapture.modeLabel.isEmpty ? 200 : 236 }
-        if audioCapture.isSuccessDone {
-            return audioCapture.hudStatusMessage != nil ? 180 : 150
-        }
-        return 130
-    }
-    
-    private func getGlowColor() -> Color {
-        if audioCapture.warningMessage != nil { return Color.uiAmber }
-        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return Color.uiAI }
-        if audioCapture.transcribedText == String(localized: "Расшифровка...") { return Color.uiProcessing }
-        if audioCapture.isSuccessDone { return Color.uiSuccess }
-        return Color.uiSuccess
+            .onDisappear { isAppeared = false }
+            .frame(width: OverlayMetrics.panelWidth, height: 60)
     }
 
-    private var timerColor: Color {
-        Color.uiSuccessText
+    @ViewBuilder
+    private var content: some View {
+        if let warningText = audioCapture.warningMessage {
+            OverlayStatusRow(dot: OverlayPalette.warning, text: warningText)
+        } else if !audioCapture.isRecording && audioCapture.isSynthesizingThought {
+            OverlayStatusRow(dot: OverlayPalette.synthesis, text: synthesisLabel, pulses: true)
+        } else if audioCapture.transcribedText == String(localized: "Расшифровка...") {
+            OverlayStatusRow(dot: OverlayPalette.processing, text: String(localized: "Расшифровка"), pulses: true)
+        } else if audioCapture.isSuccessDone {
+            OverlaySuccessRow(text: audioCapture.hudStatusMessage)
+        } else {
+            RecordingLevelView(modeLabel: audioCapture.modeLabel)
+        }
+    }
+
+    private var synthesisLabel: String {
+        VoiceIntelligenceSettings.shared.engine == .airGapped
+            ? String(localized: "Синтез мысли SLM")
+            : String(localized: "Синтез мысли")
+    }
+
+    /// Ключ состояния: по нему плашка плавно меняет ширину.
+    private var stateKey: String {
+        if let warning = audioCapture.warningMessage { return "warn:\(warning)" }
+        if !audioCapture.isRecording && audioCapture.isSynthesizingThought { return "synth" }
+        if audioCapture.transcribedText == String(localized: "Расшифровка...") { return "decode" }
+        if audioCapture.isSuccessDone { return "done:\(audioCapture.hudStatusMessage ?? "")" }
+        return "rec:\(audioCapture.modeLabel)"
     }
 }
 
-/// Таймер и полосы громкости во время записи. Отдельное представление, чтобы
-/// обновления индикатора 20 раз в секунду не перерисовывали весь оверлей.
+/// Точка состояния. Пульсирует только пока идёт работа.
+private struct OverlayDot: View {
+    let color: Color
+    var pulses: Bool = false
+    @State private var dim = false
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: 7, height: 7)
+            .opacity(dim ? 0.35 : 1)
+            .onAppear {
+                guard pulses else { return }
+                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                    dim = true
+                }
+            }
+    }
+}
+
+/// Строка «точка и текст»: предупреждение, расшифровка, синтез.
+private struct OverlayStatusRow: View {
+    let dot: Color
+    let text: String
+    var pulses: Bool = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            OverlayDot(color: dot, pulses: pulses)
+            Text(text)
+                .font(.ui(.body, weight: .medium))
+                .foregroundColor(Color.uiInk)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: 280, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// Готово: галочка и, если есть, куда вставлено.
+private struct OverlaySuccessRow: View {
+    let text: String?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark")
+                .font(.ui(.body, weight: .semibold))
+                .foregroundColor(OverlayPalette.recording)
+            if let text {
+                Text(text)
+                    .font(.ui(.body, weight: .medium))
+                    .foregroundColor(Color.uiInk)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
+    }
+}
+
+/// Таймер, метка режима и уровень записи. Отдельное представление, чтобы
+/// обновления индикатора 20 раз в секунду не перерисовывали всю плашку.
 private struct RecordingLevelView: View {
     @ObservedObject var meter = RecordingMeter.shared
-    let timerColor: Color
-    let barGradient: LinearGradient
     /// Пусто при обычной очистке; иначе «Промпт» или имя правила.
     let modeLabel: String
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(Color.uiSuccess)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: Color.uiSuccess.opacity(0.8), radius: 3, x: 0, y: 0)
+        HStack(spacing: 8) {
+            OverlayDot(color: OverlayPalette.recording, pulses: true)
 
-                Text(meter.elapsedText)
-                    .font(.ui(.body, weight: .bold, design: .monospaced))
-                    .foregroundColor(timerColor)
-                    .shadow(color: timerColor.opacity(0.55), radius: 2, x: 0, y: 0)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text("\(meter.elapsedSeconds)")
+                    .font(.ui(.callout, weight: .semibold, design: .monospaced))
+                    .monospacedDigit()
+                    .foregroundColor(Color.uiInk)
+                Text(String(localized: "с"))
+                    .font(.ui(.footnote, weight: .medium))
+                    .foregroundColor(Color.uiMidGray)
             }
+            .lineLimit(1)
+            .fixedSize()
 
             if !modeLabel.isEmpty {
+                Rectangle()
+                    .fill(OverlayPalette.border)
+                    .frame(width: 1, height: 16)
+
                 Text(modeLabel)
-                    .font(.ui(.caption, weight: .semibold))
-                    .foregroundColor(Color.uiAI)
+                    .font(.ui(.footnote, weight: .medium))
+                    .foregroundColor(Color.uiMidGray)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .frame(maxWidth: OverlayMetrics.labelMaxWidth, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer()
+            LevelBars(samples: meter.samples)
+                .padding(.leading, 2)
+        }
+    }
+}
 
-            HStack(spacing: 2.0) {
-                ForEach(0..<RecordingMeter.barCount, id: \.self) { i in
-                    let sampleVal = i < meter.samples.count ? meter.samples[i] : RecordingMeter.floorLevel
+/// Монохромные полосы уровня. Цвет один, разницу несёт только высота.
+private struct LevelBars: View {
+    let samples: [Float]
 
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(barGradient)
-                        .frame(width: 2.0, height: CGFloat(sampleVal) * 22)
-                        .animation(.spring(response: 0.12, dampingFraction: 0.55), value: sampleVal)
-                }
+    var body: some View {
+        HStack(alignment: .center, spacing: 2) {
+            ForEach(0..<RecordingMeter.barCount, id: \.self) { i in
+                let sampleVal = i < samples.count ? samples[i] : RecordingMeter.floorLevel
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(OverlayPalette.bar.opacity(0.65))
+                    .frame(width: 2, height: max(2, CGFloat(sampleVal) * OverlayMetrics.barHeight))
+                    .animation(.spring(response: 0.12, dampingFraction: 0.55), value: sampleVal)
             }
         }
+        .frame(height: OverlayMetrics.barHeight)
+        .fixedSize()
     }
 }

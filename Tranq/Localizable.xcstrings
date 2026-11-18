@@ -886,22 +886,6 @@
         }
       }
     },
-    "Готов к работе" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ready"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Готов к работе"
-          }
-        }
-      }
-    },
     "Готово" : {
       "localizations" : {
         "en" : {
@@ -1123,22 +1107,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Запись отменена"
-          }
-        }
-      }
-    },
-    "Запись..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recording..."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Запись..."
           }
         }
       }
@@ -3472,6 +3440,118 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Нет горячей клавиши"
+          }
+        }
+      }
+    },
+    "Нет доступа к микрофону" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No microphone access"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет доступа к микрофону"
+          }
+        }
+      }
+    },
+    "Нет универсального доступа" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No accessibility access"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет универсального доступа"
+          }
+        }
+      }
+    },
+    "Открыть настройки macOS" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open macOS settings"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть настройки macOS"
+          }
+        }
+      }
+    },
+    "Расшифровка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcribing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расшифровка"
+          }
+        }
+      }
+    },
+    "Синтез мысли" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synthesizing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синтез мысли"
+          }
+        }
+      }
+    },
+    "Синтез мысли SLM" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synthesizing on SLM"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синтез мысли SLM"
+          }
+        }
+      }
+    },
+    "с" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "s"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "с"
           }
         }
       }

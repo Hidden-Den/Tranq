@@ -13,7 +13,8 @@ final class RecordingMeter: ObservableObject {
     static let floorLevel: Float = 0.15
 
     @Published private(set) var samples: [Float] = Array(repeating: RecordingMeter.floorLevel, count: RecordingMeter.barCount)
-    @Published private(set) var elapsedText: String = "00:00"
+    /// Целые секунды записи. Оверлей показывает их как «7 с», без минут.
+    @Published private(set) var elapsedSeconds: Int = 0
 
     private var lastElapsedSecond = -1
 
@@ -29,13 +30,13 @@ final class RecordingMeter: ObservableObject {
         let second = Int(elapsed)
         if second != lastElapsedSecond {
             lastElapsedSecond = second
-            elapsedText = String(format: "%02d:%02d", second / 60, second % 60)
+            elapsedSeconds = second
         }
     }
 
     func reset() {
         samples = Array(repeating: Self.floorLevel, count: Self.barCount)
-        elapsedText = "00:00"
+        elapsedSeconds = 0
         lastElapsedSecond = -1
     }
 

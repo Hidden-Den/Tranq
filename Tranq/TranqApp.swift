@@ -78,7 +78,7 @@ struct TranqApp: App {
             ContentView()
                 .preferredColorScheme(theme.current.colorScheme)
                 .ignoresSafeArea()
-                .frame(minWidth: 990, minHeight: 710)
+                .frame(minWidth: WindowMetrics.minWidth, minHeight: WindowMetrics.minHeight)
         }
         .windowStyle(.hiddenTitleBar)
         

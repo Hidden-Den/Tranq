@@ -128,9 +128,10 @@ struct RecordingMeterTests {
         #expect(meter.samples.count == RecordingMeter.barCount)
         #expect(meter.samples.last! > RecordingMeter.floorLevel)
         #expect(meter.samples.first == RecordingMeter.floorLevel)
-        #expect(meter.elapsedText == "01:05")
+        #expect(meter.elapsedSeconds == 65)
         meter.reset()
         #expect(meter.samples.allSatisfy { $0 == RecordingMeter.floorLevel })
+        #expect(meter.elapsedSeconds == 0)
     }
 
     @Test func normalizesDecibelsIntoBarRange() {
