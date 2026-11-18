@@ -265,7 +265,7 @@ struct MCPDoor: @unchecked Sendable {
     }
 
     private func requiredPackID(_ args: [String: Any]) throws -> String {
-        guard let id = args["id"] as? String, !id.isEmpty else {
+        guard let id = (args["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !id.isEmpty else {
             throw Refusal(String(localized: "Для набора нужно поле id со строкой."))
         }
         return id

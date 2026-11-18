@@ -113,9 +113,10 @@ final class DictionaryStore: ObservableObject {
         userEntries = kept
         // Наблюдатели свойств в init не вызываются, поэтому снимок заполняется явно.
         entriesSnapshot = kept
+        var needsSave = false
         if kept.count != loaded.entries.count {
             AppLogger.shared.info("Dictionary", "Удалены неиспользуемые выученные слова", details: "\(loaded.entries.count - kept.count)")
-            scheduleSave()
+            needsSave = true
         }
 
         // Повтор идентификатора или совпадение со встроенным набором сломали бы ключи замен и выключений.
@@ -124,10 +125,12 @@ final class DictionaryStore: ObservableObject {
         let validPacks = storedPacks.filter { knownIDs.insert($0.id).inserted }
         if validPacks.count != storedPacks.count {
             AppLogger.shared.warn("Dictionary", "Наборы агента с повторным идентификатором пропущены", details: "\(storedPacks.count - validPacks.count)")
-            scheduleSave()
+            needsSave = true
         }
         agentPacks = validPacks
         self.packs = builtinPacks + validPacks
+        // Снимок для записи берётся в момент вызова, поэтому запись планируется, когда загружено всё.
+        if needsSave { scheduleSave() }
         rebuildIndex()
 
         terminationObserver = NotificationCenter.default.addObserver(
@@ -567,7 +570,8 @@ final class DictionaryStore: ObservableObject {
         try onMain {
             let pack = try agentPack(id: id)
             var entries = pack.entries
-            let free = Self.maxWordsPerAgentPack - entries.count
+            // Файл мог быть правлен вручную: остаток не уходит в минус.
+            let free = max(0, Self.maxWordsPerAgentPack - entries.count)
 
             var counted = Set<String>()
             let known = Set(entries.map { $0.spelling.lowercased() })
@@ -642,7 +646,7 @@ final class DictionaryStore: ObservableObject {
                     result.skipped[spelling] = "такого слова нет в наборе"
                     continue
                 }
-                pruneDisabled(packId: id, word: entries[i].spelling)
+                pruneDisabled(packId: id, word: entries[i].spelling, variants: entries[i].variants.values.flatMap { $0 })
                 entries.remove(at: i)
                 result.added.append(spelling.trimmingCharacters(in: .whitespacesAndNewlines))
             }
@@ -673,9 +677,10 @@ final class DictionaryStore: ObservableObject {
         return checker.isCommonWord(spelling, language: candidate) ? [candidate] : []
     }
 
-    /// Убирает выключения набора целиком (`word == nil`) или одного его слова вместе с вариантами слова.
+    /// Убирает выключения набора целиком (`word == nil`) или одного его слова вместе с его вариантами `variants`.
     /// Остаток после удаления не должен встретить новое слово или набор с тем же ключом выключенным.
-    private func pruneDisabled(packId: String, word: String? = nil) {
+    /// Ключи вариантов слова с косой чертой в написании, например «CI/CD», у слова «CI» не отбираются.
+    private func pruneDisabled(packId: String, word: String? = nil, variants wordVariants: [String] = []) {
         let base = word.map { "\(packId)/\($0)" } ?? packId
         let prefix = base + "/"
         if word == nil, disabledPacks.remove(packId) != nil {
@@ -686,7 +691,10 @@ final class DictionaryStore: ObservableObject {
             disabledPackWords = words
             defaults.set(words.sorted(), forKey: Keys.disabledPackWords)
         }
-        let variants = disabledPackVariants.filter { !$0.hasPrefix(prefix) }
+        let variants = disabledPackVariants.filter { key in
+            guard key.hasPrefix(prefix) else { return true }
+            return word != nil && !wordVariants.contains(String(key.dropFirst(prefix.count)))
+        }
         if variants != disabledPackVariants {
             disabledPackVariants = variants
             defaults.set(variants.sorted(), forKey: Keys.disabledPackVariants)

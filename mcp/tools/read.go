@@ -6,7 +6,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-const listDictionaryPacksDescription = "List the built-in dictionary packs of Tranq, a macOS dictation app that turns " +
+const listDictionaryPacksDescription = "List the dictionary packs of Tranq, built-in ones and those made by agents. Tranq is a macOS dictation app that turns " +
 	"spoken Russian, with Latin technical terms, into clean text. A pack is a ready-made vocabulary for one " +
 	"field, such as IT, medicine or law: it tells Tranq how to spell the terms and names of that field after " +
 	"speech recognition.\n\n" +

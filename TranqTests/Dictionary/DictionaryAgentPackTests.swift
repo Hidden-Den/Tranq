@@ -36,8 +36,11 @@ final class DictionaryAgentPackTests {
     private var mainURL: URL { directory.appendingPathComponent("dictionary.json") }
     private var corruptURL: URL { directory.appendingPathComponent("dictionary.corrupt.json") }
 
-    private func makeStore(packs: [DictionaryPack] = [], checker: CommonWordChecking = SetCommonWordChecker([:])) -> DictionaryStore {
-        DictionaryStore(directory: directory, defaults: defaults, packsBundle: .main, checker: checker, packs: packs)
+    private func makeStore(
+        packs: [DictionaryPack] = [], checker: CommonWordChecking = SetCommonWordChecker([:]),
+        now: @escaping () -> Date = Date.init
+    ) -> DictionaryStore {
+        DictionaryStore(directory: directory, defaults: defaults, packsBundle: .main, checker: checker, packs: packs, now: now)
     }
 
     /// Сохраняет всё отложенное и поднимает второе хранилище на тех же файлах.
@@ -158,6 +161,24 @@ final class DictionaryAgentPackTests {
         #expect(store.agentPacks.map(\.id) == ["agent-aaaaaaaa", "agent-bbbbbbbb"])
         #expect(store.agentPacks.first?.title[.ru] == "Один")
         #expect(store.packs.map(\.id) == ["med", "agent-aaaaaaaa", "agent-bbbbbbbb"])
+        // Починенный при загрузке файл не должен потерять наборы при записи.
+        #expect(reload(store, packs: [medicine]).agentPacks.map(\.id) == ["agent-aaaaaaaa", "agent-bbbbbbbb"])
+    }
+
+    @Test func очисткаУстаревшихВыученныхСловПриЗагрузкеНеТеряетНаборы() throws {
+        let old = Date().addingTimeInterval(-100 * 86_400)
+        let first = makeStore(now: { old })
+        first.addEntry(spelling: "устарело", variants: [.ru: ["устарелое"]], source: .learned)
+        try create(first, "Музыка")
+        first.flush()
+
+        // Второй запуск удаляет выученное слово и сам планирует запись файла.
+        let second = makeStore()
+        #expect(second.userEntries.isEmpty)
+        #expect(second.agentPacks.count == 1)
+        let third = reload(second)
+        #expect(third.agentPacks.map(\.title[.ru]) == ["Музыка"])
+        #expect(third.userEntries.isEmpty)
     }
 
     // MARK: - Удаление
@@ -490,5 +511,33 @@ final class DictionaryAgentPackTests {
         try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
         try store.deleteAgentPack(id: id)
         #expect(apply(store, "открой эйблтон") == "открой эйблтон")
+    }
+
+    @Test func снятиеСловаНеВключаетДругоеСловоСКосойЧертойВНаписании() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("CI", ["си ай"]), word("CI/CD", ["си ай си ди"])])
+        store.setPackWord("\(id)/CI/CD", enabled: false)
+        store.removeVariant("си ай си ди", language: .ru, fromEntryKey: "\(id)/CI/CD")
+
+        try store.removeFromAgentPack(id: id, spellings: ["CI"])
+
+        #expect(store.disabledPackWords == ["\(id)/CI/CD"])
+        #expect(store.disabledPackVariants == ["\(id)/CI/CD/си ай си ди"])
+    }
+
+    @Test func наборБольшеПределаИзФайлаНеДаётОтрицательногоОстатка() throws {
+        let entries = (0..<520).map { #"{"spelling":"слово\#($0)","variants":{}}"# }.joined(separator: ",")
+        let json = #"{"schemaVersion":1,"entries":[],"agentPacks":[{"id":"agent-aaaaaaaa","title":{"ru":"Большой","en":"Большой"},"version":1,"entries":["#
+            + entries + "]}]}"
+        try Data(json.utf8).write(to: mainURL)
+        let store = makeStore()
+
+        #expect(throws: AgentPackError.tooManyWords(limit: 500, free: 0)) {
+            try store.addToAgentPack(id: "agent-aaaaaaaa", words: [word("новое")])
+        }
+        // Слияние с существующим словом место не занимает и проходит.
+        let merged = try store.addToAgentPack(id: "agent-aaaaaaaa", words: [word("слово1", ["вариант один"])])
+        #expect(merged.added == ["слово1"])
     }
 }

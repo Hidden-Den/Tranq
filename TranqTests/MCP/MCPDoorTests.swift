@@ -574,6 +574,16 @@ final class MCPDoorTests {
         }
     }
 
+    @Test func idНабораСПробеламиПоКраямПринимаетсяВезде() {
+        let setup = makeSetup()
+        let id = makePack(setup)
+        let padded = " \(id) "
+        _ = call(setup, "add_words", ["words": words(["Ableton"]), "pack_id": padded])
+        #expect((call(setup, "pack_words", ["id": padded])["data"] as? [[String: Any]])?.count == 1)
+        #expect(isOK(call(setup, "delete_pack", ["id": padded])))
+        #expect(setup.dictionary.agentPacks.isEmpty)
+    }
+
     @Test func deletePackУдаляетИВозвращаетЧислоСлов() {
         let setup = makeSetup()
         let id = makePack(setup)
