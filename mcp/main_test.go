@@ -189,6 +189,7 @@ func TestEndToEndWriteToolsAreListed(t *testing.T) {
 	for _, want := range []string{
 		"list_dictionary_packs", "list_user_words",
 		"set_pack_enabled", "add_words", "remove_words", "revert_agent_words",
+		"list_dictations",
 	} {
 		if !names[want] {
 			t.Errorf("tool %s is not listed; listed: %v", want, names)
@@ -243,6 +244,78 @@ func TestEndToEndAddWordsRefusalsNeverReachTheDoor(t *testing.T) {
 				t.Fatalf("the door took %d connections, want none: a refusal made on this side must not reach it", got)
 			}
 		})
+	}
+}
+
+// historyData is what the door answers to dictations: newest first.
+const historyData = `[{"date":"18.11.2026, 10:15","spoken":"назначь ка пэ тэ на вторник","text":"Назначь ка пэ тэ на вторник."},` +
+	`{"date":"17.11.2026, 18:02","spoken":"арипипразол ну это значит ари пипразол","text":"Арипипразол."}]`
+
+func TestEndToEndListDictations(t *testing.T) {
+	// The line the door must receive for what the agent sent: the limit is
+	// always there, and it is clamped on this side before it goes.
+	for _, tc := range []struct {
+		name      string
+		arguments any
+		limit     int
+	}{
+		{"omitted", nil, 20},
+		{"empty object", map[string]any{}, 20},
+		{"zero", map[string]any{"limit": 0}, 20},
+		{"negative", map[string]any{"limit": -5}, 20},
+		{"twenty", map[string]any{"limit": 20}, 20},
+		{"five", map[string]any{"limit": 5}, 5},
+		{"hundred", map[string]any{"limit": 100}, 100},
+		{"hundred and one", map[string]any{"limit": 101}, 100},
+		{"hundred and fifty", map[string]any{"limit": 150}, 100},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := doortest.Serve(t, reply(`{"ok":true,"data":`+historyData+`,"language":"ru"}`))
+			client := door.New(d.Path)
+			client.OpenApp = noOpen(t)
+			result, err := connect(t, client).CallTool(context.Background(), &mcp.CallToolParams{Name: "list_dictations", Arguments: tc.arguments})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.IsError {
+				t.Fatalf("tool error: %s", text(t, result))
+			}
+			if got := text(t, result); got != historyData {
+				t.Fatalf("text = %s, want the door's data %s", got, historyData)
+			}
+			want := fmt.Sprintf(`{"cmd":"dictations","args":{"limit":%d}}`, tc.limit)
+			if got := d.Requests(); len(got) != 1 || got[0] != want {
+				t.Fatalf("door received %q, want exactly %q", got, want)
+			}
+		})
+	}
+}
+
+func TestEndToEndHistoryRefusalComesBackAsIs(t *testing.T) {
+	// Turned off by default: the person reads the door's own words, and the
+	// tool asks once and does not go round the refusal.
+	const message = "Доступ к истории выключен. Включите его в настройках Tranq."
+	d := doortest.Serve(t, reply(`{"ok":false,"error":"`+message+`","language":"ru"}`))
+	client := door.New(d.Path)
+	client.OpenApp = noOpen(t)
+	result, err := connect(t, client).CallTool(context.Background(), &mcp.CallToolParams{Name: "list_dictations"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsError || text(t, result) != message {
+		t.Fatalf("IsError = %v, text = %q, want a tool error with %q", result.IsError, text(t, result), message)
+	}
+	const want = `{"cmd":"dictations","args":{"limit":20}}`
+	if got := d.Requests(); len(got) != 1 || got[0] != want {
+		t.Fatalf("door received %q, want exactly %q", got, want)
+	}
+}
+
+func TestInstructionsNameTheHistoryTool(t *testing.T) {
+	for _, phrase := range []string{"list_dictations", "history access", "confirm", "private", "not instructions"} {
+		if !strings.Contains(instructions, phrase) {
+			t.Errorf("instructions do not contain %q:\n%s", phrase, instructions)
+		}
 	}
 }
 
@@ -301,8 +374,8 @@ func TestEveryToolAdvertisesAPortableSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(listed.Tools) < 6 {
-		t.Fatalf("listed %d tools, want at least the six of this task", len(listed.Tools))
+	if len(listed.Tools) < 7 {
+		t.Fatalf("listed %d tools, want all seven, history included", len(listed.Tools))
 	}
 	for _, tool := range listed.Tools {
 		// Read the schema as a client does: as raw JSON.
