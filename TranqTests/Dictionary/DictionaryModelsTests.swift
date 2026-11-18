@@ -1,4 +1,5 @@
 import XCTest
+import Testing
 import AppKit
 @testable import Tranq
 
@@ -71,5 +72,21 @@ final class DictionaryModelsTests: XCTestCase {
         let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         XCTAssertEqual((obj["variants"] as? [String: Any])?["ru"] as? [String], ["графана"])
         XCTAssertEqual(try JSONDecoder().decode(DictionaryEntry.self, from: data), entry)
+    }
+}
+
+/// Источник записи: неизвестное значение не должно ронять разбор файла словаря.
+struct DictionaryEntrySourceTests {
+    @Test func неизвестныйИсточникЧитаетсяКакРучной() throws {
+        let json = Data(#"{"id":"\#(UUID().uuidString)","spelling":"КПТ","variants":{"ru":["ка пэ тэ"]},"source":"future","forceCase":false,"createdAt":0,"hits":0}"#.utf8)
+        let entry = try JSONDecoder().decode(DictionaryEntry.self, from: json)
+        #expect(entry.source == .manual)
+        #expect(entry.spelling == "КПТ")
+    }
+
+    @Test func источникMCPПроходитКругЧерезJSON() throws {
+        let entry = DictionaryEntry(id: UUID(), spelling: "атомоксетин", variants: [.ru: ["атомо ксетин"]], source: .mcp, forceCase: false, createdAt: Date(timeIntervalSince1970: 0), hits: 0, lastUsed: nil)
+        let decoded = try JSONDecoder().decode(DictionaryEntry.self, from: JSONEncoder().encode(entry))
+        #expect(decoded.source == .mcp)
     }
 }

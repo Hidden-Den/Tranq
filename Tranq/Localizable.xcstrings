@@ -3795,6 +3795,822 @@
           }
         }
       }
+    },
+    "ДОСТУП ДЛЯ НЕЙРОНОК" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ACCESS FOR AI AGENTS"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ДОСТУП ДЛЯ НЕЙРОНОК"
+          }
+        }
+      }
+    },
+    "Нейронка поможет вести словарь" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An AI agent helps keep the dictionary"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нейронка поможет вести словарь"
+          }
+        }
+      }
+    },
+    "Доступ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступ"
+          }
+        }
+      }
+    },
+    "Читать словарь, добавлять слова" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the dictionary, add words"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Читать словарь, добавлять слова"
+          }
+        }
+      }
+    },
+    "Полный доступ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full access"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Полный доступ"
+          }
+        }
+      }
+    },
+    "Удалять слова и выключать наборы" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete words and turn off packs"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалять слова и выключать наборы"
+          }
+        }
+      }
+    },
+    "Читать ваши диктовки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read your dictations"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Читать ваши диктовки"
+          }
+        }
+      }
+    },
+    "Конфиг" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Config"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Конфиг"
+          }
+        }
+      }
+    },
+    "Вставьте в настройки клиента" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste into the client settings"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вставьте в настройки клиента"
+          }
+        }
+      }
+    },
+    "Вставьте в терминал" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste into the terminal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вставьте в терминал"
+          }
+        }
+      }
+    },
+    "Включить полный доступ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable full access?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включить полный доступ?"
+          }
+        }
+      }
+    },
+    "Включить доступ к истории?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable history access?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Включить доступ к истории?"
+          }
+        }
+      }
+    },
+    "Нейронка сможет удалить из словаря любое слово, даже добавленное вами вручную. Такие слова не вернуть." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An AI agent will be able to delete any word from the dictionary, even one you added by hand. Those words cannot be restored."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нейронка сможет удалить из словаря любое слово, даже добавленное вами вручную. Такие слова не вернуть."
+          }
+        }
+      }
+    },
+    "Диктовки уйдут в стороннюю модель вместе со всем, что в них есть, например письмами, заметками и рабочими записями." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your dictations will go to a third-party model with everything in them, such as letters, notes and work records."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диктовки уйдут в стороннюю модель вместе со всем, что в них есть, например письмами, заметками и рабочими записями."
+          }
+        }
+      }
+    },
+    "Снять слова агента" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove agent words"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снять слова агента"
+          }
+        }
+      }
+    },
+    "Снять" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Снять"
+          }
+        }
+      }
+    },
+    "Доступ для нейронок выключен. Включите его в настройках Tranq." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI agent access is off. Turn it on in Tranq settings."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступ для нейронок выключен. Включите его в настройках Tranq."
+          }
+        }
+      }
+    },
+    "Доступ нейронок к истории выключен. Включите его в настройках Tranq." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI agent access to history is off. Turn it on in Tranq settings."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступ нейронок к истории выключен. Включите его в настройках Tranq."
+          }
+        }
+      }
+    },
+    "Для этого нужен полный доступ нейронок. Включите его в настройках Tranq." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This needs full access for AI agents. Turn it on in Tranq settings."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для этого нужен полный доступ нейронок. Включите его в настройках Tranq."
+          }
+        }
+      }
+    },
+    "Не удалось выполнить команду." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not run the command."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось выполнить команду."
+          }
+        }
+      }
+    },
+    "Не удалось прочитать запрос. Нужна одна строка JSON с полем cmd." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read the request. Send one line of JSON with a cmd field."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось прочитать запрос. Нужна одна строка JSON с полем cmd."
+          }
+        }
+      }
+    },
+    "В запросе нет команды. Нужно поле cmd со строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The request has no command. It needs a cmd field with a string."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В запросе нет команды. Нужно поле cmd со строкой."
+          }
+        }
+      }
+    },
+    "Неизвестная команда %@. Доступны: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown command %@. Available: %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Неизвестная команда %@. Доступны: %@."
+          }
+        }
+      }
+    },
+    "Поле args должно быть объектом." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The args field must be an object."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поле args должно быть объектом."
+          }
+        }
+      }
+    },
+    "Для набора нужно поле id со строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pack needs an id field with a string."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для набора нужно поле id со строкой."
+          }
+        }
+      }
+    },
+    "Для набора нужно поле enabled со значением true или false." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pack needs an enabled field set to true or false."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для набора нужно поле enabled со значением true или false."
+          }
+        }
+      }
+    },
+    "Набора %@ нет. Список наборов даёт команда packs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is no pack %@. The packs command lists them."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Набора %@ нет. Список наборов даёт команда packs."
+          }
+        }
+      }
+    },
+    "Для набора нужно поле title со строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A title field with a string is required."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для набора нужно поле title со строкой."
+          }
+        }
+      }
+    },
+    "Название набора не может быть пустым." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack title cannot be empty."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название набора не может быть пустым."
+          }
+        }
+      }
+    },
+    "Название набора длиннее %lld знаков." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack title is longer than %lld characters."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название набора длиннее %lld знаков."
+          }
+        }
+      }
+    },
+    "Такое название у встроенного набора. Выберите другое." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A built-in pack has this title. Choose another."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Такое название у встроенного набора. Выберите другое."
+          }
+        }
+      }
+    },
+    "Наборов агента уже %lld, это предел. Удалите ненужный набор." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are already %lld agent packs, which is the limit. Delete one you do not need."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наборов агента уже %lld, это предел. Удалите ненужный набор."
+          }
+        }
+      }
+    },
+    "Это встроенный набор. Работать можно только с наборами агента." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a built-in pack. Only agent packs can be used here."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это встроенный набор. Работать можно только с наборами агента."
+          }
+        }
+      }
+    },
+    "В наборе не больше %lld слов, свободно %lld. Ничего не записано." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pack holds at most %lld words, %lld free. Nothing was written."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В наборе не больше %lld слов, свободно %lld. Ничего не записано."
+          }
+        }
+      }
+    },
+    "Поле pack_id должно быть непустой строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack_id field must be a non-empty string."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поле pack_id должно быть непустой строкой."
+          }
+        }
+      }
+    },
+    "Удалятся слова, варианты и наборы агента. Ваши останутся." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Words, variants and agent packs will be removed. Yours stay."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалятся слова, варианты и наборы агента. Ваши останутся."
+          }
+        }
+      }
+    },
+    "от агента" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from agent"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "от агента"
+          }
+        }
+      }
+    },
+    "Удалить набор" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete pack"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить набор"
+          }
+        }
+      }
+    },
+    "Удалить набор?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete pack?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить набор?"
+          }
+        }
+      }
+    },
+    "Набор и его слова исчезнут." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack and its words will disappear."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Набор и его слова исчезнут."
+          }
+        }
+      }
+    },
+    "Нужно поле words со списком слов." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A words field with a list of words is required."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нужно поле words со списком слов."
+          }
+        }
+      }
+    },
+    "Список слов пуст. Передайте хотя бы одно слово." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The word list is empty. Send at least one word."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Список слов пуст. Передайте хотя бы одно слово."
+          }
+        }
+      }
+    },
+    "Слишком много слов за раз: не больше %lld. Разбейте список на части." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many words at once: no more than %lld. Split the list into parts."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слишком много слов за раз: не больше %lld. Разбейте список на части."
+          }
+        }
+      }
+    },
+    "Слово номер %lld: нужно поле spelling со строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Word number %lld: a spelling field with a string is required."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слово номер %lld: нужно поле spelling со строкой."
+          }
+        }
+      }
+    },
+    "Слово номер %lld: force_case должен быть true или false." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Word number %lld: force_case must be true or false."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слово номер %lld: force_case должен быть true или false."
+          }
+        }
+      }
+    },
+    "Слово номер %lld: variants должен быть объектом, где ключ язык ru или en, а значение список строк." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Word number %lld: variants must be an object where the key is the language ru or en and the value is a list of strings."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слово номер %lld: variants должен быть объектом, где ключ язык ru или en, а значение список строк."
+          }
+        }
+      }
+    },
+    "Нужно поле spellings со списком строк." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A spellings field with a list of strings is required."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нужно поле spellings со списком строк."
+          }
+        }
+      }
+    },
+    "Поле limit должно быть числом." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The limit field must be a number."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поле limit должно быть числом."
+          }
+        }
+      }
+    },
+    "Не удалось собрать ответ." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not build the response."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось собрать ответ."
+          }
+        }
+      }
+    },
+    "Слишком много соединений. Закройте лишние и повторите." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many connections. Close the extra ones and try again."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слишком много соединений. Закройте лишние и повторите."
+          }
+        }
+      }
+    },
+    "Запрос длиннее 1 МиБ. Разбейте его на части." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The request is longer than 1 MiB. Split it into parts."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запрос длиннее 1 МиБ. Разбейте его на части."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

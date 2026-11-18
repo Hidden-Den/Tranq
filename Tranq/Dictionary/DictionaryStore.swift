@@ -19,6 +19,9 @@ final class DictionaryStore: ObservableObject {
     static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design", "medicine", "psychology"]
 
     static let schemaVersion = 1
+    static let maxAgentPacks = 20
+    static let maxWordsPerAgentPack = 500
+    static let maxAgentPackTitleLength = 60
     static let fileName = "dictionary.json"
     static let backupFileName = "dictionary.backup.json"
     static let corruptFileName = "dictionary.corrupt.json"
@@ -28,9 +31,11 @@ final class DictionaryStore: ObservableObject {
         static let disabledPacks = "dictionary.disabledPacks"
         static let disabledPackWords = "dictionary.disabledPackWords"
         static let disabledPackVariants = "dictionary.disabledPackVariants"
+        static let mcpVariants = "dictionary.mcpVariants"
     }
 
     private static let userKeyPrefix = "user/"
+    private static let agentForceCaseSuffix = "forceCase"
     private static let learnedLifetime: TimeInterval = 60 * 86_400
     private static let maxHintSpellings = 8
     private static let maxRecordedNotes = 50
@@ -38,7 +43,12 @@ final class DictionaryStore: ObservableObject {
     @Published private(set) var userEntries: [DictionaryEntry] = [] {
         didSet { withLock { entriesSnapshot = userEntries } }
     }
+    /// Встроенные наборы и наборы агента: `builtinPacks + agentPacks`, всегда в таком порядке.
     @Published private(set) var packs: [DictionaryPack] = []
+    /// Наборы, которые создал агент, в порядке создания. Хранятся в `dictionary.json`.
+    @Published private(set) var agentPacks: [DictionaryPack] = [] {
+        didSet { packs = builtinPacks + agentPacks }
+    }
     @Published private(set) var disabledPacks: Set<String> = []
     @Published private(set) var disabledPackWords: Set<String> = []
     @Published private(set) var disabledPackVariants: Set<String> = []
@@ -47,6 +57,7 @@ final class DictionaryStore: ObservableObject {
     }
 
     private let directory: URL
+    private let builtinPacks: [DictionaryPack]
     /// Общие настройки: обучение хранит в них счётчики пар и дневной лимит.
     let defaults: UserDefaults
     private let checker: CommonWordChecking
@@ -62,8 +73,11 @@ final class DictionaryStore: ObservableObject {
     private var entriesSnapshot: [DictionaryEntry] = []
     private var noteReplacements: [UUID: [AppliedReplacement]] = [:]
     private var noteOrder: [UUID] = []
-    private var pendingEntries: [DictionaryEntry]?
+    private var pendingFile: StoredFile?
     private var pendingSave: DispatchWorkItem?
+    /// Что агент дописал в чужие записи: `<id записи>/<язык>/<вариант>` и `<id записи>/forceCase`.
+    /// Живёт в `defaults`, а не в публикуемом свойстве, поэтому изменения объявляются вручную.
+    private var mcpVariants: Set<String> = []
 
     private let indexQueue = DispatchQueue(label: "tranq.dictionary.index", qos: .userInitiated)
     private let ioQueue = DispatchQueue(label: "tranq.dictionary.io", qos: .utility)
@@ -80,6 +94,7 @@ final class DictionaryStore: ObservableObject {
         saveDelay: TimeInterval = 1
     ) {
         self.directory = directory
+        self.builtinPacks = packs ?? Self.loadPacks(from: packsBundle)
         self.defaults = defaults
         self.checker = checker
         self.now = now
@@ -90,18 +105,32 @@ final class DictionaryStore: ObservableObject {
         disabledPacks = Set(defaults.stringArray(forKey: Keys.disabledPacks) ?? [])
         disabledPackWords = Set(defaults.stringArray(forKey: Keys.disabledPackWords) ?? [])
         disabledPackVariants = Set(defaults.stringArray(forKey: Keys.disabledPackVariants) ?? [])
-        self.packs = packs ?? Self.loadPacks(from: packsBundle)
+        mcpVariants = Set(defaults.stringArray(forKey: Keys.mcpVariants) ?? [])
 
-        let loaded = Self.loadEntries(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
+        let loaded = Self.loadStored(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
         let cutoff = now().addingTimeInterval(-Self.learnedLifetime)
-        let kept = loaded.filter { $0.source != .learned || ($0.lastUsed ?? $0.createdAt) >= cutoff }
+        let kept = loaded.entries.filter { $0.source != .learned || ($0.lastUsed ?? $0.createdAt) >= cutoff }
         userEntries = kept
         // Наблюдатели свойств в init не вызываются, поэтому снимок заполняется явно.
         entriesSnapshot = kept
-        if kept.count != loaded.count {
-            AppLogger.shared.info("Dictionary", "Удалены неиспользуемые выученные слова", details: "\(loaded.count - kept.count)")
-            scheduleSave()
+        var needsSave = false
+        if kept.count != loaded.entries.count {
+            AppLogger.shared.info("Dictionary", "Удалены неиспользуемые выученные слова", details: "\(loaded.entries.count - kept.count)")
+            needsSave = true
         }
+
+        // Повтор идентификатора или совпадение со встроенным набором сломали бы ключи замен и выключений.
+        var knownIDs = Set(builtinPacks.map(\.id))
+        let storedPacks = loaded.agentPacks ?? []
+        let validPacks = storedPacks.filter { knownIDs.insert($0.id).inserted }
+        if validPacks.count != storedPacks.count {
+            AppLogger.shared.warn("Dictionary", "Наборы агента с повторным идентификатором пропущены", details: "\(storedPacks.count - validPacks.count)")
+            needsSave = true
+        }
+        agentPacks = validPacks
+        self.packs = builtinPacks + validPacks
+        // Снимок для записи берётся в момент вызова, поэтому запись планируется, когда загружено всё.
+        if needsSave { scheduleSave() }
         rebuildIndex()
 
         terminationObserver = NotificationCenter.default.addObserver(
@@ -132,6 +161,7 @@ final class DictionaryStore: ObservableObject {
                 for (language, list) in variants {
                     entry.variants[language] = Self.mergedVariants(entry.variants[language] ?? [], list)
                 }
+                // Человек, добавивший слово агента вручную, забирает его себе: откат оставит запись целиком.
                 if source == .manual { entry.source = .manual }
                 entry.forceCase = entry.forceCase || forceCase
                 if entry != userEntries[i] {
@@ -171,10 +201,19 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
+    /// Правка из экрана словаря. Человек, изменивший написание, варианты или регистр записи агента,
+    /// забирает её себе: источник становится ручным, и откат её не тронет. Счётчики источник не меняют.
     func updateEntry(_ entry: DictionaryEntry) {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == entry.id }), userEntries[i] != entry else { return }
+            let stored = userEntries[i]
+            var entry = entry
+            if stored.source == .mcp, entry.source == .mcp,
+               stored.spelling != entry.spelling || stored.variants != entry.variants || stored.forceCase != entry.forceCase {
+                entry.source = .manual
+            }
             userEntries[i] = entry
+            pruneAgentKeys(for: entry.id)
             entriesChanged()
         }
     }
@@ -183,12 +222,14 @@ final class DictionaryStore: ObservableObject {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == id }) else { return }
             userEntries.remove(at: i)
+            pruneAgentKeys(for: id)
             entriesChanged()
         }
     }
 
     /// Убирает вариант по ключу записи из `AppliedReplacement.entryKey`.
     /// Пользовательская запись теряет вариант, а выученная без вариантов удаляется целиком.
+    /// Запись агента после снятия варианта становится ручной, и откат её не тронет.
     /// У набора вариант выключается ключом `<packId>/<spelling>/<variant>`; для исправления регистра
     /// вариантом служит написание в нижнем регистре.
     func removeVariant(_ variant: String, language: DictionaryLanguage, fromEntryKey entryKey: String) {
@@ -201,10 +242,13 @@ final class DictionaryStore: ObservableObject {
                 if entry.source == .learned, entry.variants.values.allSatisfy(\.isEmpty) {
                     userEntries.remove(at: i)
                 } else if entry != userEntries[i] {
+                    // Как и в `updateEntry`: человек, снявший вариант у записи агента, забирает её себе.
+                    if entry.source == .mcp { entry.source = .manual }
                     userEntries[i] = entry
                 } else {
                     return
                 }
+                pruneAgentKeys(for: id)
                 entriesChanged()
             } else {
                 guard disabledPackVariants.insert("\(entryKey)/\(variant)").inserted else { return }
@@ -249,6 +293,411 @@ final class DictionaryStore: ObservableObject {
             } else if variantsChange {
                 rebuildIndex()
             }
+        }
+    }
+
+    // MARK: - Записи агента
+
+    /// Записывает пачку слов от агента. Новое написание получает источник `mcp`. У существующего
+    /// источник остаётся прежним, а варианты и жёсткий регистр, которых в записи не было, запоминаются
+    /// как агентские, чтобы откат снял ровно их. Отброшенные слова уходят в `skipped`, остальные проходят.
+    @discardableResult
+    func addFromAgent(_ words: [AgentWord]) -> AgentWriteResult {
+        onMain {
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            var remembered = mcpVariants
+            for word in words {
+                let spelling = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !spelling.isEmpty else {
+                    result.skipped[word.spelling] = "пустое написание"
+                    continue
+                }
+                guard seen.insert(spelling.lowercased()).inserted else {
+                    result.skipped[word.spelling] = "повтор в этом запросе"
+                    continue
+                }
+
+                // Плохой вариант отбрасывается сам по себе, слово с остальными вариантами проходит.
+                var variants: [DictionaryLanguage: [String]] = [:]
+                for (language, list) in word.variants {
+                    for variant in list {
+                        let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let reason = Self.agentVariantRejection(trimmed, spelling: spelling) {
+                            result.skipped["\(spelling) / \(trimmed)"] = reason
+                        } else {
+                            variants[language, default: []].append(trimmed)
+                        }
+                    }
+                }
+
+                let before = userEntries.first { $0.spelling.lowercased() == spelling.lowercased() }
+                let after = addEntry(spelling: spelling, variants: variants, source: .mcp, forceCase: word.forceCase)
+                // Свои записи агент снимает целиком, запоминать нужно только дописанное в чужие.
+                if let before, before.source != .mcp {
+                    for (language, list) in after.variants {
+                        let had = Set((before.variants[language] ?? []).map { $0.lowercased() })
+                        for variant in list where !had.contains(variant.lowercased()) {
+                            remembered.insert(Self.agentKey(after.id, language: language, variant: variant))
+                        }
+                    }
+                    if after.forceCase, !before.forceCase {
+                        remembered.insert(Self.agentKey(after.id))
+                    }
+                }
+                result.added.append(spelling)
+            }
+            setMCPVariants(remembered)
+            return result
+        }
+    }
+
+    /// Снимает записи по написанию. Без полного доступа — только записи `mcp`,
+    /// на ручные и выученные приходит отказ с причиной.
+    @discardableResult
+    func removeFromAgent(spellings: [String], fullAccess: Bool) -> AgentWriteResult {
+        onMain {
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var entries = userEntries
+            var removedIDs = Set<UUID>()
+            var seen = Set<String>()
+            for spelling in spellings {
+                let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !key.isEmpty, !seen.insert(key).inserted {
+                    result.skipped[spelling] = "повтор в списке"
+                    continue
+                }
+                guard !key.isEmpty, let i = entries.firstIndex(where: { $0.spelling.lowercased() == key }) else {
+                    result.skipped[spelling] = "такого слова нет в словаре"
+                    continue
+                }
+                if entries[i].source != .mcp, !fullAccess {
+                    result.skipped[spelling] = entries[i].source == .learned
+                        ? "слово выучено приложением, удалить его можно в Tranq"
+                        : "слово добавлено вручную, удалить его можно в Tranq"
+                    continue
+                }
+                removedIDs.insert(entries[i].id)
+                entries.remove(at: i)
+                result.added.append(spelling.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            guard !removedIDs.isEmpty else { return result }
+            setMCPVariants(mcpVariants.filter { key in
+                Self.parseAgentKey(key).map { !removedIDs.contains($0.id) } ?? false
+            })
+            userEntries = entries
+            entriesChanged()
+            return result
+        }
+    }
+
+    /// Удаляет записи `mcp` и все наборы агента, снимает запомненные варианты и жёсткий регистр агента из чужих записей
+    /// и чистит список. Ключи записей и вариантов, которые человек уже удалил, пропускаются.
+    /// Возвращает число удалённых записей `mcp`, число снятых вариантов агента, включая варианты выученных записей,
+    /// удалённых тем же откатом как пустые, и число удалённых наборов агента.
+    @discardableResult
+    func revertAgentChanges() -> AgentRevertResult {
+        onMain {
+            var entries = userEntries.filter { $0.source != .mcp }
+            let removedWords = userEntries.count - entries.count
+            var removedVariants = 0
+            var touched = Set<UUID>()
+            for key in mcpVariants {
+                guard let parsed = Self.parseAgentKey(key),
+                      let i = entries.firstIndex(where: { $0.id == parsed.id }) else { continue }
+                if let language = parsed.language, let variant = parsed.variant {
+                    let lowered = variant.lowercased()
+                    let before = entries[i].variants[language]?.count ?? 0
+                    entries[i].variants[language]?.removeAll { $0.lowercased() == lowered }
+                    let removed = before - (entries[i].variants[language]?.count ?? 0)
+                    if removed > 0 {
+                        removedVariants += removed
+                        touched.insert(parsed.id)
+                    }
+                } else if entries[i].forceCase {
+                    entries[i].forceCase = false
+                    touched.insert(parsed.id)
+                }
+            }
+            // Как в `removeVariant`: выученная запись, которую откат оставил без вариантов и без жёсткого
+            // регистра, ничего не делает. Нетронутые откатом записи, например выученные только по регистру, остаются.
+            entries.removeAll {
+                touched.contains($0.id) && $0.source == .learned
+                    && $0.variants.values.allSatisfy(\.isEmpty) && !$0.forceCase
+            }
+            setMCPVariants([])
+            // Наборы агента уходят вместе со своими выключениями, одним сохранением со словами.
+            let removedPacks = agentPacks.count
+            for pack in agentPacks { pruneDisabled(packId: pack.id) }
+            let result = AgentRevertResult(removedWords: removedWords, removedVariants: removedVariants, removedPacks: removedPacks)
+            guard entries != userEntries || removedPacks > 0 else { return result }
+            if removedPacks > 0 { agentPacks = [] }
+            if entries != userEntries { userEntries = entries }
+            entriesChanged()
+            return result
+        }
+    }
+
+    /// Записи `mcp`, записи с вариантами или жёстким регистром агента и слова наборов агента.
+    var agentWordCount: Int {
+        onMain {
+            var keysByID: [UUID: [(language: DictionaryLanguage?, variant: String?)]] = [:]
+            for key in mcpVariants {
+                guard let parsed = Self.parseAgentKey(key) else { continue }
+                keysByID[parsed.id, default: []].append((parsed.language, parsed.variant))
+            }
+            let packWords = agentPacks.reduce(0) { $0 + $1.entries.count }
+            return packWords + userEntries.filter { entry in
+                if entry.source == .mcp { return true }
+                return (keysByID[entry.id] ?? []).contains { key in
+                    guard let language = key.language, let variant = key.variant?.lowercased() else {
+                        return entry.forceCase
+                    }
+                    return (entry.variants[language] ?? []).contains { $0.lowercased() == variant }
+                }
+            }.count
+        }
+    }
+
+    private func setMCPVariants(_ keys: Set<String>) {
+        guard keys != mcpVariants else { return }
+        objectWillChange.send()
+        mcpVariants = keys
+        if keys.isEmpty {
+            defaults.removeObject(forKey: Keys.mcpVariants)
+        } else {
+            defaults.set(keys.sorted(), forKey: Keys.mcpVariants)
+        }
+    }
+
+    /// Человек поменял запись сам: ключи агента, которым в ней больше нечего соответствовать, забываются.
+    /// Вариант, который человек удалил и набрал снова, или регистр, выключенный и включённый заново, —
+    /// уже его, и откат их не тронет. На путях самого агента не вызывается.
+    private func pruneAgentKeys(for id: UUID) {
+        let entry = userEntries.first { $0.id == id }
+        setMCPVariants(mcpVariants.filter { key in
+            guard let parsed = Self.parseAgentKey(key), parsed.id == id else { return true }
+            guard let entry else { return false }
+            guard let language = parsed.language, let variant = parsed.variant?.lowercased() else {
+                return entry.forceCase
+            }
+            return (entry.variants[language] ?? []).contains { $0.lowercased() == variant }
+        })
+    }
+
+    /// Причина отказа для варианта агента или `nil`, если вариант годится. `variant` уже без пробелов по краям.
+    private static func agentVariantRejection(_ variant: String, spelling: String) -> String? {
+        if variant.count < 2 { return "вариант «\(variant)» короче двух символов" }
+        if variant.lowercased() == spelling.lowercased() { return "вариант «\(variant)» совпадает с написанием" }
+        return nil
+    }
+
+    /// `<id>/<язык>/<вариант>` для варианта, `<id>/forceCase` для жёсткого регистра.
+    private static func agentKey(_ id: UUID, language: DictionaryLanguage? = nil, variant: String? = nil) -> String {
+        guard let language, let variant else { return "\(id.uuidString)/\(agentForceCaseSuffix)" }
+        return "\(id.uuidString)/\(language.rawValue)/\(variant)"
+    }
+
+    /// Ключ варианта делится на три части, в самом варианте может быть косая черта.
+    private static func parseAgentKey(_ key: String) -> (id: UUID, language: DictionaryLanguage?, variant: String?)? {
+        let parts = key.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: false).map(String.init)
+        guard let first = parts.first, let id = UUID(uuidString: first) else { return nil }
+        if parts.count == 2, parts[1] == agentForceCaseSuffix { return (id, nil, nil) }
+        guard parts.count == 3, let language = DictionaryLanguage(rawValue: parts[1]) else { return nil }
+        return (id, language, parts[2])
+    }
+
+    // MARK: - Наборы агента
+
+    /// Создаёт набор агента. Набор с тем же названием без учёта регистра не дублируется: возвращается прежний.
+    @discardableResult
+    func createAgentPack(title: String) throws -> AgentPackCreateResult {
+        try onMain {
+            let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { throw AgentPackError.emptyTitle }
+            guard title.count <= Self.maxAgentPackTitleLength else {
+                throw AgentPackError.titleTooLong(limit: Self.maxAgentPackTitleLength)
+            }
+            let builtInTaken = builtinPacks.contains { pack in
+                pack.title.values.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+            }
+            guard !builtInTaken else { throw AgentPackError.titleTakenByBuiltIn }
+            if let existing = agentPacks.first(where: { pack in
+                pack.title.values.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+            }) {
+                return AgentPackCreateResult(id: existing.id, title: existing.title[.ru] ?? title, created: false)
+            }
+            guard agentPacks.count < Self.maxAgentPacks else {
+                throw AgentPackError.tooManyPacks(limit: Self.maxAgentPacks)
+            }
+            let known = Set(packs.map(\.id))
+            var id: String
+            repeat {
+                id = "agent-" + UUID().uuidString.lowercased().prefix(8)
+            } while known.contains(id)
+            agentPacks.append(DictionaryPack(id: id, title: [.ru: title, .en: title], version: 1, entries: []))
+            entriesChanged()
+            return AgentPackCreateResult(id: id, title: title, created: true)
+        }
+    }
+
+    /// Удаляет набор агента со словами и чистит его выключения.
+    @discardableResult
+    func deleteAgentPack(id: String) throws -> AgentPackDeleteResult {
+        try onMain {
+            let pack = try agentPack(id: id)
+            agentPacks.removeAll { $0.id == id }
+            pruneDisabled(packId: id)
+            entriesChanged()
+            return AgentPackDeleteResult(id: id, title: pack.title[.ru] ?? id, removedWords: pack.entries.count)
+        }
+    }
+
+    /// Набор агента по идентификатору. Встроенный набор и неизвестный идентификатор дают отказ.
+    func agentPack(id: String) throws -> DictionaryPack {
+        try onMain {
+            if let pack = agentPacks.first(where: { $0.id == id }) { return pack }
+            if builtinPacks.contains(where: { $0.id == id }) { throw AgentPackError.builtInPack(id: id) }
+            throw AgentPackError.noSuchPack(id: id)
+        }
+    }
+
+    /// Записывает пачку слов в набор агента. Правила слов те же, что у `addFromAgent`: плохой вариант
+    /// отбрасывается сам по себе, повтор без учёта регистра сливает варианты. `forceCase` не действует:
+    /// у слов набора его нет. Пачка, которая не помещается в предел набора, отклоняется целиком.
+    @discardableResult
+    func addToAgentPack(id: String, words: [AgentWord]) throws -> AgentWriteResult {
+        try onMain {
+            let pack = try agentPack(id: id)
+            var entries = pack.entries
+            // Файл мог быть правлен вручную: остаток не уходит в минус.
+            let free = max(0, Self.maxWordsPerAgentPack - entries.count)
+
+            var counted = Set<String>()
+            let known = Set(entries.map { $0.spelling.lowercased() })
+            var newWords = 0
+            for word in words {
+                let key = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty, counted.insert(key).inserted else { continue }
+                if !known.contains(key) { newWords += 1 }
+            }
+            guard newWords <= free else {
+                throw AgentPackError.tooManyWords(limit: Self.maxWordsPerAgentPack, free: free)
+            }
+
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            for word in words {
+                let spelling = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !spelling.isEmpty else {
+                    result.skipped[word.spelling] = "пустое написание"
+                    continue
+                }
+                guard seen.insert(spelling.lowercased()).inserted else {
+                    result.skipped[word.spelling] = "повтор в этом запросе"
+                    continue
+                }
+                var variants: [DictionaryLanguage: [String]] = [:]
+                for (language, list) in word.variants {
+                    for variant in list {
+                        let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let reason = Self.agentVariantRejection(trimmed, spelling: spelling) {
+                            result.skipped["\(spelling) / \(trimmed)"] = reason
+                        } else {
+                            variants[language, default: []].append(trimmed)
+                        }
+                    }
+                }
+                if let i = entries.firstIndex(where: { $0.spelling.lowercased() == spelling.lowercased() }) {
+                    for (language, list) in variants {
+                        entries[i].variants[language] = Self.mergedVariants(entries[i].variants[language] ?? [], list)
+                    }
+                } else {
+                    var cleaned: [DictionaryLanguage: [String]] = [:]
+                    for (language, list) in variants {
+                        let merged = Self.mergedVariants([], list)
+                        if !merged.isEmpty { cleaned[language] = merged }
+                    }
+                    entries.append(PackEntry(
+                        spelling: spelling, variants: cleaned, commonIn: Self.commonLanguages(for: spelling, checker: checker)
+                    ))
+                }
+                result.added.append(spelling)
+            }
+            setAgentPackEntries(id: id, entries)
+            return result
+        }
+    }
+
+    /// Снимает слова набора агента по написанию без учёта регистра. Полный доступ не нужен: набор принадлежит агенту.
+    @discardableResult
+    func removeFromAgentPack(id: String, spellings: [String]) throws -> AgentWriteResult {
+        try onMain {
+            var entries = try agentPack(id: id).entries
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            for spelling in spellings {
+                let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !key.isEmpty, !seen.insert(key).inserted {
+                    result.skipped[spelling] = "повтор в списке"
+                    continue
+                }
+                guard !key.isEmpty, let i = entries.firstIndex(where: { $0.spelling.lowercased() == key }) else {
+                    result.skipped[spelling] = "такого слова нет в наборе"
+                    continue
+                }
+                pruneDisabled(packId: id, word: entries[i].spelling, variants: entries[i].variants.values.flatMap { $0 })
+                entries.remove(at: i)
+                result.added.append(spelling.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            setAgentPackEntries(id: id, entries)
+            return result
+        }
+    }
+
+    private func setAgentPackEntries(id: String, _ entries: [PackEntry]) {
+        guard let i = agentPacks.firstIndex(where: { $0.id == id }), agentPacks[i].entries != entries else { return }
+        agentPacks[i].entries = entries
+        entriesChanged()
+    }
+
+    /// Языки, в которых написание бывает обычным словом: правило `scripts/annotate-dictionaries.swift`.
+    /// Кириллица даёт `ru`, латиница `en`, написания с цифрами и знаками обычными словами не бывают.
+    private static func commonLanguages(for spelling: String, checker: CommonWordChecking) -> [DictionaryLanguage] {
+        let letters = spelling.filter { !$0.isWhitespace }
+        guard !letters.isEmpty, letters.allSatisfy(\.isLetter) else { return [] }
+        let candidate: DictionaryLanguage
+        if letters.allSatisfy({ $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }) {
+            candidate = .ru
+        } else if letters.allSatisfy(\.isASCII) {
+            candidate = .en
+        } else {
+            return []
+        }
+        return checker.isCommonWord(spelling, language: candidate) ? [candidate] : []
+    }
+
+    /// Убирает выключения набора целиком (`word == nil`) или одного его слова вместе с его вариантами `variants`.
+    /// Остаток после удаления не должен встретить новое слово или набор с тем же ключом выключенным.
+    /// Ключи вариантов слова с косой чертой в написании, например «CI/CD», у слова «CI» не отбираются.
+    private func pruneDisabled(packId: String, word: String? = nil, variants wordVariants: [String] = []) {
+        let base = word.map { "\(packId)/\($0)" } ?? packId
+        let prefix = base + "/"
+        if word == nil, disabledPacks.remove(packId) != nil {
+            defaults.set(disabledPacks.sorted(), forKey: Keys.disabledPacks)
+        }
+        let words = disabledPackWords.filter { $0 != base && !$0.hasPrefix(prefix) }
+        if words != disabledPackWords {
+            disabledPackWords = words
+            defaults.set(words.sorted(), forKey: Keys.disabledPackWords)
+        }
+        let variants = disabledPackVariants.filter { key in
+            guard key.hasPrefix(prefix) else { return true }
+            return word != nil && !wordVariants.contains(String(key.dropFirst(prefix.count)))
+        }
+        if variants != disabledPackVariants {
+            disabledPackVariants = variants
+            defaults.set(variants.sorted(), forKey: Keys.disabledPackVariants)
         }
     }
 
@@ -434,6 +883,8 @@ final class DictionaryStore: ObservableObject {
     private struct StoredFile: Codable {
         var schemaVersion: Int
         var entries: [DictionaryEntry]
+        /// Нет в файлах, записанных до наборов агента; пустой список не пишется.
+        var agentPacks: [DictionaryPack]?
     }
 
     private func entriesChanged() {
@@ -443,10 +894,12 @@ final class DictionaryStore: ObservableObject {
 
     /// Запись откладывается на `saveDelay`, каждое изменение переносит её заново.
     private func scheduleSave() {
-        let entries = userEntries
+        let file = StoredFile(
+            schemaVersion: Self.schemaVersion, entries: userEntries, agentPacks: agentPacks.isEmpty ? nil : agentPacks
+        )
         let work = DispatchWorkItem { [weak self] in self?.writePending() }
         let previous: DispatchWorkItem? = withLock {
-            pendingEntries = entries
+            pendingFile = file
             defer { pendingSave = work }
             return pendingSave
         }
@@ -460,22 +913,22 @@ final class DictionaryStore: ObservableObject {
     }
 
     private func writePending() {
-        let entries: [DictionaryEntry]? = withLock {
-            defer { pendingEntries = nil; pendingSave = nil }
-            return pendingEntries
+        let file: StoredFile? = withLock {
+            defer { pendingFile = nil; pendingSave = nil }
+            return pendingFile
         }
-        guard let entries else { return }
-        Self.write(entries, main: mainURL, backup: backupURL)
+        guard let file else { return }
+        Self.write(file, main: mainURL, backup: backupURL)
     }
 
     /// Предыдущий файл копируется в резервную копию, только если он читается: иначе испорченный файл
     /// затёр бы рабочую копию, из которой словарь мог быть загружен.
-    private static func write(_ entries: [DictionaryEntry], main: URL, backup: URL) {
+    private static func write(_ file: StoredFile, main: URL, backup: URL) {
         let data: Data
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys]
-            data = try encoder.encode(StoredFile(schemaVersion: schemaVersion, entries: entries))
+            data = try encoder.encode(file)
         } catch {
             AppLogger.shared.warn("Dictionary", "Словарь не сохранён", details: error.localizedDescription)
             return
@@ -499,8 +952,8 @@ final class DictionaryStore: ObservableObject {
 
     /// Нечитаемый основной файл переносится в `dictionary.corrupt.json`, прежняя испорченная копия затирается:
     /// иначе следующая запись заменила бы его и данные пропали бы безвозвратно.
-    private static func loadEntries(main: URL, backup: URL, corrupt: URL) -> [DictionaryEntry] {
-        if let entries = readEntries(at: main) { return entries }
+    private static func loadStored(main: URL, backup: URL, corrupt: URL) -> StoredFile {
+        if let file = readStored(at: main) { return file }
         let mainExisted = FileManager.default.fileExists(atPath: main.path)
         if mainExisted {
             try? FileManager.default.removeItem(at: corrupt)
@@ -510,20 +963,20 @@ final class DictionaryStore: ObservableObject {
                 AppLogger.shared.warn("Dictionary", "Испорченный файл словаря не перенесён", details: error.localizedDescription)
             }
         }
-        if let entries = readEntries(at: backup) {
+        if let file = readStored(at: backup) {
             if mainExisted {
                 AppLogger.shared.warn("Dictionary", "Словарь загружен из резервной копии")
             }
-            return entries
+            return file
         }
-        return []
+        return StoredFile(schemaVersion: schemaVersion, entries: [], agentPacks: nil)
     }
 
     /// `nil`, если файла нет или он не читается; во втором случае пишется `warn`.
-    private static func readEntries(at url: URL) -> [DictionaryEntry]? {
+    private static func readStored(at url: URL) -> StoredFile? {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         do {
-            return try JSONDecoder().decode(StoredFile.self, from: Data(contentsOf: url)).entries
+            return try JSONDecoder().decode(StoredFile.self, from: Data(contentsOf: url))
         } catch {
             AppLogger.shared.warn("Dictionary", "Файл словаря не читается", details: "\(url.lastPathComponent): \(error.localizedDescription)")
             return nil
@@ -532,8 +985,8 @@ final class DictionaryStore: ObservableObject {
 
     // MARK: - Вспомогательное
 
-    private func onMain<T>(_ body: () -> T) -> T {
-        Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
+    private func onMain<T>(_ body: () throws -> T) rethrows -> T {
+        Thread.isMainThread ? try body() : try DispatchQueue.main.sync(execute: body)
     }
 
     private func withLock<T>(_ body: () -> T) -> T {

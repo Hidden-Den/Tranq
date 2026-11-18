@@ -20,6 +20,34 @@ jobs:
       - name: Проверка имени
         run: bash scripts/check-brand.sh
 
+      # Go нужен и тестам MCP-сервера, и сборке Xcode: фаза приложения
+      # собирает tranq-mcp и без Go падает.
+      - name: Установка Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: mcp/go.mod
+          cache: false
+
+      - name: Форматирование Go
+        working-directory: mcp
+        run: |
+          # Все отслеживаемые файлы Go, кроме vendor
+          files=$(git ls-files '*.go' | grep -v '^vendor/')
+          unformatted=$(gofmt -l $files)
+          if [ -n "$unformatted" ]; then
+            echo "Не отформатировано gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Проверка Go
+        working-directory: mcp
+        run: go vet ./...
+
+      - name: Тесты Go
+        working-directory: mcp
+        run: go test -mod=vendor -race ./...
+
       - name: Версия Xcode
         run: xcodebuild -version
 
@@ -38,6 +66,23 @@ jobs:
             CODE_SIGN_IDENTITY=- \
             | tee build/xcodebuild.log | grep -E "error:|Test run with|\*\* TEST" || true
           grep -q "\*\* TEST SUCCEEDED \*\*" build/xcodebuild.log
+
+      # Лог xcodebuild называет упавшие тесты, но не говорит почему. Причины лежат
+      # только в xcresult, поэтому печатаем их оттуда.
+      - name: Причины падений
+        if: failure()
+        run: |
+          result=$(ls -td build/DerivedData-ci/Logs/Test/*.xcresult 2>/dev/null | head -1)
+          if [ -z "$result" ]; then
+            echo "Пакет результатов не найден"
+            exit 0
+          fi
+          xcrun xcresulttool get test-results summary --path "$result" --compact | python3 -c '
+          import json, sys
+          for failure in json.load(sys.stdin).get("testFailures", []):
+              print(failure.get("testIdentifierString", "?"))
+              print("    " + failure.get("failureText", "").replace("\n", "\n    "))
+          '
 
       - name: Отчёт о тестах
         if: failure()

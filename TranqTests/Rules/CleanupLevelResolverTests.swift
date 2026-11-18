@@ -30,7 +30,7 @@ struct CleanupLevelResolverTests {
     @Test func noRuleGivesClean() {
         let r = CleanupLevelResolver.resolve(ctx("org.telegram.desktop", nil), rules: [], mode: .smart, promptModeEnabled: false)
         #expect(r.level == .clean)
-        #expect(r.label == "Чисто")
+        #expect(r.label == String(localized: "Чисто"))
         #expect(r.ruleName == nil)
     }
 
@@ -44,13 +44,13 @@ struct CleanupLevelResolverTests {
         #expect(CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], mode: .smart, promptModeEnabled: false).level == .clean)
         let r = CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], mode: .direct, promptModeEnabled: true)
         #expect(r.level == .prompt)
-        #expect(r.label == "Промпт")
+        #expect(r.label == String(localized: "Промпт"))
     }
 
     @Test func directModeIgnoresRules() {
         let r = CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite], mode: .direct, promptModeEnabled: true)
         #expect(r.level == .verbatim)
-        #expect(r.label == "Дословно")
+        #expect(r.label == String(localized: "Дословно"))
     }
 
     @Test func longestDomainWins() {

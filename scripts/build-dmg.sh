@@ -47,7 +47,15 @@ for res in gigaam.gguf llama/llama-server; do
   [[ -e "$APP/Contents/Resources/$res" ]] || die "в бандле нет $res"
 done
 
+# MCP-сервер: лежит рядом с исполняемым файлом, запускается и подписан сам
+MCP="$APP/Contents/MacOS/tranq-mcp"
+[[ -x "$MCP" ]] || die "в бандле нет Contents/MacOS/tranq-mcp"
+codesign --verify --strict "$MCP" || die "подпись tranq-mcp не прошла проверку"
+MCP_VERSION="$("$MCP" --version)" || die "tranq-mcp --version не запускается"
+[[ "$(codesign -dv "$MCP" 2>&1)" == *"runtime"* ]] || die "hardened runtime у tranq-mcp не включён"
+
 VERSION="$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)"
+[[ "$MCP_VERSION" == "tranq-mcp $VERSION" ]] || die "tranq-mcp сообщил «$MCP_VERSION», ожидалась версия $VERSION"
 log "Упаковка Tranq $VERSION"
 STAGING="$(mktemp -d)"
 trap 'rm -rf "$STAGING"' EXIT

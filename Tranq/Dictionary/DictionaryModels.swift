@@ -42,7 +42,7 @@ private struct StringCodingKey: CodingKey {
 }
 
 struct DictionaryEntry: Codable, Identifiable, Equatable {
-    enum Source: String, Codable { case manual, learned }
+    enum Source: String, Codable { case manual, learned, mcp }
 
     var id: UUID
     var spelling: String
@@ -61,7 +61,8 @@ extension DictionaryEntry {
             id: try c.decode(UUID.self, forKey: .id),
             spelling: try c.decode(String.self, forKey: .spelling),
             variants: try c.decodeLanguageMap([String].self, forKey: .variants),
-            source: try c.decode(Source.self, forKey: .source),
+            // Неизвестный источник читается как ручной: одна запись не должна ронять весь словарь.
+            source: Source(rawValue: try c.decode(String.self, forKey: .source)) ?? .manual,
             forceCase: try c.decode(Bool.self, forKey: .forceCase),
             createdAt: try c.decode(Date.self, forKey: .createdAt),
             hits: try c.decode(Int.self, forKey: .hits),
@@ -95,6 +96,8 @@ struct DictionaryPack: Codable, Identifiable {
     var version: Int
     var entries: [PackEntry]
 }
+
+extension DictionaryPack: Equatable {}
 
 extension DictionaryPack {
     init(from decoder: Decoder) throws {

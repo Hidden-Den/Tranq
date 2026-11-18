@@ -10,6 +10,7 @@ struct DictionaryView: View {
     @State private var expandedID: UUID?
     @State private var addingWord = false
     @State private var confirmingReset = false
+    @State private var confirmingAgentRevert = false
     @State private var openPackID: String?
 
     private let language = DictionaryLanguage.current
@@ -43,6 +44,8 @@ struct DictionaryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.uiCanvas)
         .sheet(isPresented: $addingWord) { DictionaryAddWordSheet() }
+        // Второе окно подтверждения висит на разделе «Мои слова»: два `.alert` на одном виде
+        // SwiftUI не показывает оба.
         .alert("Сбросить выученное", isPresented: $confirmingReset) {
             Button("Сбросить", role: .destructive) { store.resetLearned() }
             Button("Отмена", role: .cancel) {}
@@ -112,9 +115,7 @@ struct DictionaryView: View {
                     .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(.uiMidGray)
                     .monospacedDigit()
-                UIDropdownMenu(items: [
-                    .action("Сбросить выученное", icon: "arrow.counterclockwise") { confirmingReset = true },
-                ], minWidth: 200) {
+                UIDropdownMenu(items: menuItems, minWidth: 200) {
                     Image(systemName: "ellipsis")
                         .font(.ui(.body, weight: .semibold))
                         .foregroundColor(.uiMidGray)
@@ -145,6 +146,23 @@ struct DictionaryView: View {
                 .dictionarySectionBox()
             }
         }
+        .alert("Снять слова агента", isPresented: $confirmingAgentRevert) {
+            Button("Снять", role: .destructive) { store.revertAgentChanges() }
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            Text("Удалятся слова, варианты и наборы агента. Ваши останутся.")
+        }
+    }
+
+    /// «Снять слова агента» появляется, только пока в словаре есть что снимать.
+    private var menuItems: [UIDropdownItem] {
+        var items: [UIDropdownItem] = [
+            .action("Сбросить выученное", icon: "arrow.counterclockwise") { confirmingReset = true },
+        ]
+        if store.agentWordCount > 0 || !store.agentPacks.isEmpty {
+            items.append(.action("Снять слова агента", icon: "arrow.uturn.backward") { confirmingAgentRevert = true })
+        }
+        return items
     }
 
     private func toggle(_ id: UUID) {
@@ -179,6 +197,11 @@ struct DictionaryView: View {
                 Text("\(pack.entries.count) слов")
                     .font(.ui(.footnote))
                     .foregroundColor(.uiMidGray)
+                if store.agentPacks.contains(where: { $0.id == pack.id }) {
+                    Text("от агента")
+                        .font(.ui(.caption))
+                        .foregroundColor(.uiMidGray)
+                }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.ui(.caption, weight: .semibold))
