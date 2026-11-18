@@ -11,3 +11,4 @@ Vendor/llama/*
 !Vendor/llama/.gitkeep
 Packages/*/.build/
 Packages/*/.swiftpm/
+CLAUDE.md
