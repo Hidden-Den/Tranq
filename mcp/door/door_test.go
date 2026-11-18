@@ -1,9 +1,11 @@
 package door
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -255,7 +257,7 @@ func TestEnsureAppOpensAppAndWaitsForSocket(t *testing.T) {
 	if got := time.Since(start); got < 250*time.Millisecond || got > 3*time.Second {
 		t.Fatalf("waited %v, want about 300ms", got)
 	}
-	if want := [][]string{{"/Applications/Tranq.app"}}; !reflect.DeepEqual(opened, want) {
+	if want := [][]string{{"-g", "/Applications/Tranq.app"}}; !reflect.DeepEqual(opened, want) {
 		t.Fatalf("open called with %q, want %q", opened, want)
 	}
 }
@@ -296,6 +298,46 @@ func TestEnsureAppFailsFastWhenOpenFails(t *testing.T) {
 	}
 }
 
+func TestEnsureAppLogsWhenOpenFails(t *testing.T) {
+	c := New(filepath.Join(doortest.ShortDir(t), "mcp.sock"))
+	var logs bytes.Buffer
+	c.logger = slog.New(slog.NewTextHandler(&logs, nil))
+	c.executable = func() (string, error) { return "/usr/local/bin/tranq-mcp", nil }
+	c.OpenApp = func(context.Context, ...string) error { return errors.New("no application knows bundle id") }
+	if err := c.EnsureApp(context.Background()); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("error = %v, want ErrUnavailable", err)
+	}
+	lines := strings.Split(strings.TrimSpace(logs.String()), "\n")
+	if len(lines) != 1 || !strings.Contains(lines[0], "no application knows bundle id") {
+		t.Fatalf("log = %q, want one line that carries the reason", logs.String())
+	}
+}
+
+func TestEnsureAppBoundsTheOpenerByTheWait(t *testing.T) {
+	c := New(filepath.Join(doortest.ShortDir(t), "mcp.sock"))
+	var logs bytes.Buffer
+	c.logger = slog.New(slog.NewTextHandler(&logs, nil))
+	c.executable = func() (string, error) { return "/Applications/Tranq.app/Contents/MacOS/tranq-mcp", nil }
+	// An opener that hangs until it is told to stop, as `open` can when the
+	// system is busy. Without a bound of its own it would hold the call forever.
+	c.OpenApp = func(ctx context.Context, _ ...string) error {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	c.waitFor = 300 * time.Millisecond
+	start := time.Now()
+	err := c.EnsureApp(context.Background())
+	if !errors.Is(err, ErrUnavailable) || err.Error() != humanUnavailable {
+		t.Fatalf("error = %v, want the human text", err)
+	}
+	if got := time.Since(start); got < 250*time.Millisecond || got > 2*time.Second {
+		t.Fatalf("EnsureApp returned after %v, want about the 300ms wait", got)
+	}
+	if strings.Count(strings.TrimSpace(logs.String()), "\n") != 0 || logs.Len() == 0 {
+		t.Fatalf("log = %q, want one line about the failed opener", logs.String())
+	}
+}
+
 func TestEnsureAppStopsOnContext(t *testing.T) {
 	c := New(filepath.Join(doortest.ShortDir(t), "mcp.sock"))
 	c.executable = func() (string, error) { return "/Applications/Tranq.app/Contents/MacOS/tranq-mcp", nil }
@@ -317,12 +359,14 @@ func TestOpenArgs(t *testing.T) {
 		exe  string
 		want []string
 	}{
-		"installed bundle":       {"/Applications/Tranq.app/Contents/MacOS/tranq-mcp", []string{"/Applications/Tranq.app"}},
-		"bundle with a space":    {"/Users/a b/My Apps/Tranq.app/Contents/MacOS/tranq-mcp", []string{"/Users/a b/My Apps/Tranq.app"}},
-		"development binary":     {"/Users/nuter/go/bin/tranq-mcp", []string{"-b", "nuter.Tranq"}},
-		"app folder, wrong spot": {"/Applications/Tranq.app/tranq-mcp", []string{"-b", "nuter.Tranq"}},
-		"resources, not MacOS":   {"/Applications/Tranq.app/Contents/Resources/tranq-mcp", []string{"-b", "nuter.Tranq"}},
-		"another app":            {"/Applications/Other.app/Contents/MacOS/tranq-mcp", []string{"/Applications/Other.app"}},
+		// -g keeps the app in the background: the person is working in their agent.
+		"installed bundle":       {"/Applications/Tranq.app/Contents/MacOS/tranq-mcp", []string{"-g", "/Applications/Tranq.app"}},
+		"bundle with a space":    {"/Users/a b/My Apps/Tranq.app/Contents/MacOS/tranq-mcp", []string{"-g", "/Users/a b/My Apps/Tranq.app"}},
+		"development binary":     {"/Users/nuter/go/bin/tranq-mcp", []string{"-g", "-b", "nuter.Tranq"}},
+		"app folder, wrong spot": {"/Applications/Tranq.app/tranq-mcp", []string{"-g", "-b", "nuter.Tranq"}},
+		"resources, not MacOS":   {"/Applications/Tranq.app/Contents/Resources/tranq-mcp", []string{"-g", "-b", "nuter.Tranq"}},
+		"another app":            {"/Applications/Other.app/Contents/MacOS/tranq-mcp", []string{"-g", "/Applications/Other.app"}},
+		"no executable known":    {"", []string{"-g", "-b", "nuter.Tranq"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := openArgs(tc.exe); !reflect.DeepEqual(got, tc.want) {
@@ -354,7 +398,7 @@ func TestOpenArgsResolvesSymlinkedBinary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{filepath.Join(root, "Tranq.app")}; !reflect.DeepEqual(openArgs(resolved), want) {
+	if want := []string{"-g", filepath.Join(root, "Tranq.app")}; !reflect.DeepEqual(openArgs(resolved), want) {
 		t.Fatalf("openArgs = %q, want %q", openArgs(resolved), want)
 	}
 }

@@ -131,6 +131,28 @@ func TestReadToolsDescribeEveryField(t *testing.T) {
 	}
 }
 
+func TestReadToolDescriptionsDoNotPromisePackContents(t *testing.T) {
+	byName := listTools(t, connect(t, &fakeDoor{}))
+	packs, words := byName["list_dictionary_packs"], byName["list_user_words"]
+	if packs == nil || words == nil {
+		t.Fatalf("read tools are not registered: %v", byName)
+	}
+	// list_dictionary_packs returns id, title, word_count and enabled, never the words of a pack.
+	if !strings.Contains(packs.Description, "not exposed by this server") {
+		t.Errorf("list_dictionary_packs must say that pack contents are not exposed:\n%s", packs.Description)
+	}
+	if !strings.Contains(words.Description, "not exposed by this server") {
+		t.Errorf("list_user_words must say that pack contents are not exposed:\n%s", words.Description)
+	}
+	if strings.Contains(words.Description, "for those use list_dictionary_packs") {
+		t.Errorf("list_user_words sends the agent to list_dictionary_packs for pack words, which it does not have:\n%s", words.Description)
+	}
+	// The way back from a bad batch is named where the agent learns what `mcp` means.
+	if !strings.Contains(words.Description, "revert_agent_words") {
+		t.Errorf("list_user_words must name revert_agent_words:\n%s", words.Description)
+	}
+}
+
 func TestReadToolsReturnDoorData(t *testing.T) {
 	packs := `[{"id":"it","title":"IT","word_count":120,"enabled":true}]`
 	words := `[{"spelling":"Kubernetes","variants":{"ru":["кубер"],"en":[]},"source":"manual","hits":3,"last_used":null}]`

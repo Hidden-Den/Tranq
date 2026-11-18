@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -70,6 +71,9 @@ type Client struct {
 	executable func() (string, error)
 	pollEvery  time.Duration
 	waitFor    time.Duration
+	// logger reports what the agent cannot see, such as a failed launch of the
+	// app. It writes to stderr: stdout belongs to the MCP protocol.
+	logger *slog.Logger
 }
 
 // New returns a client for the socket at socketPath. SocketPath gives the usual one.
@@ -81,6 +85,7 @@ func New(socketPath string) *Client {
 		executable: executablePath,
 		pollEvery:  defaultPoll,
 		waitFor:    defaultWait,
+		logger:     slog.New(slog.NewTextHandler(os.Stderr, nil)),
 	}
 }
 
@@ -143,8 +148,9 @@ func (c *Client) Call(ctx context.Context, cmd string, args any) (json.RawMessag
 }
 
 // EnsureApp makes sure the door can be reached. When the socket cannot be
-// connected it opens the app and polls the socket every 100 ms for up to five
-// seconds. When the door does not come up it returns ErrUnavailable.
+// connected it opens the app, in the background, and polls the socket every
+// 100 ms for up to five seconds. The launch itself gets the same five seconds.
+// When the door does not come up it returns ErrUnavailable.
 func (c *Client) EnsureApp(ctx context.Context) error {
 	if c.reachable(ctx) {
 		return nil
@@ -157,10 +163,15 @@ func (c *Client) EnsureApp(ctx context.Context) error {
 	if exe, err := c.executable(); err == nil {
 		args = openArgs(exe)
 	}
-	if err := c.OpenApp(ctx, args...); err != nil {
+	// A hung `open` must not hold the tool call past the time the door is given to come up.
+	openCtx, cancelOpen := context.WithTimeout(ctx, c.waitFor)
+	err := c.OpenApp(openCtx, args...)
+	cancelOpen()
+	if err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		c.logger.Warn("tranq-mcp: could not open the Tranq app", "open_args", args, "error", err)
 		// Nothing was started, so there is nothing to wait for.
 		return ErrUnavailable
 	}
@@ -198,15 +209,17 @@ func (c *Client) reachable(ctx context.Context) bool {
 // openArgs returns the arguments of `open` that start the app. The binary
 // lives at Tranq.app/Contents/MacOS/tranq-mcp, and the app is found from that
 // location. A binary outside a bundle is a development build: the app is then
-// found by its bundle identifier.
+// found by its bundle identifier. The -g flag starts the app in the
+// background: the person is working in their agent and Tranq must not take
+// the screen from it.
 func openArgs(exe string) []string {
 	macOS := filepath.Dir(exe)
 	contents := filepath.Dir(macOS)
 	app := filepath.Dir(contents)
 	if exe != "" && filepath.Base(macOS) == "MacOS" && filepath.Base(contents) == "Contents" && strings.HasSuffix(app, ".app") {
-		return []string{app}
+		return []string{"-g", app}
 	}
-	return []string{"-b", bundleID}
+	return []string{"-g", "-b", bundleID}
 }
 
 // executablePath is the location of this binary with symlinks resolved, so
