@@ -138,6 +138,7 @@ final class DictionaryStore: ObservableObject {
                 for (language, list) in variants {
                     entry.variants[language] = Self.mergedVariants(entry.variants[language] ?? [], list)
                 }
+                // Человек, добавивший слово агента вручную, забирает его себе: откат оставит запись целиком.
                 if source == .manual { entry.source = .manual }
                 entry.forceCase = entry.forceCase || forceCase
                 if entry != userEntries[i] {
@@ -181,6 +182,7 @@ final class DictionaryStore: ObservableObject {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == entry.id }), userEntries[i] != entry else { return }
             userEntries[i] = entry
+            pruneAgentKeys(for: entry.id)
             entriesChanged()
         }
     }
@@ -189,6 +191,7 @@ final class DictionaryStore: ObservableObject {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == id }) else { return }
             userEntries.remove(at: i)
+            pruneAgentKeys(for: id)
             entriesChanged()
         }
     }
@@ -211,6 +214,7 @@ final class DictionaryStore: ObservableObject {
                 } else {
                     return
                 }
+                pruneAgentKeys(for: id)
                 entriesChanged()
             } else {
                 guard disabledPackVariants.insert("\(entryKey)/\(variant)").inserted else { return }
@@ -271,8 +275,8 @@ final class DictionaryStore: ObservableObject {
             var remembered = mcpVariants
             for word in words {
                 let spelling = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
-                if let reason = Self.agentRejection(spelling: spelling, variants: word.variants) {
-                    result.skipped[word.spelling] = reason
+                guard !spelling.isEmpty else {
+                    result.skipped[word.spelling] = "пустое написание"
                     continue
                 }
                 guard seen.insert(spelling.lowercased()).inserted else {
@@ -280,8 +284,21 @@ final class DictionaryStore: ObservableObject {
                     continue
                 }
 
+                // Плохой вариант отбрасывается сам по себе, слово с остальными вариантами проходит.
+                var variants: [DictionaryLanguage: [String]] = [:]
+                for (language, list) in word.variants {
+                    for variant in list {
+                        let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let reason = Self.agentVariantRejection(trimmed, spelling: spelling) {
+                            result.skipped["\(spelling) / \(trimmed)"] = reason
+                        } else {
+                            variants[language, default: []].append(trimmed)
+                        }
+                    }
+                }
+
                 let before = userEntries.first { $0.spelling.lowercased() == spelling.lowercased() }
-                let after = addEntry(spelling: spelling, variants: word.variants, source: .mcp, forceCase: word.forceCase)
+                let after = addEntry(spelling: spelling, variants: variants, source: .mcp, forceCase: word.forceCase)
                 // Свои записи агент снимает целиком, запоминать нужно только дописанное в чужие.
                 if let before, before.source != .mcp {
                     for (language, list) in after.variants {
@@ -390,17 +407,25 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
-    /// Причина отказа для слова агента или `nil`, если слово годится.
-    private static func agentRejection(spelling: String, variants: [DictionaryLanguage: [String]]) -> String? {
-        guard !spelling.isEmpty else { return "пустое написание" }
-        let key = spelling.lowercased()
-        for language in DictionaryLanguage.allCases {
-            for variant in variants[language] ?? [] {
-                let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.count < 2 { return "вариант «\(trimmed)» короче двух символов" }
-                if trimmed.lowercased() == key { return "вариант «\(trimmed)» совпадает с написанием" }
+    /// Человек поменял запись сам: ключи агента, которым в ней больше нечего соответствовать, забываются.
+    /// Вариант, который человек удалил и набрал снова, или регистр, выключенный и включённый заново, —
+    /// уже его, и откат их не тронет. На путях самого агента не вызывается.
+    private func pruneAgentKeys(for id: UUID) {
+        let entry = userEntries.first { $0.id == id }
+        setMCPVariants(mcpVariants.filter { key in
+            guard let parsed = Self.parseAgentKey(key), parsed.id == id else { return true }
+            guard let entry else { return false }
+            guard let language = parsed.language, let variant = parsed.variant?.lowercased() else {
+                return entry.forceCase
             }
-        }
+            return (entry.variants[language] ?? []).contains { $0.lowercased() == variant }
+        })
+    }
+
+    /// Причина отказа для варианта агента или `nil`, если вариант годится. `variant` уже без пробелов по краям.
+    private static func agentVariantRejection(_ variant: String, spelling: String) -> String? {
+        if variant.count < 2 { return "вариант «\(variant)» короче двух символов" }
+        if variant.lowercased() == spelling.lowercased() { return "вариант «\(variant)» совпадает с написанием" }
         return nil
     }
 
