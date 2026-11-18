@@ -6,7 +6,7 @@
 
 **Architecture:** Отдельный stdio-бинарник `tranq-mcp` на Go внутри бандла держит протокол MCP и ходит в приложение через Unix-сокет в папке данных. Приложение про MCP не знает: оно отвечает на семь команд построчного JSON и остаётся единственным, кто пишет в словарь. Доступ разбит на три уровня, все по умолчанию выключены.
 
-**Tech Stack:** Swift 6, SwiftUI, swift-testing; Go с `github.com/modelcontextprotocol/go-sdk`; Xcode build phase для `go build`.
+**Tech Stack:** Swift (в проекте `SWIFT_VERSION = 5.0`), SwiftUI, swift-testing; Go с `github.com/modelcontextprotocol/go-sdk`; Xcode build phase для `go build`.
 
 **Spec:** `docs/superpowers/specs/2026-11-18-mcp-server-design.md`
 
@@ -17,6 +17,8 @@
 - Имя бренда в путях, конфиге и текстах — `Tranq` и `tranq`; `scripts/check-brand.sh` остаётся зелёным.
 - `Localizable.xcstrings` правится только дампером в формате Xcode, никогда `json.dump`.
 - Swift-тесты на swift-testing: `import Testing`, `struct …Tests`, `#expect`.
+- Протокол двери зафиксирован в `mcp/PROTOCOL.md`: имена команд и полей, формы ответов. Swift и Go следуют ему буквально, поля в `snake_case`.
+- Стор получает `defaults` через инициализатор. Код, работающий со стором, пользуется его `defaults`, а не `AppEnvironment.defaults` напрямую, иначе тесты со своим `suiteName` читают чужое состояние.
 - Хранилища мутируются с главного потока. Настройки — через `AppEnvironment.defaults`, не `UserDefaults.standard`.
 - Сборка Go: только `arm64`, подпись ad-hoc, зависимости вендорятся, сеть при сборке не нужна.
 - Пределы из спеки: 50 слов за вызов `add_words`; `list_dictations` по умолчанию 20 записей, не больше 100.
@@ -113,10 +115,11 @@ extension DictionaryStore {
 
 **Требования:**
 - Новое написание создаёт запись с источником `mcp`.
-- Существующее написание сохраняет свой источник, а варианты агента дописываются и запоминаются в `AppEnvironment.defaults` под ключом `dictionary.mcpVariants`, ключами `<id записи>/<язык>/<вариант>` — по образцу `dictionary.disabledPackVariants`. Жёсткий регистр, впервые поставленный агентом, запоминается ключом `<id записи>/forceCase`.
+- Существующее написание сохраняет свой источник, а варианты агента дописываются и запоминаются в `defaults` стора под ключом `dictionary.mcpVariants`, ключами `<id записи>/<язык>/<вариант>` — по образцу `dictionary.disabledPackVariants`. Жёсткий регистр, впервые поставленный агентом, запоминается ключом `<id записи>/forceCase`.
 - Отбрасываются: пустое написание и одни пробелы, повтор внутри одной пачки, вариант равный написанию без учёта регистра, вариант короче двух символов. Причина отказа ложится в `skipped`, остальные слова пачки проходят.
 - `removeFromAgent` без полного доступа снимает только записи `mcp`, на `manual` и `learned` даёт `skipped` с причиной.
 - `revertAgentChanges` удаляет записи `mcp`, снимает запомненные варианты из чужих записей, снимает запомненный жёсткий регистр и чистит список. Висящие ключи — запись или вариант, уже удалённые человеком — пропускаются без ошибки.
+- `agentWordCount` — число записей `mcp` плюс число записей, в которых остались варианты или жёсткий регистр агента. Стор шлёт `objectWillChange` при каждом изменении списка агента, иначе кнопка отката в экране словаря не появится, когда агент только дописал варианты в ручные записи.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -169,7 +172,8 @@ enum MCPCommandName: String, CaseIterable {
 
 final class MCPAccess: ObservableObject {
     static let shared: MCPAccess
-    @Published var enabled: Bool          // dictionary-независимый ключ mcp.enabled
+    init(defaults: UserDefaults = AppEnvironment.defaults)   // тесты передают свой suite
+    @Published var enabled: Bool          // ключ mcp.enabled
     @Published var fullAccess: Bool       // mcp.fullAccess
     @Published var historyAccess: Bool    // mcp.historyAccess
 
@@ -230,6 +234,8 @@ struct MCPDoor {
 - `dictations` берёт `TranscriptionItem` из `HistoryStore`, пропускает записи без `spokenText`, отдаёт дату, сырую расшифровку и итоговый текст; `limit` по умолчанию 20, больше 100 обрезается до 100, ноль и отрицательное дают 20.
 - `add_words` больше 50 слов — отказ целиком с просьбой разбить.
 - Каждая команда сначала спрашивает `MCPAccess.verdict`.
+- `handle(line:)` сам переходит на главный поток, если вызван не с него, и безопасен при вызове с главного: стор и история мутируются только там, а сокет зовёт дверь с фоновой очереди.
+- Имена команд, поля запросов и формы ответов — по `mcp/PROTOCOL.md`. Дверь выводит «выключение набора» из `enabled == false`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -282,6 +288,8 @@ final class MCPSocketServer {
 - Права файла `0600`; оставшийся от прошлого запуска файл удаляется перед `bind`.
 - Построчный протокол: запрос — одна строка, ответ — одна строка.
 - Несколько соединений одновременно, каждое в своей задаче; ответ уходит только своему клиенту.
+- Путь сокета длиннее 103 байт не помещается в `sockaddr_un`: сервер пишет предупреждение в `AppLogger` и не стартует, приложение не падает.
+- Поведение выше обязательно, фреймворк свободен: допустимы и `Network.framework`, и POSIX-сокеты на `DispatchQueue`, смотря что даёт права `0600` без гонки.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -293,7 +301,7 @@ final class MCPSocketServer {
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
-- [ ] **Step 3: Реализовать `MCPSocketServer` на `Network.framework`, `NWListener` с `NWEndpoint.unix(path:)`, и позвать `start` из `TranqApp`**
+- [ ] **Step 3: Реализовать `MCPSocketServer` и позвать `start` из `TranqApp`**
 - [ ] **Step 4: Run tests to verify they pass**
 - [ ] **Step 5: Commit**
 
@@ -419,7 +427,7 @@ git commit -m "feat: MCP-сервер на Go, клиент двери и инс
 func TestAddWordsRejectsEmptyList(t *testing.T)
 func TestAddWordsRejectsOverFifty(t *testing.T)
 func TestAddWordsReportsSkippedWithReason(t *testing.T)
-func TestSetPackEnabledPassesDisablingFlag(t *testing.T)
+func TestSetPackEnabledSendsIdAndEnabled(t *testing.T)   // args ровно {id, enabled}, отдельного флага нет
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -477,6 +485,7 @@ git commit -m "feat: чтение истории диктовок через MCP
 - Modify: `.github/workflows/ci.yml`
 
 **Требования:**
+- В цели приложения `ENABLE_USER_SCRIPT_SANDBOXING = YES`: скрипт-фаза не сможет ни писать кэш Go, ни читать `mcp/`. Фаза объявляет входы и выходы либо цель получает `NO`; выбор за исполнителем, причина записывается в сообщение коммита.
 - Фаза сборки запускает `go build -o "$BUILT_PRODUCTS_DIR/$EXECUTABLE_FOLDER_PATH/tranq-mcp" ./...` в `mcp/` с `GOARCH=arm64` и `-mod=vendor`. Нет Go на машине — фаза падает с текстом «нет Go, установите toolchain», а не пропускается.
 - Бинарник подписывается до подписи бандла, чтобы `codesign --verify --strict` в `build-dmg.sh` проходил.
 - В `build-dmg.sh` список обязательных файлов пополняется `Contents/MacOS/tranq-mcp`.
@@ -484,9 +493,11 @@ git commit -m "feat: чтение истории диктовок через MCP
 
 - [ ] **Step 1: Добавить фазу сборки, копирование и подпись**
 - [ ] **Step 2: Прогнать `scripts/build-dmg.sh` и убедиться, что проверка подписи и проверка наличия `tranq-mcp` проходят**
-- [ ] **Step 3: Проверить на деле, что чужой процесс запускает вложенный бинарник**
 
-Собрать DMG, установить приложение, снять карантин `xattr -cr`, подключить сервер в Claude Code и в одном ещё клиенте, вызвать `list_dictionary_packs`. Отказ Gatekeeper здесь означает, что stdio для этого клиента не работает, и нужно возвращаться к HTTP внутри приложения — это решение принимается с человеком, а не в обход плана.
+`Tranq/gigaam.gguf` и `Vendor/llama/llama-server` в этом дереве есть, скрипт должен дойти до конца.
+- [ ] **Step 3: Проверить, что вложенный бинарник запускается из чужого процесса**
+
+Исполнитель проверяет то, что доступно без интерактивного клиента: `codesign --verify --strict --deep` на собранном `.app`, запуск `Contents/MacOS/tranq-mcp` из обычной оболочки с проставленным `com.apple.quarantine` на копии бандла и после `xattr -cr`, рукопожатие `initialize` по stdio, `echo '{"jsonrpc":"2.0",…}' | tranq-mcp`. Подключение в Claude Code и ещё одном клиенте остаётся человеку: в отчёте это значится как «не проверено», а не как пройденное. Отказ Gatekeeper означает, что stdio для этого клиента не работает и нужно возвращаться к HTTP внутри приложения — решение принимает человек, не исполнитель.
 
 - [ ] **Step 4: Добавить шаг `go test` в CI и убедиться, что задача зелёная**
 
