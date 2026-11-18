@@ -110,7 +110,7 @@ final class MCPAccessTests {
 
     @Test func остальныеКомандыРазрешеныПриВключённомДоступе() {
         let access = makeAccess(enabled: true)
-        for command in [MCPCommandName.packs, .words, .addWords, .revertAgentWords, .removeWords] {
+        for command in [MCPCommandName.packs, .words, .addWords, .revertAgentWords, .removeWords, .createPack, .deletePack, .packWords] {
             #expect(access.verdict(for: command, disablingPack: false) == .allow, "команда \(command.rawValue)")
         }
     }

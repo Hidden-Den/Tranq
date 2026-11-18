@@ -4244,6 +4244,134 @@
         }
       }
     },
+    "Для набора нужно поле title со строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A title field with a string is required."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для набора нужно поле title со строкой."
+          }
+        }
+      }
+    },
+    "Название набора не может быть пустым." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack title cannot be empty."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название набора не может быть пустым."
+          }
+        }
+      }
+    },
+    "Название набора длиннее %lld знаков." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack title is longer than %lld characters."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Название набора длиннее %lld знаков."
+          }
+        }
+      }
+    },
+    "Такое название у встроенного набора. Выберите другое." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A built-in pack has this title. Choose another."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Такое название у встроенного набора. Выберите другое."
+          }
+        }
+      }
+    },
+    "Наборов агента уже %lld, это предел. Удалите ненужный набор." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are already %lld agent packs, which is the limit. Delete one you do not need."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наборов агента уже %lld, это предел. Удалите ненужный набор."
+          }
+        }
+      }
+    },
+    "Это встроенный набор. Работать можно только с наборами агента." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a built-in pack. Only agent packs can be used here."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это встроенный набор. Работать можно только с наборами агента."
+          }
+        }
+      }
+    },
+    "В наборе не больше %lld слов, свободно %lld. Ничего не записано." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pack holds at most %lld words, %lld free. Nothing was written."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В наборе не больше %lld слов, свободно %lld. Ничего не записано."
+          }
+        }
+      }
+    },
+    "Поле pack_id должно быть непустой строкой." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack_id field must be a non-empty string."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поле pack_id должно быть непустой строкой."
+          }
+        }
+      }
+    },
     "Нужно поле words со списком слов." : {
       "localizations" : {
         "en" : {

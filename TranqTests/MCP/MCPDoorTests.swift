@@ -441,9 +441,204 @@ final class MCPDoorTests {
         let data = try #require(answer["data"] as? [String: Any])
         #expect(data["removed_words"] as? Int == 2)
         #expect(data["removed_variants"] as? Int == 2)
-        #expect(Set(data.keys) == ["removed_words", "removed_variants"])
+        #expect(data["removed_packs"] as? Int == 0)
+        #expect(Set(data.keys) == ["removed_words", "removed_variants", "removed_packs"])
         #expect(setup.dictionary.userEntries.map(\.spelling) == ["Redis"])
         #expect(setup.dictionary.userEntries.first?.variants[.ru] == ["редис"])
+    }
+
+    // MARK: - Наборы агента
+
+    private func call(_ setup: Setup, _ cmd: String, _ args: [String: Any]? = nil) -> [String: Any] {
+        parse(setup.door.handle(line: request(cmd, args)))
+    }
+
+    private func data(_ answer: [String: Any]) -> [String: Any] { answer["data"] as? [String: Any] ?? [:] }
+
+    @discardableResult
+    private func makePack(_ setup: Setup, _ title: String = "Музыка") -> String {
+        data(call(setup, "create_pack", ["title": title]))["id"] as? String ?? ""
+    }
+
+    @Test func packsПоказываетИсточник() throws {
+        let setup = makeSetup(fullAccess: true)
+        let id = makePack(setup)
+        let list = try #require(call(setup, "packs")["data"] as? [[String: Any]])
+        #expect(list.map { $0["source"] as? String } == ["builtin", "builtin", "agent"])
+        #expect(list.last?["id"] as? String == id)
+        #expect(list.last?["word_count"] as? Int == 0)
+        let set = data(call(setup, "set_pack", ["id": id, "enabled": false]))
+        #expect(set["source"] as? String == "agent")
+        #expect(set["enabled"] as? Bool == false)
+    }
+
+    @Test func createPackСоздаётНаборИВозвращаетCreatedFalseПриПовторе() {
+        let setup = makeSetup()
+        let first = call(setup, "create_pack", ["title": " Музыка "])
+        #expect(isOK(first))
+        let created = data(first)
+        let id = created["id"] as? String ?? ""
+        #expect(id.range(of: "^agent-[0-9a-f]{8}$", options: .regularExpression) != nil)
+        #expect(created["title"] as? String == "Музыка")
+        #expect(created["created"] as? Bool == true)
+        #expect(Set(created.keys) == ["id", "title", "created"])
+
+        let again = data(call(setup, "create_pack", ["title": "музыка"]))
+        #expect(again["id"] as? String == id)
+        #expect(again["created"] as? Bool == false)
+        #expect(setup.dictionary.agentPacks.count == 1)
+    }
+
+    @Test func createPackОтказы() {
+        let setup = makeSetup()
+        let bad: [[String: Any]?] = [
+            nil, [:], ["title": 7], ["title": NSNull()], ["title": ""], ["title": "   "],
+            ["title": String(repeating: "я", count: 61)], ["title": "Программирование"], ["title": "programming"],
+        ]
+        for args in bad {
+            #expect(isRefusal(call(setup, "create_pack", args)), "аргументы \(String(describing: args))")
+        }
+        #expect(setup.dictionary.agentPacks.isEmpty)
+
+        for i in 0..<20 { makePack(setup, "Набор \(i)") }
+        #expect(isRefusal(call(setup, "create_pack", ["title": "Двадцать первый"])))
+        #expect(setup.dictionary.agentPacks.count == 20)
+    }
+
+    @Test func addWordsСPackIdПишетВНаборНеВМоиСлова() throws {
+        let setup = makeSetup()
+        let id = makePack(setup)
+        let answer = call(setup, "add_words", [
+            "words": [["spelling": "Ableton", "variants": ["ru": ["эйблтон"]]]], "pack_id": id,
+        ])
+        #expect(isOK(answer))
+        #expect(data(answer)["added"] as? [String] == ["Ableton"])
+        #expect(setup.dictionary.userEntries.isEmpty)
+
+        let list = try #require(call(setup, "pack_words", ["id": id])["data"] as? [[String: Any]])
+        #expect(list.count == 1)
+        #expect(list[0]["spelling"] as? String == "Ableton")
+        let variants = try #require(list[0]["variants"] as? [String: [String]])
+        #expect(variants == ["ru": ["эйблтон"], "en": []])
+        #expect(Set(list[0].keys) == ["spelling", "variants"])
+    }
+
+    @Test func addWordsСНедопустимымPackIdОтказИНичегоНеЗаписано() {
+        let setup = makeSetup()
+        makePack(setup)
+        for packID: Any in ["", "   ", 42, true, "it", "agent-00000000"] {
+            let answer = call(setup, "add_words", ["words": words(["Ableton"]), "pack_id": packID])
+            #expect(isRefusal(answer), "pack_id \(packID)")
+        }
+        #expect(setup.dictionary.userEntries.isEmpty)
+        #expect(setup.dictionary.agentPacks.allSatisfy { $0.entries.isEmpty })
+
+        let absent = call(setup, "add_words", ["words": words(["Serum"]), "pack_id": NSNull()])
+        #expect(isOK(absent))
+        #expect(setup.dictionary.userEntries.map(\.spelling) == ["Serum"])
+    }
+
+    @Test func addWordsПределыПачкиИНабора() throws {
+        let setup = makeSetup()
+        let id = makePack(setup)
+        let fifty1 = words((0...50).map { "слово\($0)" })
+        #expect(isRefusal(call(setup, "add_words", ["words": fifty1, "pack_id": id])))
+        #expect(try setup.dictionary.agentPack(id: id).entries.isEmpty)
+
+        let full = (0..<500).map { AgentWord(spelling: "слово\($0)", variants: [:], forceCase: false) }
+        try setup.dictionary.addToAgentPack(id: id, words: full)
+        let answer = call(setup, "add_words", ["words": words(["новое"]), "pack_id": id])
+        #expect(isRefusal(answer))
+        #expect(try setup.dictionary.agentPack(id: id).entries.count == 500)
+    }
+
+    @Test func removeWordsСPackIdНеТрогаетМоиСлова() throws {
+        let setup = makeSetup(fullAccess: false)
+        let id = makePack(setup)
+        setup.dictionary.addEntry(spelling: "Serum", variants: [:], source: .manual)
+        _ = call(setup, "add_words", ["words": words(["Serum"]), "pack_id": id])
+
+        let fromPack = call(setup, "remove_words", ["spellings": ["Serum"], "pack_id": id])
+        #expect(isOK(fromPack))
+        #expect(data(fromPack)["removed"] as? [String] == ["Serum"])
+        #expect(setup.dictionary.userEntries.map(\.spelling) == ["Serum"])
+        #expect(try setup.dictionary.agentPack(id: id).entries.isEmpty)
+
+        _ = call(setup, "add_words", ["words": words(["Serum"]), "pack_id": id])
+        let mine = call(setup, "remove_words", ["spellings": ["Serum"]])
+        #expect((data(mine)["removed"] as? [String])?.isEmpty == true, "ручное слово без полного доступа не снимается")
+        #expect(try setup.dictionary.agentPack(id: id).entries.map(\.spelling) == ["Serum"])
+
+        for bad: Any in ["it", "agent-00000000", "", 5] {
+            #expect(isRefusal(call(setup, "remove_words", ["spellings": ["Serum"], "pack_id": bad])))
+        }
+    }
+
+    @Test func deletePackУдаляетИВозвращаетЧислоСлов() {
+        let setup = makeSetup()
+        let id = makePack(setup)
+        _ = call(setup, "add_words", ["words": words(["Ableton", "Serum"]), "pack_id": id])
+
+        let answer = call(setup, "delete_pack", ["id": id])
+        #expect(isOK(answer))
+        #expect(data(answer)["removed_words"] as? Int == 2)
+        #expect(data(answer)["title"] as? String == "Музыка")
+        #expect(data(answer)["id"] as? String == id)
+        #expect(setup.dictionary.agentPacks.isEmpty)
+
+        for bad: [String: Any]? in [["id": "it"], ["id": id], ["id": ""], [:], nil] {
+            #expect(isRefusal(call(setup, "delete_pack", bad)))
+        }
+        #expect(setup.dictionary.packs.map(\.id) == ["it", "legal"])
+    }
+
+    @Test func packWordsВстроенныйИНеизвестныйОтказ() {
+        let setup = makeSetup()
+        for bad: [String: Any]? in [["id": "it"], ["id": "agent-00000000"], [:], nil] {
+            let answer = call(setup, "pack_words", bad)
+            #expect(isRefusal(answer))
+            #expect(answer["data"] == nil, "состав встроенного набора не раскрывается")
+        }
+    }
+
+    @Test func откатВозвращаетRemovedPacks() {
+        let setup = makeSetup()
+        makePack(setup, "Музыка")
+        makePack(setup, "Кино")
+        let answer = call(setup, "revert_agent_words")
+        #expect(data(answer)["removed_packs"] as? Int == 2)
+        #expect(setup.dictionary.packs.map(\.id) == ["it", "legal"])
+    }
+
+    @Test func выключениеНабораАгентаТребуетПолногоДоступа() {
+        let setup = makeSetup(fullAccess: false)
+        let id = makePack(setup)
+        let refused = call(setup, "set_pack", ["id": id, "enabled": false])
+        guard case .deny(let expected) = setup.access.verdict(for: .setPack, disablingPack: true) else {
+            Issue.record("шлюз должен отклонить выключение")
+            return
+        }
+        #expect(refused["error"] as? String == expected)
+        #expect(setup.dictionary.disabledPacks.isEmpty)
+
+        setup.access.fullAccess = true
+        #expect(isOK(call(setup, "set_pack", ["id": id, "enabled": false])))
+        setup.access.fullAccess = false
+        #expect(isOK(call(setup, "set_pack", ["id": id, "enabled": true])))
+        #expect(setup.dictionary.disabledPacks.isEmpty)
+    }
+
+    @Test func новыеКомандыПриВыключенномДоступеДаютОтказШлюза() {
+        let setup = makeSetup(enabled: false)
+        for command in [MCPCommandName.createPack, .deletePack, .packWords] {
+            guard case .deny(let expected) = setup.access.verdict(for: command, disablingPack: false) else {
+                Issue.record("шлюз должен отклонить \(command.rawValue)")
+                continue
+            }
+            let answer = call(setup, command.rawValue, ["title": "Музыка", "id": "it"])
+            #expect(answer["error"] as? String == expected)
+        }
+        #expect(setup.dictionary.agentPacks.isEmpty)
     }
 
     // MARK: - dictations

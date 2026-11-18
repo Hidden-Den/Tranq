@@ -94,6 +94,9 @@ struct MCPDoor: @unchecked Sendable {
         case .removeWords: return try removeWords(args)
         case .revertAgentWords: return revertAgentWords()
         case .dictations: return try dictations(args)
+        case .createPack: return try createPack(args)
+        case .deletePack: return try deletePack(args)
+        case .packWords: return try packWords(args)
         }
     }
 
@@ -109,24 +112,26 @@ struct MCPDoor: @unchecked Sendable {
             "title": DictionaryScreenLogic.packTitle(pack, uiLanguage: language),
             "word_count": pack.entries.count,
             "enabled": !dictionary.disabledPacks.contains(pack.id),
+            "source": dictionary.agentPacks.contains { $0.id == pack.id } ? "agent" : "builtin",
         ]
     }
 
     private func words() -> Any {
         let formatter = ISO8601DateFormatter()
         return dictionary.userEntries.map { entry -> [String: Any] in
-            // Оба языка есть всегда, чтобы читателю не гадать о форме.
-            let variants = Dictionary(uniqueKeysWithValues: DictionaryLanguage.allCases.map {
-                ($0.rawValue, entry.variants[$0] ?? [])
-            })
-            return [
+            [
                 "spelling": entry.spelling,
-                "variants": variants,
+                "variants": variantsObject(entry.variants),
                 "source": entry.source.rawValue,
                 "hits": entry.hits,
                 "last_used": entry.lastUsed.map { formatter.string(from: $0) } ?? NSNull(),
             ]
         }
+    }
+
+    /// Оба языка есть всегда, чтобы читателю не гадать о форме.
+    private func variantsObject(_ variants: [DictionaryLanguage: [String]]) -> [String: [String]] {
+        Dictionary(uniqueKeysWithValues: DictionaryLanguage.allCases.map { ($0.rawValue, variants[$0] ?? []) })
     }
 
     private func setPack(_ args: [String: Any]) throws -> Any {
@@ -156,7 +161,12 @@ struct MCPDoor: @unchecked Sendable {
             throw Refusal(String(localized: "Слишком много слов за раз: не больше \(Self.maxWordsPerRequest). Разбейте список на части."))
         }
         let words = try raw.enumerated().map { try agentWord($1, number: $0 + 1) }
-        let result = dictionary.addFromAgent(words)
+        let result: AgentWriteResult
+        if let packID = try packID(args) {
+            result = try packWork { try dictionary.addToAgentPack(id: packID, words: words) }
+        } else {
+            result = dictionary.addFromAgent(words)
+        }
         return ["added": result.added, "skipped": result.skipped]
     }
 
@@ -212,14 +222,90 @@ struct MCPDoor: @unchecked Sendable {
         guard spellings.count == raw.count else {
             throw Refusal(String(localized: "Нужно поле spellings со списком строк."))
         }
-        // Слова, написанные человеком, защищает само хранилище: без полного доступа оно их не снимает.
-        let result = dictionary.removeFromAgent(spellings: spellings, fullAccess: access.fullAccess)
+        let result: AgentWriteResult
+        if let packID = try packID(args) {
+            // Набор принадлежит агенту, полный доступ для его слов не нужен.
+            result = try packWork { try dictionary.removeFromAgentPack(id: packID, spellings: spellings) }
+        } else {
+            // Слова, написанные человеком, защищает само хранилище: без полного доступа оно их не снимает.
+            result = dictionary.removeFromAgent(spellings: spellings, fullAccess: access.fullAccess)
+        }
         return ["removed": result.added, "skipped": result.skipped]
     }
 
     private func revertAgentWords() -> Any {
         let result = dictionary.revertAgentChanges()
-        return ["removed_words": result.removedWords, "removed_variants": result.removedVariants]
+        return [
+            "removed_words": result.removedWords,
+            "removed_variants": result.removedVariants,
+            "removed_packs": result.removedPacks,
+        ]
+    }
+
+    // MARK: - Наборы агента
+
+    private func createPack(_ args: [String: Any]) throws -> Any {
+        guard let title = args["title"] as? String else {
+            throw Refusal(String(localized: "Для набора нужно поле title со строкой."))
+        }
+        let result = try packWork { try dictionary.createAgentPack(title: title) }
+        return ["id": result.id, "title": result.title, "created": result.created]
+    }
+
+    private func deletePack(_ args: [String: Any]) throws -> Any {
+        let id = try requiredPackID(args)
+        let result = try packWork { try dictionary.deleteAgentPack(id: id) }
+        return ["id": result.id, "title": result.title, "removed_words": result.removedWords]
+    }
+
+    private func packWords(_ args: [String: Any]) throws -> Any {
+        let id = try requiredPackID(args)
+        let pack = try packWork { try dictionary.agentPack(id: id) }
+        return pack.entries.map { ["spelling": $0.spelling, "variants": variantsObject($0.variants)] as [String: Any] }
+    }
+
+    private func requiredPackID(_ args: [String: Any]) throws -> String {
+        guard let id = args["id"] as? String, !id.isEmpty else {
+            throw Refusal(String(localized: "Для набора нужно поле id со строкой."))
+        }
+        return id
+    }
+
+    /// `pack_id` отсутствует или `null`: слова идут в «Мои слова». Любое другое значение, кроме непустой строки,
+    /// отказ: пустая строка не должна молча попасть в личный список.
+    private func packID(_ args: [String: Any]) throws -> String? {
+        switch args["pack_id"] {
+        case nil, is NSNull:
+            return nil
+        case let id as String where !id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty:
+            return id.trimmingCharacters(in: .whitespacesAndNewlines)
+        default:
+            throw Refusal(String(localized: "Поле pack_id должно быть непустой строкой."))
+        }
+    }
+
+    /// Отказы хранилища становятся отказами двери с текстом для человека.
+    private func packWork<T>(_ body: () throws -> T) throws -> T {
+        do {
+            return try body()
+        } catch let error as AgentPackError {
+            switch error {
+            case .emptyTitle:
+                throw Refusal(String(localized: "Название набора не может быть пустым."))
+            case .titleTooLong(let limit):
+                throw Refusal(String(localized: "Название набора длиннее \(limit) знаков."))
+            case .titleTakenByBuiltIn:
+                throw Refusal(String(localized: "Такое название у встроенного набора. Выберите другое."))
+            case .tooManyPacks(let limit):
+                throw Refusal(String(localized: "Наборов агента уже \(limit), это предел. Удалите ненужный набор."))
+            case .builtInPack:
+                throw Refusal(String(localized: "Это встроенный набор. Работать можно только с наборами агента."))
+            case .noSuchPack(let id):
+                throw Refusal(String(localized: "Набора \(id) нет. Список наборов даёт команда packs."))
+            case .tooManyWords(let limit, let free):
+                throw Refusal(String(localized: "В наборе не больше \(limit) слов, свободно \(free). Ничего не записано."))
+            }
+        }
     }
 
     // MARK: - История

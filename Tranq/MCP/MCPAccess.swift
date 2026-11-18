@@ -5,6 +5,7 @@ import Combine
 enum MCPCommandName: String, CaseIterable {
     case packs, words, setPack = "set_pack", addWords = "add_words"
     case removeWords = "remove_words", revertAgentWords = "revert_agent_words", dictations
+    case createPack = "create_pack", deletePack = "delete_pack", packWords = "pack_words"
 }
 
 /// Три выключателя доступа для нейронок, все выключены по умолчанию:
@@ -76,7 +77,7 @@ final class MCPAccess: ObservableObject {
             return disablingPack && !fullAccess
                 ? .deny(String(localized: "Для этого нужен полный доступ нейронок. Включите его в настройках Tranq."))
                 : .allow
-        case .packs, .words, .addWords, .removeWords, .revertAgentWords:
+        case .packs, .words, .addWords, .removeWords, .revertAgentWords, .createPack, .deletePack, .packWords:
             return .allow
         }
     }
