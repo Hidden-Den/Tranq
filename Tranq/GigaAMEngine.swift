@@ -31,6 +31,28 @@ final class GigaAMEngine: SpeechRecognizer {
 
     private init() {}
 
+    /// ggml роняет процесс при выходе, если Metal-устройство освобождается, пока модель жива:
+    /// в наборах резидентности остаются буферы. Обработчик `atexit` регистрируется после первой
+    /// загрузки, то есть после создания устройства, поэтому на выходе срабатывает раньше его
+    /// деструктора. Он покрывает и выход из приложения, и завершение хоста юнит-тестов.
+    private static let exitHook: Void = {
+        atexit { GigaAMEngine.shared.shutdown() }
+    }()
+
+    /// Модель сейчас в памяти.
+    var isModelLoaded: Bool {
+        queue.sync { session != nil }
+    }
+
+    /// Освобождает модель и сессию и отменяет отложенную выгрузку. Вызывается при выходе из приложения.
+    func shutdown() {
+        queue.sync {
+            idleUnload?.cancel()
+            idleUnload = nil
+            unloadLocked()
+        }
+    }
+
     func prewarm() {
         queue.async { [weak self] in
             guard let self else { return }
@@ -120,6 +142,7 @@ final class GigaAMEngine: SpeechRecognizer {
         model = newModel
         session = newSession
         loadedPath = path
+        _ = Self.exitHook
         let backendName = transcribe_model_backend(newModel).map { String(cString: $0) } ?? "?"
         AppLogger.shared.info(
             "GigaAM",
