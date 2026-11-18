@@ -95,6 +95,9 @@ struct MCPSettingsSection: View {
     }
 
     private func grant(_ risk: RiskyAccess) {
+        confirming = nil
+        // Пока висело подтверждение, доступ могли выключить: тогда ничего не выдаём.
+        guard access.enabled else { return }
         switch risk {
         case .fullAccess: access.fullAccess = true
         case .history: access.historyAccess = true
