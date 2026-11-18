@@ -39,7 +39,7 @@ public struct JournalRecord: Codable, Identifiable {
 }
 
 public final class TranscriptJournal: ObservableObject {
-    public static let shared = TranscriptJournal()
+    public static let shared = TranscriptJournal(directory: AppEnvironment.dataDirectory)
 
     @Published public private(set) var lastRecord: JournalRecord?
 
@@ -48,12 +48,39 @@ public final class TranscriptJournal: ObservableObject {
     private let pendingLock = NSLock()
     private let maxFileBytes: UInt64 = 5 * 1024 * 1024 // 5 MB ротация
 
+    private let directory: URL
+
     private var journalFileURL: URL? {
-        AppEnvironment.dataDirectory.appendingPathComponent("transcript_journal.jsonl")
+        directory.appendingPathComponent("transcript_journal.jsonl")
     }
 
-    private init() {
+    /// Архив, в который журнал уходит при ротации.
+    private static func archiveURL(for url: URL) -> URL {
+        url.deletingPathExtension().appendingPathExtension("1.jsonl")
+    }
+
+    /// `directory` подменяется в тестах, чтобы не трогать настоящий журнал пользователя.
+    init(directory: URL) {
+        self.directory = directory
         loadLastRecordFromDisk()
+    }
+
+    /// Стирает журнал, его архив и последнюю запись в памяти. «Вставить оригинал речи» после этого ничего не найдёт.
+    public func clear() {
+        pendingLock.lock()
+        pendingRecords.removeAll()
+        pendingLock.unlock()
+        DispatchQueue.main.async { self.lastRecord = nil }
+        ioQueue.async {
+            guard let url = self.journalFileURL else { return }
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: Self.archiveURL(for: url))
+        }
+    }
+
+    /// Ждёт, пока завершится отложенная запись на диск или стирание.
+    func flush() {
+        ioQueue.sync {}
     }
 
     /// Сохранение сырой расшифровки на диск ДО начала синтеза мысли
@@ -171,7 +198,7 @@ public final class TranscriptJournal: ObservableObject {
                     // Ротация при превышении 5 МБ: архивируем в .1.jsonl
                     if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
                        let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
-                        let backupURL = url.deletingPathExtension().appendingPathExtension("1.jsonl")
+                        let backupURL = Self.archiveURL(for: url)
                         try? FileManager.default.removeItem(at: backupURL)
                         try? FileManager.default.moveItem(at: url, to: backupURL)
                     }

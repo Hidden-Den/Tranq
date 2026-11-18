@@ -354,7 +354,7 @@ HStack {
             Button("Отмена", role: .cancel) { }
             Button("Стереть", role: .destructive) {
                 PlaybackController.shared.stopSyncedPlayback()
-                HistoryStore.shared.clearAll()
+                DataEraser.eraseAll()
             }
         } message: { Text("Все сохраненные транскрипции будут удалены безвозвратно. Это действие нельзя отменить.") }
         }

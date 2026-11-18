@@ -38,8 +38,9 @@ final class AppLogger: ObservableObject {
     private let fileURL: URL?
     private var fileHandle: FileHandle?
 
-    private init() {
-        let dir = AppEnvironment.dataDirectory.appendingPathComponent("Logs", isDirectory: true)
+    /// `directory` подменяется в тестах, чтобы не трогать настоящий лог пользователя.
+    init(directory: URL = AppEnvironment.dataDirectory) {
+        let dir = directory.appendingPathComponent("Logs", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         self.fileURL = dir.appendingPathComponent("app.log")
         loadTailFromFile()
@@ -77,6 +78,11 @@ final class AppLogger: ObservableObject {
             self.entries.removeAll()
         }
         ioQueue.async { [weak self] in self?.resetFile() }
+    }
+
+    /// Ждёт, пока завершатся отложенные записи и стирание файла.
+    func flush() {
+        ioQueue.sync {}
     }
 
     // MARK: Disk
