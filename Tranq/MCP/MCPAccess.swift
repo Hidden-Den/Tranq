@@ -53,7 +53,9 @@ final class MCPAccess: ObservableObject {
     /// Тесты передают свой набор настроек.
     init(defaults: UserDefaults = AppEnvironment.defaults) {
         self.defaults = defaults
-        // Присваивание в init не вызывает наблюдателей, лишней записи в настройки нет.
+        // `didSet` срабатывает и при присваивании в init. Если сохранено `enabled == false`, а флаги
+        // полного доступа и истории сохранены включёнными, присваивание `enabled` сбрасывает оба флага,
+        // и они записываются обратно уже выключенными. Если сохранено `enabled == true`, флаги остаются как были.
         enabled = defaults.object(forKey: Keys.enabled) as? Bool ?? false
         fullAccess = defaults.object(forKey: Keys.fullAccess) as? Bool ?? false
         historyAccess = defaults.object(forKey: Keys.historyAccess) as? Bool ?? false

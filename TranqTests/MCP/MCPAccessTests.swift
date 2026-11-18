@@ -199,17 +199,33 @@ final class MCPAccessTests {
         #expect(second.historyAccess == true)
     }
 
-    @Test func сбросНеЗапускаетсяПриСозданииЭкземпляра() {
-        // Права, записанные при включённом доступе, переживают перезапуск: сброс идёт только от выключения.
-        let first = MCPAccess(defaults: defaults)
-        first.enabled = true
-        first.fullAccess = true
-        first.historyAccess = true
+    @Test func приСозданииСВыключеннымДоступомСохранённыеПраваСбрасываютсяИЗаписываются() {
+        // Наблюдатели срабатывают и в init: выключенный доступ снимает права, оставшиеся в настройках.
+        defaults.set(false, forKey: "mcp.enabled")
+        defaults.set(true, forKey: "mcp.fullAccess")
+        defaults.set(true, forKey: "mcp.historyAccess")
 
+        let first = MCPAccess(defaults: defaults)
+        #expect(first.enabled == false)
+        #expect(first.fullAccess == false)
+        #expect(first.historyAccess == false)
+
+        // Сброс записан в настройки: следующий экземпляр тоже видит оба права выключенными.
         let second = MCPAccess(defaults: defaults)
-        #expect(second.enabled == true)
-        #expect(second.fullAccess == true)
-        #expect(second.historyAccess == true)
+        #expect(second.enabled == false)
+        #expect(second.fullAccess == false)
+        #expect(second.historyAccess == false)
+    }
+
+    @Test func приСозданииСВключённымДоступомСохранённыеПраваОстаются() {
+        defaults.set(true, forKey: "mcp.enabled")
+        defaults.set(true, forKey: "mcp.fullAccess")
+        defaults.set(true, forKey: "mcp.historyAccess")
+
+        let access = MCPAccess(defaults: defaults)
+        #expect(access.enabled == true)
+        #expect(access.fullAccess == true)
+        #expect(access.historyAccess == true)
     }
 
     @Test func повторноеВыключениеУжеВыключенногоДоступаНичегоНеМеняет() {
