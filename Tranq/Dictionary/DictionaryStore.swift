@@ -28,9 +28,11 @@ final class DictionaryStore: ObservableObject {
         static let disabledPacks = "dictionary.disabledPacks"
         static let disabledPackWords = "dictionary.disabledPackWords"
         static let disabledPackVariants = "dictionary.disabledPackVariants"
+        static let mcpVariants = "dictionary.mcpVariants"
     }
 
     private static let userKeyPrefix = "user/"
+    private static let agentForceCaseSuffix = "forceCase"
     private static let learnedLifetime: TimeInterval = 60 * 86_400
     private static let maxHintSpellings = 8
     private static let maxRecordedNotes = 50
@@ -64,6 +66,9 @@ final class DictionaryStore: ObservableObject {
     private var noteOrder: [UUID] = []
     private var pendingEntries: [DictionaryEntry]?
     private var pendingSave: DispatchWorkItem?
+    /// Что агент дописал в чужие записи: `<id записи>/<язык>/<вариант>` и `<id записи>/forceCase`.
+    /// Живёт в `defaults`, а не в публикуемом свойстве, поэтому изменения объявляются вручную.
+    private var mcpVariants: Set<String> = []
 
     private let indexQueue = DispatchQueue(label: "tranq.dictionary.index", qos: .userInitiated)
     private let ioQueue = DispatchQueue(label: "tranq.dictionary.io", qos: .utility)
@@ -90,6 +95,7 @@ final class DictionaryStore: ObservableObject {
         disabledPacks = Set(defaults.stringArray(forKey: Keys.disabledPacks) ?? [])
         disabledPackWords = Set(defaults.stringArray(forKey: Keys.disabledPackWords) ?? [])
         disabledPackVariants = Set(defaults.stringArray(forKey: Keys.disabledPackVariants) ?? [])
+        mcpVariants = Set(defaults.stringArray(forKey: Keys.mcpVariants) ?? [])
         self.packs = packs ?? Self.loadPacks(from: packsBundle)
 
         let loaded = Self.loadEntries(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
@@ -250,6 +256,167 @@ final class DictionaryStore: ObservableObject {
                 rebuildIndex()
             }
         }
+    }
+
+    // MARK: - Записи агента
+
+    /// Записывает пачку слов от агента. Новое написание получает источник `mcp`. У существующего
+    /// источник остаётся прежним, а варианты и жёсткий регистр, которых в записи не было, запоминаются
+    /// как агентские, чтобы откат снял ровно их. Отброшенные слова уходят в `skipped`, остальные проходят.
+    @discardableResult
+    func addFromAgent(_ words: [AgentWord]) -> AgentWriteResult {
+        onMain {
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            var remembered = mcpVariants
+            for word in words {
+                let spelling = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
+                if let reason = Self.agentRejection(spelling: spelling, variants: word.variants) {
+                    result.skipped[word.spelling] = reason
+                    continue
+                }
+                guard seen.insert(spelling.lowercased()).inserted else {
+                    result.skipped[word.spelling] = "повтор в этом запросе"
+                    continue
+                }
+
+                let before = userEntries.first { $0.spelling.lowercased() == spelling.lowercased() }
+                let after = addEntry(spelling: spelling, variants: word.variants, source: .mcp, forceCase: word.forceCase)
+                // Свои записи агент снимает целиком, запоминать нужно только дописанное в чужие.
+                if let before, before.source != .mcp {
+                    for (language, list) in after.variants {
+                        let had = Set((before.variants[language] ?? []).map { $0.lowercased() })
+                        for variant in list where !had.contains(variant.lowercased()) {
+                            remembered.insert(Self.agentKey(after.id, language: language, variant: variant))
+                        }
+                    }
+                    if after.forceCase, !before.forceCase {
+                        remembered.insert(Self.agentKey(after.id))
+                    }
+                }
+                result.added.append(spelling)
+            }
+            setMCPVariants(remembered)
+            return result
+        }
+    }
+
+    /// Снимает записи по написанию. Без полного доступа — только записи `mcp`,
+    /// на ручные и выученные приходит отказ с причиной.
+    @discardableResult
+    func removeFromAgent(spellings: [String], fullAccess: Bool) -> AgentWriteResult {
+        onMain {
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var entries = userEntries
+            var removedIDs = Set<UUID>()
+            for spelling in spellings {
+                let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty, let i = entries.firstIndex(where: { $0.spelling.lowercased() == key }) else {
+                    result.skipped[spelling] = "такого слова нет в словаре"
+                    continue
+                }
+                if entries[i].source != .mcp, !fullAccess {
+                    result.skipped[spelling] = entries[i].source == .learned
+                        ? "слово выучено приложением, удалить его можно в Tranq"
+                        : "слово добавлено вручную, удалить его можно в Tranq"
+                    continue
+                }
+                removedIDs.insert(entries[i].id)
+                entries.remove(at: i)
+                result.added.append(spelling.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            guard !removedIDs.isEmpty else { return result }
+            setMCPVariants(mcpVariants.filter { key in
+                Self.parseAgentKey(key).map { !removedIDs.contains($0.id) } ?? false
+            })
+            userEntries = entries
+            entriesChanged()
+            return result
+        }
+    }
+
+    /// Удаляет записи `mcp`, снимает запомненные варианты и жёсткий регистр агента из чужих записей
+    /// и чистит список. Ключи записей и вариантов, которые человек уже удалил, пропускаются.
+    func revertAgentChanges() {
+        onMain {
+            var entries = userEntries.filter { $0.source != .mcp }
+            for key in mcpVariants {
+                guard let parsed = Self.parseAgentKey(key),
+                      let i = entries.firstIndex(where: { $0.id == parsed.id }) else { continue }
+                if let language = parsed.language, let variant = parsed.variant {
+                    let lowered = variant.lowercased()
+                    entries[i].variants[language]?.removeAll { $0.lowercased() == lowered }
+                } else {
+                    entries[i].forceCase = false
+                }
+            }
+            // Как в `removeVariant`: выученная запись без вариантов ничего не заменяет.
+            entries.removeAll { $0.source == .learned && $0.variants.values.allSatisfy(\.isEmpty) }
+            setMCPVariants([])
+            guard entries != userEntries else { return }
+            userEntries = entries
+            entriesChanged()
+        }
+    }
+
+    /// Записи `mcp` и записи, в которых ещё остались варианты или жёсткий регистр агента.
+    var agentWordCount: Int {
+        onMain {
+            var keysByID: [UUID: [(language: DictionaryLanguage?, variant: String?)]] = [:]
+            for key in mcpVariants {
+                guard let parsed = Self.parseAgentKey(key) else { continue }
+                keysByID[parsed.id, default: []].append((parsed.language, parsed.variant))
+            }
+            return userEntries.filter { entry in
+                if entry.source == .mcp { return true }
+                return (keysByID[entry.id] ?? []).contains { key in
+                    guard let language = key.language, let variant = key.variant?.lowercased() else {
+                        return entry.forceCase
+                    }
+                    return (entry.variants[language] ?? []).contains { $0.lowercased() == variant }
+                }
+            }.count
+        }
+    }
+
+    private func setMCPVariants(_ keys: Set<String>) {
+        guard keys != mcpVariants else { return }
+        objectWillChange.send()
+        mcpVariants = keys
+        if keys.isEmpty {
+            defaults.removeObject(forKey: Keys.mcpVariants)
+        } else {
+            defaults.set(keys.sorted(), forKey: Keys.mcpVariants)
+        }
+    }
+
+    /// Причина отказа для слова агента или `nil`, если слово годится.
+    private static func agentRejection(spelling: String, variants: [DictionaryLanguage: [String]]) -> String? {
+        guard !spelling.isEmpty else { return "пустое написание" }
+        let key = spelling.lowercased()
+        for language in DictionaryLanguage.allCases {
+            for variant in variants[language] ?? [] {
+                let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.count < 2 { return "вариант «\(trimmed)» короче двух символов" }
+                if trimmed.lowercased() == key { return "вариант «\(trimmed)» совпадает с написанием" }
+            }
+        }
+        return nil
+    }
+
+    /// `<id>/<язык>/<вариант>` для варианта, `<id>/forceCase` для жёсткого регистра.
+    private static func agentKey(_ id: UUID, language: DictionaryLanguage? = nil, variant: String? = nil) -> String {
+        guard let language, let variant else { return "\(id.uuidString)/\(agentForceCaseSuffix)" }
+        return "\(id.uuidString)/\(language.rawValue)/\(variant)"
+    }
+
+    /// Ключ варианта делится на три части, в самом варианте может быть косая черта.
+    private static func parseAgentKey(_ key: String) -> (id: UUID, language: DictionaryLanguage?, variant: String?)? {
+        let parts = key.split(separator: "/", maxSplits: 2, omittingEmptySubsequences: false).map(String.init)
+        guard let first = parts.first, let id = UUID(uuidString: first) else { return nil }
+        if parts.count == 2, parts[1] == agentForceCaseSuffix { return (id, nil, nil) }
+        guard parts.count == 3, let language = DictionaryLanguage(rawValue: parts[1]) else { return nil }
+        return (id, language, parts[2])
     }
 
     // MARK: - Чтение
