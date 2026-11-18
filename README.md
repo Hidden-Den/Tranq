@@ -34,6 +34,7 @@ The app targets Russian speech with Latin-script technical terms.
   * an external API: OpenRouter, OpenAI, Anthropic, DeepSeek, Ollama;
   * an OpenAI-compatible corporate gateway. If it is unreachable, for example with VPN off, the text is inserted without cleanup and the overlay shows a notice.
 * **Terms.** Built-in dictionaries for IT, business, HR, finance, and more. Latin terms stay in Latin script, Russian abbreviations stay in Cyrillic. The dictionary learns from your note edits.
+* **Agent access.** Off by default. Once turned on in Settings, an AI agent connected over MCP reads the dictionary and adds your words with pronunciation variants, collects themed packs of its own, and, with history access granted separately, reads past dictations to find words the recognizer keeps getting wrong. Everything an agent wrote is marked in the dictionary screen and comes off with one action.
 * **Insertion under the cursor** in any app. Two hotkey modes: toggle and push-to-talk.
 * **History.** Notes with the final text, the raw transcript, and the voice recording. Edit text in place.
 
@@ -49,6 +50,7 @@ The app targets Russian speech with Latin-script technical terms.
 | **Speech Models** | GigaAM v3 RNN-T, Whisper Large-v3 Turbo, Whisper Medium |
 | **Local Cleanup** | llama-server with Gemma 4 and T-lite models |
 | **HotKey Subsystem** | Carbon Event Manager for combos, CGEventTap for modifiers and `Fn` |
+| **Agent Access** | Bundled `tranq-mcp` helper in Go 1.27: MCP over stdin and stdout, a Unix socket to the app |
 | **Telemetry** | Local only: API tokens and latency, hidden by default |
 
 ---
@@ -85,6 +87,24 @@ xattr -cr /Applications/Tranq.app
 * **`ESC`:** Cancels recording immediately without saving or pasting.
 * **Hotkey with Shift:** Runs one dictation in prompt mode, when enabled.
 * **Menu Bar Status Icon:** Open the app and settings.
+
+---
+
+## Agent Access
+
+Tranq can hand its dictionary to an AI agent. The app ships a helper, `tranq-mcp`, that speaks MCP over stdin and stdout and reaches the app through a Unix socket in its data folder. Nothing listens on the network, and the agent you already use is the only one that sees the data.
+
+**Switches in Settings, all off until you turn them on:**
+
+* **Access** — read the dictionary, add words, create packs of its own.
+* **Full access** — delete any word, your own hand-typed ones included, and disable packs. Confirmed with a warning.
+* **History** — read your dictations. Confirmed with a warning: the text goes to the model your agent runs on.
+
+**Connecting a client.** The settings block shows the config with the path to the helper. Clients that read an `mcpServers` config — Claude Code, Cursor, Gemini CLI, Antigravity — take the JSON tab. Codex keeps servers in TOML, so for it the block shows a `codex mcp add` command for the terminal. Copy what is shown; there is nothing else to set up.
+
+**What the agent gets:** `list_dictionary_packs`, `list_user_words`, `list_pack_words`, `set_pack_enabled`, `add_words`, `remove_words`, `create_pack`, `delete_pack`, `revert_agent_words`, `list_dictations`. Words arrive in batches of up to 50; an agent keeps at most 20 packs of its own with up to 500 words in each. Its own words land in your personal list or in its pack, never inside a built-in dictionary, and the dictionary screen has a single action that takes all of them back.
+
+The socket protocol is written down in [mcp/PROTOCOL.md](mcp/PROTOCOL.md).
 
 ---
 
