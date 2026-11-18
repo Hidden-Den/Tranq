@@ -553,6 +553,120 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
+    /// Записывает пачку слов в набор агента. Правила слов те же, что у `addFromAgent`: плохой вариант
+    /// отбрасывается сам по себе, повтор без учёта регистра сливает варианты. `forceCase` не действует:
+    /// у слов набора его нет. Пачка, которая не помещается в предел набора, отклоняется целиком.
+    @discardableResult
+    func addToAgentPack(id: String, words: [AgentWord]) throws -> AgentWriteResult {
+        try onMain {
+            let pack = try agentPack(id: id)
+            var entries = pack.entries
+            let free = Self.maxWordsPerAgentPack - entries.count
+
+            var counted = Set<String>()
+            let known = Set(entries.map { $0.spelling.lowercased() })
+            var newWords = 0
+            for word in words {
+                let key = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                guard !key.isEmpty, counted.insert(key).inserted else { continue }
+                if !known.contains(key) { newWords += 1 }
+            }
+            guard newWords <= free else {
+                throw AgentPackError.tooManyWords(limit: Self.maxWordsPerAgentPack, free: free)
+            }
+
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            for word in words {
+                let spelling = word.spelling.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !spelling.isEmpty else {
+                    result.skipped[word.spelling] = "пустое написание"
+                    continue
+                }
+                guard seen.insert(spelling.lowercased()).inserted else {
+                    result.skipped[word.spelling] = "повтор в этом запросе"
+                    continue
+                }
+                var variants: [DictionaryLanguage: [String]] = [:]
+                for (language, list) in word.variants {
+                    for variant in list {
+                        let trimmed = variant.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let reason = Self.agentVariantRejection(trimmed, spelling: spelling) {
+                            result.skipped["\(spelling) / \(trimmed)"] = reason
+                        } else {
+                            variants[language, default: []].append(trimmed)
+                        }
+                    }
+                }
+                if let i = entries.firstIndex(where: { $0.spelling.lowercased() == spelling.lowercased() }) {
+                    for (language, list) in variants {
+                        entries[i].variants[language] = Self.mergedVariants(entries[i].variants[language] ?? [], list)
+                    }
+                } else {
+                    var cleaned: [DictionaryLanguage: [String]] = [:]
+                    for (language, list) in variants {
+                        let merged = Self.mergedVariants([], list)
+                        if !merged.isEmpty { cleaned[language] = merged }
+                    }
+                    entries.append(PackEntry(
+                        spelling: spelling, variants: cleaned, commonIn: Self.commonLanguages(for: spelling, checker: checker)
+                    ))
+                }
+                result.added.append(spelling)
+            }
+            setAgentPackEntries(id: id, entries)
+            return result
+        }
+    }
+
+    /// Снимает слова набора агента по написанию без учёта регистра. Полный доступ не нужен: набор принадлежит агенту.
+    @discardableResult
+    func removeFromAgentPack(id: String, spellings: [String]) throws -> AgentWriteResult {
+        try onMain {
+            var entries = try agentPack(id: id).entries
+            var result = AgentWriteResult(added: [], skipped: [:])
+            var seen = Set<String>()
+            for spelling in spellings {
+                let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !key.isEmpty, !seen.insert(key).inserted {
+                    result.skipped[spelling] = "повтор в списке"
+                    continue
+                }
+                guard !key.isEmpty, let i = entries.firstIndex(where: { $0.spelling.lowercased() == key }) else {
+                    result.skipped[spelling] = "такого слова нет в наборе"
+                    continue
+                }
+                pruneDisabled(packId: id, word: entries[i].spelling)
+                entries.remove(at: i)
+                result.added.append(spelling.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            setAgentPackEntries(id: id, entries)
+            return result
+        }
+    }
+
+    private func setAgentPackEntries(id: String, _ entries: [PackEntry]) {
+        guard let i = agentPacks.firstIndex(where: { $0.id == id }), agentPacks[i].entries != entries else { return }
+        agentPacks[i].entries = entries
+        entriesChanged()
+    }
+
+    /// Языки, в которых написание бывает обычным словом: правило `scripts/annotate-dictionaries.swift`.
+    /// Кириллица даёт `ru`, латиница `en`, написания с цифрами и знаками обычными словами не бывают.
+    private static func commonLanguages(for spelling: String, checker: CommonWordChecking) -> [DictionaryLanguage] {
+        let letters = spelling.filter { !$0.isWhitespace }
+        guard !letters.isEmpty, letters.allSatisfy(\.isLetter) else { return [] }
+        let candidate: DictionaryLanguage
+        if letters.allSatisfy({ $0.unicodeScalars.allSatisfy { (0x400...0x4FF).contains($0.value) } }) {
+            candidate = .ru
+        } else if letters.allSatisfy(\.isASCII) {
+            candidate = .en
+        } else {
+            return []
+        }
+        return checker.isCommonWord(spelling, language: candidate) ? [candidate] : []
+    }
+
     /// Убирает выключения набора целиком (`word == nil`) или одного его слова вместе с вариантами слова.
     /// Остаток после удаления не должен встретить новое слово или набор с тем же ключом выключенным.
     private func pruneDisabled(packId: String, word: String? = nil) {

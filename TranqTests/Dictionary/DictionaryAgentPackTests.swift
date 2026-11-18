@@ -207,4 +207,170 @@ final class DictionaryAgentPackTests {
         #expect(try store.agentPack(id: id).id == id)
         #expect(store.packs.map(\.id) == ["med", id])
     }
+
+    // MARK: - Слова в наборе
+
+    private func word(_ spelling: String, _ ru: [String] = [], en: [String] = []) -> AgentWord {
+        var variants: [DictionaryLanguage: [String]] = [:]
+        if !ru.isEmpty { variants[.ru] = ru }
+        if !en.isEmpty { variants[.en] = en }
+        return AgentWord(spelling: spelling, variants: variants, forceCase: false)
+    }
+
+    private func entries(_ store: DictionaryStore, _ id: String) throws -> [PackEntry] {
+        try store.agentPack(id: id).entries
+    }
+
+    @Test func словоЛожитсяВНаборАНеВМоиСлова() throws {
+        let store = makeStore()
+        let id = try create(store)
+        let result = try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
+
+        #expect(result.added == ["Ableton"])
+        #expect(result.skipped.isEmpty)
+        let list = try entries(store, id)
+        #expect(list.map(\.spelling) == ["Ableton"])
+        #expect(list[0].variants[.ru] == ["эйблтон"])
+        #expect(store.userEntries.isEmpty)
+    }
+
+    @Test func повторБезУчётаРегистраСливаетВариантыИНеДублирует() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
+        let result = try store.addToAgentPack(id: id, words: [word("ableton", ["эйблтон", "аблтон"])])
+
+        let list = try entries(store, id)
+        #expect(list.count == 1)
+        #expect(list[0].spelling == "Ableton")
+        #expect(list[0].variants[.ru] == ["эйблтон", "аблтон"])
+        #expect(result.added == ["ableton"])
+    }
+
+    @Test func негодныйВариантОтбрасываетсяАСловоПроходит() throws {
+        let store = makeStore()
+        let id = try create(store)
+        let result = try store.addToAgentPack(id: id, words: [word("Ableton", ["к", "ableton", "эйблтон"])])
+
+        #expect(result.added == ["Ableton"])
+        #expect(result.skipped["Ableton / к"]?.isEmpty == false)
+        #expect(result.skipped["Ableton / ableton"]?.isEmpty == false)
+        #expect(try entries(store, id)[0].variants[.ru] == ["эйблтон"])
+    }
+
+    @Test func пустоеНаписаниеИПовторВЗапросеПропускаются() throws {
+        let store = makeStore()
+        let id = try create(store)
+        let result = try store.addToAgentPack(id: id, words: [word(""), word("Serum"), word("serum")])
+
+        #expect(result.added == ["Serum"])
+        #expect(result.skipped[""]?.isEmpty == false)
+        #expect(result.skipped["serum"]?.isEmpty == false)
+        #expect(try entries(store, id).map(\.spelling) == ["Serum"])
+    }
+
+    @Test func commonInСчитаетсяПравиломСкрипта() throws {
+        let store = makeStore(checker: SetCommonWordChecker([.ru: ["кубик"], .en: ["reaper"]]))
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [
+            word("Кубик"), word("Reaper"), word("Kubernetes"), word("n8n"), word("FL Studio"), word("Logic Pro"),
+        ])
+        let common = Dictionary(uniqueKeysWithValues: try entries(store, id).map { ($0.spelling, $0.commonIn) })
+        #expect(common["Кубик"] == [.ru])
+        #expect(common["Reaper"] == [.en])
+        #expect(common["Kubernetes"] == [])
+        #expect(common["n8n"] == [])
+        #expect(common["FL Studio"] == [])
+        #expect(common["Logic Pro"] == [])
+    }
+
+    @Test func предел500СловАтомарен() throws {
+        let store = makeStore()
+        let id = try create(store)
+        let full = (0..<500).map { word("слово\($0)") }
+        try store.addToAgentPack(id: id, words: full)
+        #expect(try entries(store, id).count == 500)
+
+        #expect(throws: AgentPackError.tooManyWords(limit: 500, free: 0)) {
+            try store.addToAgentPack(id: id, words: [word("новое")])
+        }
+        #expect(try entries(store, id).count == 500)
+        // Слова, которые лишь сливаются с существующими, предел не занимают.
+        let merged = try store.addToAgentPack(id: id, words: [word("СЛОВО1", ["вариант один"])])
+        #expect(merged.added == ["СЛОВО1"])
+
+        try store.removeFromAgentPack(id: id, spellings: ["слово0"])
+        #expect(throws: AgentPackError.tooManyWords(limit: 500, free: 1)) {
+            try store.addToAgentPack(id: id, words: [word("новое один"), word("новое два")])
+        }
+        #expect(try entries(store, id).count == 499)
+        #expect(try entries(store, id).contains { $0.spelling == "новое один" } == false)
+
+        try store.addToAgentPack(id: id, words: [word("новое один"), word("слово2", ["ещё вариант"])])
+        #expect(try entries(store, id).count == 500)
+    }
+
+    @Test func добавлениеВВстроенныйИНеизвестныйНабор() throws {
+        let store = makeStore(packs: [medicine])
+        #expect(throws: AgentPackError.builtInPack(id: "med")) { try store.addToAgentPack(id: "med", words: [word("Ибу")]) }
+        #expect(throws: AgentPackError.noSuchPack(id: "agent-00000000")) {
+            try store.addToAgentPack(id: "agent-00000000", words: [word("Ибу")])
+        }
+        #expect(store.packs.first?.entries == medicine.entries)
+    }
+
+    @Test func снятиеСловаБезУчётаРегистраИПричиныОтказов() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton")])
+        let result = try store.removeFromAgentPack(id: id, spellings: ["ABLETON", "нет", "ABLETON"])
+
+        #expect(result.added == ["ABLETON"])
+        #expect(result.skipped["нет"]?.isEmpty == false)
+        #expect(result.skipped["ABLETON"]?.isEmpty == false)
+        #expect(try entries(store, id).isEmpty)
+        #expect(store.agentPacks.map(\.id) == [id])
+    }
+
+    @Test func снятиеСловаЧиститВыключенияЭтогоСлова() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"]), word("Serum")])
+        store.setPackWord("\(id)/Ableton", enabled: false)
+        store.removeVariant("эйблтон", language: .ru, fromEntryKey: "\(id)/Ableton")
+        store.setPackWord("\(id)/Serum", enabled: false)
+
+        try store.removeFromAgentPack(id: id, spellings: ["Ableton"])
+
+        #expect(store.disabledPackWords == ["\(id)/Serum"])
+        #expect(store.disabledPackVariants.isEmpty)
+        #expect(stored("dictionary.disabledPackWords") == ["\(id)/Serum"])
+        #expect(stored("dictionary.disabledPackVariants").isEmpty)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
+        #expect(!store.disabledPackWords.contains("\(id)/Ableton"))
+    }
+
+    @Test func спискиНеПересекаются() throws {
+        let store = makeStore()
+        let id = try create(store)
+        store.addEntry(spelling: "Serum", variants: [:], source: .manual)
+        try store.addToAgentPack(id: id, words: [word("Serum")])
+
+        try store.removeFromAgentPack(id: id, spellings: ["Serum"])
+        #expect(store.userEntries.map(\.spelling) == ["Serum"])
+
+        try store.addToAgentPack(id: id, words: [word("Serum")])
+        store.removeFromAgent(spellings: ["Serum"], fullAccess: true)
+        #expect(try entries(store, id).map(\.spelling) == ["Serum"])
+    }
+
+    @Test func словаНабораПереживаютПерезагрузку() throws {
+        let store = makeStore(checker: SetCommonWordChecker([.ru: ["кубик"]]))
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Кубик", ["куб"], en: ["cube"]), word("Ableton", ["эйблтон"])])
+
+        let loaded = reload(store)
+        #expect(try entries(loaded, id) == entries(store, id))
+        #expect(try entries(loaded, id)[0].commonIn == [.ru])
+    }
 }
