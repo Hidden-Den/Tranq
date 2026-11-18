@@ -20,6 +20,9 @@ final class MCPSocketServer: @unchecked Sendable {
 
     /// Предел строки запроса: длиннее — отказ и закрытое соединение.
     static let maxLineBytes = 1 << 20
+    /// Предел живых соединений. Каждое держит поток общего пула GCD, от которого зависят таймауты диктовки,
+    /// поэтому утекающий клиент не должен занять его целиком. Лишнее соединение получает отказ и закрывается.
+    static let maxConnections = 8
     /// Столько байт пути помещается в `sockaddr_un.sun_path` вместе с завершающим нулём.
     static let maxPathBytes = MemoryLayout.size(ofValue: sockaddr_un().sun_path) - 1
 
@@ -133,20 +136,30 @@ final class MCPSocketServer: @unchecked Sendable {
             let fd = accept(listener, nil, nil)
             guard fd >= 0 else { return }
             _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
-            // Принятый сокет наследует неблокирующий режим приёмника, соединению он не нужен
-            _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK)
             // Клиент, ушедший посреди ответа, не роняет приложение сигналом
             var on: Int32 = 1
             setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
 
+            // Проверка предела и запись соединения под одним замком: гонки между ними нет
             lock.lock()
             let running = acceptSource != nil
-            if running { connections.insert(fd) }
+            let admitted = running && connections.count < Self.maxConnections
+            if admitted { connections.insert(fd) }
             lock.unlock()
             guard running else {
                 Darwin.close(fd)
                 return
             }
+            guard admitted else {
+                // Сокет ещё неблокирующий, как приёмник: не влезло сразу — просто закрываем, приём не ждёт
+                let bytes = Array((Self.refusal(String(localized: "Слишком много соединений. Закройте лишние и повторите."),
+                                                language: door.language) + "\n").utf8)
+                _ = bytes.withUnsafeBytes { Darwin.send(fd, $0.baseAddress, $0.count, MSG_NOSIGNAL) }
+                Darwin.close(fd)
+                continue
+            }
+            // Принятый сокет наследует неблокирующий режим приёмника, соединению он не нужен
+            _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK)
             connectionQueue.async { [weak self] in
                 self?.serve(fd, door: door)
                 self?.finish(fd)
@@ -209,9 +222,14 @@ final class MCPSocketServer: @unchecked Sendable {
 
     /// Отказ на слишком длинную строку собирается без двери: строку ей не отдают.
     static func oversizedAnswer(language: DictionaryLanguage) -> String {
+        refusal(String(localized: "Запрос длиннее 1 МиБ. Разбейте его на части."), language: language)
+    }
+
+    /// Отказ самого сокета в форме ответа двери: `ok: false`, текст и язык.
+    static func refusal(_ text: String, language: DictionaryLanguage) -> String {
         let object: [String: Any] = [
             "ok": false,
-            "error": String(localized: "Запрос длиннее 1 МиБ. Разбейте его на части."),
+            "error": text,
             "language": language.rawValue,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys, .withoutEscapingSlashes]) else {

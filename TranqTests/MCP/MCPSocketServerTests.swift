@@ -180,6 +180,57 @@ final class MCPSocketServerTests {
     }
 
     @Test(.timeLimit(.minutes(1)))
+    func соединениеСверхПределаПолучаетОтказАЖивыеРаботают() async throws {
+        let server = await startServer()
+        defer { server.stop() }
+
+        // Полный набор живых соединений: каждое уже ответило, значит принято и учтено
+        var live = [TestClient]()
+        for _ in 0..<MCPSocketServer.maxConnections {
+            let client = try TestClient(path: socketPath)
+            try client.send(#"{"cmd":"packs"}"# + "\n")
+            #expect(object(client.readLine())?["ok"] as? Bool == true)
+            live.append(client)
+        }
+
+        // Два лишних подряд: каждый получает одну строку отказа и конец потока
+        for _ in 0..<2 {
+            let extra = try TestClient(path: socketPath)
+            let refusal = object(extra.readLine())
+            #expect(refusal?["ok"] as? Bool == false)
+            #expect((refusal?["error"] as? String)?.isEmpty == false)
+            #expect(refusal?["language"] as? String == "ru")
+            #expect(extra.isClosedByPeer())
+        }
+
+        // Живые соединения по-прежнему обслуживаются
+        for client in live {
+            try client.send(#"{"cmd":"packs"}"# + "\n")
+            #expect(object(client.readLine())?["ok"] as? Bool == true)
+        }
+
+        // Один ушёл: место освобождается, отказанные в счёт не шли, новый клиент обслуживается
+        live.removeLast().close()
+        var served = false
+        for _ in 0..<50 where !served {
+            let next = try TestClient(path: socketPath)
+            try? next.send(#"{"cmd":"packs"}"# + "\n")
+            if object(next.readLine())?["data"] != nil {
+                served = true
+                live.append(next)
+            } else {
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+        }
+        #expect(served)
+
+        // И снова полный набор: следующий лишний опять получает отказ
+        let extra = try TestClient(path: socketPath)
+        #expect(object(extra.readLine())?["ok"] as? Bool == false)
+        #expect(extra.isClosedByPeer())
+    }
+
+    @Test(.timeLimit(.minutes(1)))
     func слишкомДлинныйПутьНеЗапускаетСервер() async throws {
         let longPath = root.appendingPathComponent(String(repeating: "д", count: 60) + ".sock").path
         #expect(longPath.utf8.count > 103)
