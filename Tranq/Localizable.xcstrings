@@ -710,18 +710,18 @@
         }
       }
     },
-    "Автоматически открывать свежую заметку по завершении расшифровки" : {
+    "Открывать новую запись после расшифровки" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Automatically open the new note when transcription finishes"
+            "value" : "Open the new entry after transcription"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Автоматически открывать свежую заметку по завершении расшифровки"
+            "value" : "Открывать новую запись после расшифровки"
           }
         }
       }
@@ -774,18 +774,18 @@
         }
       }
     },
-    "Безвозвратное удаление ВСЕХ заметок на устройстве" : {
+    "Все диктовки удалятся с устройства безвозвратно" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permanently delete ALL notes on this device"
+            "value" : "All dictations are permanently deleted from this device"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Безвозвратное удаление ВСЕХ заметок на устройстве"
+            "value" : "Все диктовки удалятся с устройства безвозвратно"
           }
         }
       }
@@ -2693,7 +2693,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete note?"
+            "value" : "Delete entry?"
           }
         },
         "ru" : {
@@ -3760,6 +3760,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ошибка"
+          }
+        }
+      }
+    },
+    "Нажмите кнопку и затем нужную клавишу" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press the button, then the key you want"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите кнопку и затем нужную клавишу"
+          }
+        }
+      }
+    },
+    "Назначить" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assign"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Назначить"
           }
         }
       }

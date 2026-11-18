@@ -117,31 +117,24 @@ struct OnboardingView: View {
                                         .font(.ui(.micro))
                                         .foregroundColor(.uiMidGray)
                                 }
-                                Text(hotKey.isConfigured ? "Назначена: \(hotKey.hotKeyName)" : "Выберите клавишу для старта диктовки")
-                                    .font(.ui(.footnote))
-                                    .foregroundColor(.uiMidGray)
+                                hotKeyHint
                             }
 
-                            Spacer()
+                            Spacer(minLength: 8)
 
+                            // Тот же захват клавиши, что и в настройках: готовых наборов нет
                             HStack(spacing: 6) {
-                                if hotKey.isConfigured {
+                                if hotKey.isCapturing {
+                                    UIBadge(text: "…")
+                                    UIOutlineButton(title: "Отмена") { hotKey.endCapture() }
+                                } else if hotKey.isConfigured {
                                     UIBadge(text: hotKey.hotKeyName)
-                                    UIOutlineButton(title: "Сбросить") {
-                                        hotKey.clear()
-                                    }
+                                    UIOutlineButton(title: "Изменить") { hotKey.beginCapture() }
                                 } else {
-                                    UIOutlineButton(title: "Fn") {
-                                        hotKey.setPreset(.fnKey)
-                                    }
-                                    UIOutlineButton(title: "⌥ Пробел") {
-                                        hotKey.setPreset(.optionSpace)
-                                    }
-                                    UIOutlineButton(title: "Правый ⌥") {
-                                        hotKey.setPreset(.rightOptionKey)
-                                    }
+                                    UIOutlineButton(title: "Назначить") { hotKey.beginCapture() }
                                 }
                             }
+                            .fixedSize()
                         }
                     }
                 }
@@ -160,6 +153,21 @@ struct OnboardingView: View {
         }
         .onReceive(timer) { _ in
             permissions.refreshPermissions()
+        }
+        // Захват держит локальный монитор клавиш: без этого он остался бы после закрытия экрана
+        .onDisappear { hotKey.endCapture() }
+    }
+
+    /// Подсказка под названием: что делать сейчас или почему не вышло. У назначенной клавиши подсказки нет.
+    @ViewBuilder private var hotKeyHint: some View {
+        if let warning = hotKey.warningMessage {
+            Text(warning).font(.ui(.footnote)).foregroundColor(.uiWarn)
+        } else if hotKey.isCapturing {
+            Text(LocalizedStringKey("HotKey.Capture")).font(.ui(.footnote)).foregroundColor(.uiMidGray)
+        } else if hotKey.isTaken {
+            Text(LocalizedStringKey("HotKey.Taken")).font(.ui(.footnote)).foregroundColor(.uiWarn)
+        } else if !hotKey.isConfigured {
+            Text("Нажмите кнопку и затем нужную клавишу").font(.ui(.footnote)).foregroundColor(.uiMidGray)
         }
     }
 }

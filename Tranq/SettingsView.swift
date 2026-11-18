@@ -147,7 +147,7 @@ struct SettingsView: View {
                                 Text("Сразу открывать в истории")
                                     .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
-                                Text("Автоматически открывать свежую заметку по завершении расшифровки")
+                                Text("Открывать новую запись после расшифровки")
                                     .font(.ui(.caption))
                                     .foregroundColor(.uiMidGray)
                             }
@@ -333,7 +333,7 @@ HStack {
                             Text("Стереть историю")
                                 .font(.ui(.body, weight: .bold))
                                 .foregroundColor(.uiEmber)
-                            Text("Безвозвратное удаление ВСЕХ заметок на устройстве")
+                            Text("Все диктовки удалятся с устройства безвозвратно")
                                 .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }

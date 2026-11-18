@@ -177,6 +177,8 @@ struct UIBadge: View {
             .font(.ui(.micro, weight: .semibold))
             .tracking(0.5)
             .foregroundColor(.uiMidGray)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.vertical, 4)
             .padding(.horizontal, 10)
             .background(Color.uiCanvas)
