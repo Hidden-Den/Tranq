@@ -25,8 +25,9 @@ import (
 )
 
 // unavailableText is shown to the human by the agent, so it is written for
-// them: the socket is missing when the app is closed or the access switch in
-// its settings is off.
+// them: the socket is missing when the app is not running or could not start
+// the server. With the access switch off the app keeps the socket up and the
+// door answers with a refusal itself.
 const unavailableText = "Откройте Tranq и включите доступ для нейронок в настройках"
 
 // ErrUnavailable means the door could not be reached: the app is not running,
