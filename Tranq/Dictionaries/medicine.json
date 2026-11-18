@@ -1,0 +1,1258 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "МРТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм эр тэ",
+          "эм эр те"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ка тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "МСКТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм эс ка тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "УЗИ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭКГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "э ка гэ",
+          "э ка ге"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭЭГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "э э гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭхоКГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эхо ка гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФГДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эф гэ дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЭГДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "э гэ дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КТГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ка тэ гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОАК",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о а ка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОАМ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о а эм"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СОЭ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эс о э"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЧСС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "че эс эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЧДД",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "че дэ дэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ИМТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и эм тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СКФ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эс ка эф"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ПЦР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пэ цэ эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ИФА",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и эф а"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ИВЛ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и вэ эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОРИТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОРВИ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о эр вэ и"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОРЗ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о эр зэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ХОБЛ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ИБС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и бэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЖКТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "жэ ка тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СРК",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эс эр ка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ГЭРБ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ХБП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ха бэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ХСН",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ха эс эн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОКС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о ка эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ТЭЛА",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ДЦП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дэ цэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "ВИЧ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "АЛТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "а эл тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "АСТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "а эс тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ТТГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "тэ тэ гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ХГЧ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ха гэ че"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "АКТГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "а ка тэ гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ФСГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эф эс гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЛПНП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эл пэ эн пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЛПВП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эл пэ вэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "АКДС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "а ка дэ эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "БЦЖ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "бэ цэ жэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ДНК",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дэ эн ка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "РНК",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эр эн ка"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ОМС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о эм эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ДМС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дэ эм эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЕМИАС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЕГИСЗ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "ВОЗ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СИОЗС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "МКБ-10",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм ка бэ десять"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "МКБ-11",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм ка бэ одиннадцать"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MRI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм ар ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ECG",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EEG",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "ICU",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PCR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пи си ар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ELISA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MRSA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BMI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "би эм ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "си пи ар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NSAID",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SSRI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SNRI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MAOI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HbA1c",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "LDL",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HDL",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IgE",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IgG",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HIV",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "AIDS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "COVID-19",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ковид девятнадцать"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SARS-CoV-2",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GLP-1",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джи эл пи один"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "mRNA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ICD-10",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ICD-11",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "FDA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "WHO",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EMA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "RCT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "in vitro",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "in vivo",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "per os",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Helicobacter pylori",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "хеликобактер пилори"
+        ]
+      }
+    }
+  ],
+  "id" : "medicine",
+  "title" : {
+    "en" : "Medicine",
+    "ru" : "Медицина"
+  },
+  "version" : 1
+}

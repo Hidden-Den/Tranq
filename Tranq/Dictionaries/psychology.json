@@ -1,0 +1,892 @@
+{
+  "entries" : [
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КПТ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ка пэ тэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ДПДГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "дэ пэ дэ гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ПТСР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пэ тэ эс эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "КПТСР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ка пэ тэ эс эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "ОКР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "о ка эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "РПП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эр пэ пэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "СДВГ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эс дэ вэ гэ"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "РАС",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "ru"
+      ],
+      "spelling" : "БАР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ЗПР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "зэ пэ эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ПРЛ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пэ эр эл"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ГТР",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "гэ тэ эр"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ТФП",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DSM-5",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ди эс эм пять"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DSM-5-TR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CBT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "си би ти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "DBT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ди би ти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "ACT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эй си ти"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "REBT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "EMDR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и эм ди ар"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "IFS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ай эф эс"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MBSR",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MBCT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SFBT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ABA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эй би эй"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CFT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "EFT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CBT-I",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "ACE",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MMPI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "эм эм пи ай"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WAIS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "WISC",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HADS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PHQ-9",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "пи эйч кью девять"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "GAD-7",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "джи эй ди семь"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "BDI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "BAI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "SCL-90",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "STAI",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "NEO-PI-R",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Y-BOCS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "PCL-5",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ADOS",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ADI-R",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "M-CHAT",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MMSE",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "MoCA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "HEXACO",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "IQ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ай кью"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "EQ",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "и кью"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "Big Five",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "биг файв"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "APA",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Rorschach",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "роршах"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "PTSD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "CPTSD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ADHD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "OCD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "ASD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "GAD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "BPD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+        "en"
+      ],
+      "spelling" : "MDD",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "Zigmund.Online",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "зигмунд онлайн"
+        ]
+      }
+    },
+    {
+      "commonIn" : [
+
+      ],
+      "spelling" : "YouTalk",
+      "variants" : {
+        "en" : [
+
+        ],
+        "ru" : [
+          "ю ток"
+        ]
+      }
+    }
+  ],
+  "id" : "psychology",
+  "title" : {
+    "en" : "Psychology",
+    "ru" : "Психология"
+  },
+  "version" : 1
+}

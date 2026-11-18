@@ -17,7 +17,7 @@ struct BrandingTests {
     }
 
     @Test func builtInPacksStillLoad() {
-        #expect(DictionaryStore.loadPacks(from: .main).count == 10)
+        #expect(DictionaryStore.loadPacks(from: .main).count == DictionaryStore.packOrder.count)
     }
 
     @Test func marketingVersionIsThreeX() {

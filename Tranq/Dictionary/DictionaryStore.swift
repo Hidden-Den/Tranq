@@ -16,7 +16,7 @@ final class DictionaryStore: ObservableObject {
     )
 
     /// Порядок наборов на экране и в индексе.
-    static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design"]
+    static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design", "medicine", "psychology"]
 
     static let schemaVersion = 1
     static let fileName = "dictionary.json"
