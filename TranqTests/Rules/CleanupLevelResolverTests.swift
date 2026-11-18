@@ -59,9 +59,9 @@ struct CleanupLevelResolverTests {
     }
 
     @Test func toneInstructionsAreExact() {
-        #expect(RuleTone.business.instruction == "деловой: вежливо и по делу, полными предложениями, без разговорных слов")
-        #expect(RuleTone.casual.instruction == "живой: коротко и просто, как в переписке с коллегой")
-        #expect(RuleTone.custom("  пиши как поэт  ").instruction == "пиши как поэт")
+        #expect(RuleTone.business.instruction == "деловой: вежливо и по делу, полными предложениями, без разговорных слов; \(RuleTone.dropProfanity)")
+        #expect(RuleTone.casual.instruction == "живой: коротко и просто, как в переписке с коллегой; \(RuleTone.keepProfanity)")
+        #expect(RuleTone.custom("  пиши как поэт  ").instruction == "пиши как поэт; \(RuleTone.keepProfanity)")
     }
 
     @Test func domainNormalization() {

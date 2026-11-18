@@ -168,8 +168,13 @@ public final class ThoughtSynthesizer {
     /// Как писать термины, общее для всех уровней с моделью.
     static let termsRule = "Латинские термины и аббревиатуры пиши латиницей: CRM, B2B, staging, pull request. Русские аббревиатуры пиши кириллицей: БТИ, НДС. Слова с русскими окончаниями оставляй кириллицей: задеплоить, митинг, фича."
 
+    /// Речь говорящего передаётся как есть, мат в том числе. Тон правила может это переопределить.
+    static let profanityRule = "Мат и грубые слова говорящего оставь как сказано: не смягчай, не маскируй звёздочками и не заменяй."
+
     public static func getSystemPrompt(for level: CleanupLevel) -> String {
         let base: String
+        // Тон правила может сам решить судьбу мата: тогда общее правило не добавляется.
+        var keepsProfanity = true
         switch level {
         case .verbatim, .clean:
             let custom = VoiceIntelligenceSettings.shared.customSystemPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -180,6 +185,7 @@ public final class ThoughtSynthesizer {
                 of: VoiceIntelligenceSettings.keepWordsRule,
                 with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
             )
+            keepsProfanity = !tone.contains(RuleTone.dropProfanity) && !tone.contains(RuleTone.keepProfanity)
 
         case .prompt:
             base = """
@@ -189,7 +195,8 @@ public final class ThoughtSynthesizer {
             Выведи только текст запроса.
             """
         }
-        return base + "\n\n" + termsRule
+        let tail = keepsProfanity ? termsRule + "\n" + profanityRule : termsRule
+        return base + "\n\n" + tail
     }
 
     /// Удаление блоков размышлений <think>...</think>

@@ -12,12 +12,22 @@ enum RuleTone: Codable, Equatable {
     case casual
     case custom(String)
 
+    /// Мат говорящего остаётся во всех тонах, кроме делового.
+    static let keepProfanity = "мат и грубые слова говорящего оставь как сказано, не смягчай и не маскируй"
+
+    /// Деловой тон по умолчанию убирает мат.
+    static let dropProfanity = "мат и грубые слова убери, смысл передай нейтрально"
+
     /// Описание тона, которое подставляется в промпт уровня C.
     var instruction: String {
         switch self {
-        case .business: return "деловой: вежливо и по делу, полными предложениями, без разговорных слов"
-        case .casual: return "живой: коротко и просто, как в переписке с коллегой"
-        case .custom(let text): return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .business:
+            return "деловой: вежливо и по делу, полными предложениями, без разговорных слов; \(Self.dropProfanity)"
+        case .casual:
+            return "живой: коротко и просто, как в переписке с коллегой; \(Self.keepProfanity)"
+        case .custom(let text):
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? trimmed : "\(trimmed); \(Self.keepProfanity)"
         }
     }
 }

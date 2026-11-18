@@ -20,6 +20,25 @@ struct CleanupPromptTests {
         #expect(!prompt.contains("не меняй тон"))
     }
 
+    @Test func matStaysOutsideBusinessTone() {
+        for level in [CleanupLevel.clean, .prompt, .rewrite(tone: RuleTone.casual.instruction)] {
+            let prompt = ThoughtSynthesizer.getSystemPrompt(for: level)
+            #expect(prompt.contains(ThoughtSynthesizer.profanityRule) || prompt.contains(RuleTone.keepProfanity))
+            #expect(!prompt.contains(RuleTone.dropProfanity))
+        }
+    }
+
+    @Test func businessToneDropsMat() {
+        let prompt = ThoughtSynthesizer.getSystemPrompt(for: .rewrite(tone: RuleTone.business.instruction))
+        #expect(prompt.contains(RuleTone.dropProfanity))
+        #expect(!prompt.contains(ThoughtSynthesizer.profanityRule))
+    }
+
+    @Test func toneWithoutMatRuleKeepsMat() {
+        let prompt = ThoughtSynthesizer.getSystemPrompt(for: .rewrite(tone: "деловой"))
+        #expect(prompt.contains(ThoughtSynthesizer.profanityRule))
+    }
+
     /// Отдельный набор настроек: тесты идут параллельно, общий набор делили бы с `resetToDefaults`.
     private func isolatedDefaults() -> UserDefaults {
         let name = "tranq.tests.prompt.\(UUID().uuidString)"
