@@ -236,4 +236,83 @@ final class DictionaryAgentWriteTests {
         #expect(entry(store, "Slack")?.variants[.ru] == ["слак"])
         #expect(store.agentWordCount == 0)
     }
+
+    @Test func выученнаяЗаписьТолькоРегистраПереживаетОткат() {
+        let store = makeStore()
+        store.addEntry(spelling: "GitHub", variants: [:], source: .learned, forceCase: true)
+        store.addFromAgent([AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ"]], forceCase: false)])
+
+        store.revertAgentChanges()
+
+        #expect(store.userEntries.map(\.spelling) == ["GitHub"])
+        #expect(entry(store, "GitHub")?.forceCase == true)
+    }
+
+    @Test func выученнаяЗаписьТолькоРегистраСВариантамиАгентаТеряетИхНоОстаётся() {
+        let store = makeStore()
+        store.addEntry(spelling: "GitHub", variants: [:], source: .learned, forceCase: true)
+        store.addFromAgent([AgentWord(spelling: "github", variants: [.ru: ["гитхаб"]], forceCase: true)])
+        #expect(entry(store, "GitHub")?.variants[.ru] == ["гитхаб"])
+
+        store.revertAgentChanges()
+
+        #expect(entry(store, "GitHub")?.source == .learned)
+        #expect(entry(store, "GitHub")?.forceCase == true)
+        #expect(entry(store, "GitHub")?.variants.values.allSatisfy(\.isEmpty) == true)
+    }
+
+    @Test func откатСообщаетЧислоСнятыхСловИВариантов() {
+        let store = makeStore()
+        let human = store.addEntry(spelling: "Kubernetes", variants: [.ru: ["кубер"]], source: .manual)
+        store.addEntry(spelling: "Grafana", variants: [.ru: ["графана"]], source: .learned)
+        store.addFromAgent([
+            AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ"]], forceCase: false),
+            AgentWord(spelling: "Ansible", variants: [:], forceCase: false),
+            AgentWord(spelling: "Kubernetes", variants: [.ru: ["кубернетес", "кубик"]], forceCase: true),
+            AgentWord(spelling: "Grafana", variants: [.ru: ["графаной"]], forceCase: false),
+        ])
+        // Вариант, который человек уже снял, в счёт не идёт.
+        store.removeVariant("кубик", language: .ru, fromEntryKey: "user/\(human.id.uuidString)")
+
+        let result = store.revertAgentChanges()
+
+        #expect(result == AgentRevertResult(removedWords: 2, removedVariants: 2))
+        #expect(store.revertAgentChanges() == AgentRevertResult(removedWords: 0, removedVariants: 0))
+    }
+
+    @Test func вариантДобавленныйЧеловекомВЗаписьАгентаЗабираетЕёСебе() {
+        let store = makeStore()
+        store.addFromAgent([AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ"]], forceCase: false)])
+        var edited = entry(store, "Terraform")!
+        edited.variants[.ru, default: []].append("тераформ")
+        store.updateEntry(edited)
+
+        #expect(entry(store, "Terraform")?.source == .manual)
+        store.revertAgentChanges()
+
+        #expect(entry(store, "Terraform")?.source == .manual)
+        #expect(entry(store, "Terraform")?.variants[.ru] == ["терраформ", "тераформ"])
+    }
+
+    @Test func обновлениеТолькоСчётчиковОставляетЗаписьАгенту() {
+        let store = makeStore()
+        store.addFromAgent([AgentWord(spelling: "Terraform", variants: [.ru: ["терраформ"]], forceCase: false)])
+        var edited = entry(store, "Terraform")!
+        edited.hits += 3
+        edited.lastUsed = Date()
+        store.updateEntry(edited)
+
+        #expect(entry(store, "Terraform")?.source == .mcp)
+        #expect(entry(store, "Terraform")?.hits == 3)
+    }
+
+    @Test func повторВСпискеУдаленияПолучаетСвоюПричину() {
+        let store = makeStore()
+        store.addFromAgent([AgentWord(spelling: "Terraform", variants: [:], forceCase: false)])
+
+        let result = store.removeFromAgent(spellings: ["Terraform", "terraform"], fullAccess: false)
+
+        #expect(result.added == ["Terraform"])
+        #expect(result.skipped == ["terraform": "повтор в списке"])
+    }
 }

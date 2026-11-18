@@ -178,9 +178,17 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
+    /// Правка из экрана словаря. Человек, изменивший написание, варианты или регистр записи агента,
+    /// забирает её себе: источник становится ручным, и откат её не тронет. Счётчики источник не меняют.
     func updateEntry(_ entry: DictionaryEntry) {
         onMain {
             guard let i = userEntries.firstIndex(where: { $0.id == entry.id }), userEntries[i] != entry else { return }
+            let stored = userEntries[i]
+            var entry = entry
+            if stored.source == .mcp, entry.source == .mcp,
+               stored.spelling != entry.spelling || stored.variants != entry.variants || stored.forceCase != entry.forceCase {
+                entry.source = .manual
+            }
             userEntries[i] = entry
             pruneAgentKeys(for: entry.id)
             entriesChanged()
@@ -326,8 +334,13 @@ final class DictionaryStore: ObservableObject {
             var result = AgentWriteResult(added: [], skipped: [:])
             var entries = userEntries
             var removedIDs = Set<UUID>()
+            var seen = Set<String>()
             for spelling in spellings {
                 let key = spelling.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                if !key.isEmpty, !seen.insert(key).inserted {
+                    result.skipped[spelling] = "повтор в списке"
+                    continue
+                }
                 guard !key.isEmpty, let i = entries.firstIndex(where: { $0.spelling.lowercased() == key }) else {
                     result.skipped[spelling] = "такого слова нет в словаре"
                     continue
@@ -354,25 +367,43 @@ final class DictionaryStore: ObservableObject {
 
     /// Удаляет записи `mcp`, снимает запомненные варианты и жёсткий регистр агента из чужих записей
     /// и чистит список. Ключи записей и вариантов, которые человек уже удалил, пропускаются.
-    func revertAgentChanges() {
+    /// Возвращает число удалённых записей `mcp` и число снятых вариантов агента из оставшихся записей.
+    @discardableResult
+    func revertAgentChanges() -> AgentRevertResult {
         onMain {
             var entries = userEntries.filter { $0.source != .mcp }
+            let removedWords = userEntries.count - entries.count
+            var removedVariants = 0
+            var touched = Set<UUID>()
             for key in mcpVariants {
                 guard let parsed = Self.parseAgentKey(key),
                       let i = entries.firstIndex(where: { $0.id == parsed.id }) else { continue }
                 if let language = parsed.language, let variant = parsed.variant {
                     let lowered = variant.lowercased()
+                    let before = entries[i].variants[language]?.count ?? 0
                     entries[i].variants[language]?.removeAll { $0.lowercased() == lowered }
-                } else {
+                    let removed = before - (entries[i].variants[language]?.count ?? 0)
+                    if removed > 0 {
+                        removedVariants += removed
+                        touched.insert(parsed.id)
+                    }
+                } else if entries[i].forceCase {
                     entries[i].forceCase = false
+                    touched.insert(parsed.id)
                 }
             }
-            // Как в `removeVariant`: выученная запись без вариантов ничего не заменяет.
-            entries.removeAll { $0.source == .learned && $0.variants.values.allSatisfy(\.isEmpty) }
+            // Как в `removeVariant`: выученная запись, которую откат оставил без вариантов и без жёсткого
+            // регистра, ничего не делает. Нетронутые откатом записи, например выученные только по регистру, остаются.
+            entries.removeAll {
+                touched.contains($0.id) && $0.source == .learned
+                    && $0.variants.values.allSatisfy(\.isEmpty) && !$0.forceCase
+            }
             setMCPVariants([])
-            guard entries != userEntries else { return }
+            let result = AgentRevertResult(removedWords: removedWords, removedVariants: removedVariants)
+            guard entries != userEntries else { return result }
             userEntries = entries
             entriesChanged()
+            return result
         }
     }
 

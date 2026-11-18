@@ -13,3 +13,9 @@ struct AgentWriteResult: Equatable {
     /// Написание в том виде, в каком его прислал агент, → причина отказа.
     var skipped: [String: String]
 }
+
+/// Итог отката: сколько записей агента удалено и сколько его вариантов снято с оставшихся записей.
+struct AgentRevertResult: Equatable {
+    var removedWords: Int
+    var removedVariants: Int
+}
