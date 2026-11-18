@@ -95,12 +95,17 @@ xattr -cr /Applications/Tranq.app
 git clone https://github.com/Nuteres/Tranq.git
 cd Tranq
 
-# 2. Fetch the GigaAM model and llama-server; versions and SHA-256 checksums are pinned in the script
+# 2. Install Go 1.27 or newer, needed to build the bundled tranq-mcp helper
+brew install go
+
+# 3. Fetch the GigaAM model and llama-server; versions and SHA-256 checksums are pinned in the script
 scripts/fetch-deps.sh
 
-# 3. Open the project in Xcode
+# 4. Open the project in Xcode
 open Tranq.xcodeproj
 ```
+
+Every Xcode build of the app runs a Go build phase for `tranq-mcp` and fails without Go. It uses the vendored dependencies, so Go needs no network.
 
 Press `⌘ + R` in Xcode to build and run. Xcode downloads the transcribe.cpp engine on its own as a Swift package.
 
