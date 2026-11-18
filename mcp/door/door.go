@@ -61,8 +61,9 @@ const (
 // Client talks to the door of one Tranq app. It is safe for concurrent use.
 type Client struct {
 	// OpenApp starts the Tranq app. args are the arguments of the macOS `open`
-	// command: the path of the .app, or -b and a bundle identifier. Tests
-	// replace it so that no test opens a real app.
+	// command: -g first, to keep the app in the background, then the path of
+	// the .app, or -b and a bundle identifier. Tests replace it so that no test
+	// opens a real app.
 	OpenApp func(ctx context.Context, args ...string) error
 	// Timeout bounds one Call, on top of the deadline of its context.
 	Timeout time.Duration

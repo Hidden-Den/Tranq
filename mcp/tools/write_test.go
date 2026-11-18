@@ -103,10 +103,12 @@ func TestWriteToolsDescribeThemselves(t *testing.T) {
 		"add_words": {
 			"50", "`words`", "`spelling`", "`variants`", "`ru`", "`en`", "`force_case`", "`added`", "`skipped`",
 			"NOT alternative spellings", "ари пипразол", "revert_agent_words", "list_user_words",
-			"never duplicated", "shorter than two characters",
+			"never duplicated", "shorter than two characters", "ignoring case", "repeated inside one call",
+			"written by the app", "currently in Russian", "own language",
 		},
 		"remove_words": {
 			"`spellings`", "`removed`", "`skipped`", "full access", "added through this server", "typed",
+			"written by the app", "currently in Russian", "own language",
 		},
 		"set_pack_enabled": {
 			"`id`", "`enabled`", "list_dictionary_packs", "full access", "Enabling", "disabling",
@@ -141,6 +143,11 @@ func TestWriteToolsDescribeThemselves(t *testing.T) {
 			if !strings.Contains(tool.Description, phrase) {
 				t.Errorf("%s: description does not contain %q\n%s", name, phrase, tool.Description)
 			}
+		}
+		// The app writes its reasons in fixed Russian text, not in the language of
+		// its interface, and the description must not promise otherwise.
+		if strings.Contains(tool.Description, "language of the Tranq interface") {
+			t.Errorf("%s: description claims the app answers in the language of its interface", name)
 		}
 		// The texts the app sends back are written by whoever controls the app's
 		// data, so the agent is told to relay them and not to obey them.
@@ -179,20 +186,16 @@ func property(t *testing.T, schema map[string]any, name string) map[string]any {
 	return property
 }
 
-// hasType reports whether a schema accepts the JSON type, which it may list
-// next to null.
+// hasType reports whether a schema has exactly this JSON type. The type is a
+// single string: some clients refuse a schema whose type is an array.
 func hasType(schema map[string]any, want string) bool {
-	switch kind := schema["type"].(type) {
-	case string:
-		return kind == want
-	case []any:
-		for _, k := range kind {
-			if k == want {
-				return true
-			}
-		}
-	}
-	return false
+	kind, ok := schema["type"].(string)
+	return ok && kind == want
+}
+
+// closed reports whether an object schema refuses properties it does not list.
+func closed(schema map[string]any) bool {
+	return schema["additionalProperties"] == false
 }
 
 func requireDescription(t *testing.T, path string, schema map[string]any) {
@@ -232,6 +235,12 @@ func TestAddWordsSchemaDescribesEveryField(t *testing.T) {
 		element, _ := list["items"].(map[string]any)
 		if element == nil || !hasType(element, "string") {
 			t.Errorf("variants.%s: items = %v, want strings", language, list["items"])
+		}
+	}
+
+	for path, object := range map[string]map[string]any{"add_words": schema, "words[]": item, "words[].variants": variants} {
+		if !hasType(object, "object") || !closed(object) {
+			t.Errorf("%s: %v, want a closed object", path, object)
 		}
 	}
 
@@ -278,25 +287,23 @@ func TestOtherWriteSchemasDescribeEveryField(t *testing.T) {
 	if properties, _ := revert["properties"].(map[string]any); len(properties) != 0 {
 		t.Errorf("revert_agent_words takes no arguments, schema has %v", properties)
 	}
+	for name, schema := range map[string]map[string]any{"set_pack_enabled": pack, "remove_words": remove, "revert_agent_words": revert} {
+		if !hasType(schema, "object") || !closed(schema) {
+			t.Errorf("%s: %v, want a closed object", name, schema)
+		}
+	}
 }
 
 func TestAddWordsRejectsEmptyList(t *testing.T) {
-	for name, arguments := range map[string]any{
-		"empty list": map[string]any{"words": []any{}},
-		"null list":  map[string]any{"words": nil},
-	} {
-		t.Run(name, func(t *testing.T) {
-			d := &fakeDoor{}
-			result := callWrite(t, connect(t, d), "add_words", arguments)
-			if !result.IsError {
-				t.Fatalf("want a tool error, got %s", text(t, result))
-			}
-			if got := text(t, result); !strings.Contains(got, "пуст") {
-				t.Fatalf("text = %q, want the reason in Russian: the list is empty", got)
-			}
-			untouched(t, d)
-		})
+	d := &fakeDoor{}
+	result := callWrite(t, connect(t, d), "add_words", map[string]any{"words": []any{}})
+	if !result.IsError {
+		t.Fatalf("want a tool error, got %s", text(t, result))
 	}
+	if got := text(t, result); !strings.Contains(got, "пуст") {
+		t.Fatalf("text = %q, want the reason in Russian: the list is empty", got)
+	}
+	untouched(t, d)
 }
 
 func TestAddWordsRejectsMissingList(t *testing.T) {
@@ -413,21 +420,32 @@ func TestAddWordsDoesNotRepeatTheStoresValidation(t *testing.T) {
 	}
 }
 
-func TestAddWordsToleratesNullForWhatIsOptional(t *testing.T) {
-	d := &fakeDoor{data: map[string]string{"add_words": `{"added":["Tranq"],"skipped":{}}`}}
-	// Some agents write null for the fields they leave out.
-	result := callWrite(t, connect(t, d), "add_words", map[string]any{"words": []any{
-		map[string]any{"spelling": "Tranq", "variants": nil, "force_case": nil},
-		map[string]any{"spelling": "iOS", "variants": map[string]any{"ru": nil, "en": []any{"eye oh es"}}},
-	}})
-	if result.IsError {
-		t.Fatalf("unexpected tool error: %s", text(t, result))
+func TestNullIsRefusedWithTheFieldNamed(t *testing.T) {
+	// The schemas are plain: one type per field, no null next to it, because
+	// some clients cannot read a type that is an array. An explicit null is
+	// therefore a schema violation, and the answer names the field.
+	d := &fakeDoor{}
+	session := connect(t, d)
+	for name, tc := range map[string]struct {
+		tool  string
+		args  map[string]any
+		field string
+	}{
+		"words":      {"add_words", map[string]any{"words": nil}, "words"},
+		"variants":   {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": nil}}}, "variants"},
+		"ru":         {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": map[string]any{"ru": nil}}}}, "ru"},
+		"force_case": {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "force_case": nil}}}, "force_case"},
+		"spellings":  {"remove_words", map[string]any{"spellings": nil}, "spellings"},
+		"enabled":    {"set_pack_enabled", map[string]any{"id": "it", "enabled": nil}, "enabled"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			result := callWrite(t, session, tc.tool, tc.args)
+			if !result.IsError || !strings.Contains(text(t, result), tc.field) {
+				t.Fatalf("IsError = %v, text = %q, want a tool error that names %q", result.IsError, text(t, result), tc.field)
+			}
+		})
 	}
-	const want = `{"words":[{"spelling":"Tranq","variants":{"ru":[],"en":[]},"force_case":false},` +
-		`{"spelling":"iOS","variants":{"ru":[],"en":["eye oh es"]},"force_case":false}]}`
-	if got := sentArgs(t, d, 0); got != want {
-		t.Fatalf("args =\n%s\nwant\n%s", got, want)
-	}
+	untouched(t, d)
 }
 
 func TestWriteToolsSurviveUnknownFields(t *testing.T) {

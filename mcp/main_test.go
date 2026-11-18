@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -241,6 +243,123 @@ func TestEndToEndAddWordsRefusalsNeverReachTheDoor(t *testing.T) {
 				t.Fatalf("the door took %d connections, want none: a refusal made on this side must not reach it", got)
 			}
 		})
+	}
+}
+
+// bannedKeywords are the schema keywords that some clients cannot read: a
+// reference, or a combination of schemas, or a default. A tool schema is plain.
+var bannedKeywords = []string{"$ref", "$defs", "anyOf", "oneOf", "allOf", "not", "default"}
+
+// portabilityProblems walks one input schema as raw JSON and reports what a
+// strict client could refuse, at the top level or at any depth. The schema is
+// the plain subset: type is one string, never a list; every object is closed;
+// every property says what it is for; there are no references or unions.
+func portabilityProblems(path string, schema any, isProperty bool) []string {
+	node, ok := schema.(map[string]any)
+	if !ok {
+		return []string{fmt.Sprintf("%s: a schema must be an object, got %T", path, schema)}
+	}
+	var problems []string
+	for _, keyword := range bannedKeywords {
+		if _, found := node[keyword]; found {
+			problems = append(problems, fmt.Sprintf("%s: uses %q", path, keyword))
+		}
+	}
+	kind, isString := node["type"].(string)
+	if !isString {
+		problems = append(problems, fmt.Sprintf("%s: type is %v, want a single string", path, node["type"]))
+	}
+	if isProperty {
+		if description, _ := node["description"].(string); description == "" {
+			problems = append(problems, fmt.Sprintf("%s: no description", path))
+		}
+	}
+	if kind == "object" && node["additionalProperties"] != false {
+		problems = append(problems, fmt.Sprintf("%s: an object must be closed with additionalProperties false", path))
+	}
+	if properties, ok := node["properties"].(map[string]any); ok {
+		names := make([]string, 0, len(properties))
+		for name := range properties {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			problems = append(problems, portabilityProblems(path+"."+name, properties[name], true)...)
+		}
+	}
+	if items, found := node["items"]; found {
+		problems = append(problems, portabilityProblems(path+"[]", items, false)...)
+	}
+	return problems
+}
+
+func TestEveryToolAdvertisesAPortableSchema(t *testing.T) {
+	d := doortest.Serve(t, reply(`{"ok":true,"data":null,"language":"ru"}`))
+	client := door.New(d.Path)
+	client.OpenApp = noOpen(t)
+	listed, err := connect(t, client).ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed.Tools) < 6 {
+		t.Fatalf("listed %d tools, want at least the six of this task", len(listed.Tools))
+	}
+	for _, tool := range listed.Tools {
+		// Read the schema as a client does: as raw JSON.
+		body, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var schema any
+		if err := json.Unmarshal(body, &schema); err != nil {
+			t.Fatal(err)
+		}
+		if top, _ := schema.(map[string]any); top["type"] != "object" {
+			t.Errorf("%s: the top level of the input schema is %s, want type object", tool.Name, body)
+		}
+		for _, problem := range portabilityProblems(tool.Name, schema, false) {
+			t.Errorf("%s", problem)
+		}
+	}
+}
+
+// The check above must not pass for want of looking: here are schemas it has to refuse.
+func TestPortabilityCheckCatchesWhatClientsRefuse(t *testing.T) {
+	for name, tc := range map[string]struct {
+		schema string
+		want   string
+	}{
+		"type list":   {`{"type":"object","properties":{"a":{"type":["null","string"],"description":"x"}},"additionalProperties":false}`, "single string"},
+		"nullable":    {`{"type":"object","properties":{"a":{"type":["null","array"],"items":{"type":"string"},"description":"x"}},"additionalProperties":false}`, "single string"},
+		"ref":         {`{"type":"object","properties":{"a":{"$ref":"#/$defs/a","type":"string","description":"x"}},"additionalProperties":false}`, `"$ref"`},
+		"defs":        {`{"type":"object","$defs":{},"additionalProperties":false}`, `"$defs"`},
+		"anyOf":       {`{"type":"object","properties":{"a":{"anyOf":[{"type":"string"}],"type":"string","description":"x"}},"additionalProperties":false}`, `"anyOf"`},
+		"oneOf":       {`{"type":"object","oneOf":[],"additionalProperties":false}`, `"oneOf"`},
+		"allOf":       {`{"type":"object","allOf":[],"additionalProperties":false}`, `"allOf"`},
+		"not":         {`{"type":"object","not":{},"additionalProperties":false}`, `"not"`},
+		"default":     {`{"type":"object","properties":{"a":{"type":"boolean","default":false,"description":"x"}},"additionalProperties":false}`, `"default"`},
+		"no type":     {`{"properties":{},"additionalProperties":false}`, "single string"},
+		"deep":        {`{"type":"object","properties":{"a":{"type":"array","items":{"type":"object","properties":{"b":{"type":["null","boolean"],"description":"x"}},"additionalProperties":false},"description":"x"}},"additionalProperties":false}`, "single string"},
+		"no describe": {`{"type":"object","properties":{"a":{"type":"string"}},"additionalProperties":false}`, "no description"},
+		"open":        {`{"type":"object","properties":{"a":{"type":"string","description":"x"}}}`, "closed"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var schema any
+			if err := json.Unmarshal([]byte(tc.schema), &schema); err != nil {
+				t.Fatal(err)
+			}
+			problems := strings.Join(portabilityProblems("tool", schema, false), "\n")
+			if !strings.Contains(problems, tc.want) {
+				t.Fatalf("problems = %q, want one that contains %q", problems, tc.want)
+			}
+		})
+	}
+	var plain any
+	if err := json.Unmarshal([]byte(`{"type":"object","properties":{"a":{"type":"array","items":{"type":"string"},"description":"x"}},"required":["a"],"additionalProperties":false}`), &plain); err != nil {
+		t.Fatal(err)
+	}
+	if problems := portabilityProblems("tool", plain, false); len(problems) != 0 {
+		t.Fatalf("a plain schema was refused: %v", problems)
 	}
 }
 
