@@ -31,7 +31,9 @@ jobs:
       - name: Форматирование Go
         working-directory: mcp
         run: |
-          unformatted=$(gofmt -l main.go main_test.go door tools internal)
+          # Все отслеживаемые файлы Go, кроме vendor
+          files=$(git ls-files '*.go' | grep -v '^vendor/')
+          unformatted=$(gofmt -l $files)
           if [ -n "$unformatted" ]; then
             echo "Не отформатировано gofmt:"
             echo "$unformatted"

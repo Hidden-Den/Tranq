@@ -40,7 +40,9 @@ project_version() {
 }
 
 if [[ $# -ge 1 ]]; then
-  DEST="$1"
+  # Относительный путь считается от текущей папки, а не от mcp/, где идёт сборка
+  mkdir -p "$(dirname "$1")"
+  DEST="$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
   CACHE_DIR="$ROOT/build/go-cache"
 elif [[ -n "${BUILT_PRODUCTS_DIR:-}" && -n "${EXECUTABLE_FOLDER_PATH:-}" ]]; then
   DEST="$BUILT_PRODUCTS_DIR/$EXECUTABLE_FOLDER_PATH/tranq-mcp"
