@@ -1,0 +1,106 @@
+import Testing
+import Foundation
+@testable import Tranq
+
+/// Все строки доступа для нейронок, от экрана настроек до отказов двери, переведены на английский.
+/// Проверяется собранный каталог в бандле приложения: ключ без перевода показал бы английскому пользователю русский текст.
+struct MCPLocalizationTests {
+    /// Строки, которые эта функция добавила в каталог: экран, откат в словаре, шлюз, дверь и сокет.
+    /// Интерполяции записаны так, как их собирает Swift: `%@` для строки и `%lld` для числа.
+    private static let addedKeys: [String] = [
+        "ДОСТУП ДЛЯ НЕЙРОНОК",
+        "Нейронка поможет вести словарь",
+        "Доступ",
+        "Читать словарь, добавлять слова",
+        "Полный доступ",
+        "Удалять слова и выключать наборы",
+        "Читать ваши диктовки",
+        "Конфиг",
+        "Вставьте в настройки клиента",
+        "Включить полный доступ?",
+        "Включить доступ к истории?",
+        "Нейронка сможет удалить из словаря любое слово, даже добавленное вами вручную. Такие слова не вернуть.",
+        "Диктовки уйдут в стороннюю модель вместе со всем, что в них есть, например письмами, заметками и рабочими записями.",
+        "Снять слова агента",
+        "Снять",
+        "Удалятся слова и варианты агента. Ваши останутся.",
+        "Доступ для нейронок выключен. Включите его в настройках Tranq.",
+        "Доступ нейронок к истории выключен. Включите его в настройках Tranq.",
+        "Для этого нужен полный доступ нейронок. Включите его в настройках Tranq.",
+        "Не удалось выполнить команду.",
+        "Не удалось прочитать запрос. Нужна одна строка JSON с полем cmd.",
+        "В запросе нет команды. Нужно поле cmd со строкой.",
+        "Неизвестная команда %@. Доступны: %@.",
+        "Поле args должно быть объектом.",
+        "Для набора нужно поле id со строкой.",
+        "Для набора нужно поле enabled со значением true или false.",
+        "Набора %@ нет. Список наборов даёт команда packs.",
+        "Нужно поле words со списком слов.",
+        "Список слов пуст. Передайте хотя бы одно слово.",
+        "Слишком много слов за раз: не больше %lld. Разбейте список на части.",
+        "Слово номер %lld: нужно поле spelling со строкой.",
+        "Слово номер %lld: force_case должен быть true или false.",
+        "Слово номер %lld: variants должен быть объектом, где ключ язык ru или en, а значение список строк.",
+        "Нужно поле spellings со списком строк.",
+        "Поле limit должно быть числом.",
+        "Не удалось собрать ответ.",
+        "Слишком много соединений. Закройте лишние и повторите.",
+        "Запрос длиннее 1 МиБ. Разбейте его на части.",
+    ]
+
+    /// Строки, которые экран берёт из каталога готовыми.
+    private static let reusedKeys: [String] = [
+        "История",
+        "Включить",
+        "Отмена",
+        "Скопировать",
+        "Готово!",
+        "Сбросить выученное",
+    ]
+
+    private static let missing = "\u{1}нет перевода"
+
+    private func english() throws -> Bundle {
+        let path = try #require(Bundle.main.path(forResource: "en", ofType: "lproj"), "в приложении нет английской локализации")
+        return try #require(Bundle(path: path))
+    }
+
+    /// Количество подстановок разных видов в строке: у ключа и у перевода оно должно совпасть.
+    private func placeholders(_ text: String) -> [Int] {
+        ["%@", "%lld"].map { text.components(separatedBy: $0).count - 1 }
+    }
+
+    @Test func уКаждойНовойСтрокиЕстьАнглийскийПеревод() throws {
+        let bundle = try english()
+        for key in Self.addedKeys + Self.reusedKeys {
+            let value = bundle.localizedString(forKey: key, value: Self.missing, table: nil)
+            #expect(value != Self.missing, "нет перевода: \(key)")
+            #expect(!value.trimmingCharacters(in: .whitespaces).isEmpty, "пустой перевод: \(key)")
+        }
+    }
+
+    @Test func переводНеПовторяетРусскийКлюч() throws {
+        let bundle = try english()
+        for key in Self.addedKeys {
+            let value = bundle.localizedString(forKey: key, value: Self.missing, table: nil)
+            #expect(value != key, "перевод совпал с ключом: \(key)")
+        }
+    }
+
+    @Test func подстановкиВПереводеСовпадаютСКлючом() throws {
+        // `%@` и `%lld` в переводе должны стоять в том же числе, иначе формат соберёт мусор.
+        let bundle = try english()
+        for key in Self.addedKeys {
+            let value = bundle.localizedString(forKey: key, value: Self.missing, table: nil)
+            #expect(placeholders(value) == placeholders(key), "подстановки разошлись: \(key)")
+        }
+    }
+
+    @Test func русскийТекстСтрокиСовпадаетСКлючом() throws {
+        let path = try #require(Bundle.main.path(forResource: "ru", ofType: "lproj"), "в приложении нет русской локализации")
+        let russian = try #require(Bundle(path: path))
+        for key in Self.addedKeys {
+            #expect(russian.localizedString(forKey: key, value: Self.missing, table: nil) == key, "русский текст разошёлся с ключом: \(key)")
+        }
+    }
+}

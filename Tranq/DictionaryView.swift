@@ -10,6 +10,7 @@ struct DictionaryView: View {
     @State private var expandedID: UUID?
     @State private var addingWord = false
     @State private var confirmingReset = false
+    @State private var confirmingAgentRevert = false
     @State private var openPackID: String?
 
     private let language = DictionaryLanguage.current
@@ -46,6 +47,12 @@ struct DictionaryView: View {
         .alert("Сбросить выученное", isPresented: $confirmingReset) {
             Button("Сбросить", role: .destructive) { store.resetLearned() }
             Button("Отмена", role: .cancel) {}
+        }
+        .alert("Снять слова агента", isPresented: $confirmingAgentRevert) {
+            Button("Снять", role: .destructive) { store.revertAgentChanges() }
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            Text("Удалятся слова и варианты агента. Ваши останутся.")
         }
     }
 
@@ -112,9 +119,7 @@ struct DictionaryView: View {
                     .font(.ui(.footnote, weight: .medium))
                     .foregroundColor(.uiMidGray)
                     .monospacedDigit()
-                UIDropdownMenu(items: [
-                    .action("Сбросить выученное", icon: "arrow.counterclockwise") { confirmingReset = true },
-                ], minWidth: 200) {
+                UIDropdownMenu(items: menuItems, minWidth: 200) {
                     Image(systemName: "ellipsis")
                         .font(.ui(.body, weight: .semibold))
                         .foregroundColor(.uiMidGray)
@@ -145,6 +150,17 @@ struct DictionaryView: View {
                 .dictionarySectionBox()
             }
         }
+    }
+
+    /// «Снять слова агента» появляется, только пока в словаре есть что снимать.
+    private var menuItems: [UIDropdownItem] {
+        var items: [UIDropdownItem] = [
+            .action("Сбросить выученное", icon: "arrow.counterclockwise") { confirmingReset = true },
+        ]
+        if store.agentWordCount > 0 {
+            items.append(.action("Снять слова агента", icon: "arrow.uturn.backward") { confirmingAgentRevert = true })
+        }
+        return items
     }
 
     private func toggle(_ id: UUID) {

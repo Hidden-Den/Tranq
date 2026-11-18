@@ -326,6 +326,9 @@ HStack {
                 // РАЗДЕЛ 3.6: ИИ-ПРОВАЙДЕР
                 AIProviderSection()
 
+                // РАЗДЕЛ 3.7: ДОСТУП ДЛЯ НЕЙРОНОК
+                MCPSettingsSection()
+
                 // РАЗДЕЛ 4: ДАННЫЕ
                 UICard {
                     HStack {
