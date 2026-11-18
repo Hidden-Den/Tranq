@@ -373,4 +373,122 @@ final class DictionaryAgentPackTests {
         #expect(try entries(loaded, id) == entries(store, id))
         #expect(try entries(loaded, id)[0].commonIn == [.ru])
     }
+
+    // MARK: - Откат и счётчик
+
+    @Test func откатУдаляетНаборыСчитаетИхИЧиститВыключения() throws {
+        let store = makeStore(packs: [medicine])
+        store.addFromAgent([word("Serum")])
+        let music = try create(store, "Музыка")
+        let film = try create(store, "Кино")
+        try store.addToAgentPack(id: music, words: [word("Ableton", ["эйблтон"])])
+        try store.addToAgentPack(id: film, words: [word("Нолан")])
+        store.setPack(film, enabled: false)
+        store.setPackWord("\(music)/Ableton", enabled: false)
+        store.removeVariant("эйблтон", language: .ru, fromEntryKey: "\(music)/Ableton")
+        store.setPackWord("med/Аспирин", enabled: false)
+
+        let result = store.revertAgentChanges()
+
+        #expect(result.removedWords == 1)
+        #expect(result.removedPacks == 2)
+        #expect(store.agentPacks.isEmpty)
+        #expect(store.packs.map(\.id) == ["med"])
+        #expect(store.disabledPacks.isEmpty)
+        #expect(store.disabledPackWords == ["med/Аспирин"])
+        #expect(store.disabledPackVariants.isEmpty)
+        #expect(stored("dictionary.disabledPackWords") == ["med/Аспирин"])
+        #expect(stored("dictionary.disabledPackVariants").isEmpty)
+        #expect(reload(store, packs: [medicine]).agentPacks.isEmpty)
+    }
+
+    @Test func откатТолькоИзНаборовБезСловАгентаВМоихСловах() throws {
+        let store = makeStore()
+        store.addEntry(spelling: "Tranq", variants: [:], source: .manual)
+        try create(store, "Музыка")
+        try create(store, "Кино")
+
+        let result = store.revertAgentChanges()
+
+        #expect(result.removedWords == 0)
+        #expect(result.removedPacks == 2)
+        #expect(store.agentPacks.isEmpty)
+        let loaded = reload(store)
+        #expect(loaded.agentPacks.isEmpty)
+        #expect(loaded.userEntries.map(\.spelling) == ["Tranq"])
+    }
+
+    @Test func откатБезЧегоЛибоНичегоНеМеняетИДаётНули() {
+        let store = makeStore()
+        #expect(store.revertAgentChanges() == AgentRevertResult(removedWords: 0, removedVariants: 0))
+        #expect(store.revertAgentChanges().removedPacks == 0)
+    }
+
+    @Test func счётчикАгентаВидитСловаНаборов() throws {
+        let store = makeStore()
+        let id = try create(store)
+        #expect(store.agentWordCount == 0)
+        try store.addToAgentPack(id: id, words: [word("Ableton"), word("Serum")])
+        #expect(store.agentWordCount == 2)
+        store.addFromAgent([word("Kontakt")])
+        #expect(store.agentWordCount == 3)
+        store.revertAgentChanges()
+        #expect(store.agentWordCount == 0)
+    }
+
+    // MARK: - Замены
+
+    private let kubernetes = DictionaryPack(
+        id: "it", title: [.ru: "IT", .en: "IT"], version: 1,
+        entries: [PackEntry(spelling: "Kubernetes", variants: [.ru: ["кубер"]])]
+    )
+
+    private func apply(_ store: DictionaryStore, _ text: String) -> String {
+        store.waitForIndex()
+        return store.index?.apply(to: text, language: .ru).text ?? text
+    }
+
+    @Test func индексЗаменяетВариантИзНабораАгента() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
+        #expect(apply(store, "открой эйблтон") == "открой Ableton")
+    }
+
+    @Test func встроенныйНаборВыигрываетПриСовпаденииВарианта() throws {
+        let store = makeStore(packs: [kubernetes])
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Cooper", ["кубер"])])
+        #expect(apply(store, "запусти кубер") == "запусти Kubernetes")
+    }
+
+    @Test func выключенныйНаборИВыключенноеСловоНеПрименяются() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"]), word("Serum", ["сирум"])])
+
+        store.setPack(id, enabled: false)
+        #expect(apply(store, "эйблтон и сирум") == "эйблтон и сирум")
+        store.setPack(id, enabled: true)
+        #expect(apply(store, "эйблтон и сирум") == "Ableton и Serum")
+
+        store.setPackWord("\(id)/Ableton", enabled: false)
+        #expect(apply(store, "эйблтон и сирум") == "эйблтон и Serum")
+    }
+
+    @Test func записьПользователяВажнееНабораАгента() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Cooper", ["кубер"])])
+        store.addEntry(spelling: "Kubernetes", variants: [.ru: ["кубер"]], source: .manual)
+        #expect(apply(store, "запусти кубер") == "запусти Kubernetes")
+    }
+
+    @Test func удалённыйНаборПерестаётЗаменять() throws {
+        let store = makeStore()
+        let id = try create(store)
+        try store.addToAgentPack(id: id, words: [word("Ableton", ["эйблтон"])])
+        try store.deleteAgentPack(id: id)
+        #expect(apply(store, "открой эйблтон") == "открой эйблтон")
+    }
 }

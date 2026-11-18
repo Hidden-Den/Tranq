@@ -388,9 +388,10 @@ final class DictionaryStore: ObservableObject {
         }
     }
 
-    /// Удаляет записи `mcp`, снимает запомненные варианты и жёсткий регистр агента из чужих записей
+    /// Удаляет записи `mcp` и все наборы агента, снимает запомненные варианты и жёсткий регистр агента из чужих записей
     /// и чистит список. Ключи записей и вариантов, которые человек уже удалил, пропускаются.
-    /// Возвращает число удалённых записей `mcp` и число снятых вариантов агента, включая варианты выученных записей, удалённых тем же откатом как пустые.
+    /// Возвращает число удалённых записей `mcp`, число снятых вариантов агента, включая варианты выученных записей,
+    /// удалённых тем же откатом как пустые, и число удалённых наборов агента.
     @discardableResult
     func revertAgentChanges() -> AgentRevertResult {
         onMain {
@@ -422,15 +423,19 @@ final class DictionaryStore: ObservableObject {
                     && $0.variants.values.allSatisfy(\.isEmpty) && !$0.forceCase
             }
             setMCPVariants([])
-            let result = AgentRevertResult(removedWords: removedWords, removedVariants: removedVariants)
-            guard entries != userEntries else { return result }
-            userEntries = entries
+            // Наборы агента уходят вместе со своими выключениями, одним сохранением со словами.
+            let removedPacks = agentPacks.count
+            for pack in agentPacks { pruneDisabled(packId: pack.id) }
+            let result = AgentRevertResult(removedWords: removedWords, removedVariants: removedVariants, removedPacks: removedPacks)
+            guard entries != userEntries || removedPacks > 0 else { return result }
+            if removedPacks > 0 { agentPacks = [] }
+            if entries != userEntries { userEntries = entries }
             entriesChanged()
             return result
         }
     }
 
-    /// Записи `mcp` и записи, в которых ещё остались варианты или жёсткий регистр агента.
+    /// Записи `mcp`, записи с вариантами или жёстким регистром агента и слова наборов агента.
     var agentWordCount: Int {
         onMain {
             var keysByID: [UUID: [(language: DictionaryLanguage?, variant: String?)]] = [:]
@@ -438,7 +443,8 @@ final class DictionaryStore: ObservableObject {
                 guard let parsed = Self.parseAgentKey(key) else { continue }
                 keysByID[parsed.id, default: []].append((parsed.language, parsed.variant))
             }
-            return userEntries.filter { entry in
+            let packWords = agentPacks.reduce(0) { $0 + $1.entries.count }
+            return packWords + userEntries.filter { entry in
                 if entry.source == .mcp { return true }
                 return (keysByID[entry.id] ?? []).contains { key in
                     guard let language = key.language, let variant = key.variant?.lowercased() else {
