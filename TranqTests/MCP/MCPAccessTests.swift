@@ -140,6 +140,91 @@ final class MCPAccessTests {
         #expect(second.fullAccess == false)
     }
 
+    // MARK: - Выключение доступа снимает полный доступ и историю
+
+    @Test func выключениеДоступаСбрасываетПолныйДоступИИсторию() {
+        let access = MCPAccess(defaults: defaults)
+        access.enabled = true
+        access.fullAccess = true
+        access.historyAccess = true
+
+        access.enabled = false
+        #expect(access.fullAccess == false)
+        #expect(access.historyAccess == false)
+        // Сброс записан в настройки теми же ключами, другой экземпляр на том же наборе читает его.
+        #expect(defaults.object(forKey: "mcp.fullAccess") as? Bool == false)
+        #expect(defaults.object(forKey: "mcp.historyAccess") as? Bool == false)
+        let second = MCPAccess(defaults: defaults)
+        #expect(second.enabled == false)
+        #expect(second.fullAccess == false)
+        #expect(second.historyAccess == false)
+    }
+
+    @Test func повторноеВключениеДоступаНеВозвращаетПолныйДоступИИсторию() {
+        let access = MCPAccess(defaults: defaults)
+        access.enabled = true
+        access.fullAccess = true
+        access.historyAccess = true
+        access.enabled = false
+
+        access.enabled = true
+        #expect(access.fullAccess == false)
+        #expect(access.historyAccess == false)
+        // Права не вернулись и для тех, кто откроет настройки заново.
+        let second = MCPAccess(defaults: defaults)
+        #expect(second.enabled == true)
+        #expect(second.fullAccess == false)
+        #expect(second.historyAccess == false)
+        // Шлюз тоже видит их выключенными.
+        #expect(denial(access, .dictations)?.isEmpty == false)
+        #expect(denial(access, .setPack, disablingPack: true)?.isEmpty == false)
+    }
+
+    @Test func приВключённомДоступеФлагиВключаютсяПоОтдельностиИХранятся() {
+        let access = MCPAccess(defaults: defaults)
+        access.enabled = true
+
+        access.fullAccess = true
+        #expect(access.fullAccess == true)
+        #expect(access.historyAccess == false)
+        #expect(MCPAccess(defaults: defaults).fullAccess == true)
+        #expect(MCPAccess(defaults: defaults).historyAccess == false)
+
+        access.historyAccess = true
+        #expect(access.fullAccess == true)
+        #expect(access.historyAccess == true)
+        let second = MCPAccess(defaults: defaults)
+        #expect(second.enabled == true)
+        #expect(second.fullAccess == true)
+        #expect(second.historyAccess == true)
+    }
+
+    @Test func сбросНеЗапускаетсяПриСозданииЭкземпляра() {
+        // Права, записанные при включённом доступе, переживают перезапуск: сброс идёт только от выключения.
+        let first = MCPAccess(defaults: defaults)
+        first.enabled = true
+        first.fullAccess = true
+        first.historyAccess = true
+
+        let second = MCPAccess(defaults: defaults)
+        #expect(second.enabled == true)
+        #expect(second.fullAccess == true)
+        #expect(second.historyAccess == true)
+    }
+
+    @Test func повторноеВыключениеУжеВыключенногоДоступаНичегоНеМеняет() {
+        let access = MCPAccess(defaults: defaults)
+        access.enabled = false
+
+        #expect(access.enabled == false)
+        #expect(access.fullAccess == false)
+        #expect(access.historyAccess == false)
+        let second = MCPAccess(defaults: defaults)
+        #expect(second.enabled == false)
+        #expect(second.fullAccess == false)
+        #expect(second.historyAccess == false)
+    }
+
     @Test func чужойНаборНеВлияетНаЭтот() {
         let otherName = "mcp-access-tests-other-\(UUID().uuidString)"
         let other = UserDefaults(suiteName: otherName)!

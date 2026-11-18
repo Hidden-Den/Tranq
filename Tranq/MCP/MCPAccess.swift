@@ -21,8 +21,18 @@ final class MCPAccess: ObservableObject {
         static let historyAccess = "mcp.historyAccess"
     }
 
+    /// Выключение доступа снимает и полный доступ, и историю, а не прячет их: при повторном включении
+    /// оба права начинают с нуля и включаются заново, с предупреждением на экране настроек.
+    /// Сброс стоит здесь, а не в экране, чтобы покрыть любой путь выключения. Через `didSet`
+    /// каждый сброс записывается в настройки так же, как любое другое присваивание флага.
     @Published var enabled: Bool = false {
-        didSet { defaults.set(enabled, forKey: Keys.enabled) }
+        didSet {
+            defaults.set(enabled, forKey: Keys.enabled)
+            if !enabled {
+                fullAccess = false
+                historyAccess = false
+            }
+        }
     }
     /// Разрешает выключать наборы и удалять чужие слова.
     @Published var fullAccess: Bool = false {
