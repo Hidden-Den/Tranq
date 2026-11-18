@@ -328,12 +328,13 @@ git commit -m "feat: локальный сокет для MCP-сервера"
 
 **Interfaces:**
 - Consumes: `MCPAccess.shared`, `DictionaryStore.revertAgentChanges()`, `DictionaryStore.agentWordCount`.
-- Produces: `MCPSettingsSection: View`, `MCPConfigSnippet.text(binaryURL: URL) -> String`.
+- Produces: `MCPSettingsSection: View`, `MCPConfigSnippet.text(binaryURL: URL) -> String`, `MCPConfigSnippet.codexCommand(binaryURL: URL) -> String`.
 
 **Требования:**
 - Заголовок секции `ДОСТУП ДЛЯ НЕЙРОНОК`, подзаголовок короче восьми слов и без скобок.
 - Три переключателя: доступ, полный доступ, доступ к истории. Полный доступ и история при включении показывают предупреждение: полный доступ — что агент сможет удалить из словаря всё и что отката для чужих слов нет; история — что диктовки уйдут в стороннюю модель вместе с их содержимым.
 - Блок конфига виден только при включённом доступе, с кнопкой скопировать. Путь берётся из `Bundle.main.executableURL`, папка `MacOS`, имя `tranq-mcp`.
+- Переключатель в блоке конфига выбирает клиента: JSON `mcpServers` или команда `codex mcp add tranq -- <путь>` для Codex, который читает TOML. Кнопка копирует то, что показано. Путь с пробелом или символом оболочки берётся в одинарные кавычки, одинарная кавычка в пути записывается как `'\''`; тест прогоняет слово через настоящий `/bin/sh`.
 - В словаре, в меню рядом со «Сбросить выученное», действие `Снять слова агента`; видно только когда `agentWordCount > 0`; подтверждение перед снятием.
 - Новые строки идут в `Localizable.xcstrings` с переводами `ru` и `en`, формат файла — Xcode.
 

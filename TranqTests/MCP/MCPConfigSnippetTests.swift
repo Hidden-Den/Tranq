@@ -52,4 +52,53 @@ struct MCPConfigSnippetTests {
         #expect(first == MCPConfigSnippet.text(binaryURL: exe))
         #expect(first.contains("\n"))
     }
+
+    // MARK: Команда для Codex
+
+    @Test func командаДляCodexДобавляетСерверСОбычнымПутёмБезКавычек() {
+        let exe = URL(fileURLWithPath: "/Applications/Tranq.app/Contents/MacOS/Tranq")
+        #expect(MCPConfigSnippet.codexCommand(binaryURL: exe)
+                == "codex mcp add tranq -- /Applications/Tranq.app/Contents/MacOS/tranq-mcp")
+    }
+
+    @Test func путьСПробеломВКомандеБерётсяВОдинарныеКавычки() {
+        let exe = URL(fileURLWithPath: "/Users/Иван Петров/Tranq.app/Contents/MacOS/Tranq")
+        #expect(MCPConfigSnippet.codexCommand(binaryURL: exe)
+                == "codex mcp add tranq -- '/Users/Иван Петров/Tranq.app/Contents/MacOS/tranq-mcp'")
+    }
+
+    @Test func одинарнаяКавычкаВПутиЗакрываетИОткрываетКавычкиЗаново() {
+        #expect(MCPConfigSnippet.shellWord("/Users/O'Brien/tranq-mcp") == #"'/Users/O'\''Brien/tranq-mcp'"#)
+    }
+
+    @Test func спецсимволыОболочкиОстаютсяВнутриОдинарныхКавычек() {
+        let path = #"/tmp/a$b`c"d\e;f&g|h(i)*j"#
+        #expect(MCPConfigSnippet.shellWord(path) == "'" + path + "'")
+    }
+
+    @Test func пустаяСтрокаСтановитсяПустымиКавычками() {
+        #expect(MCPConfigSnippet.shellWord("") == "''")
+    }
+
+    @Test func словоПроходитЧерезОболочкуБезПотерь() throws {
+        // Главная гарантия: что бы ни лежало в пути, оболочка получает его одним словом и без изменений.
+        let paths = [
+            "/Applications/Tranq.app/Contents/MacOS/tranq-mcp",
+            "/Users/Иван Петров/Мои \"приложения\"/tranq-mcp",
+            "/Users/O'Brien/tranq-mcp",
+            #"/tmp/a$b`c"d\e;f&g|h(i)*j#k~l!m"#,
+            "/tmp/two  spaces/and\ttab/tranq-mcp",
+        ]
+        for path in paths {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", "printf %s " + MCPConfigSnippet.shellWord(path)]
+            let out = Pipe()
+            process.standardOutput = out
+            try process.run()
+            let data = out.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            #expect(String(decoding: data, as: UTF8.self) == path)
+        }
+    }
 }

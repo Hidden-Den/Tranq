@@ -10,6 +10,27 @@ struct MCPSettingsSection: View {
 
     /// Выключатель с предупреждением, который человек пытается включить, пока не подтвердит.
     @State private var confirming: RiskyAccess?
+    /// Какому клиенту показан конфиг.
+    @State private var configClient: ConfigClient = .json
+
+    /// JSON `mcpServers` читают Claude Code, Antigravity, Gemini CLI и Cursor, Codex добавляется командой.
+    private enum ConfigClient {
+        case json, codex
+
+        var hint: LocalizedStringKey {
+            switch self {
+            case .json: return "Вставьте в настройки клиента"
+            case .codex: return "Вставьте в терминал"
+            }
+        }
+
+        func text(binaryURL: URL) -> String {
+            switch self {
+            case .json: return MCPConfigSnippet.text(binaryURL: binaryURL)
+            case .codex: return MCPConfigSnippet.codexCommand(binaryURL: binaryURL)
+            }
+        }
+    }
 
     private enum RiskyAccess {
         case fullAccess, history
@@ -55,7 +76,7 @@ struct MCPSettingsSection: View {
 
                     if let executable = Bundle.main.executableURL {
                         Divider().background(Color.uiHairline)
-                        configBlock(MCPConfigSnippet.text(binaryURL: executable))
+                        configBlock(binaryURL: executable)
                     }
                 }
             }
@@ -124,18 +145,27 @@ struct MCPSettingsSection: View {
     // MARK: Конфиг
 
     /// Текст конфига и одна кнопка копирования. Кнопка сама на пару секунд показывает, что скопировано.
-    private func configBlock(_ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+    /// Переключатель выбирает клиента, и кнопка копирует то, что показано.
+    private func configBlock(binaryURL: URL) -> some View {
+        let text = configClient.text(binaryURL: binaryURL)
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Конфиг")
                         .font(.ui(.body, weight: .medium))
                         .foregroundColor(.uiInk)
-                    Text("Вставьте в настройки клиента")
+                    Text(configClient.hint)
                         .font(.ui(.caption))
                         .foregroundColor(.uiMidGray)
                 }
                 Spacer()
+                Picker("", selection: $configClient) {
+                    Text(verbatim: "JSON").tag(ConfigClient.json)
+                    Text(verbatim: "Codex").tag(ConfigClient.codex)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
                 CopyFeedbackButton(textToCopy: text)
             }
             Text(verbatim: text)

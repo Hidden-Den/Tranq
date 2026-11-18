@@ -3940,6 +3940,22 @@
         }
       }
     },
+    "Вставьте в терминал" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste into the terminal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вставьте в терминал"
+          }
+        }
+      }
+    },
     "Включить полный доступ?" : {
       "localizations" : {
         "en" : {
