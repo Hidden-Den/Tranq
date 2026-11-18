@@ -62,7 +62,7 @@ struct OnboardingView: View {
                                 UIBadge(text: String(localized: "Готово"))
                             } else {
                                 UIPrimaryButton(title: "Разрешить") {
-                                    permissions.requestMicPermission()
+                                    permissions.resolveMicPermission()
                                 }
                             }
                         }

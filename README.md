@@ -17,7 +17,7 @@
 > At this stage, architecture and interfaces are undergoing rapid changes: certain features may be unstable, and parts of the original repository functionality may be removed or completely rewritten in upcoming releases.
 > The app is being reshaped for new workflows. Current development efforts are strictly focused on perfecting and polishing the **macOS** version. Once all core features are refined and stable, cross-platform porting to **Windows** and **Linux** will follow.
 
-Voice dictation for macOS. Press a key, speak, and clean, concise text lands in the active field — without filler words, slips, or repeated thoughts. Speech is recognized on-device by Sber GigaAM v3; text cleanup runs on the language model of your choice: local and offline, an external API, or a corporate gateway. No telemetry.
+Voice dictation for macOS. Press a key, speak, and clean, concise text lands in the active field — without filler words, slips, or repeated thoughts. Speech is recognized on-device by Sber GigaAM v3; text cleanup runs on the language model of your choice: local and offline, an external API, or a corporate gateway. Nothing is sent anywhere except to the model you choose; the only statistics are local API token and latency counters, hidden by default.
 
 The app targets Russian speech with Latin-script technical terms.
 
@@ -49,7 +49,7 @@ The app targets Russian speech with Latin-script technical terms.
 | **Speech Models** | GigaAM v3 RNN-T, Whisper Large-v3 Turbo, Whisper Medium |
 | **Local Cleanup** | llama-server with Gemma 4 and T-lite models |
 | **HotKey Subsystem** | Carbon Event Manager for combos, CGEventTap for modifiers and `Fn` |
-| **Telemetry** | None |
+| **Telemetry** | Local only: API tokens and latency, hidden by default |
 
 ---
 

@@ -75,6 +75,20 @@ struct ExternalBackendTelemetryTests {
         #expect(result.record.estimated == false)
     }
 
+    @Test func usageSentTogetherWithTextIsKept() async throws {
+        // Часть шлюзов шлёт usage вместе с последним куском текста
+        let stream = """
+        data: {"choices":[{"delta":{"content":"Привет"}}],"usage":{"prompt_tokens":120,"completion_tokens":48}}
+        data: [DONE]
+
+        """
+        let result = try await run(providerID: "openai", baseURL: "https://stub.test/v1", stream: stream)
+        #expect(result.reply == "Привет")
+        #expect(result.record.inputTokens == 120)
+        #expect(result.record.outputTokens == 48)
+        #expect(result.record.estimated == false)
+    }
+
     @Test func missingUsageFallsBackToMarkedEstimate() async throws {
         let stream = """
         data: {"choices":[{"delta":{"content":"Привет, мир"}}]}

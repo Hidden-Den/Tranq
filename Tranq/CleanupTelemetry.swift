@@ -25,6 +25,26 @@ struct ModelTotals: Codable, Equatable {
     var failures: Int
     var inputTokens: Int
     var outputTokens: Int
+    /// Сколько запросов посчитано по символам, а не взято у провайдера: итоги с оценками нельзя выдавать за точные.
+    var estimatedRequests: Int = 0
+
+    init(requests: Int, failures: Int, inputTokens: Int, outputTokens: Int, estimatedRequests: Int = 0) {
+        self.requests = requests
+        self.failures = failures
+        self.inputTokens = inputTokens
+        self.outputTokens = outputTokens
+        self.estimatedRequests = estimatedRequests
+    }
+
+    /// Файл, записанный до появления счётчика оценок, читается как есть.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        requests = try c.decode(Int.self, forKey: .requests)
+        failures = try c.decode(Int.self, forKey: .failures)
+        inputTokens = try c.decode(Int.self, forKey: .inputTokens)
+        outputTokens = try c.decode(Int.self, forKey: .outputTokens)
+        estimatedRequests = try c.decodeIfPresent(Int.self, forKey: .estimatedRequests) ?? 0
+    }
 }
 
 /// Телеметрия очистки: расход токенов, задержки и исходы. Данные остаются на машине.
@@ -99,6 +119,7 @@ final class CleanupTelemetry: ObservableObject {
         if outcome != .success { entry.failures += 1 }
         entry.inputTokens += done.inputTokens
         entry.outputTokens += done.outputTokens
+        if done.estimated { entry.estimatedRequests += 1 }
         totals[done.model] = entry
         save()
     }

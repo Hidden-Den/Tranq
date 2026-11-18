@@ -100,6 +100,8 @@ struct ContentView: View {
             showAboutSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Права могли выдать в системных настройках: строка проблемы в сайдбаре должна исчезнуть
+            permissions.refreshPermissions()
             UpdateService.shared.checkUpdates()
         }
         .onChange(of: searchText) { newValue in

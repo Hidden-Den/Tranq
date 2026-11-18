@@ -19,8 +19,14 @@ extension AIProviderConfig {
 
     /// Серверы, у которых проверена поддержка `stream_options`. Строгий шлюз отвечает 400 на неизвестное поле,
     /// и очистка пропала бы ради отладочной цифры, поэтому остальным поле не уходит, а токены оцениваются.
+    /// Пресет сам ничего не решает: при выбранном OpenAI адрес могут переписать на свой шлюз, поэтому смотрим на хост.
     var supportsStreamUsageOption: Bool {
-        providerID == "openai" || providerID == "deepseek"
+        guard let host = URL(string: baseURL)?.host?.lowercased() else { return false }
+        switch providerID {
+        case "openai": return host == "api.openai.com"
+        case "deepseek": return host == "api.deepseek.com"
+        default: return false
+        }
     }
 }
 

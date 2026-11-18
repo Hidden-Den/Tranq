@@ -27,6 +27,12 @@ struct ChatRequestBuilderUsageTests {
         #expect(options?["include_usage"] as? Bool == true)
     }
 
+    @Test func knownPresetPointedAtAnotherHostGetsNoStreamOptions() throws {
+        // Пресет остаётся выбранным, когда адрес переписывают на свой шлюз
+        let config = AIProviderConfig(baseURL: "https://gateway.company.ru/v1", apiKey: "k", model: "gpt-6-luna", providerID: "openai")
+        #expect(try body(config)["stream_options"] == nil)
+    }
+
     @Test func corporateGatewayGetsNoUsageFields() throws {
         // Строгий шлюз отвечает 400 на неизвестное поле, и очистка пропала бы ради отладочной цифры
         let config = AIProviderConfig(baseURL: "https://gateway.company.ru/v1", apiKey: "k", model: "gpt-6-luna", providerID: "corporate")

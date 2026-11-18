@@ -52,7 +52,7 @@ struct TelemetryDisclosure: View {
 
     private var currentModel: some View {
         let totals = telemetry.totals[model] ?? ModelTotals(requests: 0, failures: 0, inputTokens: 0, outputTokens: 0)
-        let estimated = telemetry.records.contains { $0.model == model && $0.estimated }
+        let estimated = totals.estimatedRequests > 0
         return VStack(alignment: .leading, spacing: 6) {
             if !model.isEmpty {
                 Text(verbatim: model)
@@ -98,7 +98,7 @@ struct TelemetryDisclosure: View {
                 .font(.ui(.footnote, weight: .medium))
                 .foregroundColor(.uiInk)
             Spacer()
-            Text(verbatim: TelemetryFormat.tokens(input: input, output: output, estimated: false))
+            Text(verbatim: TelemetryFormat.tokens(input: input, output: output, estimated: telemetry.totals.values.contains { $0.estimatedRequests > 0 }))
                 .font(.ui(.footnote, weight: .medium))
                 .monospacedDigit()
                 .foregroundColor(.uiInk)

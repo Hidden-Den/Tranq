@@ -61,6 +61,8 @@ struct ExternalBackend: CleanupBackend {
                         AppLogger.shared.info("Synthesizer", String(format: "Первый токен получен за %.2f с", elapsed))
                         await store.noteFirstToken(seconds: elapsed)
                     }
+                    // Часть шлюзов шлёт usage вместе с текстом: расход берём независимо от куска
+                    if let pair = Self.usagePair(in: line) { usage.apply(input: pair.input, output: pair.output) }
                     if let clean = stripper.feed(piece) { accumulated.append(clean) }
                     continue
                 }
@@ -126,6 +128,15 @@ extension ExternalBackend {
         }
         // У последнего куска OpenAI массив choices пуст, у Anthropic usage лежит в message_start и message_delta
         return usageEvent(in: json) ?? .skip
+    }
+
+    /// Расход из строки потока независимо от того, есть ли в ней текст.
+    static func usagePair(in line: String) -> (input: Int?, output: Int?)? {
+        guard line.hasPrefix("data: "), line.contains("\"usage\""),
+              let data = String(line.dropFirst(6)).data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              case .usage(let input, let output)? = usageEvent(in: json) else { return nil }
+        return (input, output)
     }
 
     private static func usageEvent(in json: [String: Any]) -> StreamEvent? {

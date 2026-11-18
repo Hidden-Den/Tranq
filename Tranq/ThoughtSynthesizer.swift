@@ -78,7 +78,7 @@ public final class ThoughtSynthesizer {
                     )
                     return CleanupResult(text: stageOne, fallback: .notConfigured)
                 }
-                resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config)
+                resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config, telemetry: telemetry)
                 modelName = AIProviderStore.shared.config.model
                 timeout = max(1.5, settings.adaptiveTimeoutSeconds)
             }

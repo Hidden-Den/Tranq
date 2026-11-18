@@ -28,6 +28,22 @@ struct CleanupTelemetryTests {
         #expect(t.records.first?.firstTokenSeconds == 0.5)
     }
 
+    @Test func estimatedAttemptsAreCountedInTotals() {
+        let t = makeStore()
+        t.begin(model: "m"); t.noteUsage(input: 10, output: 5, estimated: true); t.finish(outcome: .success, totalSeconds: 1.0)
+        t.begin(model: "m"); t.noteUsage(input: 10, output: 5, estimated: false); t.finish(outcome: .success, totalSeconds: 1.0)
+        #expect(t.totals["m"]?.estimatedRequests == 1)
+        #expect(t.totals["m"]?.requests == 2)
+    }
+
+    @Test func totalsFileWrittenBeforeEstimateCounterStillLoads() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("telemetry-\(UUID().uuidString).json")
+        let old = #"{"totals":{"m":{"requests":3,"failures":1,"inputTokens":30,"outputTokens":9}},"records":[]}"#
+        try Data(old.utf8).write(to: url)
+        let t = makeStore(file: url)
+        #expect(t.totals["m"] == ModelTotals(requests: 3, failures: 1, inputTokens: 30, outputTokens: 9))
+    }
+
     @Test func failureCountsAsFailure() {
         let t = makeStore()
         t.begin(model: "m")
