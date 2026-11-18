@@ -4052,22 +4052,6 @@
         }
       }
     },
-    "Удалятся слова и варианты агента. Ваши останутся." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agent words and variants will be removed. Yours stay."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалятся слова и варианты агента. Ваши останутся."
-          }
-        }
-      }
-    },
     "Доступ для нейронок выключен. Включите его в настройках Tranq." : {
       "localizations" : {
         "en" : {
@@ -4368,6 +4352,86 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Поле pack_id должно быть непустой строкой."
+          }
+        }
+      }
+    },
+    "Удалятся слова, варианты и наборы агента. Ваши останутся." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Words, variants and agent packs will be removed. Yours stay."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалятся слова, варианты и наборы агента. Ваши останутся."
+          }
+        }
+      }
+    },
+    "от агента" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from agent"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "от агента"
+          }
+        }
+      }
+    },
+    "Удалить набор" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete pack"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить набор"
+          }
+        }
+      }
+    },
+    "Удалить набор?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete pack?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удалить набор?"
+          }
+        }
+      }
+    },
+    "Набор и его слова исчезнут." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The pack and its words will disappear."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Набор и его слова исчезнут."
           }
         }
       }

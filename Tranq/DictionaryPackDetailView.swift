@@ -10,9 +10,12 @@ struct DictionaryPackDetailView: View {
     let uiLanguage: DictionaryLanguage
     let onBack: () -> Void
 
+    @State private var confirmingDelete = false
+
     private let language = DictionaryLanguage.current
 
     private var packEnabled: Bool { !store.disabledPacks.contains(pack.id) }
+    private var isAgentPack: Bool { store.agentPacks.contains { $0.id == pack.id } }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,6 +40,15 @@ struct DictionaryPackDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.uiCanvas)
         .onExitCommand(perform: onBack)
+        .alert("Удалить набор?", isPresented: $confirmingDelete) {
+            Button("Удалить", role: .destructive) {
+                _ = try? store.deleteAgentPack(id: pack.id)
+                onBack()
+            }
+            Button("Отмена", role: .cancel) {}
+        } message: {
+            Text("Набор и его слова исчезнут.")
+        }
     }
 
     private var header: some View {
@@ -60,6 +72,19 @@ struct DictionaryPackDetailView: View {
                 .font(.ui(.footnote))
                 .foregroundColor(.uiMidGray)
             Spacer()
+            if isAgentPack {
+                Button { confirmingDelete = true } label: {
+                    Text("Удалить набор")
+                        .font(.ui(.footnote, weight: .medium))
+                        .foregroundColor(.uiInk)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.uiPaper)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.uiHairline, lineWidth: 1))
+                }
+                .buttonStyle(TactileButtonStyle())
+            }
         }
         .padding(.horizontal, 32)
         .padding(.vertical, 16)

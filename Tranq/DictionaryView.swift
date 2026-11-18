@@ -150,7 +150,7 @@ struct DictionaryView: View {
             Button("Снять", role: .destructive) { store.revertAgentChanges() }
             Button("Отмена", role: .cancel) {}
         } message: {
-            Text("Удалятся слова и варианты агента. Ваши останутся.")
+            Text("Удалятся слова, варианты и наборы агента. Ваши останутся.")
         }
     }
 
@@ -159,7 +159,7 @@ struct DictionaryView: View {
         var items: [UIDropdownItem] = [
             .action("Сбросить выученное", icon: "arrow.counterclockwise") { confirmingReset = true },
         ]
-        if store.agentWordCount > 0 {
+        if store.agentWordCount > 0 || !store.agentPacks.isEmpty {
             items.append(.action("Снять слова агента", icon: "arrow.uturn.backward") { confirmingAgentRevert = true })
         }
         return items
@@ -197,6 +197,11 @@ struct DictionaryView: View {
                 Text("\(pack.entries.count) слов")
                     .font(.ui(.footnote))
                     .foregroundColor(.uiMidGray)
+                if store.agentPacks.contains(where: { $0.id == pack.id }) {
+                    Text("от агента")
+                        .font(.ui(.caption))
+                        .foregroundColor(.uiMidGray)
+                }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.ui(.caption, weight: .semibold))
