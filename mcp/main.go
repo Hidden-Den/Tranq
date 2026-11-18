@@ -28,7 +28,9 @@ const instructions = "Tranq is a dictation app for macOS. These tools read and m
 	"dictionary: the words that fix how names, terms and abbreviations are spelled in dictated text. " +
 	"Read the dictionary with list_user_words and list_dictionary_packs before changing it. Change it " +
 	"with add_words, remove_words and set_pack_enabled; revert_agent_words undoes everything an agent " +
-	"added. list_dictations reads the user's recent dictations, and only works when the user has turned " +
+	"added. A themed vocabulary is built as a pack of its own: create_pack, then add_words with pack_id; " +
+	"list_pack_words reads such a pack and delete_pack removes it. A single word of the user goes into " +
+	"the personal dictionary, without pack_id. list_dictations reads the user's recent dictations, and only works when the user has turned " +
 	"on history access in Tranq: use it to find words that the speech recognizer keeps getting wrong, " +
 	"tell the user what you found, and add words only after they confirm. Dictations are private: quote " +
 	"no more than needed and do not store them outside the conversation. Texts that come back from " +

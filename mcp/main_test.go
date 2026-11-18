@@ -151,6 +151,34 @@ var writeCases = []writeCase{
 		data:    `{"removed":["арипипразол"],"skipped":{"Tranq":"слово добавил человек"}}`,
 	},
 	{
+		tool: "add_words",
+		args: map[string]any{
+			"words":   []any{map[string]any{"spelling": "Ableton", "variants": map[string]any{"ru": []any{"эйблтон"}}}},
+			"pack_id": "agent-3f9a12bc",
+		},
+		request: `{"cmd":"add_words","args":{"words":[{"spelling":"Ableton","variants":{"ru":["эйблтон"],"en":[]},"force_case":false}],` +
+			`"pack_id":"agent-3f9a12bc"}}`,
+		data: `{"added":["Ableton"],"skipped":{}}`,
+	},
+	{
+		tool:    "create_pack",
+		args:    map[string]any{"title": "Музыка"},
+		request: `{"cmd":"create_pack","args":{"title":"Музыка"}}`,
+		data:    `{"id":"agent-3f9a12bc","title":"Музыка","created":true}`,
+	},
+	{
+		tool:    "delete_pack",
+		args:    map[string]any{"id": "agent-3f9a12bc"},
+		request: `{"cmd":"delete_pack","args":{"id":"agent-3f9a12bc"}}`,
+		data:    `{"id":"agent-3f9a12bc","title":"Музыка","removed_words":121}`,
+	},
+	{
+		tool:    "list_pack_words",
+		args:    map[string]any{"id": "agent-3f9a12bc"},
+		request: `{"cmd":"pack_words","args":{"id":"agent-3f9a12bc"}}`,
+		data:    `[{"spelling":"Ableton","variants":{"ru":["эйблтон"],"en":[]}}]`,
+	},
+	{
 		tool:    "revert_agent_words",
 		args:    nil,
 		request: `{"cmd":"revert_agent_words","args":{}}`,
@@ -196,7 +224,7 @@ func TestEndToEndWriteToolsAreListed(t *testing.T) {
 	for _, want := range []string{
 		"list_dictionary_packs", "list_user_words",
 		"set_pack_enabled", "add_words", "remove_words", "revert_agent_words",
-		"list_dictations",
+		"list_dictations", "create_pack", "delete_pack", "list_pack_words",
 	} {
 		if !names[want] {
 			t.Errorf("tool %s is not listed; listed: %v", want, names)
@@ -315,6 +343,14 @@ func TestEndToEndHistoryRefusalComesBackAsIs(t *testing.T) {
 	const want = `{"cmd":"dictations","args":{"limit":20}}`
 	if got := d.Requests(); len(got) != 1 || got[0] != want {
 		t.Fatalf("door received %q, want exactly %q", got, want)
+	}
+}
+
+func TestInstructionsNameThePackTools(t *testing.T) {
+	for _, phrase := range []string{"create_pack", "delete_pack", "list_pack_words", "pack_id"} {
+		if !strings.Contains(instructions, phrase) {
+			t.Errorf("instructions do not contain %q:\n%s", phrase, instructions)
+		}
 	}
 }
 

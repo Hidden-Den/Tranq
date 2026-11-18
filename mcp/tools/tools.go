@@ -29,6 +29,7 @@ func Register(s *mcp.Server, d Door) {
 	registerRead(s, d)
 	registerWrite(s, d)
 	registerDictations(s, d)
+	registerPacks(s, d)
 }
 
 // ask sends a command to the door and returns the data as the text of a tool

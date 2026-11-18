@@ -12,14 +12,16 @@ const listDictionaryPacksDescription = "List the built-in dictionary packs of Tr
 	"speech recognition.\n\n" +
 	"Call this tool when the user asks which vocabularies Tranq has or which of them are switched on, and " +
 	"before adding words yourself, to see whether a pack already covers the field. The result lists packs " +
-	"only. The words inside a pack are not exposed by this server, so you cannot check whether a pack " +
+	"only. The words inside a built-in pack are not exposed by this server, so you cannot check whether a pack " +
 	"contains a given term. The user's own words are not part of the result either, for those use " +
 	"list_user_words.\n\n" +
 	"Takes no arguments. Returns a JSON array with one object per pack. Fields of each object:\n" +
 	"- `id`: stable identifier of the pack, for example \"it\"; the value other tools take to refer to the pack.\n" +
 	"- `title`: display name of the pack, in the language of the Tranq interface, Russian or English.\n" +
 	"- `word_count`: number of terms the pack contains.\n" +
-	"- `enabled`: true if the pack is applied to dictation now, false if the user switched it off.\n\n" +
+	"- `enabled`: true if the pack is applied to dictation now, false if the user switched it off.\n" +
+	"- `source`: `builtin` for a pack that comes with Tranq, `agent` for a pack an agent made with " +
+	"create_pack. The words of an agent pack are read with list_pack_words.\n\n" +
 	"Read-only: nothing is changed."
 
 const listUserWordsDescription = "List the user's own dictionary words in Tranq, a macOS dictation app that turns " +

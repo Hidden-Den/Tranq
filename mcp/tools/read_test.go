@@ -99,7 +99,7 @@ func TestReadToolsDescribeEveryField(t *testing.T) {
 	byName := listTools(t, connect(t, &fakeDoor{}))
 	// Every field of the door's answer, spelled as the agent will see it.
 	required := map[string][]string{
-		"list_dictionary_packs": {"`id`", "`title`", "`word_count`", "`enabled`"},
+		"list_dictionary_packs": {"`id`", "`title`", "`word_count`", "`enabled`", "`source`", "`builtin`", "`agent`", "list_pack_words"},
 		"list_user_words": {
 			"`spelling`", "`variants`", "`ru`", "`en`", "`source`", "`manual`", "`learned`", "`mcp`",
 			"`hits`", "`last_used`", "ISO 8601", "null",

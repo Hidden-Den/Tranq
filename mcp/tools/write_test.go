@@ -13,7 +13,7 @@ import (
 )
 
 // writeToolNames are the tools that change the dictionary.
-var writeToolNames = []string{"set_pack_enabled", "add_words", "remove_words", "revert_agent_words"}
+var writeToolNames = []string{"set_pack_enabled", "add_words", "remove_words", "revert_agent_words", "create_pack", "delete_pack"}
 
 // callWrite calls a tool as an agent does and returns the result. A protocol
 // error is a test failure: every refusal of a write tool is a tool error.
@@ -69,14 +69,14 @@ func untouched(t *testing.T, d *fakeDoor) {
 func TestWriteToolsAreRegisteredWithHints(t *testing.T) {
 	byName := listTools(t, connect(t, &fakeDoor{}))
 	// Deleting and disabling are destructive; adding is not.
-	destructive := map[string]bool{"set_pack_enabled": true, "add_words": false, "remove_words": true, "revert_agent_words": true}
+	destructive := map[string]bool{"set_pack_enabled": true, "add_words": false, "remove_words": true, "revert_agent_words": true, "create_pack": false, "delete_pack": true}
 	// Idempotent means that repeating a call with the same arguments has no
 	// further effect, not that the answer is the same. All four are: a repeated
 	// add_words only skips what the first one added, a repeated remove_words
 	// only reports words that are already gone, a repeated revert_agent_words
 	// finds nothing left to revert, and a pack switched to the state it already
 	// has stays as it is.
-	idempotent := map[string]bool{"set_pack_enabled": true, "add_words": true, "remove_words": true, "revert_agent_words": true}
+	idempotent := map[string]bool{"set_pack_enabled": true, "add_words": true, "remove_words": true, "revert_agent_words": true, "create_pack": true, "delete_pack": true}
 	for _, name := range writeToolNames {
 		tool, ok := byName[name]
 		if !ok {
@@ -111,16 +111,23 @@ func TestWriteToolsDescribeThemselves(t *testing.T) {
 			"NOT alternative spellings", "ари пипразол", "revert_agent_words", "list_user_words",
 			"never duplicated", "shorter than two characters", "ignoring case", "repeated inside one call",
 			"written by the app", "currently in Russian", "own language",
+			"`pack_id`", "create_pack", "500", "single word of the user, such as a surname, goes without pack_id",
 		},
 		"remove_words": {
 			"`spellings`", "`removed`", "`skipped`", "full access", "added through this server", "typed",
-			"written by the app", "currently in Russian", "own language",
+			"written by the app", "currently in Russian", "own language", "`pack_id`",
+		},
+		"create_pack": {
+			"`id`", "`title`", "`created`", "20", "60", "add_words", "`pack_id`", "already existed", "built-in",
+		},
+		"delete_pack": {
+			"`id`", "`removed_words`", "`title`", "list_dictionary_packs", "agent",
 		},
 		"set_pack_enabled": {
 			"`id`", "`enabled`", "list_dictionary_packs", "full access", "Enabling", "disabling",
 		},
 		"revert_agent_words": {
-			"`removed_words`", "`removed_variants`", "undo", "added through this server",
+			"`removed_words`", "`removed_variants`", "`removed_packs`", "undo", "added through this server",
 		},
 	}
 	for name, phrases := range required {
@@ -408,6 +415,57 @@ func TestAddWordsSendsTheWireShape(t *testing.T) {
 	}
 }
 
+func TestAddWordsWithPackIdSendsItLast(t *testing.T) {
+	d := &fakeDoor{data: map[string]string{"add_words": `{"added":["Ableton"],"skipped":{}}`}}
+	callWrite(t, connect(t, d), "add_words", map[string]any{
+		"words": []any{map[string]any{"spelling": "Ableton"}}, "pack_id": "agent-3f9a12bc",
+	})
+	const want = `{"words":[{"spelling":"Ableton","variants":{"ru":[],"en":[]},"force_case":false}],"pack_id":"agent-3f9a12bc"}`
+	if got := sentArgs(t, d, 0); got != want {
+		t.Fatalf("args =\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestBlankPackIdReachesTheDoor(t *testing.T) {
+	// An empty pack_id must not be read as a missing one: the door refuses it,
+	// and the words do not land in the personal dictionary by accident.
+	d := &fakeDoor{data: map[string]string{"add_words": `{"added":[],"skipped":{}}`, "remove_words": `{"removed":[],"skipped":{}}`}}
+	session := connect(t, d)
+	callWrite(t, session, "add_words", map[string]any{"words": []any{map[string]any{"spelling": "Ableton"}}, "pack_id": ""})
+	callWrite(t, session, "remove_words", map[string]any{"spellings": []any{"Ableton"}, "pack_id": ""})
+	if got, want := sentArgs(t, d, 0), `{"words":[{"spelling":"Ableton","variants":{"ru":[],"en":[]},"force_case":false}],"pack_id":""}`; got != want {
+		t.Fatalf("add_words args = %s, want %s", got, want)
+	}
+	if got, want := sentArgs(t, d, 1), `{"spellings":["Ableton"],"pack_id":""}`; got != want {
+		t.Fatalf("remove_words args = %s, want %s", got, want)
+	}
+}
+
+func TestRemoveWordsWithPackIdSendsIt(t *testing.T) {
+	d := &fakeDoor{data: map[string]string{"remove_words": `{"removed":["Ableton"],"skipped":{}}`}}
+	callWrite(t, connect(t, d), "remove_words", map[string]any{"spellings": []any{"Ableton"}, "pack_id": "agent-3f9a12bc"})
+	if got, want := sentArgs(t, d, 0), `{"spellings":["Ableton"],"pack_id":"agent-3f9a12bc"}`; got != want {
+		t.Fatalf("args = %s, want %s", got, want)
+	}
+}
+
+func TestPackIdIsAnOptionalDescribedString(t *testing.T) {
+	byName := listTools(t, connect(t, &fakeDoor{}))
+	for _, name := range []string{"add_words", "remove_words"} {
+		schema := schemaOf(t, listed(t, byName, name))
+		packID := property(t, schema, "pack_id")
+		requireDescription(t, name+".pack_id", packID)
+		if !hasType(packID, "string") {
+			t.Errorf("%s.pack_id: %v, want a string", name, packID)
+		}
+		for _, field := range schema["required"].([]any) {
+			if field == "pack_id" {
+				t.Errorf("%s requires pack_id, it must stay optional", name)
+			}
+		}
+	}
+}
+
 func TestAddWordsDoesNotRepeatTheStoresValidation(t *testing.T) {
 	// An empty spelling, an empty variant and a variant equal to the spelling
 	// are the app's to judge and report in skipped: they all go through.
@@ -437,12 +495,16 @@ func TestNullIsRefusedWithTheFieldNamed(t *testing.T) {
 		args  map[string]any
 		field string
 	}{
-		"words":      {"add_words", map[string]any{"words": nil}, "words"},
-		"variants":   {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": nil}}}, "variants"},
-		"ru":         {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": map[string]any{"ru": nil}}}}, "ru"},
-		"force_case": {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "force_case": nil}}}, "force_case"},
-		"spellings":  {"remove_words", map[string]any{"spellings": nil}, "spellings"},
-		"enabled":    {"set_pack_enabled", map[string]any{"id": "it", "enabled": nil}, "enabled"},
+		"words":                   {"add_words", map[string]any{"words": nil}, "words"},
+		"variants":                {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": nil}}}, "variants"},
+		"ru":                      {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "variants": map[string]any{"ru": nil}}}}, "ru"},
+		"force_case":              {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq", "force_case": nil}}}, "force_case"},
+		"spellings":               {"remove_words", map[string]any{"spellings": nil}, "spellings"},
+		"enabled":                 {"set_pack_enabled", map[string]any{"id": "it", "enabled": nil}, "enabled"},
+		"pack_id of add_words":    {"add_words", map[string]any{"words": []any{map[string]any{"spelling": "Tranq"}}, "pack_id": nil}, "pack_id"},
+		"pack_id of remove_words": {"remove_words", map[string]any{"spellings": []any{"Tranq"}, "pack_id": nil}, "pack_id"},
+		"title":                   {"create_pack", map[string]any{"title": nil}, "title"},
+		"id of delete_pack":       {"delete_pack", map[string]any{"id": nil}, "id"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			result := callWrite(t, session, tc.tool, tc.args)
@@ -479,6 +541,8 @@ func TestWriteToolsSurviveUnknownFields(t *testing.T) {
 		"set_pack_enabled":   {"set_pack_enabled", map[string]any{"id": "it", "enabled": true, "force": true}, "force"},
 		"remove_words":       {"remove_words", map[string]any{"spellings": []any{"Tranq"}, "all": true}, "all"},
 		"revert_agent_words": {"revert_agent_words", map[string]any{"everything": true}, "everything"},
+		"create_pack":        {"create_pack", map[string]any{"title": "Музыка", "id": "x"}, "id"},
+		"delete_pack":        {"delete_pack", map[string]any{"id": "agent-3f9a12bc", "force": true}, "force"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			result := callWrite(t, session, tc.tool, tc.args)
@@ -583,6 +647,8 @@ func TestWriteToolsCarryDoorRefusalAsIs(t *testing.T) {
 		"add_words":          {"words": []any{map[string]any{"spelling": "Tranq"}}},
 		"remove_words":       {"spellings": []any{"Tranq"}},
 		"revert_agent_words": {},
+		"create_pack":        {"title": "Музыка"},
+		"delete_pack":        {"id": "agent-3f9a12bc"},
 	}
 	for _, name := range writeToolNames {
 		t.Run(name, func(t *testing.T) {
