@@ -19,7 +19,8 @@ struct MCPDoor: @unchecked Sendable {
     private let dictionary: DictionaryStore
     private let history: HistoryStore
     private let access: MCPAccess
-    private let language: DictionaryLanguage
+    /// Язык приложения: сокет берёт его для отказа, который собирает сам, без двери.
+    let language: DictionaryLanguage
 
     /// `language` — язык приложения: на нём идут названия наборов и тексты ошибок, он же попадает в каждый ответ.
     init(dictionary: DictionaryStore, history: HistoryStore, access: MCPAccess, language: DictionaryLanguage) {

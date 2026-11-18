@@ -33,6 +33,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !AppEnvironment.isRunningTests {
             SpellCommonWordChecker.shared.warmUp()
             _ = DictionaryStore.shared
+            // Сокет двери живёт всё время работы приложения: отказы при выключенном доступе выдаёт сама дверь
+            MCPSocketServer.shared.start(door: MCPDoor(
+                dictionary: DictionaryStore.shared,
+                history: HistoryStore.shared,
+                access: MCPAccess.shared,
+                language: DictionaryScreenLogic.currentUILanguage
+            ))
         }
 
         DispatchQueue.main.async {
@@ -44,6 +51,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 MainWindowController.shared.register(window: window)
             }
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // Убирает файл сокета, чтобы следующий запуск и клиенты не видели мёртвый сокет
+        MCPSocketServer.shared.stop()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
