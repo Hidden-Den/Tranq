@@ -71,14 +71,16 @@ final class MCPSocketServer: @unchecked Sendable {
         lock.lock()
         let source = acceptSource
         acceptSource = nil
-        let live = connections
+        // Соединение убирает свой дескриптор из `connections` под этим же замком, прежде чем закрыть его.
+        // Поэтому `shutdown` под замком не заденет дескриптор, который закрыт и уже выдан ОС другому.
+        // `shutdown` не блокируется и замок не берёт.
+        if source != nil {
+            for fd in connections { shutdown(fd, SHUT_RDWR) }
+        }
         lock.unlock()
 
         guard let source else { return }
         source.cancel()
-        // Соединение закрывает свой дескриптор само, когда его чтение увидит конец потока:
-        // так дескриптор не освободится, пока задача соединения ещё работает с ним.
-        for fd in live { shutdown(fd, SHUT_RDWR) }
         unlink(path)
         AppLogger.shared.info("MCP", "Сокет двери закрыт")
     }
