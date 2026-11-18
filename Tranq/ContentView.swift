@@ -244,10 +244,10 @@ struct ContentView: View {
         .background(Color.uiCanvas)
     }
 
-    /// Граница между списком и содержимым. Тонкая линия, тянется мышью.
+    /// Граница между списком и содержимым. Невидимая: границу и так показывает смена фона,
+    /// а курсор-стрелка подсказывает, что за край можно взяться.
     private var sidebarResizeHandle: some View {
-        Rectangle()
-            .fill(Color.uiHairline)
+        Color.clear
             .frame(width: 1)
             .overlay(
                 Color.clear
