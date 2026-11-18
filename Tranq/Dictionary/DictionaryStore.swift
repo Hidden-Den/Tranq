@@ -19,6 +19,9 @@ final class DictionaryStore: ObservableObject {
     static let packOrder = ["it", "ai", "apps", "management", "business", "hr", "finance", "marketing", "legal", "design", "medicine", "psychology"]
 
     static let schemaVersion = 1
+    static let maxAgentPacks = 20
+    static let maxWordsPerAgentPack = 500
+    static let maxAgentPackTitleLength = 60
     static let fileName = "dictionary.json"
     static let backupFileName = "dictionary.backup.json"
     static let corruptFileName = "dictionary.corrupt.json"
@@ -40,7 +43,12 @@ final class DictionaryStore: ObservableObject {
     @Published private(set) var userEntries: [DictionaryEntry] = [] {
         didSet { withLock { entriesSnapshot = userEntries } }
     }
+    /// Встроенные наборы и наборы агента: `builtinPacks + agentPacks`, всегда в таком порядке.
     @Published private(set) var packs: [DictionaryPack] = []
+    /// Наборы, которые создал агент, в порядке создания. Хранятся в `dictionary.json`.
+    @Published private(set) var agentPacks: [DictionaryPack] = [] {
+        didSet { packs = builtinPacks + agentPacks }
+    }
     @Published private(set) var disabledPacks: Set<String> = []
     @Published private(set) var disabledPackWords: Set<String> = []
     @Published private(set) var disabledPackVariants: Set<String> = []
@@ -49,6 +57,7 @@ final class DictionaryStore: ObservableObject {
     }
 
     private let directory: URL
+    private let builtinPacks: [DictionaryPack]
     /// Общие настройки: обучение хранит в них счётчики пар и дневной лимит.
     let defaults: UserDefaults
     private let checker: CommonWordChecking
@@ -64,7 +73,7 @@ final class DictionaryStore: ObservableObject {
     private var entriesSnapshot: [DictionaryEntry] = []
     private var noteReplacements: [UUID: [AppliedReplacement]] = [:]
     private var noteOrder: [UUID] = []
-    private var pendingEntries: [DictionaryEntry]?
+    private var pendingFile: StoredFile?
     private var pendingSave: DispatchWorkItem?
     /// Что агент дописал в чужие записи: `<id записи>/<язык>/<вариант>` и `<id записи>/forceCase`.
     /// Живёт в `defaults`, а не в публикуемом свойстве, поэтому изменения объявляются вручную.
@@ -85,6 +94,7 @@ final class DictionaryStore: ObservableObject {
         saveDelay: TimeInterval = 1
     ) {
         self.directory = directory
+        self.builtinPacks = packs ?? Self.loadPacks(from: packsBundle)
         self.defaults = defaults
         self.checker = checker
         self.now = now
@@ -96,18 +106,28 @@ final class DictionaryStore: ObservableObject {
         disabledPackWords = Set(defaults.stringArray(forKey: Keys.disabledPackWords) ?? [])
         disabledPackVariants = Set(defaults.stringArray(forKey: Keys.disabledPackVariants) ?? [])
         mcpVariants = Set(defaults.stringArray(forKey: Keys.mcpVariants) ?? [])
-        self.packs = packs ?? Self.loadPacks(from: packsBundle)
 
-        let loaded = Self.loadEntries(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
+        let loaded = Self.loadStored(main: mainURL, backup: backupURL, corrupt: directory.appendingPathComponent(Self.corruptFileName))
         let cutoff = now().addingTimeInterval(-Self.learnedLifetime)
-        let kept = loaded.filter { $0.source != .learned || ($0.lastUsed ?? $0.createdAt) >= cutoff }
+        let kept = loaded.entries.filter { $0.source != .learned || ($0.lastUsed ?? $0.createdAt) >= cutoff }
         userEntries = kept
         // Наблюдатели свойств в init не вызываются, поэтому снимок заполняется явно.
         entriesSnapshot = kept
-        if kept.count != loaded.count {
-            AppLogger.shared.info("Dictionary", "Удалены неиспользуемые выученные слова", details: "\(loaded.count - kept.count)")
+        if kept.count != loaded.entries.count {
+            AppLogger.shared.info("Dictionary", "Удалены неиспользуемые выученные слова", details: "\(loaded.entries.count - kept.count)")
             scheduleSave()
         }
+
+        // Повтор идентификатора или совпадение со встроенным набором сломали бы ключи замен и выключений.
+        var knownIDs = Set(builtinPacks.map(\.id))
+        let storedPacks = loaded.agentPacks ?? []
+        let validPacks = storedPacks.filter { knownIDs.insert($0.id).inserted }
+        if validPacks.count != storedPacks.count {
+            AppLogger.shared.warn("Dictionary", "Наборы агента с повторным идентификатором пропущены", details: "\(storedPacks.count - validPacks.count)")
+            scheduleSave()
+        }
+        agentPacks = validPacks
+        self.packs = builtinPacks + validPacks
         rebuildIndex()
 
         terminationObserver = NotificationCenter.default.addObserver(
@@ -478,6 +498,81 @@ final class DictionaryStore: ObservableObject {
         return (id, language, parts[2])
     }
 
+    // MARK: - Наборы агента
+
+    /// Создаёт набор агента. Набор с тем же названием без учёта регистра не дублируется: возвращается прежний.
+    @discardableResult
+    func createAgentPack(title: String) throws -> AgentPackCreateResult {
+        try onMain {
+            let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { throw AgentPackError.emptyTitle }
+            guard title.count <= Self.maxAgentPackTitleLength else {
+                throw AgentPackError.titleTooLong(limit: Self.maxAgentPackTitleLength)
+            }
+            let builtInTaken = builtinPacks.contains { pack in
+                pack.title.values.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+            }
+            guard !builtInTaken else { throw AgentPackError.titleTakenByBuiltIn }
+            if let existing = agentPacks.first(where: { pack in
+                pack.title.values.contains { $0.caseInsensitiveCompare(title) == .orderedSame }
+            }) {
+                return AgentPackCreateResult(id: existing.id, title: existing.title[.ru] ?? title, created: false)
+            }
+            guard agentPacks.count < Self.maxAgentPacks else {
+                throw AgentPackError.tooManyPacks(limit: Self.maxAgentPacks)
+            }
+            let known = Set(packs.map(\.id))
+            var id: String
+            repeat {
+                id = "agent-" + UUID().uuidString.lowercased().prefix(8)
+            } while known.contains(id)
+            agentPacks.append(DictionaryPack(id: id, title: [.ru: title, .en: title], version: 1, entries: []))
+            entriesChanged()
+            return AgentPackCreateResult(id: id, title: title, created: true)
+        }
+    }
+
+    /// Удаляет набор агента со словами и чистит его выключения.
+    @discardableResult
+    func deleteAgentPack(id: String) throws -> AgentPackDeleteResult {
+        try onMain {
+            let pack = try agentPack(id: id)
+            agentPacks.removeAll { $0.id == id }
+            pruneDisabled(packId: id)
+            entriesChanged()
+            return AgentPackDeleteResult(id: id, title: pack.title[.ru] ?? id, removedWords: pack.entries.count)
+        }
+    }
+
+    /// Набор агента по идентификатору. Встроенный набор и неизвестный идентификатор дают отказ.
+    func agentPack(id: String) throws -> DictionaryPack {
+        try onMain {
+            if let pack = agentPacks.first(where: { $0.id == id }) { return pack }
+            if builtinPacks.contains(where: { $0.id == id }) { throw AgentPackError.builtInPack(id: id) }
+            throw AgentPackError.noSuchPack(id: id)
+        }
+    }
+
+    /// Убирает выключения набора целиком (`word == nil`) или одного его слова вместе с вариантами слова.
+    /// Остаток после удаления не должен встретить новое слово или набор с тем же ключом выключенным.
+    private func pruneDisabled(packId: String, word: String? = nil) {
+        let base = word.map { "\(packId)/\($0)" } ?? packId
+        let prefix = base + "/"
+        if word == nil, disabledPacks.remove(packId) != nil {
+            defaults.set(disabledPacks.sorted(), forKey: Keys.disabledPacks)
+        }
+        let words = disabledPackWords.filter { $0 != base && !$0.hasPrefix(prefix) }
+        if words != disabledPackWords {
+            disabledPackWords = words
+            defaults.set(words.sorted(), forKey: Keys.disabledPackWords)
+        }
+        let variants = disabledPackVariants.filter { !$0.hasPrefix(prefix) }
+        if variants != disabledPackVariants {
+            disabledPackVariants = variants
+            defaults.set(variants.sorted(), forKey: Keys.disabledPackVariants)
+        }
+    }
+
     // MARK: - Чтение
 
     /// Последний собранный индекс; `nil` до первой сборки.
@@ -660,6 +755,8 @@ final class DictionaryStore: ObservableObject {
     private struct StoredFile: Codable {
         var schemaVersion: Int
         var entries: [DictionaryEntry]
+        /// Нет в файлах, записанных до наборов агента; пустой список не пишется.
+        var agentPacks: [DictionaryPack]?
     }
 
     private func entriesChanged() {
@@ -669,10 +766,12 @@ final class DictionaryStore: ObservableObject {
 
     /// Запись откладывается на `saveDelay`, каждое изменение переносит её заново.
     private func scheduleSave() {
-        let entries = userEntries
+        let file = StoredFile(
+            schemaVersion: Self.schemaVersion, entries: userEntries, agentPacks: agentPacks.isEmpty ? nil : agentPacks
+        )
         let work = DispatchWorkItem { [weak self] in self?.writePending() }
         let previous: DispatchWorkItem? = withLock {
-            pendingEntries = entries
+            pendingFile = file
             defer { pendingSave = work }
             return pendingSave
         }
@@ -686,22 +785,22 @@ final class DictionaryStore: ObservableObject {
     }
 
     private func writePending() {
-        let entries: [DictionaryEntry]? = withLock {
-            defer { pendingEntries = nil; pendingSave = nil }
-            return pendingEntries
+        let file: StoredFile? = withLock {
+            defer { pendingFile = nil; pendingSave = nil }
+            return pendingFile
         }
-        guard let entries else { return }
-        Self.write(entries, main: mainURL, backup: backupURL)
+        guard let file else { return }
+        Self.write(file, main: mainURL, backup: backupURL)
     }
 
     /// Предыдущий файл копируется в резервную копию, только если он читается: иначе испорченный файл
     /// затёр бы рабочую копию, из которой словарь мог быть загружен.
-    private static func write(_ entries: [DictionaryEntry], main: URL, backup: URL) {
+    private static func write(_ file: StoredFile, main: URL, backup: URL) {
         let data: Data
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys]
-            data = try encoder.encode(StoredFile(schemaVersion: schemaVersion, entries: entries))
+            data = try encoder.encode(file)
         } catch {
             AppLogger.shared.warn("Dictionary", "Словарь не сохранён", details: error.localizedDescription)
             return
@@ -725,8 +824,8 @@ final class DictionaryStore: ObservableObject {
 
     /// Нечитаемый основной файл переносится в `dictionary.corrupt.json`, прежняя испорченная копия затирается:
     /// иначе следующая запись заменила бы его и данные пропали бы безвозвратно.
-    private static func loadEntries(main: URL, backup: URL, corrupt: URL) -> [DictionaryEntry] {
-        if let entries = readEntries(at: main) { return entries }
+    private static func loadStored(main: URL, backup: URL, corrupt: URL) -> StoredFile {
+        if let file = readStored(at: main) { return file }
         let mainExisted = FileManager.default.fileExists(atPath: main.path)
         if mainExisted {
             try? FileManager.default.removeItem(at: corrupt)
@@ -736,20 +835,20 @@ final class DictionaryStore: ObservableObject {
                 AppLogger.shared.warn("Dictionary", "Испорченный файл словаря не перенесён", details: error.localizedDescription)
             }
         }
-        if let entries = readEntries(at: backup) {
+        if let file = readStored(at: backup) {
             if mainExisted {
                 AppLogger.shared.warn("Dictionary", "Словарь загружен из резервной копии")
             }
-            return entries
+            return file
         }
-        return []
+        return StoredFile(schemaVersion: schemaVersion, entries: [], agentPacks: nil)
     }
 
     /// `nil`, если файла нет или он не читается; во втором случае пишется `warn`.
-    private static func readEntries(at url: URL) -> [DictionaryEntry]? {
+    private static func readStored(at url: URL) -> StoredFile? {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         do {
-            return try JSONDecoder().decode(StoredFile.self, from: Data(contentsOf: url)).entries
+            return try JSONDecoder().decode(StoredFile.self, from: Data(contentsOf: url))
         } catch {
             AppLogger.shared.warn("Dictionary", "Файл словаря не читается", details: "\(url.lastPathComponent): \(error.localizedDescription)")
             return nil
@@ -758,8 +857,8 @@ final class DictionaryStore: ObservableObject {
 
     // MARK: - Вспомогательное
 
-    private func onMain<T>(_ body: () -> T) -> T {
-        Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
+    private func onMain<T>(_ body: () throws -> T) rethrows -> T {
+        Thread.isMainThread ? try body() : try DispatchQueue.main.sync(execute: body)
     }
 
     private func withLock<T>(_ body: () -> T) -> T {

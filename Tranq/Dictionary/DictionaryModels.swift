@@ -97,6 +97,8 @@ struct DictionaryPack: Codable, Identifiable {
     var entries: [PackEntry]
 }
 
+extension DictionaryPack: Equatable {}
+
 extension DictionaryPack {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)

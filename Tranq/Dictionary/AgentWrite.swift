@@ -19,4 +19,30 @@ struct AgentWriteResult: Equatable {
 struct AgentRevertResult: Equatable {
     var removedWords: Int
     var removedVariants: Int
+    /// Сколько наборов агента удалено.
+    var removedPacks = 0
+}
+
+/// Итог создания набора агента. `created == false`, если набор с таким названием уже был.
+struct AgentPackCreateResult: Equatable {
+    var id: String
+    var title: String
+    var created: Bool
+}
+
+struct AgentPackDeleteResult: Equatable {
+    var id: String
+    var title: String
+    var removedWords: Int
+}
+
+/// Отказ в работе с набором агента. Текст для человека пишет дверь.
+enum AgentPackError: Error, Equatable {
+    case emptyTitle
+    case titleTooLong(limit: Int)
+    case titleTakenByBuiltIn
+    case tooManyPacks(limit: Int)
+    case builtInPack(id: String)
+    case noSuchPack(id: String)
+    case tooManyWords(limit: Int, free: Int)
 }
