@@ -465,7 +465,9 @@ struct ContentView: View {
                 } else {
                     emptyHistoryCard
                 }
-            }.padding(20)
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 24)
         }
         .onChange(of: selectedItemId) { _ in playback.stopSyncedPlayback() }
         .onChange(of: currentTab) { _ in playback.stopSyncedPlayback() }
@@ -482,8 +484,8 @@ struct ContentView: View {
         } message: { Text("Это действие нельзя отменить.") }
     }
 
+    /// Пустое состояние лежит прямо на подложке, без своей карточки.
     private var emptyHistoryCard: some View {
-        UICard {
             VStack(spacing: 24) {
                 VStack(spacing: 6) {
                     HStack(spacing: 8) {
@@ -504,8 +506,8 @@ struct ContentView: View {
                 ) {
                     audioCapture.toggleRecording()
                 }
+                .frame(maxWidth: 520)
             }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
     }
 }
 
@@ -580,8 +582,9 @@ struct SidebarTabButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)).frame(width: 20); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
-            .foregroundColor(isActive ? .uiPaper : .uiInk).padding(.vertical, 8).padding(.horizontal, 12)
-            .background(isActive ? Color.uiInk : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
+            .foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 12)
+            // Выбранный пункт отмечен мягкой плашкой, как у Linear, а не залитой инверсией
+            .background(isActive ? Color.uiSelection : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
         }
         .buttonStyle(TactileButtonStyle())
     }

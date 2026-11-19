@@ -25,7 +25,8 @@ struct HistoryNoteView: View {
     }
 
     var body: some View {
-        UICard {
+        // Запись лежит прямо на подложке: вторая карточка внутри неё дала бы двойную рамку
+        Group {
             VStack(alignment: .leading, spacing: 12) {
                 header
                 Divider().background(Color.uiHairline)

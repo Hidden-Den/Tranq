@@ -47,7 +47,9 @@ extension Color {
     static let uiCanvas = dynamic(light: "#ffffff", dark: "#000000")
     static let uiPaper = dynamic(light: "#f8f8fa", dark: "#141417")
     /// Подложка содержимого справа от меню: чуть светлее окна, карточки на ней светлее ещё.
-    static let uiPanel = dynamic(light: "#ffffff", dark: "#0b0b0d")
+    static let uiPanel = dynamic(light: "#ffffff", dark: "#111113")
+    /// Плашка выбранного пункта бокового меню.
+    static let uiSelection = dynamic(light: "#e2e2e4", dark: "#1f1f22")
     /// Фон окна и бокового меню вокруг подложки. В светлой теме серый, как у Linear.
     static let uiWindow = dynamic(light: "#f1f1f2", dark: "#000000")
     static let uiSidebar = dynamic(light: "#ffffff", dark: "#000000")
