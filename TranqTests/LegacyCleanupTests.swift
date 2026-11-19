@@ -14,7 +14,7 @@ struct LegacyCleanupTests {
         let suite = "tranq.tests.legacy.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        for key in ["voice.style", "voice.openRouterModel", "voice.adaptiveAppProfiles", "voice.mode"] { defaults.set("x", forKey: key) }
+        for key in ["voice.style", "voice.openRouterModel", "voice.adaptiveAppProfiles", "voice.engine"] { defaults.set("x", forKey: key) }
 
         LegacyCleanup.run(directory: dir, defaults: defaults)
 
@@ -23,7 +23,7 @@ struct LegacyCleanupTests {
         #expect(defaults.string(forKey: "voice.style") == nil)
         #expect(defaults.string(forKey: "voice.openRouterModel") == nil)
         #expect(defaults.string(forKey: "voice.adaptiveAppProfiles") == nil)
-        #expect(defaults.string(forKey: "voice.mode") == "x")
+        #expect(defaults.string(forKey: "voice.engine") == "x")
     }
 
     @Test func runningTwiceIsHarmless() throws {

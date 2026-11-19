@@ -122,138 +122,111 @@ struct VoiceIntelligenceSection: View {
     var body: some View {
         UICard {
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("ГОЛОСОВОЙ ВВОД И СИНТЕЗ")
-                        .font(.ui(.caption, weight: .bold))
-                        .tracking(1.0)
-                        .foregroundColor(.uiMidGray)
-                    Spacer()
-                    UIBadge(text: settings.mode == .smart ? "Умная речь" : "Прямой")
-                }
+                Text("ГОЛОСОВОЙ ВВОД И СИНТЕЗ")
+                    .font(.ui(.caption, weight: .bold))
+                    .tracking(1.0)
+                    .foregroundColor(.uiMidGray)
 
-                // Переключатель режима
+                // Движок обработки
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Умная речь")
+                        Text("Движок синтеза")
                             .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
-                        Text(settings.mode == .smart ? "Очистка от паразитов и синтез мысли" : "Только звуки и заикания, без ИИ")
+                        Text(LocalizedStringKey(settings.engine.subtitle))
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                     }
                     Spacer()
-                    Toggle(String(localized: "Умная речь"), isOn: Binding(
-                        get: { settings.mode == .smart },
-                        set: { settings.mode = $0 ? .smart : .direct }
-                    ))
-                    .labelsHidden()
-                    .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
+                    UIDropdownPicker(selection: $settings.engine, options: VoiceEngine.allCases.map { e in
+                        .init(LocalizedStringKey(e.title), value: e)
+                    }, width: 210)
                 }
 
-                if settings.mode == .smart {
+                if settings.engine == .airGapped {
                     Divider().background(Color.uiHairline)
 
-                    // Движок обработки
+                    // Языковая модель SLM на устройстве
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Движок синтеза")
+                            Text("Модель обработки")
                                 .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
-                            Text(LocalizedStringKey(settings.engine.subtitle))
+                            Text("Оффлайн SLM для Apple Silicon")
                                 .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }
                         Spacer()
-                        UIDropdownPicker(selection: $settings.engine, options: VoiceEngine.allCases.map { e in
-                            .init(LocalizedStringKey(e.title), value: e)
-                        }, width: 210)
+                        UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
+                            .init(LocalizedStringKey(SLMRecommendation.pickerLabel(for: m)), value: m.id)
+                        }, width: 240)
                     }
 
-                    if settings.engine == .airGapped {
-                        Divider().background(Color.uiHairline)
+                    ActiveSLMModelStatusRow(modelID: settings.localModel)
+                        .padding(.vertical, 4)
+                }
 
-                        // Языковая модель SLM на устройстве
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Модель обработки")
-                                    .font(.ui(.body, weight: .medium))
-                                    .foregroundColor(.uiInk)
-                                Text("Оффлайн SLM для Apple Silicon")
-                                    .font(.ui(.caption))
-                                    .foregroundColor(.uiMidGray)
-                            }
-                            Spacer()
-                            UIDropdownPicker(selection: $settings.localModel, options: SLMModelStore.catalog.map { m in
-                                .init(LocalizedStringKey(SLMRecommendation.pickerLabel(for: m)), value: m.id)
-                            }, width: 240)
-                        }
+                Divider().background(Color.uiHairline)
 
-                        ActiveSLMModelStatusRow(modelID: settings.localModel)
-                            .padding(.vertical, 4)
-                    }
-
-                    Divider().background(Color.uiHairline)
-
-                    // Словарь
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Словарь")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Свои слова и наборы терминов")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        UIOutlineButton(title: "Открыть") {
-                            NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
-                        }
-                    }
-
-                    Divider().background(Color.uiHairline)
-
-                    // Правила
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Правила")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Text("Тон и режим для каждого приложения")
-                                .font(.ui(.caption))
-                                .foregroundColor(.uiMidGray)
-                        }
-                        Spacer()
-                        UIOutlineButton(title: "Открыть") {
-                            NotificationCenter.default.post(name: NSNotification.Name("OpenRulesTab"), object: nil)
-                        }
-                    }
-
-                    Divider().background(Color.uiHairline)
-
-                    // Инструкция модели
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(alignment: .center) {
-                            Text("Инструкция модели")
-                                .font(.ui(.body, weight: .medium))
-                                .foregroundColor(.uiInk)
-                            Spacer()
-                            UIOutlineButton(title: "По умолчанию") {
-                                settings.customSystemPrompt = VoiceIntelligenceSettings.defaultCustomPrompt
-                            }
-                            .disabled(settings.customSystemPrompt == VoiceIntelligenceSettings.defaultCustomPrompt)
-                        }
-                        TextEditor(text: $settings.customSystemPrompt)
-                            .font(.ui(.footnote, design: .monospaced))
+                // Словарь
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Словарь")
+                            .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
-                            .lineSpacing(3)
-                            .scrollContentBackground(.hidden)
-                            .padding(10)
-                            .frame(height: 160)
-                            .background(Color.uiCanvas)
-                            .cornerRadius(UIRadius.sm)
-                            .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
-                            .accessibilityLabel(Text("Инструкция модели"))
+                        Text("Свои слова и наборы терминов")
+                            .font(.ui(.caption))
+                            .foregroundColor(.uiMidGray)
                     }
+                    Spacer()
+                    UIOutlineButton(title: "Открыть") {
+                        NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
+                    }
+                }
+
+                Divider().background(Color.uiHairline)
+
+                // Правила
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Правила")
+                            .font(.ui(.body, weight: .medium))
+                            .foregroundColor(.uiInk)
+                        Text("Тон и режим для каждого приложения")
+                            .font(.ui(.caption))
+                            .foregroundColor(.uiMidGray)
+                    }
+                    Spacer()
+                    UIOutlineButton(title: "Открыть") {
+                        NotificationCenter.default.post(name: NSNotification.Name("OpenRulesTab"), object: nil)
+                    }
+                }
+
+                Divider().background(Color.uiHairline)
+
+                // Инструкция модели
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .center) {
+                        Text("Инструкция модели")
+                            .font(.ui(.body, weight: .medium))
+                            .foregroundColor(.uiInk)
+                        Spacer()
+                        UIOutlineButton(title: "По умолчанию") {
+                            settings.customSystemPrompt = VoiceIntelligenceSettings.defaultCustomPrompt
+                        }
+                        .disabled(settings.customSystemPrompt == VoiceIntelligenceSettings.defaultCustomPrompt)
+                    }
+                    TextEditor(text: $settings.customSystemPrompt)
+                        .font(.ui(.footnote, design: .monospaced))
+                        .foregroundColor(.uiInk)
+                        .lineSpacing(3)
+                        .scrollContentBackground(.hidden)
+                        .padding(10)
+                        .frame(height: 160)
+                        .background(Color.uiCanvas)
+                        .cornerRadius(UIRadius.sm)
+                        .overlay(RoundedRectangle(cornerRadius: UIRadius.sm).stroke(Color.uiHairline, lineWidth: 1))
+                        .accessibilityLabel(Text("Инструкция модели"))
                 }
 
                 Divider().background(Color.uiHairline)

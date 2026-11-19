@@ -2110,22 +2110,6 @@
         }
       }
     },
-    "Только звуки и заикания, без ИИ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fillers and stutters only, no AI"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Только звуки и заикания, без ИИ"
-          }
-        }
-      }
-    },
     "Адрес шлюза компании" : {
       "localizations" : {
         "en" : {
@@ -2286,22 +2270,6 @@
         }
       }
     },
-    "Дословно" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbatim"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Дословно"
-          }
-        }
-      }
-    },
     "Чисто" : {
       "localizations" : {
         "en" : {
@@ -2330,22 +2298,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Голосовая диктовка для macOS. Речь распознаётся на вашем Mac, без передачи данных посторонним."
-          }
-        }
-      }
-    },
-    "Умная речь" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Smart Voice"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Умная речь"
           }
         }
       }

@@ -17,18 +17,18 @@ struct CleanupLevelResolverTests {
     }
 
     @Test func siteBeatsApp() {
-        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "mail.company.ru"), rules: [chromeApp, gmailSite], mode: .smart, promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "mail.company.ru"), rules: [chromeApp, gmailSite], promptModeEnabled: false)
         #expect(r.level == .rewrite(tone: RuleTone.business.instruction))
         #expect(r.label == "Почта")
     }
 
     @Test func unknownSiteFallsBackToAppRule() {
-        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "chatgpt.com"), rules: [chromeApp, gmailSite], mode: .smart, promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "chatgpt.com"), rules: [chromeApp, gmailSite], promptModeEnabled: false)
         #expect(r.ruleName == "Chrome")
     }
 
     @Test func noRuleGivesClean() {
-        let r = CleanupLevelResolver.resolve(ctx("org.telegram.desktop", nil), rules: [], mode: .smart, promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("org.telegram.desktop", nil), rules: [], promptModeEnabled: false)
         #expect(r.level == .clean)
         #expect(r.label == String(localized: "Чисто"))
         #expect(r.ruleName == nil)
@@ -37,25 +37,35 @@ struct CleanupLevelResolverTests {
     @Test func disabledRuleIgnored() {
         var off = gmailSite
         off.isEnabled = false
-        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [off], mode: .smart, promptModeEnabled: false).level == .clean)
+        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [off], promptModeEnabled: false).level == .clean)
     }
 
     @Test func promptNeedsSettingAndShift() {
-        #expect(CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], mode: .smart, promptModeEnabled: false).level == .clean)
-        let r = CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], mode: .direct, promptModeEnabled: true)
+        #expect(CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], promptModeEnabled: false).level == .clean)
+        let r = CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], promptModeEnabled: true)
         #expect(r.level == .prompt)
         #expect(r.label == String(localized: "Промпт"))
     }
 
-    @Test func directModeIgnoresRules() {
-        let r = CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite], mode: .direct, promptModeEnabled: true)
-        #expect(r.level == .verbatim)
-        #expect(r.label == String(localized: "Дословно"))
+    @Test func resolveWithoutRulesIsClean() {
+        let r = CleanupLevelResolver.resolve(ctx("ru.keepcoder.Telegram", nil), rules: [], promptModeEnabled: false)
+        #expect(r.level == .clean)
+    }
+
+    /// Режим `direct`, сохранённый прежней версией, больше ни на что не влияет.
+    @Test func legacyDirectModeIsIgnored() {
+        let defaults = AppEnvironment.defaults
+        defaults.set("direct", forKey: "voice.mode")
+        defer { defaults.removeObject(forKey: "voice.mode") }
+        let r = CleanupLevelResolver.resolve(ctx(nil, nil), rules: [], promptModeEnabled: false)
+        #expect(r.level == .clean)
+        let ruled = CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite], promptModeEnabled: false)
+        #expect(ruled.level == .rewrite(tone: RuleTone.business.instruction))
     }
 
     @Test func longestDomainWins() {
         let inner = DictationRule(id: UUID(), target: .site(domain: "mail.company.ru"), displayName: "Внутр", tone: .casual, isEnabled: true)
-        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite, inner], mode: .smart, promptModeEnabled: false).ruleName == "Внутр")
+        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite, inner], promptModeEnabled: false).ruleName == "Внутр")
     }
 
     @Test func toneInstructionsAreExact() {

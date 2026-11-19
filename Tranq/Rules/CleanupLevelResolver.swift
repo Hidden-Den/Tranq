@@ -25,18 +25,14 @@ struct ResolvedLevel: Equatable {
 }
 
 enum CleanupLevelResolver {
-    /// Порядок: промпт по Shift, прямой ввод, правило сайта, правило приложения, чистая мысль.
+    /// Порядок: промпт по Shift, правило сайта, правило приложения, чистая мысль.
     static func resolve(
         _ context: DictationContext,
         rules: [DictationRule],
-        mode: VoiceInputMode,
         promptModeEnabled: Bool
     ) -> ResolvedLevel {
         if context.promptRequested && promptModeEnabled {
             return ResolvedLevel(level: .prompt, label: String(localized: "Промпт"), ruleName: nil)
-        }
-        if mode == .direct {
-            return ResolvedLevel(level: .verbatim, label: String(localized: "Дословно"), ruleName: nil)
         }
         if let rule = siteRule(for: context.host, in: rules) ?? appRule(for: context.bundleId, in: rules) {
             return ResolvedLevel(level: .rewrite(tone: rule.tone.instruction), label: rule.displayName, ruleName: rule.displayName)

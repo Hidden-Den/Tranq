@@ -83,9 +83,7 @@ final class AudioCapture: ObservableObject {
         AppLogger.shared.info("Recording", "Запись началась", details: "режим: \(HotKeySettings.shared.mode == .pushToTalk ? "рация" : "переключатель")")
         // Пока человек говорит, заранее поднимаем модели, чтобы распознавание и синтез стартовали без загрузки
         SpeechRecognizerFactory.current()?.prewarm()
-        if VoiceIntelligenceSettings.shared.mode == .smart {
-            ThoughtSynthesizer.shared.prewarmConnection(for: VoiceIntelligenceSettings.shared.engine)
-        }
+        ThoughtSynthesizer.shared.prewarmConnection(for: VoiceIntelligenceSettings.shared.engine)
 
         escMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { DispatchQueue.main.async { self?.cancelRecording() } }
@@ -154,7 +152,6 @@ final class AudioCapture: ObservableObject {
         return CleanupLevelResolver.resolve(
             context,
             rules: DictationRuleStore.shared.rules,
-            mode: settings.mode,
             promptModeEnabled: settings.promptModeEnabled
         )
     }
