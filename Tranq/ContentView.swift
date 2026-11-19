@@ -545,7 +545,7 @@ struct SidebarTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
+            HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)).frame(width: 20); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
             .foregroundColor(isActive ? .uiPaper : .uiInk).padding(.vertical, 8).padding(.horizontal, 12)
             .background(isActive ? Color.uiInk : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
         }
