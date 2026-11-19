@@ -75,7 +75,7 @@ enum HistoryMigration {
             var committed = false
             for _ in 0..<attempts {
                 let notes = assignCreatedAt(fingerprint.items)
-                try await offMain { try run.sealCopies(notes: notes, journal: journal) }
+                try await offMain { try run.sealCopiesReplacingUnreadableKey(notes: notes, journal: journal) }
                 afterCopies?()
                 let current = enableFingerprint(store: store, layout: layout)
                 guard current == fingerprint else {
@@ -575,24 +575,28 @@ extension HistoryMigration {
 
         /// Откат выключения, которое не дошло до флага. Замок остаётся, конверты главные и не трогаются.
         ///
-        /// Удаляется только то, что лежит и в конвертах:
-        /// - открытая история, поставленная этим выключением, уходит, если её байты совпадают
-        ///   с проверенной копией из метки и у каждой её заметки есть конверт. Иначе в ней есть
-        ///   то, чего нет в конвертах, — заметка без конверта или правка после перехода, — и она остаётся;
-        /// - непоставленная копия истории уходит, если каждая её заметка лежит конвертом или
-        ///   такой же заметкой в `history.json`, иначе встаёт на место или вливается в `history.json`;
+        /// Удаляется только то, чьё содержимое целиком лежит в конвертах, а не только id:
+        /// - отпечаток в метке есть, только если копия истории собрана из одних конвертов, без заметок,
+        ///   ждавших конверта. Такая заметка — например, правка X' рядом со старым `X.note` — живёт
+        ///   только в открытой копии, поэтому без отпечатка копия не удаляется никогда;
+        /// - открытая история уходит, если её байты совпадают с отпечатком и у каждой её заметки есть конверт:
+        ///   тогда каждая заметка расшифрована из своего конверта. Иначе в ней есть то, чего нет в конвертах,
+        ///   — правка без конверта, правка после перехода, заметка без конверта, — и она остаётся;
+        /// - непоставленная копия истории уходит по тому же правилу или если каждая её заметка такой же
+        ///   лежит в `history.json`; иначе встаёт на место или вливается в `history.json` без потерь;
         /// - копии аудио и таймингов уходят, если конверт на месте, иначе становятся открытыми файлами;
-        /// - открытые тайминги, у которых есть конверт, уходят: они расшифрованы из него;
+        /// - открытые тайминги уходят, только если их байты равны расшифрованному двойнику. Расшифровка
+        ///   возможна только в работающем приложении, на запуске диалога нет, и тайминги остаются;
         /// - открытые строки журнала снова запечатываются по публичному ключу.
         /// Возвращает `.leftoverPlainHistory`, если открытая история осталась.
         /// `journal` — живой журнал, если откат идёт в работающем приложении: тогда запечатка идёт в его очереди.
         func rollbackDisable(digest: String?, key: HistoryKeyProviding,
                              journal: TranscriptJournal? = nil) -> LaunchNotice? {
             let noteIDs = Set(files(in: notes, suffix: ".note").keys)
-            settleHistoryCopy(noteIDs: noteIDs)
+            settleHistoryCopy(noteIDs: noteIDs, digest: digest)
             if exists(history) {
                 let bytes = FileManager.default.contents(atPath: history.path)
-                let placed = bytes.map { HistoryMigration.digest($0) == digest } ?? false
+                let placed = digest != nil && bytes.map { HistoryMigration.digest($0) == digest } == true
                 let covered = plainHistory()?.allSatisfy { noteIDs.contains($0.id) } ?? false
                 if placed && covered {
                     remove(history)
@@ -600,9 +604,13 @@ extension HistoryMigration {
                     AppLogger.shared.warn("History", "Открытая история оставлена при откате", details: history.lastPathComponent)
                 }
             }
-            dropUncommittedRestores()
-            for (id, url) in files(in: audio, suffix: ".segments.json") where exists(sealedTimings(id)) {
-                remove(url)
+            dropUncommittedRestores(digest: digest)
+            if journal != nil {
+                let vault = HistoryVault(directory: directory, key: key)
+                for (id, url) in files(in: audio, suffix: ".segments.json") where exists(sealedTimings(id)) {
+                    let plain = FileManager.default.contents(atPath: url.path)
+                    if let plain, (try? vault.readBlob(id: id, purpose: .timings)) == plain { remove(url) }
+                }
             }
             do {
                 if let journal {
@@ -619,7 +627,8 @@ extension HistoryMigration {
         }
 
         /// Непоставленная копия истории: уходит, только если всё в ней есть в другом месте.
-        private func settleHistoryCopy(noteIDs: Set<UUID>) {
+        /// По конвертам — только при отпечатке, совпавшем с байтами копии, см. `rollbackDisable`.
+        private func settleHistoryCopy(noteIDs: Set<UUID>, digest: String?) {
             guard exists(historyRestore) else { return }
             guard let data = FileManager.default.contents(atPath: historyRestore.path),
                   let copy = try? JSONDecoder().decode([TranscriptionItem].self, from: data) else {
@@ -632,7 +641,8 @@ extension HistoryMigration {
                 return
             }
             let plainSet = Set(plain)
-            if copy.allSatisfy({ noteIDs.contains($0.id) || plainSet.contains($0) }) {
+            let fromEnvelopes = digest != nil && HistoryMigration.digest(data) == digest
+            if copy.allSatisfy({ (fromEnvelopes && noteIDs.contains($0.id)) || plainSet.contains($0) }) {
                 remove(historyRestore)
                 return
             }
@@ -640,7 +650,13 @@ extension HistoryMigration {
                 Darwin.rename(historyRestore.path, history.path)
                 return
             }
-            // Слияние без потерь: копия новее, заметки открытого файла, которых в ней нет, остаются.
+            // Слияние без потерь: заметки открытого файла, которых нет в копии, остаются. Если одна заметка
+            // в двух файлах разная, слить нельзя без потери одной версии: оба файла остаются.
+            let copyByID = Dictionary(copy.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            guard plain.allSatisfy({ copyByID[$0.id] == nil || copyByID[$0.id] == $0 }) else {
+                AppLogger.shared.warn("History", "Копия истории оставлена рядом", details: historyRestore.lastPathComponent)
+                return
+            }
             let copyIDs = Set(copy.map(\.id))
             let merged = HistoryVault.newestFirst(copy + plain.filter { !copyIDs.contains($0.id) })
             guard let encoded = try? JSONEncoder().encode(merged),
@@ -654,8 +670,8 @@ extension HistoryMigration {
 
         /// Выключение не дошло до фиксации: конверты главные. Копия убирается, если конверт на месте,
         /// иначе встаёт открытым файлом, который хранилище запечатает.
-        func dropUncommittedRestores() {
-            settleHistoryCopy(noteIDs: Set(files(in: notes, suffix: ".note").keys))
+        func dropUncommittedRestores(digest: String? = nil) {
+            settleHistoryCopy(noteIDs: Set(files(in: notes, suffix: ".note").keys), digest: digest)
             for (id, copy) in files(in: audio, suffix: ".wav." + restoreExtension) {
                 if exists(sealedAudio(id)) || exists(plainAudio(id)) { remove(copy) } else { Darwin.rename(copy.path, plainAudio(id).path) }
             }
@@ -699,6 +715,32 @@ extension HistoryMigration {
             }
         }
 
+        /// `sealCopies` с выходом из нечитаемого ключа. Ключ есть, но не работает — например, папка данных
+        /// перенесена на другой Mac или файл публичного ключа испорчен. Если ключ ничего не держит —
+        /// ни конверта заметки, аудио или таймингов, ни запечатанной строки журнала, — замена ничего
+        /// не теряет: ключ создаётся заново один раз за прогон, и копии пишутся и сверяются ещё раз.
+        /// Если держит хоть что-то, ключ не трогается и ошибка уходит наружу.
+        func sealCopiesReplacingUnreadableKey(notes items: [TranscriptionItem], journal: TranscriptJournal) throws {
+            do {
+                try sealCopies(notes: items, journal: journal)
+            } catch HistoryKeyError.unavailable where !keyCreated {
+                removeWritten()
+                guard !holdsKeyData else { throw HistoryKeyError.unavailable }
+                AppLogger.shared.warn("History", "Нечитаемый ключ истории заменён: он ничего не держал")
+                try vault.key.create()
+                keyCreated = true
+                try sealCopies(notes: items, journal: journal)
+            }
+        }
+
+        /// На диске есть то, что открывается только этим ключом.
+        var holdsKeyData: Bool {
+            !layout.files(in: layout.notes, suffix: ".note").isEmpty
+                || !layout.files(in: layout.audio, suffix: ".wav.sealed").isEmpty
+                || !layout.files(in: layout.audio, suffix: ".segments.sealed").isEmpty
+                || layout.hasSealedJournal
+        }
+
         /// Пишет конверты рядом с исходниками и читает каждый обратно. Ничего открытого не удаляет.
         /// Каждая попытка начинается с чистого листа: заметка, удалённая между попытками, не воскреснет.
         func sealCopies(notes items: [TranscriptionItem], journal: TranscriptJournal) throws {
@@ -725,6 +767,10 @@ extension HistoryMigration {
             }
             for line in Set(journal.migrationLines()) where !isSealedLine(line) {
                 journalMap[line] = try sealVerified(line, key: vault.key)
+            }
+            // Сверять было нечего: ключ всё равно проверяется, иначе нечитаемый ключ прошёл бы молча.
+            if notes.isEmpty && audio.isEmpty && timings.isEmpty && journalMap.isEmpty {
+                _ = try sealVerified("", key: vault.key)
             }
         }
 
@@ -766,12 +812,7 @@ extension HistoryMigration {
         /// До фиксации проверенных конвертов нет, но любой оставшийся конверт держит ключ на всякий случай.
         func abort() {
             removeWritten()
-            guard keyCreated else { return }
-            let holdsSomething = !layout.files(in: layout.notes, suffix: ".note").isEmpty
-                || !layout.files(in: layout.audio, suffix: ".wav.sealed").isEmpty
-                || !layout.files(in: layout.audio, suffix: ".segments.sealed").isEmpty
-                || layout.hasSealedJournal
-            if !holdsSomething { try? vault.key.destroy() }
+            if keyCreated && !holdsKeyData { try? vault.key.destroy() }
         }
 
         private func removeWritten() {
@@ -841,7 +882,9 @@ extension HistoryMigration {
             var seen = Set<UUID>()
             let merged = HistoryVault.newestFirst((pending + sealed + existing).filter { seen.insert($0.id).inserted })
             let data = try JSONEncoder().encode(merged)
-            historyDigest = HistoryMigration.digest(data)
+            // Отпечаток только для копии из одних конвертов. Заметка, ждавшая конверта, или заметка
+            // прежнего открытого файла есть лишь здесь: без отпечатка откат копию не удалит.
+            historyDigest = pending.isEmpty && existing.isEmpty ? HistoryMigration.digest(data) : nil
             written.append(layout.historyRestore)
             try data.write(to: layout.historyRestore, options: .atomic)
             guard let back = try? JSONDecoder().decode([TranscriptionItem].self,

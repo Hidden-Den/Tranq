@@ -13,6 +13,8 @@ final class ScriptedHistoryKey: HistoryKeyProviding {
     let inner: TestHistoryKey
     var publicLimit = Int.max
     var agreeFails = false
+    /// Ключ есть, но не читается, пока его не создадут заново.
+    var broken = false
     private(set) var publicCalls = 0
     private(set) var creates = 0
     private(set) var destroys = 0
@@ -28,17 +30,17 @@ final class ScriptedHistoryKey: HistoryKeyProviding {
             publicCalls += 1
             let over = publicCalls > publicLimit
             lock.unlock()
-            if over { throw HistoryKeyError.unavailable }
+            if over || broken { throw HistoryKeyError.unavailable }
             return try inner.publicKey
         }
     }
 
     func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
-        if agreeFails { throw HistoryKeyError.unavailable }
+        if agreeFails || broken { throw HistoryKeyError.unavailable }
         return try inner.agree(withEphemeral: ephemeral)
     }
 
-    func create() throws { creates += 1; try inner.create() }
+    func create() throws { creates += 1; broken = false; try inner.create() }
     func destroy() throws { destroys += 1; try inner.destroy() }
 
     /// С этого момента публичный ключ не отдаётся.
@@ -783,6 +785,183 @@ struct HistoryMigrationTests {
         try await enable(rig)
         #expect(rig.flags.values == [true, false, true])
         #expect(leftovers(rig).isEmpty)
+    }
+
+    // MARK: - Откат по содержимому и нечитаемый ключ
+
+    /// Правка X' ждёт конверта рядом со старым `X.note`. Под замком, без конверта, правку пишет
+    /// только `pendingSeal`.
+    private func strandEdit(_ rig: Rig, seed: Seed) async throws -> TranscriptionItem {
+        try await enable(rig)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        rig.key.stopPublicKey()
+        let id = seed.items[0].id
+        rig.store.appendTextToNote(id: id, text: "правка без конверта")
+        rig.store.flush()
+        await mainHop()
+        #expect(rig.store.sealFailureCount == 1)
+        return try #require(rig.store.items.first { $0.id == id })
+    }
+
+    @Test func pendingEditSurvivesFailedJournalStep() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let edited = try await strandEdit(rig, seed: seed)
+        try FileManager.default.createDirectory(at: journalURL(rig).appendingPathExtension("migrating"),
+                                                withIntermediateDirectories: true)
+
+        await #expect(throws: (any Error).self) { try await disable(rig) }
+
+        #expect(rig.flags.values == [true])
+        #expect(rig.store.lockState == .locked)
+        #expect(try decodeHistory(rig).contains(edited))
+    }
+
+    /// Сбой сразу после перехода: состояние диска того момента и уборка запуска.
+    @Test func pendingEditSurvivesCrashAfterDeactivate() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let edited = try await strandEdit(rig, seed: seed)
+        try FileManager.default.createDirectory(at: journalURL(rig).appendingPathExtension("migrating"),
+                                                withIntermediateDirectories: true)
+        let marker = rig.directory.appendingPathComponent(HistoryMigration.markerName)
+        var snapshot: (marker: Data, history: Data)?
+
+        await #expect(throws: (any Error).self) {
+            try await HistoryMigration.disable(
+                store: rig.store, journal: rig.journal, vault: rig.vault,
+                deactivate: {
+                    rig.journal.setSealing(.off)
+                    rig.store.applyLockState(.off)
+                    rig.store.attach(vault: nil)
+                    if let m = FileManager.default.contents(atPath: marker.path),
+                       let h = FileManager.default.contents(atPath: historyURL(rig).path) {
+                        snapshot = (m, h)
+                    }
+                },
+                setFlag: { rig.flags.values.append($0) })
+        }
+        let state = try #require(snapshot)
+        try state.marker.write(to: marker)
+        try state.history.write(to: historyURL(rig))
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(notice == .leftoverPlainHistory)
+        #expect(try decodeHistory(rig).contains(edited))
+    }
+
+    /// Те же id, другие байты: откат файл не удаляет.
+    @Test func rollbackKeepsChangedPlainHistoryWithSameIDs() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let placed = try JSONEncoder().encode(seed.items)
+        let changed = try JSONEncoder().encode([seed.items[0].withText("правка после перехода")] + seed.items.dropFirst())
+        try changed.write(to: historyURL(rig))
+        try HistoryMigration.writeMarker(.disable, in: rig.directory, digest: HistoryMigration.digest(placed))
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(notice == .leftoverPlainHistory)
+        #expect(try Data(contentsOf: historyURL(rig)) == changed)
+    }
+
+    /// Тайминги с другими байтами рядом с конвертом откат не удаляет.
+    @Test func rollbackKeepsChangedTimings() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let id = try #require(seed.timings.keys.first)
+        let changed = Data("[{\"word\":\"другое\"}]".utf8)
+        try changed.write(to: timingsURL(id, rig))
+        try HistoryMigration.writeMarker(.disable, in: rig.directory, digest: nil)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(try Data(contentsOf: timingsURL(id, rig)) == changed)
+        #expect(rig.vault.hasBlob(id: id, purpose: .timings))
+    }
+
+    /// Ключ есть, но не читается и ничего не держит: создаётся заново один раз, включение проходит.
+    @Test func unreadableKeyWithoutDataIsReplacedOnce() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        rig.key.broken = true
+
+        try await enable(rig)
+
+        #expect(rig.key.creates == 1)
+        #expect(rig.flags.values == [true])
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+    }
+
+    /// Пустая история: нечитаемый ключ ловит пробная сверка.
+    @Test func unreadableKeyIsReplacedEvenWithEmptyHistory() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        rig.key.broken = true
+
+        try await enable(rig)
+
+        #expect(rig.key.creates == 1)
+        #expect(!rig.key.broken)
+    }
+
+    /// Нечитаемый ключ держит запечатанную строку журнала: не пересоздаётся, включение падает, ключ цел.
+    @Test func unreadableKeyHoldingJournalIsKept() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        rig.journal.setSealing(.sealed(key: rig.key))
+        rig.journal.recordInitial(id: UUID(), rawText: "старое", durationSec: 1, targetAppName: nil)
+        rig.journal.setSealing(.off)
+        rig.journal.flush()
+        try seed(rig)
+        let before = plainFiles(rig)
+        rig.key.broken = true
+
+        await #expect(throws: HistoryKeyError.self) { try await enable(rig) }
+
+        #expect(rig.key.creates == 0)
+        #expect(rig.key.destroys == 0)
+        #expect(rig.key.exists)
+        #expect(plainFiles(rig) == before)
+        #expect(rig.flags.values.isEmpty)
+    }
+
+    /// Нечитаемый ключ держит конверт-сироту: не пересоздаётся.
+    @Test func unreadableKeyHoldingOrphanIsKept() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try rig.vault.writeNote(note("сирота", date: "01.01.2026, 10:00", createdAt: nil))
+        rig.key.broken = true
+
+        await #expect(throws: HistoryKeyError.self) { try await enable(rig) }
+
+        #expect(rig.key.creates == 0)
+        #expect(rig.key.exists)
+        #expect(rig.vault.noteFileCount() == 1)
+    }
+
+    /// Ключ остаётся нечитаемым и после замены: одна замена, без петли.
+    @Test func keyReplacementHappensAtMostOnce() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        rig.key.broken = true
+        rig.key.agreeFails = true
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(rig.key.creates == 1)
+        #expect(rig.flags.values.isEmpty)
     }
 
     // MARK: - Закрытия настроек
