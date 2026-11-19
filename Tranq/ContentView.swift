@@ -209,9 +209,6 @@ struct ContentView: View {
             // Точный отступ под светофор macOS (красная, жёлтая, зелёная кнопки: x = 18..66)
             Spacer().frame(width: 76)
             
-            // Кнопка сворачивания, центр которой строго совпадает с осью светофора (y = 16.2 pt)
-            sidebarToggleButton
-            
             // Заголовок раздела показывается ТОЛЬКО когда боковое меню скрыто, чтобы не дублировать
             if !isSidebarVisible {
                 Text(currentTabTitle)
@@ -224,20 +221,6 @@ struct ContentView: View {
             Spacer()
         }
         .frame(height: 32.5)
-    }
-    
-    private var sidebarToggleButton: some View {
-        Button(action: toggleSidebar) {
-            Image(systemName: "sidebar.leading")
-                .font(.ui(.body, weight: .medium))
-                .foregroundColor(.uiInkSoft)
-                .frame(width: 26, height: 26)
-                .background(Color.uiPaper.opacity(0.6))
-                .cornerRadius(UIRadius.sm)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(TactileButtonStyle())
-        .help(isSidebarVisible ? LocalizedStringKey("Скрыть меню") : LocalizedStringKey("Показать меню"))
     }
     
     private var sidebarColumn: some View {
@@ -277,11 +260,19 @@ struct ContentView: View {
         .background(Color.uiCanvas)
     }
 
-    /// Граница между списком и содержимым. Невидимая: границу и так показывает смена фона,
-    /// а курсор-стрелка подсказывает, что за край можно взяться.
+    /// Граница между списком и содержимым. В покое невидимая: границу показывает смена фона.
+    /// Под курсором и при перетаскивании на ней проступает линия, как в Linear.
     private var sidebarResizeHandle: some View {
         Color.clear
             .frame(width: 1)
+            .overlay(
+                Color.uiInk
+                    .opacity(isOverSidebarEdge || dragStartSidebarWidth != nil ? 0.3 : 0)
+                    .frame(width: 2)
+                    .animation(.easeOut(duration: 0.15), value: isOverSidebarEdge)
+                    .animation(.easeOut(duration: 0.15), value: dragStartSidebarWidth != nil)
+                    .allowsHitTesting(false)
+            )
             .overlay(
                 Color.clear
                     .frame(width: 11)
