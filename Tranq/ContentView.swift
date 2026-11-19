@@ -127,12 +127,6 @@ struct ContentView: View {
             isSidebarVisible = true
             currentTab = .settings
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
-            currentTab = .vocabulary
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRulesTab"))) { _ in
-            currentTab = .rules
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
             toggleSidebar()
         }

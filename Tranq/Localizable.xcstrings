@@ -209,22 +209,6 @@
         }
       }
     },
-    "Тон для приложений и сайтов" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tone for apps and sites"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Тон для приложений и сайтов"
-          }
-        }
-      }
-    },
     "Чистый текст голосом в любом приложении" : {
       "localizations" : {
         "en" : {
@@ -3084,22 +3068,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "По умолчанию"
-          }
-        }
-      }
-    },
-    "Свои слова и наборы терминов" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your words and term packs"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Свои слова и наборы терминов"
           }
         }
       }

@@ -167,42 +167,6 @@ struct VoiceIntelligenceSection: View {
 
                 Divider().background(Color.uiHairline)
 
-                // Словарь
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Словарь")
-                            .font(.ui(.body, weight: .medium))
-                            .foregroundColor(.uiInk)
-                        Text("Свои слова и наборы терминов")
-                            .font(.ui(.caption))
-                            .foregroundColor(.uiMidGray)
-                    }
-                    Spacer()
-                    UIOutlineButton(title: "Открыть") {
-                        NotificationCenter.default.post(name: NSNotification.Name("OpenVocabularyTab"), object: nil)
-                    }
-                }
-
-                Divider().background(Color.uiHairline)
-
-                // Правила
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Правила")
-                            .font(.ui(.body, weight: .medium))
-                            .foregroundColor(.uiInk)
-                        Text("Тон для приложений и сайтов")
-                            .font(.ui(.caption))
-                            .foregroundColor(.uiMidGray)
-                    }
-                    Spacer()
-                    UIOutlineButton(title: "Открыть") {
-                        NotificationCenter.default.post(name: NSNotification.Name("OpenRulesTab"), object: nil)
-                    }
-                }
-
-                Divider().background(Color.uiHairline)
-
                 // Инструкция модели
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .center) {
