@@ -43,6 +43,12 @@ struct ContentView: View {
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
+    /// Выбранный раздел настроек. Ключ общий с `SettingsSection.restore`.
+    @AppStorage(SettingsSection.storageKey) private var settingsSectionRaw: String = SettingsSection.dictation.rawValue
+
+    private var selectedSettingsSection: SettingsSection {
+        SettingsSection(rawValue: settingsSectionRaw) ?? .dictation
+    }
 
     /// Границы ширины списка: уже — обрезает даты, шире — душит содержимое.
     static let sidebarMinWidth: Double = 220
@@ -113,6 +119,8 @@ struct ContentView: View {
             scheduleSearch(newValue)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
+            // Со свёрнутым меню список разделов недоступен, поэтому раскрываем его вместе с переходом
+            isSidebarVisible = true
             currentTab = .settings
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
@@ -181,7 +189,7 @@ struct ContentView: View {
                     case .vocabulary: DictionaryView()
                     case .rules: RulesView()
                     case .history: historyDetailView
-                    case .settings: SettingsView()
+                    case .settings: SettingsView(section: selectedSettingsSection)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -251,7 +259,13 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             
-            if currentTab == .history { historySearchAndList } else { Spacer() }
+            if currentTab == .history {
+                historySearchAndList
+            } else if currentTab == .settings {
+                settingsSectionList
+            } else {
+                Spacer()
+            }
             sidebarFooter
         }
         .padding(.top, 4)
@@ -306,6 +320,20 @@ struct ContentView: View {
         }.padding(.horizontal, 16)
     }
     
+    /// Шесть разделов настроек под кнопками вкладок, там же, где для истории список записей.
+    private var settingsSectionList: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Divider().background(Color.uiHairline).padding(.horizontal, 12).padding(.bottom, 6)
+            ForEach(SettingsSection.allCases) { section in
+                SidebarTabButton(title: LocalizedStringKey(section.title), icon: section.icon, isActive: section == selectedSettingsSection) {
+                    settingsSectionRaw = section.rawValue
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+    }
+
     private var historySearchAndList: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {

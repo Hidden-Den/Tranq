@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "ru",
   "strings" : {
+    "Данные" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Данные"
+          }
+        }
+      }
+    },
+    "Диктовка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictation"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диктовка"
+          }
+        }
+      }
+    },
     "Итог" : {
       "localizations" : {
         "en" : {
@@ -13,6 +45,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Итог"
+          }
+        }
+      }
+    },
+    "Обработка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обработка"
+          }
+        }
+      }
+    },
+    "Провайдер" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provider"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Провайдер"
+          }
+        }
+      }
+    },
+    "Распознавание" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognition"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Распознавание"
           }
         }
       }
@@ -77,6 +157,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Слушать"
+          }
+        }
+      }
+    },
+    "Тон и режим для каждого приложения" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tone and mode for each app"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тон и режим для каждого приложения"
           }
         }
       }
