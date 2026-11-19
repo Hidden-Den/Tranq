@@ -201,7 +201,7 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: WindowMetrics.minWidth, minHeight: WindowMetrics.minHeight)
-        .background(Color.uiCanvas)
+        .background(Color.uiWindow)
         .ignoresSafeArea()
     }
 
@@ -289,7 +289,7 @@ struct ContentView: View {
         }
         .padding(.top, 4)
         .frame(width: sidebarWidth)
-        .background(Color.uiCanvas)
+        .background(Color.uiWindow)
     }
 
     /// Невидимая полоса захвата поверх левого края подложки.

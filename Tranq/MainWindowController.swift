@@ -38,7 +38,7 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
         window.styleMask.insert(.fullSizeContentView)
         window.isMovableByWindowBackground = true
         let isDark = (ThemeSettings.shared.current.nsAppearance ?? NSApp.effectiveAppearance).bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        window.backgroundColor = isDark ? .black : .white
+        window.backgroundColor = isDark ? .black : NSColor(hex: "#f1f1f2")
         
         if self.mainWindow !== window {
             self.mainWindow = window
