@@ -95,7 +95,11 @@ struct ContentView: View {
         .ignoresSafeArea()
         // Автоматическое открытие заметки
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoSelectNote"))) { notification in
-            if preferences.autoOpenNoteEnabled, let newId = notification.object as? UUID {
+            // Открытое окно не трогаем: новая запись остаётся непрочитанной, на неё указывает точка в истории
+            if AutoOpenPolicy.shouldSwitchToHistory(
+                autoOpenEnabled: preferences.autoOpenNoteEnabled,
+                isWindowVisible: MainWindowController.shared.isWindowVisible
+            ), let newId = notification.object as? UUID {
                 withAnimation {
                     self.currentTab = .history
                     self.searchText = ""
