@@ -7,6 +7,14 @@ public enum HotKeyMode: String, CaseIterable, Identifiable {
     case toggle = "toggle"
     case pushToTalk = "pushToTalk"
     public var id: String { rawValue }
+
+    /// Название режима для меню и настроек. Строки уже переведены в каталоге.
+    public var title: String {
+        switch self {
+        case .toggle: return String(localized: "HotKey.ModeToggle")
+        case .pushToTalk: return String(localized: "HotKey.ModePushToTalk")
+        }
+    }
 }
 
 public class NativeHotKeyManager {

@@ -71,6 +71,8 @@ struct TranqApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject var audioCapture = AudioCapture.shared
     @ObservedObject var theme = ThemeSettings.shared
+    @ObservedObject var hotKeySettings = HotKeySettings.shared
+    @ObservedObject var preferences = AppPreferences.shared
 
     init() {
         BrandFonts.registerAll()
@@ -110,6 +112,14 @@ struct TranqApp: App {
 
             CommandGroup(replacing: .newItem) {}
 
+            CommandGroup(replacing: .appSettings) {
+                Button("Настройки…") {
+                    MainWindowController.shared.showMainWindow()
+                    NotificationCenter.default.post(name: NSNotification.Name("OpenSettingsTab"), object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+
             CommandGroup(after: .pasteboard) {
                 Button(String(localized: "Вставить оригинал речи")) {
                     TranscriptJournal.shared.pasteOriginal { _ in }
@@ -121,6 +131,33 @@ struct TranqApp: App {
         .defaultSize(width: 990, height: 710)
         
         MenuBarExtra {
+            Text("Режим")
+            ForEach(HotKeyMode.allCases) { mode in
+                Button {
+                    hotKeySettings.mode = mode
+                } label: {
+                    if hotKeySettings.mode == mode {
+                        Label(mode.title, systemImage: "checkmark")
+                    } else {
+                        Text(mode.title)
+                    }
+                }
+            }
+
+            Divider()
+
+            Button {
+                preferences.soundEnabled.toggle()
+            } label: {
+                if preferences.soundEnabled {
+                    Label("Звуки", systemImage: "checkmark")
+                } else {
+                    Text("Звуки")
+                }
+            }
+
+            Divider()
+
             Button("Развернуть Tranq") {
                 MainWindowController.shared.showMainWindow()
             }

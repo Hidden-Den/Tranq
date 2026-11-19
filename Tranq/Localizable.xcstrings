@@ -1143,6 +1143,22 @@
         }
       }
     },
+    "Звуки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sounds"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Звуки"
+          }
+        }
+      }
+    },
     "зн" : {
       "localizations" : {
         "en" : {
@@ -2282,6 +2298,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Новый термин"
+          }
+        }
+      }
+    },
+    "Режим" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим"
           }
         }
       }
