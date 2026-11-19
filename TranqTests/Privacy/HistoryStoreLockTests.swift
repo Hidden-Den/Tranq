@@ -228,6 +228,81 @@ struct HistoryStoreLockTests {
         #expect(vault.noteFileCount() == 1)
         #expect(!FileManager.default.fileExists(atPath: plainFile(directory).path))
     }
+
+    /// Отказ записи конверта: заметка ждёт в памяти и дописывается при следующей попытке.
+    @Test func failedSealStaysPendingAndRetries() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let key = TestHistoryKey()
+        let (store, vault) = makeStore(directory, key: key, state: .locked)
+
+        key.failure = .unavailable
+        let note = dictation("не потеряйся")
+        store.insert(note)
+        store.flush()
+        await mainHop()
+        #expect(vault.noteFileCount() == 0)
+        #expect(store.sealFailureCount == 1)
+        #expect(!FileManager.default.fileExists(atPath: plainFile(directory).path))
+
+        key.failure = nil
+        await store.applyLockStateAndWait(.locked)
+        store.flush()
+        await mainHop()
+        #expect(vault.noteFileCount() == 1)
+        #expect(store.sealFailureCount == 0)
+        await store.applyLockStateAndWait(.unlocked)
+        #expect(store.items.map(\.id) == [note.id])
+        #expect(store.items.first?.isUnread == true)
+    }
+
+    /// Без хранилища заметка держится в памяти и запечатывается после `attach`.
+    @Test func noteWithoutVaultIsSealedAfterAttach() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = HistoryStore(directory: directory, saveDelay: 0, vault: nil, lockState: .locked)
+
+        let note = dictation("ждёт ключа")
+        store.insert(note)
+        store.flush()
+        await mainHop()
+        #expect(store.sealFailureCount == 1)
+
+        await store.applyLockStateAndWait(.unlocked)
+        #expect(store.items.map(\.id) == [note.id])
+
+        let vault = HistoryVault(directory: directory, key: TestHistoryKey())
+        store.attach(vault: vault)
+        store.flush()
+        await mainHop()
+        #expect(vault.noteFileCount() == 1)
+        #expect(store.sealFailureCount == 0)
+        #expect(!FileManager.default.fileExists(atPath: plainFile(directory).path))
+    }
+
+    /// Чтение конвертов, начатое до очистки, не возвращает стёртые заметки.
+    @Test func clearAllDuringUnlockReadStaysEmpty() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let (store, vault) = makeStore(directory, state: .locked)
+        store.addNote(text: "раз")
+        store.addNote(text: "два")
+        store.flush()
+
+        store.applyLockState(.unlocked)
+        store.clearAll()
+        store.flush()
+        await mainHop()
+
+        #expect(store.items.isEmpty)
+        #expect(vault.noteFileCount() == 0)
+    }
+
+    private func mainHop() async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+    }
 }
 
 extension HistoryStore {

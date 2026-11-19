@@ -59,6 +59,8 @@ final class HistoryStore: ObservableObject {
     }
 
     @Published private(set) var lockState: HistoryLockState
+    /// Сколько заметок ждут записи конверта: хранилища нет или запись не удалась.
+    @Published private(set) var sealFailureCount = 0
 
     let directory: URL
     var audioDirectory: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
@@ -71,6 +73,8 @@ final class HistoryStore: ObservableObject {
     private var vault: HistoryVault?
     /// Растёт на каждом переходе: запоздавшее чтение конвертов не оживит `items` после запирания.
     private var generation = 0
+    /// Заметки без записанного конверта. Только на `ioQueue`. Открытым файлом не подменяются никогда.
+    private var pendingSeal: [UUID: TranscriptionItem] = [:]
 
     static var defaultDirectory: URL { AppEnvironment.dataDirectory }
 
@@ -90,6 +94,7 @@ final class HistoryStore: ObservableObject {
     /// Подключает или снимает хранилище конвертов на живом сторе. Состояние меняет `applyLockState`.
     func attach(vault: HistoryVault?) {
         self.vault = vault
+        retryPendingSeals()
     }
 
     /// Переход замка, с главного потока. `unlocked` читает конверты в фоне и публикует их на главном;
@@ -102,6 +107,7 @@ final class HistoryStore: ObservableObject {
         pendingSave?.cancel()
         pendingSave = nil
         lockState = state
+        retryPendingSeals()
         switch state {
         case .off:
             load()
@@ -111,18 +117,22 @@ final class HistoryStore: ObservableObject {
             finish(completion)
         case .unlocked:
             setItemsQuietly([])
-            guard let vault else { finish(completion); return }
+            let vault = vault
             // Чтение на той же очереди, что и записи: заметки, записанные раньше, в него попадут.
             ioQueue.async { [weak self] in
-                let result = Result { try vault.readNotes() }
-                DispatchQueue.main.async {
+                // Незапечатанные заметки видны из памяти.
+                let pending = (self?.pendingSeal.values ?? [:].values).sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+                let result = vault.map { vault in Result { try vault.readNotes() } } ?? .success([])
+                DispatchQueue.main.async { [weak self] in
                     defer { completion?() }
                     guard let self, self.generation == current else { return }
                     switch result {
                     case .success(let loaded):
                         // Вставленное за время чтения уже записано отдельно и стоит первым.
-                        let fresh = Set(self.items.map(\.id))
-                        self.setItemsQuietly(self.items + loaded.filter { !fresh.contains($0.id) })
+                        var seen = Set(self.items.map(\.id))
+                        var merged = self.items
+                        for item in pending + loaded where seen.insert(item.id).inserted { merged.append(item) }
+                        self.setItemsQuietly(merged)
                     case .failure(HistoryKeyError.denied):
                         self.lockState = .locked
                         self.setItemsQuietly([])
@@ -150,9 +160,40 @@ final class HistoryStore: ObservableObject {
     private var isSealed: Bool { lockState != .off }
 
     /// Пишет конверт одной заметки. Нужен только публичный ключ.
+    /// Неудача оставляет заметку в `pendingSeal` до следующей попытки.
     private func seal(_ item: TranscriptionItem) {
-        guard let vault else { return }
-        ioQueue.async { try? vault.writeNote(item) }
+        let vault = vault
+        ioQueue.async { [self] in
+            pendingSeal[item.id] = item
+            drainPendingSeals(vault)
+        }
+    }
+
+    private func retryPendingSeals() {
+        let vault = vault
+        ioQueue.async { [self] in drainPendingSeals(vault) }
+    }
+
+    /// Только на `ioQueue`. В лог идёт id заметки, текст — никогда.
+    private func drainPendingSeals(_ vault: HistoryVault?) {
+        if let vault {
+            for (id, item) in pendingSeal {
+                do {
+                    try vault.writeNote(item)
+                    pendingSeal[id] = nil
+                } catch {
+                    AppLogger.shared.error("History", "Конверт заметки не записан", details: "\(id.uuidString): \(error)")
+                }
+            }
+        }
+        publishSealFailures()
+    }
+
+    private func publishSealFailures() {
+        let count = pendingSeal.count
+        DispatchQueue.main.async { [weak self] in
+            if self?.sealFailureCount != count { self?.sealFailureCount = count }
+        }
     }
 
     /// При запертой истории заметка уходит только в свой конверт, `items` не трогается.
@@ -205,10 +246,14 @@ final class HistoryStore: ObservableObject {
     func clearAll() {
         let ids = items.map(\.id)
         let vault = isSealed ? vault : nil
+        // Чтение конвертов в полёте не должно вернуть стёртое.
+        generation += 1
         items.removeAll()
         ioQueue.async { [self] in
             ids.forEach(deleteFilesSync)
             vault?.deleteAll()
+            pendingSeal.removeAll()
+            publishSealFailures()
         }
     }
 
@@ -244,6 +289,8 @@ final class HistoryStore: ObservableObject {
         let vault = isSealed ? vault : nil
         ioQueue.async { [self] in
             deleteFilesSync(id)
+            pendingSeal[id] = nil
+            publishSealFailures()
             vault?.deleteNote(id: id)
             vault?.deleteBlobs(id: id)
         }
