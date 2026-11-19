@@ -38,6 +38,12 @@ public struct JournalRecord: Codable, Identifiable {
     }
 }
 
+/// Как журнал пишет строки: открытым JSON или конвертом. Запечатать можно по одному публичному ключу.
+enum JournalSealing {
+    case off
+    case sealed(key: HistoryKeyProviding)
+}
+
 public final class TranscriptJournal: ObservableObject {
     public static let shared = TranscriptJournal(directory: AppEnvironment.dataDirectory)
 
@@ -49,6 +55,8 @@ public final class TranscriptJournal: ObservableObject {
     private let maxFileBytes: UInt64 = 5 * 1024 * 1024 // 5 MB ротация
 
     private let directory: URL
+    /// Читается и меняется только на ioQueue, поэтому смена режима идёт в одном порядке с записями.
+    private var sealing: JournalSealing
 
     private var journalFileURL: URL? {
         directory.appendingPathComponent("transcript_journal.jsonl")
@@ -60,9 +68,16 @@ public final class TranscriptJournal: ObservableObject {
     }
 
     /// `directory` подменяется в тестах, чтобы не трогать настоящий журнал пользователя.
-    init(directory: URL) {
+    init(directory: URL, sealing: JournalSealing = .off) {
         self.directory = directory
-        loadLastRecordFromDisk()
+        self.sealing = sealing
+        // Запечатанную строку без подтверждения личности не прочесть: последнюю запись с диска не поднимаем.
+        if case .off = sealing { loadLastRecordFromDisk() }
+    }
+
+    /// Переключает режим записи на ходу. Встаёт в очередь записи, поэтому уже принятые строки уйдут в прежнем режиме.
+    func setSealing(_ sealing: JournalSealing) {
+        ioQueue.async { self.sealing = sealing }
     }
 
     /// Стирает журнал, его архив и последнюю запись в памяти. «Вставить оригинал речи» после этого ничего не найдёт.
@@ -186,35 +201,75 @@ public final class TranscriptJournal: ObservableObject {
         }
     }
 
+    /// Строка файла: открытый JSON или base64 конверта, смотря по режиму. Без публичного ключа строки нет, открытым не пишем.
+    private func encodeLine(_ record: JournalRecord) throws -> Data? {
+        let json = try JSONEncoder().encode(record)
+        switch sealing {
+        case .off:
+            return json
+        case .sealed(let key):
+            let envelope = try HistoryCrypto.seal(json, purpose: .journal, publicKey: key.publicKey)
+            return Data(try JSONEncoder().encode(envelope).base64EncodedString().utf8)
+        }
+    }
+
     private func appendToFile(_ record: JournalRecord) {
         guard let url = journalFileURL else { return }
         do {
-            let data = try JSONEncoder().encode(record)
-            if let line = String(data: data, encoding: .utf8) {
-                let entry = line + "\n"
-                guard let entryData = entry.data(using: .utf8) else { return }
+            guard var entryData = try encodeLine(record) else { return }
+            entryData.append(0x0A)
 
-                if FileManager.default.fileExists(atPath: url.path) {
-                    // Ротация при превышении 5 МБ: архивируем в .1.jsonl
-                    if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-                       let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
-                        let backupURL = Self.archiveURL(for: url)
-                        try? FileManager.default.removeItem(at: backupURL)
-                        try? FileManager.default.moveItem(at: url, to: backupURL)
-                    }
+            if FileManager.default.fileExists(atPath: url.path) {
+                // Ротация при превышении 5 МБ: архивируем в .1.jsonl
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
+                    let backupURL = Self.archiveURL(for: url)
+                    try? FileManager.default.removeItem(at: backupURL)
+                    try? FileManager.default.moveItem(at: url, to: backupURL)
                 }
+            }
 
-                if FileManager.default.fileExists(atPath: url.path) {
-                    let fileHandle = try FileHandle(forWritingTo: url)
-                    fileHandle.seekToEndOfFile()
-                    try fileHandle.write(contentsOf: entryData)
-                    try fileHandle.close()
-                } else {
-                    try entryData.write(to: url, options: .atomic)
-                }
+            if FileManager.default.fileExists(atPath: url.path) {
+                let fileHandle = try FileHandle(forWritingTo: url)
+                fileHandle.seekToEndOfFile()
+                try fileHandle.write(contentsOf: entryData)
+                try fileHandle.close()
+            } else {
+                try entryData.write(to: url, options: .atomic)
             }
         } catch {
             AppLogger.shared.error("Journal", "Не удалось записать журнал транскриптов", details: error.localizedDescription)
         }
+    }
+
+    /// Читает архив и текущий файл, открывая каждую запечатанную строку. Нечитаемые строки пропускает,
+    /// ошибки ключа `HistoryKeyError` отдаёт наружу. Может показать запрос подтверждения: не звать с главного потока.
+    func readAllRecords(key: HistoryKeyProviding) throws -> [JournalRecord] {
+        // Снимок файлов берём в очереди записи, расшифровку делаем вне её: диалог не должен держать запись.
+        let contents: [String] = ioQueue.sync {
+            guard let url = journalFileURL else { return [] }
+            return [Self.archiveURL(for: url), url].compactMap { fileURL in
+                (try? Data(contentsOf: fileURL)).map { String(decoding: $0, as: UTF8.self) }
+            }
+        }
+
+        var records: [JournalRecord] = []
+        for content in contents {
+            for line in content.components(separatedBy: .newlines) where !line.isEmpty {
+                guard let data = Data(base64Encoded: line),
+                      let envelope = try? JSONDecoder().decode(SealedEnvelope.self, from: data) else { continue }
+                do {
+                    let json = try HistoryCrypto.open(envelope, purpose: .journal, key: key)
+                    if let record = try? JSONDecoder().decode(JournalRecord.self, from: json) {
+                        records.append(record)
+                    }
+                } catch let error as HistoryKeyError {
+                    throw error
+                } catch {
+                    continue
+                }
+            }
+        }
+        return records
     }
 }
