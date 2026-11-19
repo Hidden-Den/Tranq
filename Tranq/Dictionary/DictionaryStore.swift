@@ -686,7 +686,11 @@ final class DictionaryStore: ObservableObject {
         if word == nil, disabledPacks.remove(packId) != nil {
             defaults.set(disabledPacks.sorted(), forKey: Keys.disabledPacks)
         }
-        let words = disabledPackWords.filter { $0 != base && !$0.hasPrefix(prefix) }
+        // Ключ слова целиком `<набор>/<написание>`: по префиксу слова отбираются только при удалении набора,
+        // иначе слово «CI» заденет ключ другого слова «CI/CD».
+        let words = disabledPackWords.filter { key in
+            key != base && (word != nil || !key.hasPrefix(prefix))
+        }
         if words != disabledPackWords {
             disabledPackWords = words
             defaults.set(words.sorted(), forKey: Keys.disabledPackWords)
