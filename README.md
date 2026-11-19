@@ -27,8 +27,7 @@ The app targets Russian speech with Latin-script technical terms.
 
 * **Offline recognition.** GigaAM v3 runs on-device; audio never leaves your Mac. Whisper Large-v3 Turbo and Medium are available as English-only alternatives.
 * **Speech cleanup.** With a cleanup model set up, local or through an API, it removes filler words, self-corrections, and repeated thoughts while keeping the speaker's own words and facts. Without one, only sounds and stutters are removed. Numbers and Latin terms are guarded by a validator: if the model drops or invents something, the text is inserted without its edits.
-* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech, unless direct mode is on.
-* **Prompt mode.** Your hotkey with Shift turns one dictation into a request for an AI assistant. Enabled in Settings.
+* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech. Rules have their own item in the sidebar.
 * **Three processing options:**
   * local models without network access, with a recommendation based on your Mac's memory;
   * an external API: OpenRouter, OpenAI, Anthropic, DeepSeek, Ollama;
@@ -72,6 +71,21 @@ xattr -cr /Applications/Tranq.app
 
 ---
 
+## Sidebar and Settings
+
+The sidebar has four items: Dictionary, Rules, History, Settings. A finished dictation opens History only while the main window is hidden; with the window open, the new note waits with an unread dot.
+
+Settings has six sections, listed in the sidebar:
+
+* **Dictation:** hotkey, hotkey mode, auto-paste, sounds.
+* **Recognition:** speech model.
+* **Processing:** engine, cleanup model, model instruction, links to the dictionary and rules.
+* **Provider:** provider presets, URL, key, connection check, telemetry.
+* **App:** language, appearance, launch at login, hide in Dock, open in History, about.
+* **Data:** agent access, app logs, erase history.
+
+---
+
 ## System Permissions
 
 * **Microphone:** Required for capturing voice input.
@@ -85,8 +99,7 @@ xattr -cr /Applications/Tranq.app
   * In **Toggle** mode: 1st press starts recording, 2nd press finalizes transcription and pastes text.
   * In **Push-to-Talk** mode: Hold key to record, release to transcribe.
 * **`ESC`:** Cancels recording immediately without saving or pasting.
-* **Hotkey with Shift:** Runs one dictation in prompt mode, when enabled.
-* **Menu Bar Status Icon:** Open the app and settings.
+* **Menu Bar Status Icon:** Choose Toggle or Push-to-Talk, turn sounds on or off, open the app and settings. `⌘ + ,` opens Settings.
 
 ---
 
@@ -94,7 +107,7 @@ xattr -cr /Applications/Tranq.app
 
 Tranq can hand its dictionary to an AI agent. The app ships a helper, `tranq-mcp`, that speaks MCP over stdin and stdout and reaches the app through a Unix socket in its data folder. Nothing listens on the network, and the agent you already use is the only one that sees the data.
 
-**Switches in Settings, all off until you turn them on:**
+**Switches in Settings, section Data, all off until you turn them on:**
 
 * **Access** — read the dictionary, add words, create packs of its own.
 * **Full access** — delete any word, your own hand-typed ones included, and disable packs. Confirmed with a warning.
