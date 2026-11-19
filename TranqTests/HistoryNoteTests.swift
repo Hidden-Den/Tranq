@@ -23,6 +23,7 @@ struct HistoryNoteTests {
         let items = try JSONDecoder().decode([TranscriptionItem].self, from: Data(json.utf8))
         #expect(items[0].text.hasPrefix("Контекст"))
         #expect(items[0].showsSpokenToggle)
+        #expect(items[0].createdAt == nil)
     }
 
     @Test func spokenToggleOnlyWhenDifferent() {

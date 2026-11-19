@@ -45,6 +45,47 @@ struct HistoryVaultTests {
         #expect(try vault.readNotes().map(\.text) == ["новая", "средняя", "старая"])
     }
 
+    @Test func rewritingOlderNoteKeepsOrder() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let vault = HistoryVault(directory: directory, key: TestHistoryKey())
+        var older = item("раньше")
+        older.createdAt = Date(timeIntervalSince1970: 1_000)
+        var newer = item("позже")
+        newer.createdAt = Date(timeIntervalSince1970: 2_000)
+        try vault.writeNote(older)
+        try vault.writeNote(newer)
+        #expect(try vault.readNotes().map(\.text) == ["позже", "раньше"])
+
+        // Перезапись старой, как в markAsRead, порядок не меняет.
+        try vault.writeNote(older.withText("раньше правка"))
+        #expect(try vault.readNotes().map(\.text) == ["позже", "раньше правка"])
+    }
+
+    @Test func notesWithoutStampComeInStableIdOrder() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let vault = HistoryVault(directory: directory, key: TestHistoryKey())
+        var notes = (0..<6).map { item("заметка \($0)") }
+        for index in notes.indices { notes[index].createdAt = nil }
+        for note in notes.reversed() { try vault.writeNote(note) }
+        let expected = notes.map(\.id.uuidString).sorted()
+        for _ in 0..<3 {
+            #expect(try vault.readNotes().map(\.id.uuidString) == expected)
+        }
+    }
+
+    @Test func stampedNotesComeBeforeUnstampedOnes() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let vault = HistoryVault(directory: directory, key: TestHistoryKey())
+        var legacy = item("старая версия")
+        legacy.createdAt = nil
+        try vault.writeNote(legacy)
+        try vault.writeNote(item("со штампом"))
+        #expect(try vault.readNotes().map(\.text) == ["со штампом", "старая версия"])
+    }
+
     @Test func corruptedFileIsSkippedAndKept() throws {
         let directory = makeDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

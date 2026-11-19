@@ -39,15 +39,15 @@ final class HistoryVault: @unchecked Sendable {
         try write(envelope, to: noteURL(item.id), in: notesDirectory)
     }
 
-    /// Новые первыми: по дате заметки, при равной дате по времени изменения файла.
-    /// Дата заметки хранится строкой с точностью до минуты, поэтому тай-брейк нужен.
+    /// Новые первыми: по дате заметки, затем по `createdAt` (пусто в конце), затем по id.
+    /// Дата заметки хранится строкой с точностью до минуты, поэтому нужны запасные ключи.
     /// Порченый конверт пропускается и остаётся на диске, его адрес попадает в `corruptedNoteFiles`.
     /// Отказ или недоступность ключа порчей не считаются и уходят наружу как есть.
     /// Согласование ключа может показать диалог: с главного потока не звать.
     func readNotes() throws -> [TranscriptionItem] {
         setCorrupted([])
         let files = noteFiles()
-        var found: [(item: TranscriptionItem, date: Date, modified: Date)] = []
+        var found: [(item: TranscriptionItem, date: Date)] = []
         var broken: [URL] = []
         for url in files {
             guard let data = try? Data(contentsOf: url),
@@ -68,12 +68,15 @@ final class HistoryVault: @unchecked Sendable {
                 broken.append(url)
                 continue
             }
-            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?
-                .contentModificationDate ?? .distantPast
-            found.append((item, Self.parse(item.date), modified))
+            found.append((item, Self.parse(item.date)))
         }
         setCorrupted(broken)
-        found.sort { ($0.date, $0.modified) > ($1.date, $1.modified) }
+        found.sort { lhs, rhs in
+            if lhs.date != rhs.date { return lhs.date > rhs.date }
+            let (left, right) = (lhs.item.createdAt ?? .distantPast, rhs.item.createdAt ?? .distantPast)
+            if left != right { return left > right }
+            return lhs.item.id.uuidString < rhs.item.id.uuidString
+        }
         return found.map(\.item)
     }
 

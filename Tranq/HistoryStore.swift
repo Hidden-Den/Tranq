@@ -9,6 +9,8 @@ struct TranscriptionItem: Identifiable, Codable, Hashable {
     var isUnread: Bool? = false
     /// Сырая расшифровка до очистки; пусто у ручных заметок и у заметок прошлых версий.
     var spokenText: String?
+    /// Момент создания: стабильный порядок заметок одной минуты. У заметок прошлых версий пусто.
+    var createdAt: Date? = Date()
 
     /// Показывать ли переключатель «Итог / Сказано»: только если сказанное отличается от итога.
     var showsSpokenToggle: Bool {
@@ -17,7 +19,7 @@ struct TranscriptionItem: Identifiable, Codable, Hashable {
     }
 
     func withText(_ newText: String) -> TranscriptionItem {
-        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread, spokenText: spokenText)
+        TranscriptionItem(id: id, date: date, text: newText, duration: duration, speedup: speedup, isUnread: isUnread, spokenText: spokenText, createdAt: createdAt)
     }
 
     static let dateFormat = "dd.MM.yyyy, HH:mm"
