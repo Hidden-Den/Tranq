@@ -98,7 +98,7 @@ struct ContentView: View {
             // Открытое окно не трогаем: новая запись остаётся непрочитанной, на неё указывает точка в истории
             if AutoOpenPolicy.shouldSwitchToHistory(
                 autoOpenEnabled: preferences.autoOpenNoteEnabled,
-                isWindowVisible: MainWindowController.shared.isWindowVisible
+                isWindowVisible: MainWindowController.shared.isMainWindowOnScreen
             ), let newId = notification.object as? UUID {
                 withAnimation {
                     self.currentTab = .history

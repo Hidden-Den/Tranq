@@ -7,3 +7,13 @@ enum AutoOpenPolicy {
         autoOpenEnabled && !isWindowVisible
     }
 }
+
+/// Видно ли главное окно на экране прямо сейчас.
+enum WindowPresence {
+    /// Окно на экране, только если оно показано, не свёрнуто в Dock и приложение не скрыто через ⌘H.
+    /// `isVisible == nil` значит, что окна ещё нет: показывать нечего.
+    static func isOnScreen(isVisible: Bool?, isMiniaturized: Bool, appIsHidden: Bool) -> Bool {
+        (isVisible ?? false) && !isMiniaturized && !appIsHidden
+    }
+}
+

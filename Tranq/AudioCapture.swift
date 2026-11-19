@@ -35,6 +35,8 @@ final class AudioCapture: ObservableObject {
     private let history = HistoryStore.shared
     private let preferences = AppPreferences.shared
     private var escMonitor: Any?
+    /// Помнит, что «ИИ не настроен» уже показано в этом запуске.
+    private var fallbackNoticeThrottle = FallbackNoticeThrottle()
 
     private init() {
         TempFiles.purgeStale()
@@ -238,7 +240,7 @@ final class AudioCapture: ObservableObject {
     private func insert(_ output: TranscriptionPipeline.Output, target: FocusSnapshot?, then next: @escaping () -> Void) {
         transcribedText = output.finalText
         isSuccessDone = true
-        let fallbackNotice = FallbackNotice.message(
+        let fallbackNotice = fallbackNoticeThrottle.message(
             for: output.fallback,
             providerID: AIProviderStore.shared.providerID,
             engine: VoiceIntelligenceSettings.shared.engine

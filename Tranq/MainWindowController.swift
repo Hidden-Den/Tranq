@@ -10,6 +10,16 @@ final class MainWindowController: NSObject, NSWindowDelegate, ObservableObject {
     private(set) var mainWindow: NSWindow?
     private weak var originalDelegate: NSWindowDelegate?
     @Published var isWindowVisible: Bool = true
+
+    /// Окно видно человеку сейчас. В отличие от `isWindowVisible`, который гаснет только при закрытии,
+    /// учитывает свёрнутое окно и приложение, скрытое через ⌘H. Читается в момент запроса.
+    var isMainWindowOnScreen: Bool {
+        WindowPresence.isOnScreen(
+            isVisible: mainWindow?.isVisible,
+            isMiniaturized: mainWindow?.isMiniaturized ?? false,
+            appIsHidden: NSApp.isHidden
+        )
+    }
     
     override init() {
         super.init()
