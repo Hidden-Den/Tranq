@@ -259,36 +259,55 @@ public final class TranscriptJournal: ObservableObject {
     }
 
     /// Переписывает архив и текущий файл построчно в очереди записи, поэтому ни одна строка не теряется
-    /// и не встаёт между чтением и заменой. Каждый файл сначала пишется копией рядом, копия читается
-    /// обратно и сверяется, и только потом атомарно заменяет исходник. Сбой до замены убирает копии,
-    /// исходники остаются как были. В конце журнал пишет в режиме `sealing`.
+    /// и не встаёт между чтением и заменой. В конце журнал пишет в режиме `sealing`.
     func rewriteForMigration(sealing: JournalSealing, transform: (String) throws -> String) throws {
         try ioQueue.sync {
-            var copies: [(copy: URL, original: URL)] = []
-            do {
-                for original in migrationFiles where FileManager.default.fileExists(atPath: original.path) {
-                    let source = Self.lines(of: original)
-                    let output = try source.map(transform)
-                    guard output.count == source.count, !output.contains(where: { $0.contains("\n") }) else {
-                        throw HistoryMigrationError.verificationFailed
-                    }
-                    let data = Data((output.map { $0 + "\n" }.joined()).utf8)
-                    let copy = original.appendingPathExtension(Self.migrationSuffix)
-                    copies.append((copy, original))
-                    try data.write(to: copy, options: .atomic)
-                    guard (try? Data(contentsOf: copy)) == data else { throw HistoryMigrationError.verificationFailed }
-                }
-            } catch {
-                for item in copies { try? FileManager.default.removeItem(at: item.copy) }
-                throw error
-            }
-            // Копии проверены: замена атомарная, исходник уходит только вместе с появлением копии.
-            for item in copies where Darwin.rename(item.copy.path, item.original.path) != 0 {
-                try? FileManager.default.removeItem(at: item.copy)
-                AppLogger.shared.error("Journal", "Файл журнала не заменён при миграции", details: item.original.lastPathComponent)
-            }
+            try Self.rewrite(migrationFiles, transform: transform)
             self.sealing = sealing
         }
+    }
+
+    /// Файлы журнала в папке данных по порядку: архив, затем текущий. Для запуска, когда очереди ещё нет.
+    static func migrationFiles(in directory: URL) -> [URL] {
+        let url = directory.appendingPathComponent("transcript_journal.jsonl")
+        return [archiveURL(for: url), url]
+    }
+
+    /// Есть ли в журнале хоть одна запечатанная строка.
+    static func hasSealedLines(in directory: URL, isSealed: (String) -> Bool) -> Bool {
+        migrationFiles(in: directory).contains { lines(of: $0).contains(where: isSealed) }
+    }
+
+    /// Каждый файл сначала пишется копией рядом, копия читается обратно и сверяется,
+    /// и только потом атомарно заменяет исходник. Сбой до замены убирает копии, исходники остаются как были.
+    /// Звать только из очереди журнала или при запуске, пока журналом никто не пишет.
+    static func rewrite(_ files: [URL], transform: (String) throws -> String) throws {
+        var copies: [(copy: URL, original: URL)] = []
+        do {
+            for original in files where FileManager.default.fileExists(atPath: original.path) {
+                let source = lines(of: original)
+                let output = try source.map(transform)
+                guard output.count == source.count, !output.contains(where: { $0.contains("\n") }) else {
+                    throw HistoryMigrationError.verificationFailed
+                }
+                let data = Data((output.map { $0 + "\n" }.joined()).utf8)
+                let copy = original.appendingPathExtension(migrationSuffix)
+                copies.append((copy, original))
+                try data.write(to: copy, options: .atomic)
+                guard (try? Data(contentsOf: copy)) == data else { throw HistoryMigrationError.verificationFailed }
+            }
+        } catch {
+            for item in copies { try? FileManager.default.removeItem(at: item.copy) }
+            throw error
+        }
+        // Копии проверены: замена атомарная, исходник уходит только вместе с появлением копии.
+        var failed = false
+        for item in copies where Darwin.rename(item.copy.path, item.original.path) != 0 {
+            try? FileManager.default.removeItem(at: item.copy)
+            AppLogger.shared.error("Journal", "Файл журнала не заменён при миграции", details: item.original.lastPathComponent)
+            failed = true
+        }
+        if failed { throw HistoryMigrationError.verificationFailed }
     }
 
     /// Строки файла по `\n`, байт в байт. Нет файла — нет строк.

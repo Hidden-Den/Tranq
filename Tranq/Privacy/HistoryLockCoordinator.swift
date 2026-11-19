@@ -18,12 +18,15 @@ final class HistoryLockCoordinator: ObservableObject {
             journal: .shared,
             key: HistoryKeyFactory.make(),
             presence: LocalAuthPresenceGate(),
-            directory: AppEnvironment.dataDirectory
+            directory: AppEnvironment.dataDirectory,
+            launchNotice: HistoryMigration.launchNotice
         )
     }()
 
     /// Состояние замка для экрана. Повторяет `lock.state`.
     @Published private(set) var state: HistoryLockState = .off
+    /// Что уборка при запуске нашла и о чём стоит сказать человеку. Показ — дело экрана.
+    @Published var launchNotice: HistoryMigration.LaunchNotice?
 
     let key: HistoryKeyProviding
     let presence: PresenceAuthorizing
@@ -51,7 +54,9 @@ final class HistoryLockCoordinator: ObservableObject {
          directory: URL,
          erase: @escaping () -> Void = { DataEraser.eraseAll() },
          resetSession: (() -> Void)? = nil,
-         now: @escaping () -> Date = Date.init) {
+         now: @escaping () -> Date = Date.init,
+         launchNotice: HistoryMigration.LaunchNotice? = nil) {
+        self.launchNotice = launchNotice
         self.store = store
         self.journal = journal
         self.key = key

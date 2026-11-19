@@ -10,13 +10,15 @@ import Testing
 
 /// Ключ со сценарием сбоев: публичный ключ отдаётся `publicLimit` раз, согласование можно сломать.
 final class ScriptedHistoryKey: HistoryKeyProviding {
-    let inner = TestHistoryKey()
+    let inner: TestHistoryKey
     var publicLimit = Int.max
     var agreeFails = false
     private(set) var publicCalls = 0
     private(set) var creates = 0
     private(set) var destroys = 0
     private let lock = NSLock()
+
+    init(created: Bool = true) { inner = TestHistoryKey(created: created) }
 
     var exists: Bool { inner.exists }
 
@@ -65,10 +67,10 @@ struct HistoryMigrationTests {
         var timings: [UUID: Data]
     }
 
-    private func makeRig(_ directory: URL? = nil) -> Rig {
-        let directory = directory ?? FileManager.default.temporaryDirectory
+    private func makeRig(keyCreated: Bool = true) -> Rig {
+        let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("HistoryMigrationTests-\(UUID().uuidString)", isDirectory: true)
-        let key = ScriptedHistoryKey()
+        let key = ScriptedHistoryKey(created: keyCreated)
         return Rig(directory: directory, key: key,
                    vault: HistoryVault(directory: directory, key: key),
                    store: HistoryStore(directory: directory, saveDelay: 0),
@@ -224,7 +226,7 @@ struct HistoryMigrationTests {
 
     /// Подставная ошибка чтения: конверты не прочитались обратно, открытые файлы целы, флаг не тронут.
     @Test func enableVerifiesBeforeDeleting() async throws {
-        let rig = makeRig()
+        let rig = makeRig(keyCreated: false)
         defer { cleanup(rig) }
         let seed = try seed(rig)
         let before = plainFiles(rig)
@@ -244,7 +246,7 @@ struct HistoryMigrationTests {
     }
 
     @Test func failureMidwayLeavesPlainFilesReadable() async throws {
-        let rig = makeRig()
+        let rig = makeRig(keyCreated: false)
         defer { cleanup(rig) }
         let seed = try seed(rig)
         let before = plainFiles(rig)
@@ -503,14 +505,15 @@ struct HistoryMigrationTests {
 
     /// Review Focus 3: замок включён, `Notes/` пуст, `history.json` остался от сбоя. Открытый файл побеждает.
     @Test func plainHistoryFileWinsWhenNotesFolderEmpty() async throws {
-        let rig = makeRig()
+        let rig = makeRig(keyCreated: false)
         defer { cleanup(rig) }
         let seed = try seed(rig)
         let before = plainFiles(rig)
 
-        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
-                                         setLockEnabled: { rig.flags.values.append($0) })
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
 
+        #expect(notice == .lockTurnedOff)
         #expect(rig.flags.values == [false])
         #expect(plainFiles(rig) == before)
         let reopened = HistoryStore(directory: rig.directory)
@@ -527,8 +530,9 @@ struct HistoryMigrationTests {
         let strayData = try JSONEncoder().encode([stray])
         try strayData.write(to: historyURL(rig))
 
-        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
-                                         setLockEnabled: { rig.flags.values.append($0) })
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
+        #expect(notice == .leftoverPlainHistory)
         #expect(rig.flags.values == [true])
         #expect(try Data(contentsOf: historyURL(rig)) == strayData)
 
@@ -543,6 +547,7 @@ struct HistoryMigrationTests {
         let rig = makeRig()
         defer { cleanup(rig) }
         let seed = try seed(rig)
+        let plainJournal = journalLines(rig)
         for item in seed.items { try rig.vault.writeNote(item) }
         for (id, bytes) in seed.audio { try rig.vault.writeBlob(bytes, id: id, purpose: .audio) }
         for (id, bytes) in seed.timings { try rig.vault.writeBlob(bytes, id: id, purpose: .timings) }
@@ -555,6 +560,10 @@ struct HistoryMigrationTests {
         #expect(plainFiles(rig).keys.filter { $0 != "transcript_journal.jsonl" }.isEmpty)
         #expect(rig.vault.noteFileCount() == seed.items.count)
         #expect(leftovers(rig).isEmpty)
+        // Сбой пришёлся до журнала: запуск запечатал его по публичному ключу.
+        #expect(!journalLines(rig).isEmpty)
+        #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
+        #expect(try rig.journal.readAllRecords(key: rig.key).count == plainJournal.count)
     }
 
     /// Не каждая заметка `history.json` лежит конвертом: открытый файл остаётся.
@@ -565,13 +574,16 @@ struct HistoryMigrationTests {
         try rig.vault.writeNote(seed.items[0])
         try HistoryMigration.writeMarker(.enable, in: rig.directory)
 
-        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
-                                         setLockEnabled: { rig.flags.values.append($0) })
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
 
         #expect(FileManager.default.fileExists(atPath: historyURL(rig).path))
+        #expect(notice == .leftoverPlainHistory)
+        #expect(rig.flags.values == [true])
+        #expect(leftovers(rig).isEmpty)
     }
 
-    /// Сбой после фиксации выключения: запуск переименовывает копии, убирает конверты и опускает флаг.
+    /// Флаг уже опущен, метка осталась: запуск переименовывает копии и убирает конверты.
     @Test func committedDisableIsFinishedOnNextLaunch() async throws {
         let rig = makeRig()
         defer { cleanup(rig) }
@@ -586,10 +598,10 @@ struct HistoryMigrationTests {
         }
         try HistoryMigration.writeMarker(.disable, in: rig.directory)
 
-        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
                                          setLockEnabled: { rig.flags.values.append($0) })
 
-        #expect(rig.flags.values == [false])
+        #expect(rig.flags.values.isEmpty)
         #expect(try decodeHistory(rig) == seed.items)
         for (id, bytes) in seed.audio { #expect(try Data(contentsOf: rig.store.audioURL(for: id)) == bytes) }
         #expect(rig.vault.noteFileCount() == 0)
@@ -614,6 +626,163 @@ struct HistoryMigrationTests {
         #expect(leftovers(rig).isEmpty)
         #expect(rig.vault.hasBlob(id: id, purpose: .audio))
         #expect(rig.vault.noteFileCount() == seed.items.count)
+    }
+
+    // MARK: - Журнал, ключ и откат
+
+    /// Метка `enableJournal` держится, пока журнал не запечатан, и снимается, когда ключ снова есть.
+    @Test func journalMarkerIsRetriedUntilSealed() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try HistoryMigration.writeMarker(.enableJournal, in: rig.directory)
+        rig.key.publicLimit = 0
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+        #expect(leftovers(rig) == [HistoryMigration.markerName])
+        #expect(!journalLines(rig).contains(where: HistoryMigration.isSealedLine))
+
+        rig.key.publicLimit = Int.max
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+        #expect(leftovers(rig).isEmpty)
+        #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
+    }
+
+    /// Журнал не открылся при выключении: замок остаётся, журнал запечатан, заметки читаются.
+    @Test func failedDisableJournalStepKeepsLockOn() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        rig.journal.flush()
+        let envelopes = envelopeCount(rig)
+        // Папка на месте копии журнала: запись копии падает.
+        try FileManager.default.createDirectory(at: journalURL(rig).appendingPathExtension("migrating"),
+                                                withIntermediateDirectories: true)
+
+        await #expect(throws: (any Error).self) { try await disable(rig) }
+        rig.journal.flush()
+
+        #expect(rig.flags.values == [true])
+        #expect(rig.store.lockState == .locked)
+        #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
+        #expect(!FileManager.default.fileExists(atPath: historyURL(rig).path))
+        #expect(envelopeCount(rig) == envelopes)
+        #expect(leftovers(rig).isEmpty)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+
+        // Повтор проходит.
+        try await disable(rig)
+        #expect(rig.flags.values == [true, false])
+        #expect(try decodeHistory(rig) == seed.items)
+    }
+
+    /// Запуск с меткой `disable` и включённым флагом: откат, замок остаётся, заметки читаются.
+    @Test func disableMarkerWithFlagOnRollsBack() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let plainJournal = try Data(contentsOf: journalURL(rig))
+        try await enable(rig)
+        rig.journal.flush()
+        // Сбой после перехода и открытия журнала, до флага.
+        let data = try JSONEncoder().encode(seed.items)
+        try data.write(to: historyURL(rig))
+        try plainJournal.write(to: journalURL(rig))
+        try HistoryMigration.writeMarker(.disable, in: rig.directory, digest: HistoryMigration.digest(data))
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(notice == nil)
+        #expect(rig.flags.values == [true])
+        #expect(!FileManager.default.fileExists(atPath: historyURL(rig).path))
+        #expect(leftovers(rig).isEmpty)
+        #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+    }
+
+    /// Откат не удаляет открытую историю, в которой есть заметка без конверта.
+    @Test func rollbackKeepsPlainHistoryWithUnsealedNote() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let extra = note("только открытая", date: "10.11.2026, 10:00", createdAt: Date())
+        let data = try JSONEncoder().encode([extra] + seed.items)
+        try data.write(to: historyURL(rig))
+        try HistoryMigration.writeMarker(.disable, in: rig.directory, digest: HistoryMigration.digest(data))
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(notice == .leftoverPlainHistory)
+        #expect(try Data(contentsOf: historyURL(rig)) == data)
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Все заметки удалены под замком, рядом остался старый `history.json`, ключ есть:
+    /// замок не выключается и удалённое не возвращается.
+    @Test func leftoverPlainHistoryWithKeyDoesNotTurnLockOff() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        while !rig.store.items.isEmpty { rig.store.deleteItem(at: 0) }
+        rig.store.flush()
+        #expect(rig.vault.noteFileCount() == 0)
+        let leftover = try JSONEncoder().encode(seed.items)
+        try leftover.write(to: historyURL(rig))
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(notice == .leftoverPlainHistory)
+        #expect(rig.flags.values == [true])
+        #expect(try Data(contentsOf: historyURL(rig)) == leftover)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items.isEmpty)
+    }
+
+    /// Ключ с запечатанными строками журнала переживает следующее включение, строки открываются.
+    @Test func existingKeyWithSealedJournalIsReused() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let old = UUID()
+        rig.journal.setSealing(.sealed(key: rig.key))
+        rig.journal.recordInitial(id: old, rawText: "старый секрет", durationSec: 1, targetAppName: nil)
+        rig.journal.setSealing(.off)
+        rig.journal.flush()
+        try seed(rig)
+
+        try await enable(rig)
+        rig.journal.flush()
+
+        #expect(rig.key.creates == 0)
+        #expect(rig.key.destroys == 0)
+        let records = try rig.journal.readAllRecords(key: rig.key)
+        #expect(records.contains { $0.id == old && $0.rawText == "старый секрет" })
+        #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
+    }
+
+    /// Порченый конверт остаётся после выключения, но метку не держит: следующее включение проходит.
+    @Test func corruptEnvelopeDoesNotBlockNextEnable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        let corrupt = rig.directory.appendingPathComponent("Notes/\(UUID().uuidString).note")
+        try Data("порча".utf8).write(to: corrupt)
+
+        try await disable(rig)
+        #expect(leftovers(rig).isEmpty)
+        #expect(FileManager.default.fileExists(atPath: corrupt.path))
+
+        try await enable(rig)
+        #expect(rig.flags.values == [true, false, true])
+        #expect(leftovers(rig).isEmpty)
     }
 
     // MARK: - Закрытия настроек

@@ -58,6 +58,7 @@ final class HistoryLockMigrator {
         try await exclusive {
             try await HistoryMigration.disable(store: store, journal: journal, vault: vault,
                                                deactivate: switchLock.map { action in { action(false) } },
+                                               reactivate: switchLock.map { action in { action(true) } },
                                                setFlag: setFlag)
         }
     }
