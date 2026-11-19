@@ -5,10 +5,9 @@
 
 import Testing
 import Foundation
-import Carbon
 @testable import Tranq
 
-/// Проверка и сборка правила из черновика, подсказка про сочетание для промпта.
+/// Проверка и сборка правила из черновика.
 struct RuleEditorLogicTests {
 
     private func siteDraft(_ input: String, tone: RuleTone = .business, customText: String = "") -> RuleDraft {
@@ -54,13 +53,5 @@ struct RuleEditorLogicTests {
         #expect(!ids.contains(Bundle.main.bundleIdentifier ?? "-"))
         let names = apps.map(\.name)
         #expect(names == names.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending })
-    }
-
-    @Test func promptHintForEachTrigger() {
-        #expect(PromptModeHint.make(for: .fnKey) == .available("⇧ + Fn"))
-        #expect(PromptModeHint.make(for: .optionSpace) == .available("⌥⇧ + Space"))
-        #expect(PromptModeHint.make(for: .singleModifier(.leftShift)) == .unavailableShift)
-        #expect(PromptModeHint.make(for: .combination(keyCode: 49, modifiers: UInt32(optionKey | shiftKey))) == .unavailableShift)
-        #expect(PromptModeHint.make(for: .none) == .noHotKey)
     }
 }

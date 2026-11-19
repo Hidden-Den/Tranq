@@ -159,7 +159,7 @@ struct HotKeyTriggerTests {
         manager.mode = .toggle
 
         var pressedCount = 0
-        manager.onHotKeyPressed = { _ in
+        manager.onHotKeyPressed = {
             pressedCount += 1
         }
         manager.onHotKeyReleased = {}
@@ -203,7 +203,7 @@ struct HotKeyTriggerTests {
 
         var pressedCount = 0
         var releasedCount = 0
-        manager.onHotKeyPressed = { _ in
+        manager.onHotKeyPressed = {
             pressedCount += 1
         }
         manager.onHotKeyReleased = {
@@ -223,6 +223,74 @@ struct HotKeyTriggerTests {
         eventUp.flags = []
         manager.handleEventTap(type: .flagsChanged, event: eventUp)
         try await Task.sleep(nanoseconds: 50_000_000)
+        #expect(pressedCount == 1)
+        #expect(releasedCount == 1)
+    }
+
+    // MARK: - Shift при нажатии и сочетание Carbon
+
+    private func withFnToggle(_ body: (NativeHotKeyManager) async throws -> Void) async rethrows {
+        let manager = NativeHotKeyManager.shared
+        let originalTrigger = manager.trigger
+        let originalMode = manager.mode
+        let originalPressed = manager.onHotKeyPressed
+        let originalReleased = manager.onHotKeyReleased
+        defer {
+            manager.trigger = originalTrigger
+            manager.mode = originalMode
+            manager.onHotKeyPressed = originalPressed
+            manager.onHotKeyReleased = originalReleased
+            manager.resetModifierState()
+        }
+        manager.setTrigger(.singleModifier(.fn))
+        manager.mode = .toggle
+        try await body(manager)
+    }
+
+    private func pressFn(_ manager: NativeHotKeyManager, withShift: Bool) async throws {
+        let down = CGEvent(keyboardEventSource: nil, virtualKey: 63, keyDown: true)!
+        var flags: CGEventFlags = [.maskSecondaryFn, CGEventFlags(rawValue: 0x00800000)]
+        if withShift { flags.insert(.maskShift) }
+        down.flags = flags
+        manager.handleEventTap(type: .flagsChanged, event: down)
+        try await Task.sleep(nanoseconds: 50_000_000)
+    }
+
+    /// Shift, зажатый до Fn, ничего не меняет: это обычное нажатие.
+    @Test func fnWithShiftIsPlainPress() async throws {
+        try await withFnToggle { manager in
+            var pressedCount = 0
+            manager.onHotKeyPressed = { pressedCount += 1 }
+            try await pressFn(manager, withShift: true)
+            #expect(pressedCount == 1)
+        }
+    }
+
+    @Test func fnWithoutShiftIsPlainPress() async throws {
+        try await withFnToggle { manager in
+            var pressedCount = 0
+            manager.onHotKeyPressed = { pressedCount += 1 }
+            try await pressFn(manager, withShift: false)
+            #expect(pressedCount == 1)
+        }
+    }
+
+    /// Нажатие и отпускание сочетания Carbon доходят до обработчиков ровно по разу.
+    @Test func carbonHotKeyPressAndReleaseReachCallbacks() {
+        let manager = NativeHotKeyManager.shared
+        let originalPressed = manager.onHotKeyPressed
+        let originalReleased = manager.onHotKeyReleased
+        defer {
+            manager.onHotKeyPressed = originalPressed
+            manager.onHotKeyReleased = originalReleased
+        }
+        var pressedCount = 0
+        var releasedCount = 0
+        manager.onHotKeyPressed = { pressedCount += 1 }
+        manager.onHotKeyReleased = { releasedCount += 1 }
+
+        manager.handleCarbonHotKey(pressed: true)
+        manager.handleCarbonHotKey(pressed: false)
         #expect(pressedCount == 1)
         #expect(releasedCount == 1)
     }

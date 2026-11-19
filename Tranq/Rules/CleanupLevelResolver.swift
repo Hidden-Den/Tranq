@@ -1,11 +1,10 @@
 import Foundation
 
-/// Где идёт диктовка: приложение, сайт активной вкладки и просьба о промпте.
+/// Где идёт диктовка: приложение и сайт активной вкладки.
 /// Снимается в начале записи и не меняется до её конца.
 struct DictationContext: Equatable {
     let bundleId: String?
     let host: String?
-    let promptRequested: Bool
 }
 
 struct ResolvedLevel: Equatable {
@@ -18,22 +17,15 @@ struct ResolvedLevel: Equatable {
     /// Подпись для окошка записи: только для необычного режима, обычная очистка не подписывается.
     var overlayLabel: String? {
         switch level {
-        case .prompt, .rewrite: return label
+        case .rewrite: return label
         case .verbatim, .clean: return nil
         }
     }
 }
 
 enum CleanupLevelResolver {
-    /// Порядок: промпт по Shift, правило сайта, правило приложения, чистая мысль.
-    static func resolve(
-        _ context: DictationContext,
-        rules: [DictationRule],
-        promptModeEnabled: Bool
-    ) -> ResolvedLevel {
-        if context.promptRequested && promptModeEnabled {
-            return ResolvedLevel(level: .prompt, label: String(localized: "Промпт"), ruleName: nil)
-        }
+    /// Порядок: правило сайта, правило приложения, чистая мысль.
+    static func resolve(_ context: DictationContext, rules: [DictationRule]) -> ResolvedLevel {
         if let rule = siteRule(for: context.host, in: rules) ?? appRule(for: context.bundleId, in: rules) {
             return ResolvedLevel(level: .rewrite(tone: rule.tone.instruction), label: rule.displayName, ruleName: rule.displayName)
         }

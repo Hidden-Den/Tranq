@@ -12,23 +12,23 @@ struct CleanupLevelResolverTests {
     let gmailSite = DictationRule(id: UUID(), target: .site(domain: "company.ru"), displayName: "Почта", tone: .business, isEnabled: true)
     let chromeApp = DictationRule(id: UUID(), target: .app(bundleId: "com.google.Chrome"), displayName: "Chrome", tone: .casual, isEnabled: true)
 
-    func ctx(_ b: String?, _ h: String?, prompt: Bool = false) -> DictationContext {
-        .init(bundleId: b, host: h, promptRequested: prompt)
+    func ctx(_ b: String?, _ h: String?) -> DictationContext {
+        .init(bundleId: b, host: h)
     }
 
     @Test func siteBeatsApp() {
-        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "mail.company.ru"), rules: [chromeApp, gmailSite], promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "mail.company.ru"), rules: [chromeApp, gmailSite])
         #expect(r.level == .rewrite(tone: RuleTone.business.instruction))
         #expect(r.label == "Почта")
     }
 
     @Test func unknownSiteFallsBackToAppRule() {
-        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "chatgpt.com"), rules: [chromeApp, gmailSite], promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("com.google.Chrome", "chatgpt.com"), rules: [chromeApp, gmailSite])
         #expect(r.ruleName == "Chrome")
     }
 
     @Test func noRuleGivesClean() {
-        let r = CleanupLevelResolver.resolve(ctx("org.telegram.desktop", nil), rules: [], promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("org.telegram.desktop", nil), rules: [])
         #expect(r.level == .clean)
         #expect(r.label == String(localized: "Чисто"))
         #expect(r.ruleName == nil)
@@ -37,18 +37,16 @@ struct CleanupLevelResolverTests {
     @Test func disabledRuleIgnored() {
         var off = gmailSite
         off.isEnabled = false
-        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [off], promptModeEnabled: false).level == .clean)
+        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [off]).level == .clean)
     }
 
-    @Test func promptNeedsSettingAndShift() {
-        #expect(CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], promptModeEnabled: false).level == .clean)
-        let r = CleanupLevelResolver.resolve(ctx(nil, nil, prompt: true), rules: [], promptModeEnabled: true)
-        #expect(r.level == .prompt)
-        #expect(r.label == String(localized: "Промпт"))
+    @Test func resolveTakesContextAndRulesOnly() {
+        let context = DictationContext(bundleId: nil, host: nil)
+        #expect(CleanupLevelResolver.resolve(context, rules: []).level == .clean)
     }
 
     @Test func resolveWithoutRulesIsClean() {
-        let r = CleanupLevelResolver.resolve(ctx("ru.keepcoder.Telegram", nil), rules: [], promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx("ru.keepcoder.Telegram", nil), rules: [])
         #expect(r.level == .clean)
     }
 
@@ -57,15 +55,15 @@ struct CleanupLevelResolverTests {
         let defaults = AppEnvironment.defaults
         defaults.set("direct", forKey: "voice.mode")
         defer { defaults.removeObject(forKey: "voice.mode") }
-        let r = CleanupLevelResolver.resolve(ctx(nil, nil), rules: [], promptModeEnabled: false)
+        let r = CleanupLevelResolver.resolve(ctx(nil, nil), rules: [])
         #expect(r.level == .clean)
-        let ruled = CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite], promptModeEnabled: false)
+        let ruled = CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite])
         #expect(ruled.level == .rewrite(tone: RuleTone.business.instruction))
     }
 
     @Test func longestDomainWins() {
         let inner = DictationRule(id: UUID(), target: .site(domain: "mail.company.ru"), displayName: "Внутр", tone: .casual, isEnabled: true)
-        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite, inner], promptModeEnabled: false).ruleName == "Внутр")
+        #expect(CleanupLevelResolver.resolve(ctx(nil, "mail.company.ru"), rules: [gmailSite, inner]).ruleName == "Внутр")
     }
 
     @Test func toneInstructionsAreExact() {

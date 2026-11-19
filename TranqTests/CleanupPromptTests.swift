@@ -5,7 +5,7 @@ import Foundation
 /// Промпты уровней и сброс прежнего текста по умолчанию.
 struct CleanupPromptTests {
     @Test func promptsCarryTermsRule() {
-        for level in [CleanupLevel.clean, .rewrite(tone: "деловой"), .prompt] {
+        for level in [CleanupLevel.clean, .rewrite(tone: "деловой")] {
             #expect(ThoughtSynthesizer.getSystemPrompt(for: level).contains(ThoughtSynthesizer.termsRule))
         }
     }
@@ -21,7 +21,7 @@ struct CleanupPromptTests {
     }
 
     @Test func matStaysOutsideBusinessTone() {
-        for level in [CleanupLevel.clean, .prompt, .rewrite(tone: RuleTone.casual.instruction)] {
+        for level in [CleanupLevel.clean, .rewrite(tone: RuleTone.casual.instruction)] {
             let prompt = ThoughtSynthesizer.getSystemPrompt(for: level)
             #expect(prompt.contains(ThoughtSynthesizer.profanityRule) || prompt.contains(RuleTone.keepProfanity))
             #expect(!prompt.contains(RuleTone.dropProfanity))

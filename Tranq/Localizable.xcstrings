@@ -2254,22 +2254,6 @@
         }
       }
     },
-    "Промпт" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompt"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Промпт"
-          }
-        }
-      }
-    },
     "Чисто" : {
       "localizations" : {
         "en" : {
@@ -3408,70 +3392,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Правило уже есть"
-          }
-        }
-      }
-    },
-    "Режим промпта" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompt mode"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Режим промпта"
-          }
-        }
-      }
-    },
-    "%@ на одну диктовку" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ for one dictation"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ на одну диктовку"
-          }
-        }
-      }
-    },
-    "Недоступно с клавишей Shift" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not available with a Shift key"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Недоступно с клавишей Shift"
-          }
-        }
-      }
-    },
-    "Нет горячей клавиши" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hotkey"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нет горячей клавиши"
           }
         }
       }

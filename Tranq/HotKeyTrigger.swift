@@ -84,20 +84,6 @@ public enum HotKeyTrigger: Equatable, Codable, Sendable {
     public static let fnKey = HotKeyTrigger.singleModifier(.fn)
     public static let rightOptionKey = HotKeyTrigger.singleModifier(.rightOption)
 
-    /// Сочетание для режима промпта: та же клавиша с Shift. `nil`, если Shift уже занят самой клавишей
-    /// или клавиши нет. Одиночные модификаторы остаются как есть: Shift проверяется по флагам события.
-    public var promptVariant: HotKeyTrigger? {
-        switch self {
-        case .none:
-            return nil
-        case .combination(let keyCode, let modifiers):
-            guard modifiers & UInt32(shiftKey) == 0 else { return nil }
-            return .combination(keyCode: keyCode, modifiers: modifiers | UInt32(shiftKey))
-        case .singleModifier(let key):
-            return (key == .leftShift || key == .rightShift) ? nil : self
-        }
-    }
-
     public var displayName: String {
         switch self {
         case .none:

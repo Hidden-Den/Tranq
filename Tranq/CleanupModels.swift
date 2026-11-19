@@ -9,8 +9,6 @@ public enum CleanupLevel: Equatable {
     case clean
     /// Уровень C: B плюс тон по правилу пользователя.
     case rewrite(tone: String)
-    /// Мысль, переписанная в запрос к нейросети.
-    case prompt
 }
 
 /// Почему вместо ответа модели вставлен текст уровня A.

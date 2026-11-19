@@ -26,7 +26,7 @@ final class AudioCapture: ObservableObject {
     @Published var transcribedText = ""
     @Published var warningMessage: String?
     @Published var isSuccessDone = false
-    /// Подпись необычного режима для окошка записи: «Промпт» или имя правила. Пусто при обычной очистке.
+    /// Подпись необычного режима для окошка записи: имя правила. Пусто при обычной очистке.
     @Published var modeLabel = ""
 
     private let contextCapture = DictationContextCapture()
@@ -45,13 +45,11 @@ final class AudioCapture: ObservableObject {
 
     // MARK: - Запись
 
-    /// `promptRequested` действует только при начале записи; остановка от него не зависит.
-    func toggleRecording(promptRequested: Bool = false) {
-        if isRecording { stopRecording() } else { startRecording(promptRequested: promptRequested) }
+    func toggleRecording() {
+        if isRecording { stopRecording() } else { startRecording() }
     }
 
-    /// `promptRequested` включает режим промпта на одну диктовку, если он разрешён в настройках.
-    func startRecording(promptRequested: Bool = false) {
+    func startRecording() {
         guard !isRecording else { return }
         isSynthesizingThought = false
         hudStatusMessage = nil
@@ -59,7 +57,7 @@ final class AudioCapture: ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
-                if granted { DispatchQueue.main.async { self.startRecording(promptRequested: promptRequested) } }
+                if granted { DispatchQueue.main.async { self.startRecording() } }
             }
             return
         case .denied, .restricted:
@@ -78,7 +76,7 @@ final class AudioCapture: ObservableObject {
             OverlayPanelManager.shared.keepFront()
         }) else { return }
 
-        beginDictationContext(promptRequested: promptRequested)
+        beginDictationContext()
         SoundEffect.playStart()
         AppLogger.shared.info("Recording", "Запись началась", details: "режим: \(HotKeySettings.shared.mode == .pushToTalk ? "рация" : "переключатель")")
         // Пока человек говорит, заранее поднимаем модели, чтобы распознавание и синтез стартовали без загрузки
@@ -148,26 +146,21 @@ final class AudioCapture: ObservableObject {
     // MARK: - Контекст диктовки
 
     private func resolveLevel(for context: DictationContext) -> ResolvedLevel {
-        let settings = VoiceIntelligenceSettings.shared
-        return CleanupLevelResolver.resolve(
-            context,
-            rules: DictationRuleStore.shared.rules,
-            promptModeEnabled: settings.promptModeEnabled
-        )
+        CleanupLevelResolver.resolve(context, rules: DictationRuleStore.shared.rules)
     }
 
     /// Снимает контекст при начале записи. Подпись режима сначала по приложению, потом уточняется по сайту.
-    private func beginDictationContext(promptRequested: Bool) {
+    private func beginDictationContext() {
         let app = NSWorkspace.shared.frontmostApplication.map { (pid: $0.processIdentifier, bundleId: $0.bundleIdentifier) }
-        modeLabel = resolveLevel(for: DictationContext(bundleId: app?.bundleId, host: nil, promptRequested: promptRequested)).overlayLabel ?? ""
+        modeLabel = resolveLevel(for: DictationContext(bundleId: app?.bundleId, host: nil)).overlayLabel ?? ""
         let hasSiteRules = DictationRuleStore.shared.rules.contains { rule in
             if case .site = rule.target { return rule.isEnabled }
             return false
         }
-        contextCapture.begin(app: app, promptRequested: promptRequested, readsHost: hasSiteRules) { [weak self] host in
+        contextCapture.begin(app: app, readsHost: hasSiteRules) { [weak self] host in
             DispatchQueue.main.async {
                 guard let self, self.isRecording else { return }
-                let context = DictationContext(bundleId: app?.bundleId, host: host, promptRequested: promptRequested)
+                let context = DictationContext(bundleId: app?.bundleId, host: host)
                 self.modeLabel = self.resolveLevel(for: context).overlayLabel ?? ""
             }
         }

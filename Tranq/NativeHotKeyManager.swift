@@ -21,9 +21,7 @@ public class NativeHotKeyManager {
     public static let shared = NativeHotKeyManager()
 
     private var hotKeyRef: EventHotKeyRef?
-    private var promptHotKeyRef: EventHotKeyRef?
     static let plainHotKeyID: UInt32 = 1
-    static let promptHotKeyID: UInt32 = 2
     private var eventHandlerRef: EventHandlerRef?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -34,11 +32,8 @@ public class NativeHotKeyManager {
     private var pendingRetryTimer: Timer?
     private var wasTrustedOnLastRetry = false
 
-    /// Аргумент `true`, если нажато сочетание для режима промпта: основная клавиша с Shift.
-    public var onHotKeyPressed: ((_ promptRequested: Bool) -> Void)?
+    public var onHotKeyPressed: (() -> Void)?
     public var onHotKeyReleased: (() -> Void)?
-    /// Включён ли режим промпта. Тесты подменяют, чтобы не трогать общие настройки.
-    var isPromptModeEnabled: () -> Bool = { VoiceIntelligenceSettings.shared.promptModeEnabled }
     public var isExternalRecordingActive: (() -> Bool)?
 
     private init() {
@@ -48,16 +43,9 @@ public class NativeHotKeyManager {
         ]
         InstallEventHandler(GetApplicationEventTarget(), { (_, eventRef, _) -> OSStatus in
             guard let eventRef else { return noErr }
-            var hotKeyID = EventHotKeyID(signature: 0, id: NativeHotKeyManager.plainHotKeyID)
-            let status = GetEventParameter(
-                eventRef, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
-                nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID
-            )
-            // Не удалось прочитать id: ведём себя как раньше, без режима промпта
-            let id = status == noErr ? hotKeyID.id : NativeHotKeyManager.plainHotKeyID
             switch GetEventKind(eventRef) {
-            case UInt32(kEventHotKeyPressed): NativeHotKeyManager.shared.handleCarbonHotKey(id: id, pressed: true)
-            case UInt32(kEventHotKeyReleased): NativeHotKeyManager.shared.handleCarbonHotKey(id: id, pressed: false)
+            case UInt32(kEventHotKeyPressed): NativeHotKeyManager.shared.handleCarbonHotKey(pressed: true)
+            case UInt32(kEventHotKeyReleased): NativeHotKeyManager.shared.handleCarbonHotKey(pressed: false)
             default: break
             }
             return noErr
@@ -160,7 +148,6 @@ public class NativeHotKeyManager {
                 return false
             } else {
                 AppLogger.shared.info("HotKey", "Горячая клавиша зарегистрирована", details: trigger.displayName)
-                registerPromptHotKey(for: trigger)
                 return true
             }
         case .singleModifier(let key):
@@ -168,38 +155,10 @@ public class NativeHotKeyManager {
         }
     }
 
-    public var isPromptHotKeyRegistered: Bool { promptHotKeyRef != nil }
-
-    /// Нужно вызывать при смене клавиши и переключателя режима промпта.
-    public func refreshPromptRegistration() {
-        registerPromptHotKey(for: trigger)
-    }
-
-    /// Второе сочетание Carbon, основная клавиша с Shift, только если режим включён и Shift свободен.
-    private func registerPromptHotKey(for trigger: HotKeyTrigger) {
-        unregisterPromptHotKey()
-        guard isPromptModeEnabled(),
-              case .combination = trigger,
-              case .combination(let kCode, let mods)? = trigger.promptVariant else { return }
-        let hotKeyID = EventHotKeyID(signature: OSType(0x474C534B), id: Self.promptHotKeyID)
-        let status = RegisterEventHotKey(kCode, mods, hotKeyID, GetApplicationEventTarget(), 0, &promptHotKeyRef)
-        if status != noErr {
-            promptHotKeyRef = nil
-            AppLogger.shared.warn("HotKey", "Не удалось зарегистрировать сочетание для промпта", details: "status \(status)")
-        }
-    }
-
-    private func unregisterPromptHotKey() {
-        if let ref = promptHotKeyRef {
-            UnregisterEventHotKey(ref)
-            promptHotKeyRef = nil
-        }
-    }
-
-    /// Нажатие или отпускание зарегистрированного сочетания Carbon. Id 2 это сочетание с Shift.
-    func handleCarbonHotKey(id: UInt32, pressed: Bool) {
+    /// Нажатие или отпускание зарегистрированного сочетания Carbon.
+    func handleCarbonHotKey(pressed: Bool) {
         if pressed {
-            onHotKeyPressed?(id == Self.promptHotKeyID)
+            onHotKeyPressed?()
         } else {
             onHotKeyReleased?()
         }
@@ -339,12 +298,8 @@ public class NativeHotKeyManager {
                 let eventKeyCode = UInt32(event.getIntegerValueField(.keyboardEventKeycode))
                 if key == .fn || eventKeyCode == key.rawValue || (event.flags.rawValue & key.deviceMask) != 0 {
                     isModifierActive = true
-                    // Shift нужно зажать до клавиши; сама клавиша Shift режим промпта не запускает
-                    let promptRequested = isPromptModeEnabled()
-                        && HotKeyTrigger.singleModifier(key).promptVariant != nil
-                        && event.flags.contains(.maskShift)
                     dispatchToMain { [weak self] in
-                        self?.onHotKeyPressed?(promptRequested)
+                        self?.onHotKeyPressed?()
                     }
                 }
             } else {
@@ -359,7 +314,6 @@ public class NativeHotKeyManager {
     }
 
     public func unregister() {
-        unregisterPromptHotKey()
         if let ref = hotKeyRef {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil

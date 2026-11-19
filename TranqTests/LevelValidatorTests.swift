@@ -70,14 +70,6 @@ struct LevelValidatorTests {
         #expect(GroundingValidator.validate(input: meeting, output: out, level: .rewrite(tone: "деловой")) == .valid(sanitizedText: out))
     }
 
-    @Test func promptAllowsStructureButNoNewNumbers() {
-        let ok = "Помоги составить сообщение клиенту о переносе встречи со среды на четверг. Причина: не успеваю подготовить презентацию."
-        #expect(GroundingValidator.validate(input: meeting, output: ok, level: .prompt) == .valid(sanitizedText: ok))
-        guard case .rejected = GroundingValidator.validate(input: meeting, output: ok + " Уложись в 100 слов.", level: .prompt) else {
-            Issue.record("новое число в промпте"); return
-        }
-    }
-
     @Test func verbatimIsNotValidated() {
         #expect(GroundingValidator.validate(input: "а", output: "что угодно 42", level: .verbatim) == .valid(sanitizedText: "что угодно 42"))
     }
