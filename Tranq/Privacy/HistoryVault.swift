@@ -115,6 +115,12 @@ final class HistoryVault: @unchecked Sendable {
         return try HistoryCrypto.open(envelope, purpose: purpose, key: key)
     }
 
+    /// Есть ли конверт на диске. Ключ не нужен.
+    func hasBlob(id: UUID, purpose: HistoryCryptoPurpose) -> Bool {
+        guard let url = try? blobURL(id, purpose) else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
     func deleteBlobs(id: UUID) {
         for purpose in [HistoryCryptoPurpose.audio, .timings] {
             if let url = try? blobURL(id, purpose) { try? FileManager.default.removeItem(at: url) }

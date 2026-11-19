@@ -43,6 +43,11 @@ enum HistoryLockState: Equatable {
     case keyUnavailable
 }
 
+/// Аудио заметки недоступно: история заперта или ключ не читается.
+enum HistoryAudioError: Error, Equatable {
+    case locked
+}
+
 /// История заметок, их аудио и тайминги слов.
 ///
 /// Мутации — с главного потока. Запись на диск откладывается на полсекунды и
@@ -58,7 +63,9 @@ final class HistoryStore: ObservableObject {
         }
     }
 
-    @Published private(set) var lockState: HistoryLockState
+    @Published private(set) var lockState: HistoryLockState {
+        didSet { updateReadAccess() }
+    }
     /// Сколько заметок ждут записи конверта: хранилища нет или запись не удалась.
     @Published private(set) var sealFailureCount = 0
 
@@ -75,6 +82,11 @@ final class HistoryStore: ObservableObject {
     private var generation = 0
     /// Заметки без записанного конверта. Только на `ioQueue`. Открытым файлом не подменяются никогда.
     private var pendingSeal: [UUID: TranscriptionItem] = [:]
+    /// Аудио, чей открытый `.wav` ещё не запечатан. Только на `ioQueue`.
+    private var pendingAudio: Set<UUID> = []
+    /// Состояние и хранилище для чтения аудио с любого потока.
+    private let accessLock = NSLock()
+    private var readAccess: (state: HistoryLockState, vault: HistoryVault?) = (.off, nil)
 
     static var defaultDirectory: URL { AppEnvironment.dataDirectory }
 
@@ -85,6 +97,7 @@ final class HistoryStore: ObservableObject {
         self.saveDelay = saveDelay
         self.vault = vault
         self.lockState = .off
+        updateReadAccess()
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if lockState == .off { load() } else { applyLockState(lockState) }
     }
@@ -94,7 +107,14 @@ final class HistoryStore: ObservableObject {
     /// Подключает или снимает хранилище конвертов на живом сторе. Состояние меняет `applyLockState`.
     func attach(vault: HistoryVault?) {
         self.vault = vault
+        updateReadAccess()
         retryPendingSeals()
+    }
+
+    private func updateReadAccess() {
+        accessLock.lock()
+        readAccess = (lockState, vault)
+        accessLock.unlock()
     }
 
     /// Переход замка, с главного потока. `unlocked` читает конверты в фоне и публикует их на главном;
@@ -171,7 +191,11 @@ final class HistoryStore: ObservableObject {
 
     private func retryPendingSeals() {
         let vault = vault
-        ioQueue.async { [self] in drainPendingSeals(vault) }
+        let sealsAudio = isSealed
+        ioQueue.async { [self] in
+            drainPendingSeals(vault)
+            if sealsAudio { drainPendingAudio(vault) }
+        }
     }
 
     /// Только на `ioQueue`. В лог идёт id заметки, текст — никогда.
@@ -253,6 +277,7 @@ final class HistoryStore: ObservableObject {
             ids.forEach(deleteFilesSync)
             vault?.deleteAll()
             pendingSeal.removeAll()
+            pendingAudio.removeAll()
             publishSealFailures()
         }
     }
@@ -268,11 +293,51 @@ final class HistoryStore: ObservableObject {
         audioDirectory.appendingPathComponent("\(id.uuidString).segments.json")
     }
 
+    /// С главного потока. При замке аудио есть, если лежит конверт или ещё не запечатанный `.wav`.
     func hasAudio(for id: UUID) -> Bool {
-        FileManager.default.fileExists(atPath: audioURL(for: id).path)
+        if FileManager.default.fileExists(atPath: audioURL(for: id).path) { return true }
+        return isSealed && vault?.hasBlob(id: id, purpose: .audio) == true
+    }
+
+    /// Байты аудио заметки, `nil`, если аудио нет. Без замка читается открытый файл.
+    /// Под замком только разлоченная история, иначе `HistoryAudioError.locked`.
+    /// Расшифровка может показать диалог: с главного потока не звать, интерфейсу — `loadAudio`.
+    /// Можно звать с любого потока.
+    func audioData(for id: UUID) throws -> Data? {
+        accessLock.lock()
+        let (state, vault) = readAccess
+        accessLock.unlock()
+        let plain = audioURL(for: id)
+        switch state {
+        case .off:
+            return try? Data(contentsOf: plain)
+        case .locked, .keyUnavailable:
+            throw HistoryAudioError.locked
+        case .unlocked:
+            if let data = try vault?.readBlob(id: id, purpose: .audio) { return data }
+            // Конверт ещё не записан: открытый файл ждёт запечатки.
+            if let data = try? Data(contentsOf: plain) { return data }
+            // Запечатка могла закончиться между двумя проверками.
+            return try vault?.readBlob(id: id, purpose: .audio)
+        }
+    }
+
+    /// `audioData` в фоне, ответ на главном. Звать с главного потока.
+    /// Если за время чтения замок сменился или история очищена, байты отбрасываются
+    /// и приходит `HistoryAudioError.locked`.
+    func loadAudio(for id: UUID, completion: @escaping (Result<Data?, Error>) -> Void) {
+        let current = generation
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            let result = Result { try audioData(for: id) }
+            DispatchQueue.main.async { [self] in
+                completion(generation == current ? result : .failure(HistoryAudioError.locked))
+            }
+        }
     }
 
     /// Сохраняет аудио заметки. При `move` файл переносится, а не копируется.
+    /// При замке открытый `.wav` живёт, пока фон не положит конверт, затем удаляется.
+    /// Нужен только публичный ключ. Неудача оставляет открытый файл до следующего перехода замка.
     func storeAudio(for id: UUID, from source: URL, move: Bool) {
         let fm = FileManager.default
         try? fm.createDirectory(at: audioDirectory, withIntermediateDirectories: true)
@@ -283,6 +348,34 @@ final class HistoryStore: ObservableObject {
         } else {
             try? fm.copyItem(at: source, to: dest)
         }
+        if isSealed { sealAudio(id) }
+    }
+
+    private func sealAudio(_ id: UUID) {
+        let vault = vault
+        ioQueue.async { [self] in
+            pendingAudio.insert(id)
+            drainPendingAudio(vault)
+        }
+    }
+
+    /// Только на `ioQueue`. В лог идёт id заметки, звук — никогда.
+    private func drainPendingAudio(_ vault: HistoryVault?) {
+        guard let vault else { return }
+        for id in pendingAudio {
+            let url = audioURL(for: id)
+            guard let data = try? Data(contentsOf: url) else {
+                pendingAudio.remove(id)
+                continue
+            }
+            do {
+                try vault.writeBlob(data, id: id, purpose: .audio)
+                try? FileManager.default.removeItem(at: url)
+                pendingAudio.remove(id)
+            } catch {
+                AppLogger.shared.error("History", "Конверт аудио не записан", details: "\(id.uuidString): \(error)")
+            }
+        }
     }
 
     private func deleteFiles(for id: UUID) {
@@ -290,6 +383,7 @@ final class HistoryStore: ObservableObject {
         ioQueue.async { [self] in
             deleteFilesSync(id)
             pendingSeal[id] = nil
+            pendingAudio.remove(id)
             publishSealFailures()
             vault?.deleteNote(id: id)
             vault?.deleteBlobs(id: id)
