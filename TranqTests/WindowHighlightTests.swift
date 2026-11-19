@@ -116,9 +116,105 @@ struct WindowHighlightManagerTests {
 
     /// Review Focus 3: цель без прямоугольника окна панель не показывает.
     @Test func doesNotShowPanelForTargetWithoutWindow() {
-        let manager = WindowHighlightManager(targetProvider: { HighlightTarget(pid: 999, windowRect: nil) })
+        let manager = WindowHighlightManager(targetProvider: { HighlightTarget(pid: 999, windowRect: nil, isMinimized: false) })
         manager.start()
         #expect(manager.isPanelVisible == false)
         manager.stop()
     }
+}
+
+/// Находка 5 ревью: свёрнутое в Dock окно многие приложения всё ещё отдают как фокусное,
+/// с последними координатами на экране. Рамка не должна застывать на пустом месте.
+struct WindowHighlightMinimizedTests {
+    @Test func hiddenForMinimizedWindow() {
+        #expect(WindowHighlightPolicy.shouldShow(
+            enabled: true, axTrusted: true, isOwnApp: false,
+            isMinimized: true, windowRect: CGRect(x: 0, y: 0, width: 400, height: 300)
+        ) == false)
+    }
+}
+
+@MainActor
+struct WindowHighlightFixTests {
+    private static let rect = CGRect(x: 100, y: 100, width: 400, height: 300)
+
+    /// Находка 1 ревью: скрытие и показ внутри одного затухания 0,2 с оставляли панель
+    /// убранной с экрана навсегда — отложенный orderOut гасил уже показанную панель.
+    @Test func showAfterHideWithinFadeKeepsPanelOnScreen() async throws {
+        let current = Holder<HighlightTarget?>(HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false))
+        let manager = WindowHighlightManager(
+            targetProvider: { current.value },
+            isEnabled: { true },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        #expect(manager.isPanelOnScreen == true)
+
+        // Окно пропало на один такт и вернулось — обе смены укладываются в одно затухание.
+        current.value = HighlightTarget(pid: 4242, windowRect: nil, isMinimized: false)
+        manager.tickForTesting()
+        current.value = HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false)
+        manager.tickForTesting()
+
+        try await Task.sleep(for: .milliseconds(350))
+        #expect(manager.isPanelOnScreen == true)
+        manager.stop()
+    }
+
+    /// Находка 3 ревью: после отпускания клавиши текст уходит в зафиксированное приложение,
+    /// поэтому рамка не должна переезжать за передним окном.
+    @Test func pinnedTargetIgnoresOtherApps() {
+        let current = Holder<HighlightTarget?>(HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false))
+        let manager = WindowHighlightManager(
+            targetProvider: { current.value },
+            isEnabled: { true },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        manager.pin(to: 4242)
+        #expect(manager.isPanelVisible == true)
+
+        current.value = HighlightTarget(pid: 777, windowRect: Self.rect, isMinimized: false)
+        manager.tickForTesting()
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+
+    /// Находка 4 ревью: выключенная настройка не должна стоить ~90 обращений к Accessibility в секунду.
+    @Test func disabledSettingNeverQueriesAccessibility() {
+        let calls = Counter()
+        let manager = WindowHighlightManager(
+            targetProvider: { calls.bump(); return nil },
+            isEnabled: { false },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        manager.tickForTesting()
+        #expect(calls.value == 0)
+        manager.stop()
+    }
+
+    /// Находка 4 ревью: то же без прав Accessibility.
+    @Test func untrustedProcessNeverQueriesAccessibility() {
+        let calls = Counter()
+        let manager = WindowHighlightManager(
+            targetProvider: { calls.bump(); return nil },
+            isEnabled: { true },
+            isAXTrusted: { false }
+        )
+        manager.start()
+        manager.tickForTesting()
+        #expect(calls.value == 0)
+        manager.stop()
+    }
+}
+
+final class Counter: @unchecked Sendable {
+    private(set) var value = 0
+    func bump() { value += 1 }
+}
+
+final class Holder<T>: @unchecked Sendable {
+    var value: T
+    init(_ value: T) { self.value = value }
 }

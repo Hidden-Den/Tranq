@@ -34,8 +34,16 @@ enum WindowHighlightGeometry {
 
 /// Решение, показывать ли рамку в этом такте.
 enum WindowHighlightPolicy {
-    static func shouldShow(enabled: Bool, axTrusted: Bool, isOwnApp: Bool, windowRect: CGRect?) -> Bool {
-        guard enabled, axTrusted, !isOwnApp else { return false }
+    /// Свёрнутое в Dock окно многие приложения продолжают отдавать как фокусное,
+    /// с последними координатами на экране, поэтому оно отсекается отдельно.
+    static func shouldShow(
+        enabled: Bool,
+        axTrusted: Bool,
+        isOwnApp: Bool,
+        isMinimized: Bool = false,
+        windowRect: CGRect?
+    ) -> Bool {
+        guard enabled, axTrusted, !isOwnApp, !isMinimized else { return false }
         guard let windowRect else { return false }
         return windowRect.width > 0 && windowRect.height > 0
     }

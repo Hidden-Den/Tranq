@@ -100,6 +100,7 @@ final class AudioCapture: ObservableObject {
         guard isRecording else { return }
         removeEscMonitor()
         let focusTarget = InsertionService.shared.captureFocus()
+        if let focusTarget { WindowHighlightManager.pinTracking(to: focusTarget.pid) }
         // Контекст фиксируется сразу: новая запись сразу после этой не должна его подменить
         let frozenContext = contextCapture.freeze()
         hudStatusMessage = nil
@@ -107,6 +108,7 @@ final class AudioCapture: ObservableObject {
 
         guard let recording = recorder.stop() else {
             isRecording = false
+            WindowHighlightManager.endTracking()
             return
         }
         AppLogger.shared.info(
