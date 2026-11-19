@@ -33,7 +33,13 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     /// Неизвестное или пустое значение открывает первый раздел.
     static func restore(from defaults: UserDefaults) -> SettingsSection {
-        defaults.string(forKey: storageKey).flatMap(SettingsSection.init(rawValue:)) ?? .dictation
+        from(raw: defaults.string(forKey: storageKey))
+    }
+
+    /// Единственное место, где сохранённая строка превращается в раздел.
+    /// Им пользуются и `restore`, и боковое меню через `@AppStorage`.
+    static func from(raw: String?) -> SettingsSection {
+        raw.flatMap(SettingsSection.init(rawValue:)) ?? .dictation
     }
 
     func store(in defaults: UserDefaults) {

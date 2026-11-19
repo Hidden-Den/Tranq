@@ -47,7 +47,7 @@ struct ContentView: View {
     @AppStorage(SettingsSection.storageKey) private var settingsSectionRaw: String = SettingsSection.dictation.rawValue
 
     private var selectedSettingsSection: SettingsSection {
-        SettingsSection(rawValue: settingsSectionRaw) ?? .dictation
+        SettingsSection.from(raw: settingsSectionRaw)
     }
 
     /// Границы ширины списка: уже — обрезает даты, шире — душит содержимое.

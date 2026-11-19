@@ -30,4 +30,17 @@ struct SettingsSectionTests {
     @Test func everySectionHasTitle() {
         for s in SettingsSection.allCases { #expect(!s.title.isEmpty) }
     }
+
+    /// Тот же путь, которым пользуется боковое меню: сырая строка из `@AppStorage`.
+    @Test func fromRawFallsBackToDictationForNilEmptyAndUnknown() {
+        #expect(SettingsSection.from(raw: nil) == .dictation)
+        #expect(SettingsSection.from(raw: "") == .dictation)
+        #expect(SettingsSection.from(raw: "какой-то-будущий-раздел") == .dictation)
+    }
+
+    @Test func fromRawRoundTripsEveryValidValue() {
+        for s in SettingsSection.allCases {
+            #expect(SettingsSection.from(raw: s.rawValue) == s)
+        }
+    }
 }
