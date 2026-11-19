@@ -175,7 +175,7 @@ struct VoiceIntelligenceSection: View {
                         // Языковая модель SLM на устройстве
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Языковая модель")
+                                Text("Модель обработки")
                                     .font(.ui(.body, weight: .medium))
                                     .foregroundColor(.uiInk)
                                 Text("Оффлайн SLM для Apple Silicon")

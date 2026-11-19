@@ -12,7 +12,7 @@ struct RulesSettingsSection: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Приложения")
+                        Text("Правила")
                             .textCase(.uppercase)
                             .font(.ui(.caption, weight: .bold))
                             .tracking(1.0)

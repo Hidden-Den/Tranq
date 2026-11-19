@@ -112,10 +112,10 @@ struct DictationSettingsSection: View {
 
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Системные звуки")
+                            Text("Звуки")
                                 .font(.ui(.body, weight: .medium))
                                 .foregroundColor(.uiInk)
-                            Text("Акустический отклик при активации, копировании и ошибках")
+                            Text("Начало и конец записи, копирование, ошибки")
                                 .font(.ui(.caption))
                                 .foregroundColor(.uiMidGray)
                         }

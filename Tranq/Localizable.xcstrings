@@ -145,6 +145,54 @@
         }
       }
     },
+    "Модель обработки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing model"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модель обработки"
+          }
+        }
+      }
+    },
+    "Модель распознавания" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognition model"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модель распознавания"
+          }
+        }
+      }
+    },
+    "Начало и конец записи, копирование, ошибки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording start and end, copying, errors"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Начало и конец записи, копирование, ошибки"
+          }
+        }
+      }
+    },
     "Слушать" : {
       "localizations" : {
         "en" : {
@@ -838,22 +886,6 @@
         }
       }
     },
-    "Акустический отклик при активации, копировании и ошибках" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audio feedback on activation, copying and errors"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Акустический отклик при активации, копировании и ошибках"
-          }
-        }
-      }
-    },
     "Аппаратное ускорение" : {
       "localizations" : {
         "en" : {
@@ -1026,22 +1058,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Давайте начнём"
-          }
-        }
-      }
-    },
-    "ДВИЖОК И УСКОРЕНИЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ENGINE & ACCELERATION"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ДВИЖОК И УСКОРЕНИЕ"
           }
         }
       }
@@ -1671,22 +1687,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Опционально"
-          }
-        }
-      }
-    },
-    "ОСНОВНЫЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GENERAL"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ОСНОВНЫЕ"
           }
         }
       }
@@ -2560,22 +2560,6 @@
         }
       }
     },
-    "Системные звуки" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "System sounds"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Системные звуки"
-          }
-        }
-      }
-    },
     "Скачать" : {
       "localizations" : {
         "en" : {
@@ -2832,22 +2816,6 @@
         }
       }
     },
-    "УПРАВЛЕНИЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CONTROL"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "УПРАВЛЕНИЕ"
-          }
-        }
-      }
-    },
     "Цвет интерфейса" : {
       "localizations" : {
         "en" : {
@@ -2892,22 +2860,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Язык приложения"
-          }
-        }
-      }
-    },
-    "Языковая модель" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Language model"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Языковая модель"
           }
         }
       }
@@ -3312,22 +3264,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "Приложения" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apps"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Приложения"
           }
         }
       }

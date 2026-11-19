@@ -9,7 +9,7 @@ struct RecognitionSettingsSection: View {
             UICard {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Text("Языковая модель")
+                        Text("Модель распознавания")
                             .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
                         Spacer()
@@ -23,18 +23,6 @@ struct RecognitionSettingsSection: View {
 
                     ActiveModelStatusRow()
                         .padding(.vertical, 4)
-
-                    Divider().background(Color.uiHairline)
-
-                    HStack {
-                        Text("Аппаратное ускорение")
-                            .font(.ui(.body, weight: .medium))
-                            .foregroundColor(.uiInk)
-                        Spacer()
-                        Text("Apple Metal")
-                            .font(.ui(.footnote))
-                            .foregroundColor(.uiMidGray)
-                    }
                 }
             }
         }
