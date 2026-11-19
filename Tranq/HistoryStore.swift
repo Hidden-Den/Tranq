@@ -59,7 +59,13 @@ enum HistoryAudioError: Error, Equatable {
 /// выполняется в фоне, поэтому частые правки не кодируют весь JSON на главном потоке.
 /// При включённом замке общий массив не пишется никогда: у каждой заметки свой конверт.
 final class HistoryStore: ObservableObject {
-    static let shared = HistoryStore(directory: HistoryStore.defaultDirectory)
+    static let shared: HistoryStore = {
+        // До первого чтения `history.json`: прерванная миграция замка доводится или убирается.
+        if !AppEnvironment.isRunningTests { HistoryMigration.cleanupAtLaunch(directory: defaultDirectory) }
+        // Включённый замок не читает открытый файл даже на миг до проводки.
+        let locked = AppPreferences.historyLockEnabled(in: AppEnvironment.defaults)
+        return HistoryStore(directory: defaultDirectory, lockState: locked ? .locked : .off)
+    }()
 
     @Published var items: [TranscriptionItem] = [] {
         didSet {
@@ -89,6 +95,8 @@ final class HistoryStore: ObservableObject {
     private var pendingSeal: [UUID: TranscriptionItem] = [:]
     /// Аудио, чей открытый `.wav` ещё не запечатан. Только на `ioQueue`.
     private var pendingAudio: Set<UUID> = []
+    /// Аудио, уже запечатанное и проверенное миграцией: обход открытых wav его не трогает. Только на `ioQueue`.
+    private var sweepSkip: Set<UUID> = []
     /// Состояние и хранилище для чтения аудио с любого потока.
     private let accessLock = NSLock()
     private var readAccess: (state: HistoryLockState, vault: HistoryVault?) = (.off, nil)
@@ -135,7 +143,13 @@ final class HistoryStore: ObservableObject {
         retryPendingSeals()
         switch state {
         case .off:
+            // Заметки без конверта не запечатываются после выключения, а встают в открытую историю.
+            let adopted = ioQueue.sync { () -> [TranscriptionItem] in
+                defer { pendingSeal.removeAll(); pendingAudio.removeAll(); publishSealFailures() }
+                return Array(pendingSeal.values)
+            }
             load()
+            adopt(adopted)
             finish(completion)
         case .locked, .keyUnavailable:
             setItemsQuietly([])
@@ -170,6 +184,33 @@ final class HistoryStore: ObservableObject {
         }
     }
 
+    /// Заметки, не попавшие в загруженный `history.json`, встают в список новыми первыми и сохраняются.
+    private func adopt(_ pending: [TranscriptionItem]) {
+        let known = Set(items.map(\.id))
+        let missing = pending.filter { !known.contains($0.id) }
+            .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+        guard !missing.isEmpty else { return }
+        items.insert(contentsOf: missing, at: 0)
+    }
+
+    // MARK: - Для миграции замка
+
+    /// Заметки, ждущие конверта. Можно звать с любого потока, кроме очереди хранилища.
+    func pendingNotes() -> [TranscriptionItem] {
+        ioQueue.sync { Array(pendingSeal.values) }
+    }
+
+    /// Ждёт все записи хранилища. Можно звать с любого потока, кроме очереди хранилища.
+    func waitForIO() {
+        ioQueue.sync {}
+    }
+
+    /// Эти wav уже лежат проверенными конвертами: обход при запирании не запечатывает их второй раз,
+    /// открытые файлы удаляет миграция.
+    func excludeFromAudioSweep(_ ids: Set<UUID>) {
+        ioQueue.sync { sweepSkip.formUnion(ids) }
+    }
+
     /// Ждёт записей, поставленных раньше, затем зовёт `completion` на главном.
     private func finish(_ completion: (() -> Void)?) {
         guard let completion else { return }
@@ -198,10 +239,11 @@ final class HistoryStore: ObservableObject {
         let vault = vault
         let sealsAudio = isSealed
         ioQueue.async { [self] in
-            drainPendingSeals(vault)
+            // Без замка ожидающие заметки забирает переход в `off`, конвертом они не пишутся.
             guard sealsAudio else { return }
+            drainPendingSeals(vault)
             // Открытые wav, оставшиеся с прошлого запуска, тоже запечатываются.
-            pendingAudio.formUnion(plainAudioIDs())
+            pendingAudio.formUnion(plainAudioIDs().filter { !sweepSkip.contains($0) })
             drainPendingAudio(vault)
         }
     }

@@ -9,14 +9,18 @@ import Foundation
 /// Системные события приходят от `HistoryLockSystemMonitor`.
 @MainActor
 final class HistoryLockCoordinator: ObservableObject {
-    static let shared = HistoryLockCoordinator(
-        enabled: AppPreferences.shared.historyLockEnabled,
-        store: .shared,
-        journal: .shared,
-        key: HistoryKeyFactory.make(),
-        presence: LocalAuthPresenceGate(),
-        directory: AppEnvironment.dataDirectory
-    )
+    static let shared: HistoryLockCoordinator = {
+        // Хранилище первым: его создание доводит прерванную миграцию и может поменять флаг.
+        let store = HistoryStore.shared
+        return HistoryLockCoordinator(
+            enabled: AppPreferences.shared.historyLockEnabled,
+            store: store,
+            journal: .shared,
+            key: HistoryKeyFactory.make(),
+            presence: LocalAuthPresenceGate(),
+            directory: AppEnvironment.dataDirectory
+        )
+    }()
 
     /// Состояние замка для экрана. Повторяет `lock.state`.
     @Published private(set) var state: HistoryLockState = .off

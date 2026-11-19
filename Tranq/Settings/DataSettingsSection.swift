@@ -9,7 +9,7 @@ struct DataSettingsSection: View {
     /// Состояние замка: выгрузка доступна только при открытой истории.
     private let lockState: HistoryLockState
 
-    /// Закрытия `onEnable`, `onDisable`, `onExport` подставляет миграция. Пока заглушки.
+    /// `onEnable` и `onDisable` делают миграцию и пишут флаг, `onExport` — выгрузку.
     init(lockState: HistoryLockState = .off,
          presence: PresenceAuthorizing = LocalAuthPresenceGate(),
          onEnable: @escaping HistoryLockSettingsModel.Action = {},

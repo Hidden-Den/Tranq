@@ -12,7 +12,12 @@ struct SettingsView: View {
         case .processing: SettingsPage { VoiceIntelligenceSection() }
         case .provider: SettingsPage { AIProviderSection() }
         case .app: AppSettingsSection()
-        case .data: DataSettingsSection(lockState: historyLock.state)
+        case .data:
+            // Закрытия зовут долгоживущую службу: модель настроек захватывает их один раз.
+            DataSettingsSection(lockState: historyLock.state,
+                                presence: historyLock.presence,
+                                onEnable: { try await HistoryLockMigrator.shared.enable() },
+                                onDisable: { try await HistoryLockMigrator.shared.disable() })
         }
     }
 }

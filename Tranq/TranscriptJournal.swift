@@ -242,6 +242,61 @@ public final class TranscriptJournal: ObservableObject {
         }
     }
 
+    // MARK: - Миграция замка
+
+    /// Суффикс копии, которую миграция пишет рядом с файлом журнала до замены.
+    static let migrationSuffix = "migrating"
+
+    /// Файлы журнала по порядку: архив, затем текущий.
+    var migrationFiles: [URL] {
+        guard let url = journalFileURL else { return [] }
+        return [Self.archiveURL(for: url), url]
+    }
+
+    /// Все строки архива и текущего файла как есть, по порядку. Пустые строки пропускаются.
+    func migrationLines() -> [String] {
+        ioQueue.sync { migrationFiles.flatMap { Self.lines(of: $0) } }
+    }
+
+    /// Переписывает архив и текущий файл построчно в очереди записи, поэтому ни одна строка не теряется
+    /// и не встаёт между чтением и заменой. Каждый файл сначала пишется копией рядом, копия читается
+    /// обратно и сверяется, и только потом атомарно заменяет исходник. Сбой до замены убирает копии,
+    /// исходники остаются как были. В конце журнал пишет в режиме `sealing`.
+    func rewriteForMigration(sealing: JournalSealing, transform: (String) throws -> String) throws {
+        try ioQueue.sync {
+            var copies: [(copy: URL, original: URL)] = []
+            do {
+                for original in migrationFiles where FileManager.default.fileExists(atPath: original.path) {
+                    let source = Self.lines(of: original)
+                    let output = try source.map(transform)
+                    guard output.count == source.count, !output.contains(where: { $0.contains("\n") }) else {
+                        throw HistoryMigrationError.verificationFailed
+                    }
+                    let data = Data((output.map { $0 + "\n" }.joined()).utf8)
+                    let copy = original.appendingPathExtension(Self.migrationSuffix)
+                    copies.append((copy, original))
+                    try data.write(to: copy, options: .atomic)
+                    guard (try? Data(contentsOf: copy)) == data else { throw HistoryMigrationError.verificationFailed }
+                }
+            } catch {
+                for item in copies { try? FileManager.default.removeItem(at: item.copy) }
+                throw error
+            }
+            // Копии проверены: замена атомарная, исходник уходит только вместе с появлением копии.
+            for item in copies where Darwin.rename(item.copy.path, item.original.path) != 0 {
+                try? FileManager.default.removeItem(at: item.copy)
+                AppLogger.shared.error("Journal", "Файл журнала не заменён при миграции", details: item.original.lastPathComponent)
+            }
+            self.sealing = sealing
+        }
+    }
+
+    /// Строки файла по `\n`, байт в байт. Нет файла — нет строк.
+    private static func lines(of url: URL) -> [String] {
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        return String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+    }
+
     /// Читает архив и текущий файл, открывая каждую запечатанную строку. Нечитаемые строки пропускает,
     /// ошибки ключа `HistoryKeyError` отдаёт наружу. Может показать запрос подтверждения: не звать с главного потока.
     func readAllRecords(key: HistoryKeyProviding) throws -> [JournalRecord] {

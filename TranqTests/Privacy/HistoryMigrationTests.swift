@@ -1,0 +1,700 @@
+//
+//  HistoryMigrationTests.swift
+//  TranqTests
+//
+
+import CryptoKit
+import Foundation
+import Testing
+@testable import Tranq
+
+/// Ключ со сценарием сбоев: публичный ключ отдаётся `publicLimit` раз, согласование можно сломать.
+final class ScriptedHistoryKey: HistoryKeyProviding {
+    let inner = TestHistoryKey()
+    var publicLimit = Int.max
+    var agreeFails = false
+    private(set) var publicCalls = 0
+    private(set) var creates = 0
+    private(set) var destroys = 0
+    private let lock = NSLock()
+
+    var exists: Bool { inner.exists }
+
+    var publicKey: Data {
+        get throws {
+            lock.lock()
+            publicCalls += 1
+            let over = publicCalls > publicLimit
+            lock.unlock()
+            if over { throw HistoryKeyError.unavailable }
+            return try inner.publicKey
+        }
+    }
+
+    func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
+        if agreeFails { throw HistoryKeyError.unavailable }
+        return try inner.agree(withEphemeral: ephemeral)
+    }
+
+    func create() throws { creates += 1; try inner.create() }
+    func destroy() throws { destroys += 1; try inner.destroy() }
+
+    /// С этого момента публичный ключ не отдаётся.
+    func stopPublicKey() {
+        lock.lock(); publicLimit = publicCalls; lock.unlock()
+    }
+}
+
+/// Миграция замка: конверты пишутся рядом, читаются обратно, и только потом уходят исходники.
+@MainActor
+struct HistoryMigrationTests {
+    private final class FlagLog { var values: [Bool] = [] }
+
+    private struct Rig {
+        let directory: URL
+        let key: ScriptedHistoryKey
+        let vault: HistoryVault
+        let store: HistoryStore
+        let journal: TranscriptJournal
+        let flags: FlagLog
+    }
+
+    private struct Seed {
+        var items: [TranscriptionItem]
+        var audio: [UUID: Data]
+        var timings: [UUID: Data]
+    }
+
+    private func makeRig(_ directory: URL? = nil) -> Rig {
+        let directory = directory ?? FileManager.default.temporaryDirectory
+            .appendingPathComponent("HistoryMigrationTests-\(UUID().uuidString)", isDirectory: true)
+        let key = ScriptedHistoryKey()
+        return Rig(directory: directory, key: key,
+                   vault: HistoryVault(directory: directory, key: key),
+                   store: HistoryStore(directory: directory, saveDelay: 0),
+                   journal: TranscriptJournal(directory: directory),
+                   flags: FlagLog())
+    }
+
+    private func cleanup(_ rig: Rig) {
+        rig.store.flush()
+        rig.journal.flush()
+        try? FileManager.default.removeItem(at: rig.directory)
+    }
+
+    private func note(_ text: String, date: String, createdAt: Date?) -> TranscriptionItem {
+        TranscriptionItem(date: date, text: text, duration: "0:05", isUnread: false,
+                          spokenText: "ну \(text)", createdAt: createdAt)
+    }
+
+    private func randomData(_ count: Int) -> Data {
+        var generator = SystemRandomNumberGenerator()
+        return Data((0..<count).map { _ in UInt8.random(in: 0...255, using: &generator) })
+    }
+
+    private func audioFolder(_ rig: Rig) -> URL { rig.directory.appendingPathComponent("Audio", isDirectory: true) }
+    private func historyURL(_ rig: Rig) -> URL { rig.directory.appendingPathComponent("history.json") }
+    private func timingsURL(_ id: UUID, _ rig: Rig) -> URL {
+        audioFolder(rig).appendingPathComponent("\(id.uuidString).segments.json")
+    }
+    private func journalURL(_ rig: Rig) -> URL { rig.directory.appendingPathComponent("transcript_journal.jsonl") }
+
+    /// Открытая история: три заметки, аудио у двух, тайминги у одной, две строки журнала.
+    @discardableResult
+    private func seed(_ rig: Rig, items: [TranscriptionItem]? = nil) throws -> Seed {
+        let base = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = items ?? [
+            note("секрет третий", date: "03.11.2026, 12:00", createdAt: base.addingTimeInterval(120)),
+            note("секрет второй", date: "02.11.2026, 11:00", createdAt: base.addingTimeInterval(60)),
+            note("секрет первый", date: "01.11.2026, 10:00", createdAt: base),
+        ]
+        // Вставка от старой к новой: в массиве новые первыми.
+        for item in items.reversed() { rig.store.insert(item) }
+        var audio: [UUID: Data] = [:]
+        var timings: [UUID: Data] = [:]
+        try FileManager.default.createDirectory(at: rig.directory, withIntermediateDirectories: true)
+        for item in items.prefix(2) {
+            let bytes = randomData(4096)
+            let source = rig.directory.appendingPathComponent("source-\(UUID().uuidString).wav")
+            try bytes.write(to: source)
+            rig.store.storeAudio(for: item.id, from: source, move: true)
+            audio[item.id] = bytes
+        }
+        if let first = items.first {
+            let bytes = Data("[{\"word\":\"секрет\",\"start\":0.5}]".utf8)
+            try bytes.write(to: timingsURL(first.id, rig))
+            timings[first.id] = bytes
+        }
+        let recordID = UUID()
+        rig.journal.recordInitial(id: recordID, rawText: "сырой секрет", durationSec: 2, targetAppName: "Notes")
+        rig.journal.updateFinal(id: recordID, stageOneText: nil, finalText: "чистый секрет", isFallback: false)
+        rig.store.flush()
+        rig.journal.flush()
+        return Seed(items: rig.store.items, audio: audio, timings: timings)
+    }
+
+    /// Байты всех открытых файлов истории.
+    private func plainFiles(_ rig: Rig) -> [String: Data] {
+        var result: [String: Data] = [:]
+        let fm = FileManager.default
+        for name in ["history.json", "transcript_journal.jsonl", "transcript_journal.1.jsonl"] {
+            if let data = fm.contents(atPath: rig.directory.appendingPathComponent(name).path) { result[name] = data }
+        }
+        for name in (try? fm.contentsOfDirectory(atPath: audioFolder(rig).path)) ?? []
+        where name.hasSuffix(".wav") || name.hasSuffix(".segments.json") {
+            result["Audio/" + name] = fm.contents(atPath: audioFolder(rig).appendingPathComponent(name).path)
+        }
+        return result
+    }
+
+    private func allFiles(_ rig: Rig) -> [URL] {
+        let enumerator = FileManager.default.enumerator(at: rig.directory, includingPropertiesForKeys: nil)
+        return (enumerator?.allObjects as? [URL] ?? []).filter { !$0.hasDirectoryPath }
+    }
+
+    private func envelopeCount(_ rig: Rig) -> Int {
+        allFiles(rig).filter { $0.pathExtension == "note" || $0.pathExtension == "sealed" }.count
+    }
+
+    private func leftovers(_ rig: Rig) -> [String] {
+        allFiles(rig).map(\.lastPathComponent)
+            .filter { $0.hasSuffix(".restore") || $0.hasSuffix(".migrating") || $0 == HistoryMigration.markerName }
+    }
+
+    private func enable(_ rig: Rig, afterCopies: (@MainActor () -> Void)? = nil) async throws {
+        try await HistoryMigration.enable(store: rig.store, journal: rig.journal, vault: rig.vault,
+                                          setFlag: { rig.flags.values.append($0) }, afterCopies: afterCopies)
+    }
+
+    private func disable(_ rig: Rig, afterCopies: (@MainActor () -> Void)? = nil) async throws {
+        try await HistoryMigration.disable(store: rig.store, journal: rig.journal, vault: rig.vault,
+                                           setFlag: { rig.flags.values.append($0) }, afterCopies: afterCopies)
+    }
+
+    private func decodeHistory(_ rig: Rig) throws -> [TranscriptionItem] {
+        try JSONDecoder().decode([TranscriptionItem].self, from: Data(contentsOf: historyURL(rig)))
+    }
+
+    private func journalLines(_ rig: Rig) -> [String] {
+        let text = (try? String(contentsOf: journalURL(rig), encoding: .utf8)) ?? ""
+        return text.split(separator: "\n").map(String.init)
+    }
+
+    private func mainHop() async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+    }
+
+    // MARK: - Включение
+
+    @Test func enableSealsEverythingAndRemovesPlainFiles() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let plainJournal = journalLines(rig)
+
+        try await enable(rig)
+        rig.journal.flush()
+
+        #expect(rig.flags.values == [true])
+        #expect(rig.store.lockState == .locked)
+        #expect(!FileManager.default.fileExists(atPath: historyURL(rig).path))
+        for id in seed.audio.keys {
+            #expect(!FileManager.default.fileExists(atPath: rig.store.audioURL(for: id).path))
+            #expect(rig.vault.hasBlob(id: id, purpose: .audio))
+        }
+        for id in seed.timings.keys {
+            #expect(!FileManager.default.fileExists(atPath: timingsURL(id, rig).path))
+            #expect(rig.vault.hasBlob(id: id, purpose: .timings))
+        }
+        #expect(rig.vault.noteFileCount() == seed.items.count)
+        // Журнал: строк столько же, каждая — конверт, записи читаются ключом.
+        let sealedJournal = journalLines(rig)
+        #expect(sealedJournal.count == plainJournal.count)
+        #expect(try rig.journal.readAllRecords(key: rig.key).count == plainJournal.count)
+        // Ни в одном файле нет открытого текста.
+        let secret = Data("секрет".utf8)
+        for url in allFiles(rig) {
+            let data = try Data(contentsOf: url)
+            #expect(data.range(of: secret) == nil, "открытый текст в \(url.lastPathComponent)")
+        }
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Подставная ошибка чтения: конверты не прочитались обратно, открытые файлы целы, флаг не тронут.
+    @Test func enableVerifiesBeforeDeleting() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+        rig.key.agreeFails = true
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(plainFiles(rig) == before)
+        #expect(envelopeCount(rig) == 0)
+        #expect(rig.flags.values.isEmpty)
+        #expect(rig.store.lockState == .off)
+        #expect(rig.store.items == seed.items)
+        #expect(leftovers(rig).isEmpty)
+        // Ключ создан этим прогоном и конвертов на нём не осталось: он убран.
+        #expect(rig.key.creates == 1)
+        #expect(!rig.key.exists)
+    }
+
+    @Test func failureMidwayLeavesPlainFilesReadable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+        // Заметки запечатаны, на первом аудио ключ пропадает.
+        rig.key.publicLimit = seed.items.count
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(plainFiles(rig) == before)
+        #expect(envelopeCount(rig) == 0)
+        #expect(rig.flags.values.isEmpty)
+        #expect(!rig.key.exists)
+        let reopened = HistoryStore(directory: rig.directory)
+        #expect(reopened.items == seed.items)
+        for (id, bytes) in seed.audio { #expect(try reopened.audioData(for: id) == bytes) }
+    }
+
+    /// Папку конвертов нельзя создать: сбой на первом же шаге.
+    @Test func unwritableNotesFolderLeavesPlainFiles() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let before = plainFiles(rig)
+        try Data("не папка".utf8).write(to: rig.directory.appendingPathComponent("Notes"))
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(plainFiles(rig) == before)
+        #expect(rig.flags.values.isEmpty)
+        #expect(rig.store.lockState == .off)
+    }
+
+    /// Ключ, которому есть что держать, миграция не пересоздаёт и при сбое не убирает.
+    @Test func abortKeepsKeyThatHoldsOtherEnvelopes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let orphan = note("сирота", date: "01.01.2026, 10:00", createdAt: nil)
+        try rig.vault.writeNote(orphan)
+        rig.key.agreeFails = true
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(rig.key.creates == 0)
+        #expect(rig.key.destroys == 0)
+        #expect(rig.key.exists)
+        #expect(rig.vault.noteFileCount() == 1)
+    }
+
+    /// Заметка, надиктованная во время миграции, попадает в конверт, а не теряется.
+    @Test func noteAddedDuringEnableIsSealed() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        var late: UUID?
+
+        try await enable(rig) {
+            if late == nil { late = rig.store.addNote(text: "поздняя") }
+        }
+        await rig.store.applyLockStateAndWait(.unlocked)
+
+        #expect(rig.store.items.contains { $0.id == late })
+        #expect(!FileManager.default.fileExists(atPath: historyURL(rig).path))
+    }
+
+    /// Заметки прошлых версий без `createdAt` сохраняют порядок массива после разлочки и выключения.
+    @Test func orderPreservedThroughEnableUnlockAndDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let base = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = [
+            note("новая", date: "05.11.2026, 09:00", createdAt: base),
+            note("старая четыре", date: "04.11.2026, 10:00", createdAt: nil),
+            note("старая три", date: "04.11.2026, 10:00", createdAt: nil),
+            note("старая два", date: "04.11.2026, 10:00", createdAt: nil),
+            note("старая один", date: "03.11.2026, 08:00", createdAt: nil),
+        ]
+        let seed = try seed(rig, items: items)
+
+        try await enable(rig)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items.map(\.id) == seed.items.map(\.id))
+
+        try await disable(rig)
+        #expect(try decodeHistory(rig).map(\.id) == seed.items.map(\.id))
+        #expect(rig.store.items.map(\.id) == seed.items.map(\.id))
+    }
+
+    // MARK: - Выключение
+
+    @Test func disableRestoresSameNotes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+
+        try await enable(rig)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+
+        try await disable(rig)
+        rig.journal.flush()
+
+        #expect(rig.flags.values == [true, false])
+        #expect(rig.store.lockState == .off)
+        #expect(rig.store.items == seed.items)
+        #expect(try decodeHistory(rig) == seed.items)
+        #expect(envelopeCount(rig) == 0)
+        #expect(leftovers(rig).isEmpty)
+        // Аудио, тайминги и журнал байт в байт.
+        let after = plainFiles(rig)
+        for (name, data) in before where name != "history.json" { #expect(after[name] == data, "\(name)") }
+        for (id, bytes) in seed.audio { #expect(try rig.store.audioData(for: id) == bytes) }
+        for (id, bytes) in seed.timings { #expect(try Data(contentsOf: timingsURL(id, rig)) == bytes) }
+    }
+
+    @Test func disableFromLockedStateReadsEnvelopes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        #expect(rig.store.lockState == .locked)
+
+        try await disable(rig)
+
+        #expect(rig.store.items == seed.items)
+        #expect(envelopeCount(rig) == 0)
+    }
+
+    @Test func largeAudioSurvivesRoundTripByteEqual() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let item = note("секрет звук", date: "01.11.2026, 10:00", createdAt: Date())
+        try seed(rig, items: [item])
+        let big = randomData(6 * 1024 * 1024)
+        let source = rig.directory.appendingPathComponent("big.wav")
+        try big.write(to: source)
+        rig.store.storeAudio(for: item.id, from: source, move: true)
+
+        try await enable(rig)
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(try rig.store.audioData(for: item.id) == big)
+
+        try await disable(rig)
+        #expect(try Data(contentsOf: rig.store.audioURL(for: item.id)) == big)
+    }
+
+    @Test func journalRoundTripKeepsEveryLine() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        // Повтор одной записи и обновление: строки не схлопываются.
+        let id = UUID()
+        rig.journal.recordInitial(id: id, rawText: "раз", durationSec: 1, targetAppName: nil)
+        rig.journal.updateFinal(id: id, stageOneText: "два", finalText: "три", isFallback: false)
+        rig.journal.flush()
+        let original = try Data(contentsOf: journalURL(rig))
+        let lineCount = journalLines(rig).count
+
+        try await enable(rig)
+        rig.journal.flush()
+        let records = try rig.journal.readAllRecords(key: rig.key)
+        #expect(records.count == lineCount)
+        #expect(records.filter { $0.id == id }.count == 2)
+
+        try await disable(rig)
+        rig.journal.flush()
+        #expect(try Data(contentsOf: journalURL(rig)) == original)
+    }
+
+    /// Заметка, ждущая конверта, при выключении уходит в `history.json` и не запечатывается потом.
+    @Test func pendingSealIsDrainedOnDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        rig.key.stopPublicKey()
+        let stranded = rig.store.addNote(text: "ждёт конверта")
+        rig.store.flush()
+        await mainHop()
+        #expect(rig.store.sealFailureCount == 1)
+
+        try await disable(rig)
+        rig.store.flush()
+        await mainHop()
+
+        #expect(try decodeHistory(rig).contains { $0.id == stranded })
+        #expect(rig.store.items.contains { $0.id == stranded })
+        #expect(rig.store.sealFailureCount == 0)
+        #expect(rig.vault.noteFileCount() == 0)
+    }
+
+    @Test func noteAddedDuringDisableIsRestored() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        var late: UUID?
+
+        try await disable(rig) {
+            if late == nil { late = rig.store.addNote(text: "поздняя под замком") }
+        }
+
+        #expect(rig.store.items.contains { $0.id == late })
+        #expect(try decodeHistory(rig).contains { $0.id == late })
+        #expect(rig.vault.noteFileCount() == 0)
+    }
+
+    /// Сбой расшифровки при выключении: конверты на месте, флаг не тронут.
+    @Test func disableFailureKeepsEnvelopes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let envelopes = envelopeCount(rig)
+        rig.key.agreeFails = true
+
+        await #expect(throws: (any Error).self) { try await disable(rig) }
+
+        #expect(rig.flags.values == [true])
+        #expect(envelopeCount(rig) == envelopes)
+        #expect(rig.store.lockState == .locked)
+        #expect(!FileManager.default.fileExists(atPath: historyURL(rig).path))
+        #expect(leftovers(rig).isEmpty)
+        rig.key.agreeFails = false
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+    }
+
+    // MARK: - Следующий запуск
+
+    /// Включение упало до флага: конверты рядом с живым `history.json` убираются, исходники целы.
+    @Test func halfDoneEnvelopesAreCleanedOnNextLaunch() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+        for item in seed.items { try rig.vault.writeNote(item) }
+        for (id, bytes) in seed.audio { try rig.vault.writeBlob(bytes, id: id, purpose: .audio) }
+        for (id, bytes) in seed.timings { try rig.vault.writeBlob(bytes, id: id, purpose: .timings) }
+        // Конверт без открытого двойника не трогается: удалять его не за чем.
+        let orphan = note("сирота", date: "01.01.2026, 10:00", createdAt: nil)
+        try rig.vault.writeNote(orphan)
+        try Data("x".utf8).write(to: rig.directory.appendingPathComponent("transcript_journal.jsonl.migrating"))
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(plainFiles(rig) == before)
+        #expect(rig.vault.noteFileCount() == 1)
+        for id in seed.audio.keys { #expect(!rig.vault.hasBlob(id: id, purpose: .audio)) }
+        for id in seed.timings.keys { #expect(!rig.vault.hasBlob(id: id, purpose: .timings)) }
+        #expect(rig.flags.values.isEmpty)
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Review Focus 3: замок включён, `Notes/` пуст, `history.json` остался от сбоя. Открытый файл побеждает.
+    @Test func plainHistoryFileWinsWhenNotesFolderEmpty() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(rig.flags.values == [false])
+        #expect(plainFiles(rig) == before)
+        let reopened = HistoryStore(directory: rig.directory)
+        #expect(reopened.items == seed.items)
+    }
+
+    /// Замок включён и конверты есть: лишний `history.json` не удаляется, а при выключении вливается.
+    @Test func strayPlainHistoryIsKeptAndMergedOnDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let stray = note("из старого файла", date: "01.10.2026, 10:00", createdAt: nil)
+        let strayData = try JSONEncoder().encode([stray])
+        try strayData.write(to: historyURL(rig))
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+        #expect(rig.flags.values == [true])
+        #expect(try Data(contentsOf: historyURL(rig)) == strayData)
+
+        try await disable(rig)
+        let restored = try decodeHistory(rig)
+        #expect(restored.contains(stray))
+        #expect(Set(restored.map(\.id)) == Set(seed.items.map(\.id) + [stray.id]))
+    }
+
+    /// Сбой после фиксации включения: запуск доводит до конца и поднимает флаг.
+    @Test func committedEnableIsFinishedOnNextLaunch() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        for item in seed.items { try rig.vault.writeNote(item) }
+        for (id, bytes) in seed.audio { try rig.vault.writeBlob(bytes, id: id, purpose: .audio) }
+        for (id, bytes) in seed.timings { try rig.vault.writeBlob(bytes, id: id, purpose: .timings) }
+        try HistoryMigration.writeMarker(.enable, in: rig.directory)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(rig.flags.values == [true])
+        #expect(plainFiles(rig).keys.filter { $0 != "transcript_journal.jsonl" }.isEmpty)
+        #expect(rig.vault.noteFileCount() == seed.items.count)
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Не каждая заметка `history.json` лежит конвертом: открытый файл остаётся.
+    @Test func committedEnableKeepsUncoveredHistory() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try rig.vault.writeNote(seed.items[0])
+        try HistoryMigration.writeMarker(.enable, in: rig.directory)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(FileManager.default.fileExists(atPath: historyURL(rig).path))
+    }
+
+    /// Сбой после фиксации выключения: запуск переименовывает копии, убирает конверты и опускает флаг.
+    @Test func committedDisableIsFinishedOnNextLaunch() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        for item in seed.items { try rig.vault.writeNote(item) }
+        for (id, bytes) in seed.audio { try rig.vault.writeBlob(bytes, id: id, purpose: .audio) }
+        let fm = FileManager.default
+        try fm.moveItem(at: historyURL(rig), to: historyURL(rig).appendingPathExtension("restore"))
+        for id in seed.audio.keys {
+            let plain = rig.store.audioURL(for: id)
+            try fm.moveItem(at: plain, to: plain.appendingPathExtension("restore"))
+        }
+        try HistoryMigration.writeMarker(.disable, in: rig.directory)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(rig.flags.values == [false])
+        #expect(try decodeHistory(rig) == seed.items)
+        for (id, bytes) in seed.audio { #expect(try Data(contentsOf: rig.store.audioURL(for: id)) == bytes) }
+        #expect(rig.vault.noteFileCount() == 0)
+        for id in seed.audio.keys { #expect(!rig.vault.hasBlob(id: id, purpose: .audio)) }
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Прерванное выключение до фиксации: копии убираются, конверты целы, флаг остаётся.
+    @Test func uncommittedDisableCopiesAreDropped() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        try Data("[]".utf8).write(to: historyURL(rig).appendingPathExtension("restore"))
+        let id = try #require(seed.audio.keys.first)
+        try Data("копия".utf8).write(to: rig.store.audioURL(for: id).appendingPathExtension("restore"))
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true,
+                                         setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(rig.flags.values == [true])
+        #expect(leftovers(rig).isEmpty)
+        #expect(rig.vault.hasBlob(id: id, purpose: .audio))
+        #expect(rig.vault.noteFileCount() == seed.items.count)
+    }
+
+    // MARK: - Закрытия настроек
+
+    private func makeMigrator(_ rig: Rig, defaults: UserDefaults) -> HistoryLockMigrator {
+        HistoryLockMigrator(store: rig.store, journal: rig.journal, vault: rig.vault,
+                            setFlag: { AppPreferences.setHistoryLockEnabled($0, in: defaults) })
+    }
+
+    private func makeDefaults() -> UserDefaults {
+        let name = "HistoryMigrationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    @Test func settingsShowStoredFlagAfterEnableAndDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let defaults = makeDefaults()
+        let migrator = makeMigrator(rig, defaults: defaults)
+        let model = HistoryLockSettingsModel(isOn: false, presence: TestPresence(),
+                                             onEnable: { try await migrator.enable() },
+                                             onDisable: { try await migrator.disable() })
+
+        model.requestToggle(to: true)
+        await model.confirm()
+        #expect(model.isOn == true)
+        #expect(model.isOn == AppPreferences.historyLockEnabled(in: defaults))
+
+        model.requestToggle(to: false)
+        await model.confirm()
+        #expect(model.isOn == false)
+        #expect(model.isOn == AppPreferences.historyLockEnabled(in: defaults))
+    }
+
+    @Test func failedEnableLeavesStoredFlagAndSwitchOff() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let defaults = makeDefaults()
+        let migrator = makeMigrator(rig, defaults: defaults)
+        let model = HistoryLockSettingsModel(isOn: false, presence: TestPresence(),
+                                             onEnable: { try await migrator.enable() })
+        rig.key.agreeFails = true
+
+        model.requestToggle(to: true)
+        await model.confirm()
+
+        #expect(model.isOn == false)
+        #expect(defaults.object(forKey: "historyLockEnabled") == nil)
+        #expect(model.errorMessage != nil)
+    }
+
+    /// Проводка с координатором: после включения замок заперт, после разлочки заметки на месте.
+    @Test func migratorDrivesCoordinator() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let coordinator = HistoryLockCoordinator(
+            enabled: false, store: rig.store, journal: rig.journal, key: rig.key, presence: TestPresence(),
+            directory: rig.directory, erase: {}, resetSession: {})
+        let defaults = makeDefaults()
+        let migrator = HistoryLockMigrator(coordinator: coordinator, store: rig.store, journal: rig.journal,
+                                           directory: rig.directory,
+                                           setFlag: { AppPreferences.setHistoryLockEnabled($0, in: defaults) })
+
+        try await migrator.enable()
+        #expect(coordinator.state == .locked)
+        #expect(AppPreferences.historyLockEnabled(in: defaults))
+
+        await coordinator.unlock()
+        for _ in 0..<300 where rig.store.items.count != seed.items.count {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(rig.store.items == seed.items)
+
+        try await migrator.disable()
+        #expect(coordinator.state == .off)
+        #expect(rig.store.items == seed.items)
+        #expect(!AppPreferences.historyLockEnabled(in: defaults))
+    }
+}

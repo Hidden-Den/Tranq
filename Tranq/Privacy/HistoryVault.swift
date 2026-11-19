@@ -11,8 +11,9 @@ enum HistoryVaultError: Error {
 /// `Notes/<uuid>.note`, `Audio/<uuid>.wav.sealed`, `Audio/<uuid>.segments.sealed`.
 /// На диске лежит JSON `SealedEnvelope`, открытого текста нет.
 final class HistoryVault: @unchecked Sendable {
-    private let directory: URL
-    private let key: HistoryKeyProviding
+    let directory: URL
+    /// Ключ конвертов: миграция создаёт его и открывает им строки журнала.
+    let key: HistoryKeyProviding
     private let lock = NSLock()
     private var corrupted: [URL] = []
 
@@ -21,8 +22,8 @@ final class HistoryVault: @unchecked Sendable {
         self.key = key
     }
 
-    private var notesDirectory: URL { directory.appendingPathComponent("Notes", isDirectory: true) }
-    private var audioDirectory: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
+    var notesDirectory: URL { directory.appendingPathComponent("Notes", isDirectory: true) }
+    var audioDirectory: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
 
     /// Что не прочиталось на последнем `readNotes`. Файлы остаются на диске.
     var corruptedNoteFiles: [URL] {
@@ -47,7 +48,7 @@ final class HistoryVault: @unchecked Sendable {
     func readNotes() throws -> [TranscriptionItem] {
         setCorrupted([])
         let files = noteFiles()
-        var found: [(item: TranscriptionItem, date: Date)] = []
+        var found: [TranscriptionItem] = []
         var broken: [URL] = []
         for url in files {
             guard let data = try? Data(contentsOf: url),
@@ -68,16 +69,30 @@ final class HistoryVault: @unchecked Sendable {
                 broken.append(url)
                 continue
             }
-            found.append((item, Self.parse(item.date)))
+            found.append(item)
         }
         setCorrupted(broken)
-        found.sort { lhs, rhs in
-            if lhs.date != rhs.date { return lhs.date > rhs.date }
-            let (left, right) = (lhs.item.createdAt ?? .distantPast, rhs.item.createdAt ?? .distantPast)
+        return Self.newestFirst(found)
+    }
+
+    /// Одна заметка, `nil`, если файла нет. Порча и ошибки ключа бросаются: это проверка, а не список.
+    /// Согласование ключа может показать диалог: с главного потока не звать.
+    func readNote(id: UUID) throws -> TranscriptionItem? {
+        let url = noteURL(id)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        let envelope = try JSONDecoder().decode(SealedEnvelope.self, from: Data(contentsOf: url))
+        let plain = try HistoryCrypto.open(envelope, purpose: .note, key: key)
+        return try JSONDecoder().decode(TranscriptionItem.self, from: plain)
+    }
+
+    /// Порядок списка: по дате заметки, затем по `createdAt` (пусто в конце), затем по id.
+    static func newestFirst(_ items: [TranscriptionItem]) -> [TranscriptionItem] {
+        items.map { ($0, parse($0.date)) }.sorted { lhs, rhs in
+            if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+            let (left, right) = (lhs.0.createdAt ?? .distantPast, rhs.0.createdAt ?? .distantPast)
             if left != right { return left > right }
-            return lhs.item.id.uuidString < rhs.item.id.uuidString
-        }
-        return found.map(\.item)
+            return lhs.0.id.uuidString < rhs.0.id.uuidString
+        }.map(\.0)
     }
 
     func deleteNote(id: UUID) {
@@ -129,11 +144,11 @@ final class HistoryVault: @unchecked Sendable {
 
     // MARK: Файлы
 
-    private func noteURL(_ id: UUID) -> URL {
+    func noteURL(_ id: UUID) -> URL {
         notesDirectory.appendingPathComponent("\(id.uuidString).note")
     }
 
-    private func blobURL(_ id: UUID, _ purpose: HistoryCryptoPurpose) throws -> URL {
+    func blobURL(_ id: UUID, _ purpose: HistoryCryptoPurpose) throws -> URL {
         switch purpose {
         case .audio: audioDirectory.appendingPathComponent("\(id.uuidString).wav.sealed")
         case .timings: audioDirectory.appendingPathComponent("\(id.uuidString).segments.sealed")
