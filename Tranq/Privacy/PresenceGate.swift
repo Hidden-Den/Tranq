@@ -3,27 +3,59 @@ import LocalAuthentication
 
 /// Подтверждение личности перед чтением истории.
 protocol PresenceAuthorizing {
-    /// Бросает `HistoryKeyError.denied` на отказ или отмену, `.unavailable`, если подтвердить нечем.
+    /// Бросает `HistoryKeyError.denied` на любую неудачу: отказ, отмену, нечем подтвердить.
     func authorize(reason: String) async throws
 }
 
-/// Общий контекст подтверждения: ключ истории читается с ним без второго диалога.
+/// Общий контекст подтверждения: ключ истории используется с ним без второго диалога.
 /// `reset` забывает подтверждение, его зовут при запирании.
 final class HistoryAuthSession {
     static let shared = HistoryAuthSession()
 
+    /// Текст диалога, если ключ просят до явной разблокировки.
+    static let defaultReason = String(localized: "открыть историю")
+
     private let lock = NSLock()
     private var current = LAContext()
+    private var authorized = false
 
     var context: LAContext {
         lock.lock(); defer { lock.unlock() }
         return current
     }
 
+    var isAuthorized: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return authorized
+    }
+
+    func markAuthorized(_ context: LAContext) {
+        lock.lock(); defer { lock.unlock() }
+        if context === current { authorized = true }
+    }
+
     func reset() {
         lock.lock(); defer { lock.unlock() }
         current.invalidate()
         current = LAContext()
+        authorized = false
+    }
+
+    /// Программная проверка личности для пути без Secure Enclave. Блокирует поток до ответа,
+    /// диалог показывает система, поэтому зовётся и с главного потока.
+    func ensureAuthorized() throws {
+        if isAuthorized { return }
+        let context = self.context
+        let reason = context.localizedReason.isEmpty ? Self.defaultReason : context.localizedReason
+        let done = DispatchSemaphore(value: 0)
+        var failure: Error?
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, error in
+            if !success { failure = error ?? HistoryKeyError.denied }
+            done.signal()
+        }
+        done.wait()
+        if failure != nil { throw HistoryKeyError.denied }
+        markAuthorized(context)
     }
 }
 
@@ -36,22 +68,10 @@ struct LocalAuthPresenceGate: PresenceAuthorizing {
         context.localizedReason = reason
         do {
             try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+            session.markAuthorized(context)
         } catch {
-            throw HistoryKeyError.from(authError: error)
-        }
-    }
-}
-
-extension HistoryKeyError {
-    /// Отказ и отмена — `denied`, всё остальное — `unavailable`.
-    static func from(authError error: Error) -> HistoryKeyError {
-        let nsError = error as NSError
-        guard nsError.domain == LAError.errorDomain else { return .unavailable }
-        switch LAError.Code(rawValue: nsError.code) {
-        case .userCancel, .appCancel, .systemCancel, .authenticationFailed, .userFallback, .notInteractive:
-            return .denied
-        default:
-            return .unavailable
+            // Неудача проверки не значит потерю ключа: всегда отказ, история остаётся запертой.
+            throw HistoryKeyError.denied
         }
     }
 }

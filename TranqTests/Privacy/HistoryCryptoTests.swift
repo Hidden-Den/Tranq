@@ -76,6 +76,45 @@ struct HistoryCryptoTests {
         #expect(envelope.ephemeralPublicKey.count == 65)
         #expect(try HistoryCrypto.open(envelope, purpose: .audio, key: key) == sample)
     }
+
+    // MARK: - Файлы ключа Secure Enclave, без самого Secure Enclave
+
+    private func makeDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("tranq-history-key-\(UUID().uuidString)", isDirectory: true)
+    }
+
+    @Test func keyFilesAreOwnerOnly() throws {
+        let url = makeDirectory().appendingPathComponent(HistoryKeyFiles.publicFileName)
+        try HistoryKeyFiles.write(sample, to: url)
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        #expect((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o600)
+        #expect(try HistoryKeyFiles.read(url) == sample)
+    }
+
+    @Test func enclaveKeyExistsFollowsFilesAndDestroyRemovesThem() throws {
+        let dir = makeDirectory()
+        let key = SecureEnclaveHistoryKey(directory: dir)
+        #expect(!key.exists)
+        let publicKey = P256.KeyAgreement.PrivateKey().publicKey.x963Representation
+        try HistoryKeyFiles.write(Data("заглушка".utf8), to: dir.appendingPathComponent(SecureEnclaveHistoryKey.blobFileName))
+        try HistoryKeyFiles.write(publicKey, to: dir.appendingPathComponent(HistoryKeyFiles.publicFileName))
+        #expect(key.exists)
+        #expect(try key.publicKey == publicKey)
+
+        try key.destroy()
+        #expect(!key.exists)
+        #expect(throws: HistoryKeyError.unavailable) { try key.publicKey }
+        #expect(!FileManager.default.fileExists(atPath: dir.appendingPathComponent(HistoryKeyFiles.publicFileName).path))
+    }
+
+    @Test func missingEnclaveBlobIsUnavailable() throws {
+        let key = SecureEnclaveHistoryKey(directory: makeDirectory())
+        let ephemeral = P256.KeyAgreement.PrivateKey().publicKey.x963Representation
+        #expect(throws: HistoryKeyError.unavailable) {
+            try key.agree(withEphemeral: ephemeral)
+        }
+    }
 }
 
 private struct P256TestKey: HistoryKeyProviding {

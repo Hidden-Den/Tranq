@@ -1,4 +1,5 @@
 import CryptoKit
+import Darwin
 import Foundation
 import LocalAuthentication
 import Security
@@ -27,29 +28,40 @@ enum HistoryKeyFactory {
     }
 }
 
-/// P-256 в Secure Enclave: приватная часть не покидает чип, в Связке ключей лежит её представление.
+/// P-256 в Secure Enclave: приватная часть не покидает чип, её непрозрачное представление
+/// лежит файлом `history-key.se`, публичный ключ — файлом `history-key.pub`.
+/// Связка ключей не используется: без Team ID она отвечает -34018.
 struct SecureEnclaveHistoryKey: HistoryKeyProviding {
+    static let blobFileName = "history-key.se"
+
+    var directory: URL = AppEnvironment.dataDirectory
     var session: HistoryAuthSession = .shared
 
-    private let keychain = HistoryKeychain(privateAccount: "secureEnclave.private",
-                                           publicAccount: "secureEnclave.public")
+    private var blobURL: URL { directory.appendingPathComponent(Self.blobFileName) }
+    private var publicURL: URL { directory.appendingPathComponent(HistoryKeyFiles.publicFileName) }
 
-    var exists: Bool { keychain.hasPublic }
+    var exists: Bool { FileManager.default.fileExists(atPath: blobURL.path) }
 
     var publicKey: Data {
-        get throws { try keychain.readPublic() }
+        get throws { try HistoryKeyFiles.read(publicURL) }
     }
 
     func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
-        let blob = try keychain.readPrivate(context: nil)
+        let peer = try P256.KeyAgreement.PublicKey(x963Representation: ephemeral)
+        let blob = try HistoryKeyFiles.read(blobURL)
+        let key: SecureEnclave.P256.KeyAgreement.PrivateKey
         do {
-            let key = try SecureEnclave.P256.KeyAgreement.PrivateKey(dataRepresentation: blob,
-                                                                     authenticationContext: session.context)
-            let peer = try P256.KeyAgreement.PublicKey(x963Representation: ephemeral)
+            key = try SecureEnclave.P256.KeyAgreement.PrivateKey(dataRepresentation: blob,
+                                                                 authenticationContext: session.context)
+        } catch {
+            throw HistoryKeyError.unavailable
+        }
+        do {
             let secret = try key.sharedSecretFromKeyAgreement(with: peer)
             return secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }
         } catch {
-            throw HistoryKeyError.fromEnclave(error)
+            // Ключ на месте: любая ошибка здесь считается отказом, а не потерей ключа.
+            throw HistoryKeyError.denied
         }
     }
 
@@ -68,144 +80,113 @@ struct SecureEnclaveHistoryKey: HistoryKeyProviding {
         } catch {
             throw HistoryKeyError.unavailable
         }
-        // Представление ключа бесполезно вне этого чипа, поэтому в Связке ключей оно без userPresence.
-        try keychain.add(privateData: key.dataRepresentation, access: nil,
-                         publicData: key.publicKey.x963Representation)
+        try HistoryKeyFiles.write(key.publicKey.x963Representation, to: publicURL)
+        try HistoryKeyFiles.write(key.dataRepresentation, to: blobURL)
     }
 
-    func destroy() throws { try keychain.deleteAll() }
+    func destroy() throws {
+        try HistoryKeyFiles.remove(blobURL)
+        try HistoryKeyFiles.remove(publicURL)
+    }
 }
 
-/// Curve25519 без Secure Enclave: байты ключа в Связке ключей под userPresence.
+/// Curve25519 для Mac без Secure Enclave.
+/// Защита этого пути — пароль входа на связке ключей login и программная проверка личности
+/// перед согласованием, одна на разлочку, — не железо. Без Team ID защищённые элементы Связки ключей недоступны.
 struct KeychainHistoryKey: HistoryKeyProviding {
+    static let service = "nuter.Tranq.historyKey"
+    static let account = "curve25519.private"
+
+    var directory: URL = AppEnvironment.dataDirectory
     var session: HistoryAuthSession = .shared
 
-    private let keychain = HistoryKeychain(privateAccount: "curve25519.private",
-                                           publicAccount: "curve25519.public")
+    private var publicURL: URL { directory.appendingPathComponent(HistoryKeyFiles.publicFileName) }
 
-    var exists: Bool { keychain.hasPublic }
+    private var itemQuery: [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: Self.service,
+         kSecAttrAccount as String: Self.account]
+    }
+
+    var exists: Bool {
+        SecItemCopyMatching(itemQuery as CFDictionary, nil) == errSecSuccess
+    }
 
     var publicKey: Data {
-        get throws { try keychain.readPublic() }
+        get throws { try HistoryKeyFiles.read(publicURL) }
     }
 
     func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
-        let raw = try keychain.readPrivate(context: session.context)
-        let key: Curve25519.KeyAgreement.PrivateKey
-        let peer: Curve25519.KeyAgreement.PublicKey
-        do {
-            key = try Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw)
-            peer = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: ephemeral)
-        } catch {
+        let peer = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: ephemeral)
+        try session.ensureAuthorized()
+
+        var query = itemQuery
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status != errSecItemNotFound else { throw HistoryKeyError.unavailable }
+        guard status == errSecSuccess, let raw = result as? Data else { throw HistoryKeyError.denied }
+
+        guard let key = try? Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw) else {
             throw HistoryKeyError.unavailable
         }
-        let secret = try key.sharedSecretFromKeyAgreement(with: peer)
-        return secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }
+        do {
+            let secret = try key.sharedSecretFromKeyAgreement(with: peer)
+            return secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }
+        } catch {
+            throw HistoryKeyError.denied
+        }
     }
 
     func create() throws {
         try destroy()
-        var error: Unmanaged<CFError>?
-        guard let access = SecAccessControlCreateWithFlags(nil,
-                                                           kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                                                           .userPresence,
-                                                           &error) else {
-            throw HistoryKeyError.unavailable
-        }
         let key = Curve25519.KeyAgreement.PrivateKey()
-        try keychain.add(privateData: key.rawRepresentation, access: access,
-                         publicData: key.publicKey.rawRepresentation)
-    }
-
-    func destroy() throws { try keychain.deleteAll() }
-}
-
-/// Два элемента Связки ключей под сервисом `nuter.Tranq.historyKey`: приватная часть и публичная.
-/// Публичная лежит отдельно, чтобы запись конвертов и проверка наличия ключа шли без диалога.
-private struct HistoryKeychain {
-    static let service = "nuter.Tranq.historyKey"
-
-    let privateAccount: String
-    let publicAccount: String
-
-    private func base(_ account: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: Self.service,
-         kSecAttrAccount as String: account,
-         kSecUseDataProtectionKeychain as String: true]
-    }
-
-    var hasPublic: Bool {
-        var query = base(publicAccount)
-        query[kSecReturnData as String] = false
-        return SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess
-    }
-
-    func readPublic() throws -> Data { try read(base(publicAccount)) }
-
-    func readPrivate(context: LAContext?) throws -> Data {
-        var query = base(privateAccount)
-        if let context { query[kSecUseAuthenticationContext as String] = context }
-        return try read(query)
-    }
-
-    func add(privateData: Data, access: SecAccessControl?, publicData: Data) throws {
-        var privateItem = base(privateAccount)
-        privateItem[kSecValueData as String] = privateData
-        if let access {
-            privateItem[kSecAttrAccessControl as String] = access
-        } else {
-            privateItem[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        }
-        var publicItem = base(publicAccount)
-        publicItem[kSecValueData as String] = publicData
-        publicItem[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-
-        try check(SecItemAdd(privateItem as CFDictionary, nil))
+        var item = itemQuery
+        item[kSecValueData as String] = key.rawRepresentation
+        guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw HistoryKeyError.unavailable }
         do {
-            try check(SecItemAdd(publicItem as CFDictionary, nil))
+            try HistoryKeyFiles.write(key.publicKey.rawRepresentation, to: publicURL)
         } catch {
-            try? deleteAll()
+            try? destroy()
             throw error
         }
     }
 
-    func deleteAll() throws {
-        for account in [privateAccount, publicAccount] {
-            let status = SecItemDelete(base(account) as CFDictionary)
-            guard status == errSecSuccess || status == errSecItemNotFound else {
-                throw HistoryKeyError.unavailable
-            }
-        }
-    }
-
-    private func read(_ query: [String: Any]) throws -> Data {
-        var query = query
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        var result: AnyObject?
-        try check(SecItemCopyMatching(query as CFDictionary, &result))
-        guard let data = result as? Data else { throw HistoryKeyError.unavailable }
-        return data
-    }
-
-    private func check(_ status: OSStatus) throws {
-        switch status {
-        case errSecSuccess: return
-        case errSecUserCanceled, errSecAuthFailed, errSecInteractionNotAllowed: throw HistoryKeyError.denied
-        default: throw HistoryKeyError.unavailable
-        }
+    func destroy() throws {
+        let status = SecItemDelete(itemQuery as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw HistoryKeyError.unavailable }
+        try HistoryKeyFiles.remove(publicURL)
     }
 }
 
-extension HistoryKeyError {
-    /// Отказ в Secure Enclave приходит ошибкой LocalAuthentication, иногда вложенной.
-    static func fromEnclave(_ error: Error) -> HistoryKeyError {
-        var current: NSError? = error as NSError
-        while let nsError = current {
-            if nsError.domain == LAError.errorDomain { return from(authError: nsError) }
-            current = nsError.userInfo[NSUnderlyingErrorKey] as? NSError
+/// Файлы ключа истории: запись атомарная, права 0600 с момента создания.
+enum HistoryKeyFiles {
+    static let publicFileName = "history-key.pub"
+
+    static func write(_ data: Data, to url: URL) throws {
+        let fm = FileManager.default
+        try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let temp = url.deletingLastPathComponent()
+            .appendingPathComponent(".\(url.lastPathComponent).\(UUID().uuidString)")
+        guard fm.createFile(atPath: temp.path, contents: data, attributes: [.posixPermissions: 0o600]) else {
+            throw HistoryKeyError.unavailable
         }
-        return .unavailable
+        guard rename(temp.path, url.path) == 0 else {
+            try? fm.removeItem(at: temp)
+            throw HistoryKeyError.unavailable
+        }
+    }
+
+    /// Нет файла или он не читается — ключ недоступен.
+    static func read(_ url: URL) throws -> Data {
+        guard let data = try? Data(contentsOf: url), !data.isEmpty else { throw HistoryKeyError.unavailable }
+        return data
+    }
+
+    static func remove(_ url: URL) throws {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: url.path) else { return }
+        try fm.removeItem(at: url)
     }
 }
