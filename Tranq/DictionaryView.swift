@@ -42,7 +42,6 @@ struct DictionaryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.uiCanvas)
         .sheet(isPresented: $addingWord) { DictionaryAddWordSheet() }
         // Второе окно подтверждения висит на разделе «Мои слова»: два `.alert` на одном виде
         // SwiftUI не показывает оба.

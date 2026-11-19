@@ -7,6 +7,5 @@ struct RulesView: View {
             RulesSettingsSection()
                 .padding(20)
         }
-        .background(Color.uiCanvas)
     }
 }
