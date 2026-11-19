@@ -2,7 +2,18 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-enum MainTab { case vocabulary, history, settings }
+enum MainTab: CaseIterable {
+    case vocabulary, rules, history, settings
+
+    var title: String {
+        switch self {
+        case .vocabulary: return String(localized: "Словарь")
+        case .rules: return String(localized: "Правила")
+        case .history: return String(localized: "История")
+        case .settings: return String(localized: "Настройки")
+        }
+    }
+}
 
 /// Наименьший размер главного окна. Одно значение на окно и на содержимое:
 /// раньше они расходились, и окно упиралось в больший из двух пределов.
@@ -53,13 +64,7 @@ struct ContentView: View {
     
     @State private var showAboutSheet = false
 
-    private var currentTabTitle: String {
-        switch currentTab {
-        case .vocabulary: return String(localized: "Словарь")
-        case .history: return String(localized: "История")
-        case .settings: return String(localized: "Настройки")
-        }
-    }
+    private var currentTabTitle: String { currentTab.title }
     
     private func toggleSidebar() {
         withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.52)) {
@@ -112,6 +117,9 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
             currentTab = .vocabulary
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRulesTab"))) { _ in
+            currentTab = .rules
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
             toggleSidebar()
@@ -171,6 +179,7 @@ struct ContentView: View {
                 Group {
                     switch currentTab {
                     case .vocabulary: DictionaryView()
+                    case .rules: RulesView()
                     case .history: historyDetailView
                     case .settings: SettingsView()
                     }
@@ -225,6 +234,10 @@ struct ContentView: View {
             VStack(spacing: 4) {
                 SidebarTabButton(title: "Словарь", icon: "character.book.closed.fill", isActive: currentTab == .vocabulary) {
                     currentTab = .vocabulary
+                    searchText = ""
+                }
+                SidebarTabButton(title: "Правила", icon: "slider.horizontal.3", isActive: currentTab == .rules) {
+                    currentTab = .rules
                     searchText = ""
                 }
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {

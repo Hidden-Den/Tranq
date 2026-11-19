@@ -3396,6 +3396,22 @@
         }
       }
     },
+    "Правила" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rules"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правила"
+          }
+        }
+      }
+    },
     "Правило уже есть" : {
       "localizations" : {
         "en" : {
