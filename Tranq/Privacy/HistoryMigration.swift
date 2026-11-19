@@ -13,6 +13,8 @@ enum HistoryMigrationError: Error, Equatable {
     case unreadablePlainHistory
     /// Замок уже в нужном положении.
     case wrongState
+    /// Пробная сверка ключа на пустой истории не открылась: ключ нечитаем.
+    case keyProbeFailed
 }
 
 /// Перевод истории между открытыми файлами и конвертами в обе стороны.
@@ -144,6 +146,32 @@ enum HistoryMigration {
             copy.createdAt = base.addingTimeInterval(Double(count - index) * 1e-6)
             return copy
         }
+    }
+
+    /// Слияние без потерь. Группы идут по старшинству: у одной заметки первая версия сохраняет id.
+    /// Та же заметка с тем же содержимым — `createdAt` не в счёт — сливается в одну. Другая версия
+    /// той же заметки остаётся отдельной заметкой с новым id и `createdAt` чуть раньше двойника,
+    /// чтобы стоять рядом с ним: лишнюю человек удалит сам, а потерянную не вернёт никто.
+    static func mergeKeepingBoth(_ groups: [[TranscriptionItem]]) -> [TranscriptionItem] {
+        var versions: [UUID: (first: TranscriptionItem, seen: Set<TranscriptionItem>)] = [:]
+        var result: [TranscriptionItem] = []
+        for item in groups.joined() {
+            var normalized = item
+            normalized.createdAt = nil
+            guard var entry = versions[item.id] else {
+                versions[item.id] = (item, [normalized])
+                result.append(item)
+                continue
+            }
+            guard entry.seen.insert(normalized).inserted else { continue }
+            versions[item.id] = entry
+            var copy = item
+            copy.id = UUID()
+            let step = Double(entry.seen.count - 1) * 1e-6
+            copy.createdAt = entry.first.createdAt.map { $0.addingTimeInterval(-step) } ?? item.createdAt
+            result.append(copy)
+        }
+        return HistoryVault.newestFirst(result)
     }
 
     // MARK: - Выключение
@@ -650,15 +678,8 @@ extension HistoryMigration {
                 Darwin.rename(historyRestore.path, history.path)
                 return
             }
-            // Слияние без потерь: заметки открытого файла, которых нет в копии, остаются. Если одна заметка
-            // в двух файлах разная, слить нельзя без потери одной версии: оба файла остаются.
-            let copyByID = Dictionary(copy.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            guard plain.allSatisfy({ copyByID[$0.id] == nil || copyByID[$0.id] == $0 }) else {
-                AppLogger.shared.warn("History", "Копия истории оставлена рядом", details: historyRestore.lastPathComponent)
-                return
-            }
-            let copyIDs = Set(copy.map(\.id))
-            let merged = HistoryVault.newestFirst(copy + plain.filter { !copyIDs.contains($0.id) })
+            // Слияние без потерь: открытый файл первым, другая версия заметки из копии остаётся рядом.
+            let merged = HistoryMigration.mergeKeepingBoth([plain, copy])
             guard let encoded = try? JSONEncoder().encode(merged),
                   (try? encoded.write(to: history, options: .atomic)) != nil,
                   plainHistory() == merged else {
@@ -723,13 +744,24 @@ extension HistoryMigration {
         func sealCopiesReplacingUnreadableKey(notes items: [TranscriptionItem], journal: TranscriptJournal) throws {
             do {
                 try sealCopies(notes: items, journal: journal)
-            } catch HistoryKeyError.unavailable where !keyCreated {
+            } catch where !keyCreated && Self.isUnreadableKey(error) {
                 removeWritten()
-                guard !holdsKeyData else { throw HistoryKeyError.unavailable }
+                guard !holdsKeyData else { throw error }
                 AppLogger.shared.warn("History", "Нечитаемый ключ истории заменён: он ничего не держал")
                 try vault.key.create()
                 keyCreated = true
                 try sealCopies(notes: items, journal: journal)
+            }
+        }
+
+        /// Ключ не читается: его нет на этом Mac, файл публичного ключа испорчен,
+        /// или пробная сверка на пустой истории не открылась.
+        static func isUnreadableKey(_ error: Error) -> Bool {
+            switch error {
+            case HistoryKeyError.unavailable, HistoryCryptoError.unsupportedKey, HistoryMigrationError.keyProbeFailed:
+                return true
+            default:
+                return false
             }
         }
 
@@ -770,7 +802,16 @@ extension HistoryMigration {
             }
             // Сверять было нечего: ключ всё равно проверяется, иначе нечитаемый ключ прошёл бы молча.
             if notes.isEmpty && audio.isEmpty && timings.isEmpty && journalMap.isEmpty {
-                _ = try sealVerified("", key: vault.key)
+                do {
+                    _ = try sealVerified("", key: vault.key)
+                } catch let error as HistoryKeyError {
+                    throw error
+                } catch HistoryCryptoError.unsupportedKey {
+                    throw HistoryCryptoError.unsupportedKey
+                } catch {
+                    // Запечатано этим же ключом и не открылось: точка публичного ключа чужая.
+                    throw HistoryMigrationError.keyProbeFailed
+                }
             }
         }
 
@@ -856,6 +897,9 @@ extension HistoryMigration {
         private(set) var journalMap: [String: String] = [:]
         /// SHA-256 проверенной открытой истории: по нему откат узнаёт свою копию.
         private(set) var historyDigest: String?
+        /// Копия истории, оставшаяся от прошлого сбоя. Читается один раз до первой перезаписи,
+        /// вливается в каждую попытку и не удаляется этим прогоном.
+        private var leftoverRestore: [TranscriptionItem]?
 
         init(layout: Layout, vault: HistoryVault) {
             self.layout = layout
@@ -878,14 +922,28 @@ extension HistoryMigration {
                 guard let plain = layout.plainHistory() else { throw HistoryMigrationError.unreadablePlainHistory }
                 existing = plain
             }
-            // Ожидающая конверта правка новее файла, конверт новее старого открытого файла.
-            var seen = Set<UUID>()
-            let merged = HistoryVault.newestFirst((pending + sealed + existing).filter { seen.insert($0.id).inserted })
+            if leftoverRestore == nil {
+                // Чужая копия не перезаписывается вслепую: её заметки вливаются в новую.
+                if layout.exists(layout.historyRestore) {
+                    guard let data = FileManager.default.contents(atPath: layout.historyRestore.path),
+                          let items = try? JSONDecoder().decode([TranscriptionItem].self, from: data) else {
+                        throw HistoryMigrationError.unreadablePlainHistory
+                    }
+                    leftoverRestore = items
+                } else {
+                    leftoverRestore = []
+                }
+            }
+            let leftover = leftoverRestore ?? []
+            // Ожидающая конверта правка первой, затем конверт, затем открытые файлы. Разные версии
+            // одной заметки остаются обе: остаток отката бывает новее своего конверта.
+            let merged = HistoryMigration.mergeKeepingBoth([pending, sealed, existing, leftover])
             let data = try JSONEncoder().encode(merged)
             // Отпечаток только для копии из одних конвертов. Заметка, ждавшая конверта, или заметка
             // прежнего открытого файла есть лишь здесь: без отпечатка откат копию не удалит.
-            historyDigest = pending.isEmpty && existing.isEmpty ? HistoryMigration.digest(data) : nil
-            written.append(layout.historyRestore)
+            historyDigest = pending.isEmpty && existing.isEmpty && leftover.isEmpty ? HistoryMigration.digest(data) : nil
+            // Копию, которая была до прогона, отмена не удаляет: после перезаписи в ней всё прежнее и больше.
+            if !(leftoverRestore?.isEmpty == false) { written.append(layout.historyRestore) }
             try data.write(to: layout.historyRestore, options: .atomic)
             guard let back = try? JSONDecoder().decode([TranscriptionItem].self,
                                                        from: Data(contentsOf: layout.historyRestore)),

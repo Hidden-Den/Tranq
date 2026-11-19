@@ -15,6 +15,11 @@ final class ScriptedHistoryKey: HistoryKeyProviding {
     var agreeFails = false
     /// Ключ есть, но не читается, пока его не создадут заново.
     var broken = false
+    /// Файл публичного ключа обрезан, пока ключ не создадут заново.
+    var truncatedPublic = false
+    /// Публичный ключ — точка чужого ключа, пока ключ не создадут заново.
+    var wrongPublic = false
+    private let stranger = Curve25519.KeyAgreement.PrivateKey()
     private(set) var publicCalls = 0
     private(set) var creates = 0
     private(set) var destroys = 0
@@ -31,6 +36,8 @@ final class ScriptedHistoryKey: HistoryKeyProviding {
             let over = publicCalls > publicLimit
             lock.unlock()
             if over || broken { throw HistoryKeyError.unavailable }
+            if truncatedPublic { return Data(repeating: 7, count: 10) }
+            if wrongPublic { return stranger.publicKey.rawRepresentation }
             return try inner.publicKey
         }
     }
@@ -40,7 +47,11 @@ final class ScriptedHistoryKey: HistoryKeyProviding {
         return try inner.agree(withEphemeral: ephemeral)
     }
 
-    func create() throws { creates += 1; broken = false; try inner.create() }
+    func create() throws {
+        creates += 1
+        broken = false; truncatedPublic = false; wrongPublic = false
+        try inner.create()
+    }
     func destroy() throws { destroys += 1; try inner.destroy() }
 
     /// С этого момента публичный ключ не отдаётся.
@@ -912,6 +923,7 @@ struct HistoryMigrationTests {
 
         #expect(rig.key.creates == 1)
         #expect(!rig.key.broken)
+        #expect(rig.flags.values == [true])
     }
 
     /// Нечитаемый ключ держит запечатанную строку журнала: не пересоздаётся, включение падает, ключ цел.
@@ -962,6 +974,145 @@ struct HistoryMigrationTests {
 
         #expect(rig.key.creates == 1)
         #expect(rig.flags.values.isEmpty)
+    }
+
+    // MARK: - Две версии заметки
+
+    /// После отката с правкой X' следующее выключение оставляет и X, и X'.
+    @Test func rollbackEditSurvivesNextDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let original = seed.items[0]
+        let edited = try await strandEdit(rig, seed: seed)
+        try FileManager.default.createDirectory(at: journalURL(rig).appendingPathExtension("migrating"),
+                                                withIntermediateDirectories: true)
+        await #expect(throws: (any Error).self) { try await disable(rig) }
+        #expect(try decodeHistory(rig).contains(edited))
+        rig.key.publicLimit = Int.max
+
+        try await disable(rig)
+
+        let final = try decodeHistory(rig)
+        // Обе версии на месте. Прежняя версия могла остаться и копией с новым id: дубль лучше потери.
+        #expect(final.contains { $0.text == original.text })
+        #expect(final.contains { $0.text == edited.text })
+        for item in seed.items.dropFirst() { #expect(final.contains(item)) }
+        #expect(rig.vault.noteFileCount() == 0)
+    }
+
+    /// Оставшаяся копия истории с заметкой не из конвертов переживает следующее выключение.
+    @Test func leftoverRestoreSurvivesDisable() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let lone = note("только в копии", date: "12.11.2026, 10:00", createdAt: Date())
+        try JSONEncoder().encode([lone]).write(to: historyURL(rig).appendingPathExtension("restore"))
+
+        try await disable(rig)
+
+        let final = try decodeHistory(rig)
+        #expect(final.contains(lone))
+        #expect(final.count == seed.items.count + 1)
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Та же заметка в конверте и в открытом файле сливается в одну.
+    @Test func identicalDuplicatesCollapse() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        try JSONEncoder().encode([seed.items[1]]).write(to: historyURL(rig))
+        try JSONEncoder().encode([seed.items[2]]).write(to: historyURL(rig).appendingPathExtension("restore"))
+
+        try await disable(rig)
+
+        #expect(try decodeHistory(rig) == seed.items)
+    }
+
+    /// Разные версии одной заметки при слиянии: обе остаются, вторая рядом с первой.
+    @Test func mergeKeepsBothVersionsSideBySide() throws {
+        let base = Date(timeIntervalSince1970: 1_800_000_000)
+        let x = note("икс", date: "01.11.2026, 10:00", createdAt: base)
+        let other = note("другая", date: "01.11.2026, 10:00", createdAt: base.addingTimeInterval(-30))
+        let edited = x.withText("икс правка")
+        var sameButTime = x
+        sameButTime.createdAt = base.addingTimeInterval(5)
+
+        let merged = HistoryMigration.mergeKeepingBoth([[x, other], [edited, sameButTime]])
+
+        try #require(merged.count == 3)
+        #expect(merged[0] == x)
+        #expect(merged[1].text == "икс правка" && merged[1].id != x.id)
+        #expect(merged[2] == other)
+    }
+
+    /// Отмена выключения не удаляет копию истории, которая была до прогона.
+    @Test func abortKeepsPreexistingRestore() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        try await enable(rig)
+        let lone = note("только в копии", date: "12.11.2026, 10:00", createdAt: Date())
+        let restore = historyURL(rig).appendingPathExtension("restore")
+        try JSONEncoder().encode([lone]).write(to: restore)
+        // Копия аудио не пишется: на её месте папка.
+        let audioID = try #require(seed.audio.keys.first)
+        try FileManager.default.createDirectory(at: rig.store.audioURL(for: audioID).appendingPathExtension("restore"),
+                                                withIntermediateDirectories: true)
+
+        await #expect(throws: (any Error).self) { try await disable(rig) }
+
+        let kept = try JSONDecoder().decode([TranscriptionItem].self, from: Data(contentsOf: restore))
+        #expect(kept.contains(lone))
+        #expect(rig.store.lockState == .locked)
+    }
+
+    /// Обрезанный файл публичного ключа без данных: ключ создаётся заново, включение проходит.
+    @Test func truncatedPublicKeyWithoutDataIsReplaced() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        rig.key.truncatedPublic = true
+
+        try await enable(rig)
+
+        #expect(rig.key.creates == 1)
+        #expect(rig.flags.values == [true])
+        await rig.store.applyLockStateAndWait(.unlocked)
+        #expect(rig.store.items == seed.items)
+    }
+
+    /// Обрезанный публичный ключ рядом с запечатанной строкой журнала: ключ не пересоздаётся.
+    @Test func truncatedPublicKeyHoldingJournalIsKept() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        rig.journal.setSealing(.sealed(key: rig.key))
+        rig.journal.recordInitial(id: UUID(), rawText: "старое", durationSec: 1, targetAppName: nil)
+        rig.journal.setSealing(.off)
+        rig.journal.flush()
+        try seed(rig)
+        rig.key.truncatedPublic = true
+
+        await #expect(throws: (any Error).self) { try await enable(rig) }
+
+        #expect(rig.key.creates == 0)
+        #expect(rig.key.exists)
+        #expect(rig.flags.values.isEmpty)
+    }
+
+    /// Чужая точка публичного ключа на пустой истории: пробная сверка ловит её, ключ создаётся заново.
+    @Test func wrongPublicKeyCaughtByProbe() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        rig.key.wrongPublic = true
+
+        try await enable(rig)
+
+        #expect(rig.key.creates == 1)
+        #expect(rig.flags.values == [true])
     }
 
     // MARK: - Закрытия настроек
