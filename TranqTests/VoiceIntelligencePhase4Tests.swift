@@ -89,18 +89,6 @@ extension SharedSettingsSuites {
             #expect(missingResult == .rejected(reason: "Пропущено исходное число 10"))
         }
 
-        @Test func promptStyleAllowsStructuralTokensAndExpandedLength() {
-            let input = "Сделай парсер логов на питоне"
-            let promptOutput = "Role: Senior Python Developer\nTask: Напиши парсер логов на Python с обработкой ошибок.\nConstraints: Используй стандартную библиотеку."
-            let result = GroundingValidator.validate(input: input, output: promptOutput, level: .prompt)
-            if case .valid(let text) = result {
-                #expect(text.contains("Role:"))
-                #expect(text.contains("Task:"))
-            } else {
-                Issue.record("Стиль промпта должен разрешать структурные токены")
-            }
-        }
-
         // MARK: - User Terms Dictionary
 
         @Test func userCustomTermsWhitelistedInValidator() {

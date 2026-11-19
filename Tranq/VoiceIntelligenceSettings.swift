@@ -1,27 +1,6 @@
 import Foundation
 import SwiftUI
 
-public enum VoiceInputMode: String, CaseIterable, Identifiable {
-    case smart = "smart"
-    case direct = "direct"
-
-    public var id: String { rawValue }
-
-    public var title: String {
-        switch self {
-        case .smart: return String(localized: "Умная речь")
-        case .direct: return String(localized: "Прямой ввод")
-        }
-    }
-
-    public var subtitle: String {
-        switch self {
-        case .smart: return String(localized: "Синтез мыслей и очистка от паразитов")
-        case .direct: return String(localized: "Только звуки и заикания, без ИИ")
-        }
-    }
-}
-
 public enum VoiceEngine: String, CaseIterable, Identifiable {
     case airGapped = "airGapped"
     case external = "external"
@@ -47,10 +26,6 @@ public final class VoiceIntelligenceSettings: ObservableObject {
     public static let shared = VoiceIntelligenceSettings()
 
     private static let defaults = AppEnvironment.defaults
-
-    @Published public var mode: VoiceInputMode {
-        didSet { Self.defaults.set(mode.rawValue, forKey: "voice.mode") }
-    }
 
     @Published public var engine: VoiceEngine {
         didSet { Self.defaults.set(engine.rawValue, forKey: "voice.engine") }
@@ -138,26 +113,16 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         didSet { Self.defaults.set(customSystemPrompt, forKey: "voice.customSystemPrompt") }
     }
 
-    /// Режим промпта по Shift на одну диктовку; по умолчанию выключен.
-    @Published public var promptModeEnabled: Bool {
-        didSet { Self.defaults.set(promptModeEnabled, forKey: "voice.promptModeEnabled") }
-    }
-
     public func resetToDefaults() {
-        self.mode = .smart
         self.engine = .external
         self.localModel = SLMRecommendation.smallID
         self.adaptiveTimeoutSeconds = Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaultCustomPrompt
-        self.promptModeEnabled = false
     }
 
     private init() {
         Self.migrateLegacyPrompt(Self.defaults)
         Self.migrateLegacyTimeout(Self.defaults)
-        let storedMode = Self.defaults.string(forKey: "voice.mode") ?? VoiceInputMode.smart.rawValue
-        self.mode = VoiceInputMode(rawValue: storedMode) ?? .smart
-
         let storedEngine = Self.defaults.string(forKey: "voice.engine") ?? VoiceEngine.external.rawValue
         if storedEngine == "airGapped" {
             self.engine = .airGapped
@@ -174,6 +139,5 @@ public final class VoiceIntelligenceSettings: ObservableObject {
         }
         self.adaptiveTimeoutSeconds = Self.defaults.double(forKey: "voice.timeout") > 0 ? Self.defaults.double(forKey: "voice.timeout") : Self.defaultTimeoutSeconds
         self.customSystemPrompt = Self.defaults.string(forKey: "voice.customSystemPrompt") ?? Self.defaultCustomPrompt
-        self.promptModeEnabled = Self.defaults.bool(forKey: "voice.promptModeEnabled")
     }
 }

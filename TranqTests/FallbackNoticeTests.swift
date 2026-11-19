@@ -48,3 +48,38 @@ struct FallbackNoticeTests {
         #expect(Date().timeIntervalSince(started) < 3)
     }
 }
+
+/// «ИИ не настроен» говорит об отсутствии настройки, а не о сбое: после первого раза за запуск
+/// оно только мешало бы, например тем, кто раньше работал без ИИ. Настоящие сбои повторяются каждый раз.
+struct FallbackNoticeThrottleTests {
+    @Test func notConfiguredIsShownOncePerLaunch() {
+        var throttle = FallbackNoticeThrottle()
+        #expect(throttle.message(for: .notConfigured, providerID: "openai", engine: .external)
+                == String(localized: "ИИ не настроен"))
+        #expect(throttle.message(for: .notConfigured, providerID: "openai", engine: .external) == nil)
+        #expect(throttle.message(for: .notConfigured, providerID: "openai", engine: .external) == nil)
+    }
+
+    @Test func realFailuresAreReportedEveryTime() {
+        var throttle = FallbackNoticeThrottle()
+        for _ in 0..<3 {
+            #expect(throttle.message(for: .timeout, providerID: "openai", engine: .external)
+                    == String(localized: "ИИ не ответил"))
+            #expect(throttle.message(for: .providerError(500), providerID: "openai", engine: .external)
+                    == String(localized: "Ошибка ИИ"))
+        }
+    }
+
+    @Test func otherReasonsDoNotUseUpTheNotConfiguredNotice() {
+        var throttle = FallbackNoticeThrottle()
+        #expect(throttle.message(for: .timeout, providerID: "openai", engine: .external) != nil)
+        #expect(throttle.message(for: .notConfigured, providerID: "openai", engine: .external)
+                == String(localized: "ИИ не настроен"))
+    }
+
+    @Test func silentReasonsStayStillSilent() {
+        var throttle = FallbackNoticeThrottle()
+        #expect(throttle.message(for: nil, providerID: "openai", engine: .external) == nil)
+        #expect(throttle.message(for: .shortPhrase, providerID: "openai", engine: .external) == nil)
+    }
+}

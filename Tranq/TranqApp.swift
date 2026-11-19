@@ -12,13 +12,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey.isExternalRecordingActive = {
             AudioCapture.shared.isRecording
         }
-        hotKey.onHotKeyPressed = { promptRequested in
+        hotKey.onHotKeyPressed = {
             if hotKey.mode == .pushToTalk {
                 if !AudioCapture.shared.isRecording {
-                    AudioCapture.shared.startRecording(promptRequested: promptRequested)
+                    AudioCapture.shared.startRecording()
                 }
             } else {
-                AudioCapture.shared.toggleRecording(promptRequested: promptRequested)
+                AudioCapture.shared.toggleRecording()
             }
         }
         hotKey.onHotKeyReleased = {
@@ -71,6 +71,8 @@ struct TranqApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject var audioCapture = AudioCapture.shared
     @ObservedObject var theme = ThemeSettings.shared
+    @ObservedObject var hotKeySettings = HotKeySettings.shared
+    @ObservedObject var preferences = AppPreferences.shared
 
     init() {
         BrandFonts.registerAll()
@@ -110,6 +112,14 @@ struct TranqApp: App {
 
             CommandGroup(replacing: .newItem) {}
 
+            CommandGroup(replacing: .appSettings) {
+                Button("Настройки…") {
+                    MainWindowController.shared.showMainWindow()
+                    NotificationCenter.default.post(name: NSNotification.Name("OpenSettingsTab"), object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+
             CommandGroup(after: .pasteboard) {
                 Button(String(localized: "Вставить оригинал речи")) {
                     TranscriptJournal.shared.pasteOriginal { _ in }
@@ -121,6 +131,21 @@ struct TranqApp: App {
         .defaultSize(width: 990, height: 710)
         
         MenuBarExtra {
+            Text("Режим")
+            Picker("Режим", selection: $hotKeySettings.mode) {
+                ForEach(HotKeyMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+
+            Divider()
+
+            Toggle("Звуки", isOn: $preferences.soundEnabled)
+
+            Divider()
+
             Button("Развернуть Tranq") {
                 MainWindowController.shared.showMainWindow()
             }

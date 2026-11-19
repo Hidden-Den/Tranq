@@ -66,19 +66,3 @@ enum RuleEditorLogic {
         return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
-
-/// Что показать под переключателем режима промпта.
-enum PromptModeHint: Equatable {
-    /// Сочетание для одной диктовки, например «⇧ + Fn».
-    case available(String)
-    /// Shift уже занят самой клавишей.
-    case unavailableShift
-    case noHotKey
-
-    static func make(for trigger: HotKeyTrigger) -> PromptModeHint {
-        if trigger == .none { return .noHotKey }
-        guard let variant = trigger.promptVariant else { return .unavailableShift }
-        if case .singleModifier = variant { return .available("⇧ + " + variant.displayName) }
-        return .available(variant.displayName)
-    }
-}

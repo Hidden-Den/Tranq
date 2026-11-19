@@ -42,6 +42,14 @@ struct AboutView: View {
                 TechBadge(text: "CORE ML")
             }
             
+            HStack {
+                Text("Аппаратное ускорение")
+                    .font(.ui(.footnote))
+                    .foregroundColor(.uiMidGray)
+                Spacer()
+                TechBadge(text: "APPLE METAL")
+            }
+            
             Divider().background(Color.uiHairline)
             
             // 4. КНОПКИ

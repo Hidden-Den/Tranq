@@ -110,32 +110,30 @@ public struct GroundingValidator {
         }
 
         // 5. Проверка латиницы и пользовательского словаря терминов
-        if level != .prompt {
-            let inputLatinLower = Set(extractLatinTokens(from: withoutNumberSign(trimmedInput)).map { $0.lowercased() })
-            let outputLatin = extractLatinTokens(from: withoutNumberSign(sanitizedOutput))
-            var customTermsTokens = Set<String>()
-            for term in customTerms {
-                for tok in extractLatinTokens(from: term) {
-                    customTermsTokens.insert(tok.lowercased())
-                }
+        let inputLatinLower = Set(extractLatinTokens(from: withoutNumberSign(trimmedInput)).map { $0.lowercased() })
+        let outputLatin = extractLatinTokens(from: withoutNumberSign(sanitizedOutput))
+        var customTermsTokens = Set<String>()
+        for term in customTerms {
+            for tok in extractLatinTokens(from: term) {
+                customTermsTokens.insert(tok.lowercased())
             }
+        }
 
-            for token in outputLatin {
-                let lowerToken = token.lowercased()
-                if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
-                    continue
-                }
-                return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
+        for token in outputLatin {
+            let lowerToken = token.lowercased()
+            if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
+                continue
             }
+            return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
+        }
 
-            // Латинские термины речи, как и числа, обязаны дожить до результата
-            if isClean || isRewrite {
-                let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
-                // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
-                let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
-                if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
-                    return .rejected(reason: "Пропущен исходный термин \(missing)")
-                }
+        // Латинские термины речи, как и числа, обязаны дожить до результата
+        if isClean || isRewrite {
+            let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
+            // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
+            let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
+            if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
+                return .rejected(reason: "Пропущен исходный термин \(missing)")
             }
         }
 
@@ -146,8 +144,6 @@ public struct GroundingValidator {
             maxAllowedWords = max(inputWordCount + 2, Int(Double(inputWordCount) * 1.2))
         case .rewrite:
             maxAllowedWords = max(12, Int(Double(inputWordCount) * 2.0))
-        case .prompt:
-            maxAllowedWords = max(25, Int(Double(inputWordCount) * 3.0))
         }
 
         if outputWordCount > maxAllowedWords {

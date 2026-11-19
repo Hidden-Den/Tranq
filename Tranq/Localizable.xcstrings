@@ -1,6 +1,38 @@
 {
   "sourceLanguage" : "ru",
   "strings" : {
+    "Данные" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Данные"
+          }
+        }
+      }
+    },
+    "Диктовка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictation"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диктовка"
+          }
+        }
+      }
+    },
     "Итог" : {
       "localizations" : {
         "en" : {
@@ -13,6 +45,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Итог"
+          }
+        }
+      }
+    },
+    "Обработка" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обработка"
+          }
+        }
+      }
+    },
+    "Провайдер" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provider"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Провайдер"
+          }
+        }
+      }
+    },
+    "Распознавание" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognition"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Распознавание"
           }
         }
       }
@@ -65,6 +145,54 @@
         }
       }
     },
+    "Модель обработки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Processing model"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модель обработки"
+          }
+        }
+      }
+    },
+    "Модель распознавания" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognition model"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Модель распознавания"
+          }
+        }
+      }
+    },
+    "Начало и конец записи, копирование, ошибки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording start and end, copying, errors"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Начало и конец записи, копирование, ошибки"
+          }
+        }
+      }
+    },
     "Слушать" : {
       "localizations" : {
         "en" : {
@@ -77,6 +205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Слушать"
+          }
+        }
+      }
+    },
+    "Тон для приложений и сайтов" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tone for apps and sites"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тон для приложений и сайтов"
           }
         }
       }
@@ -742,22 +886,6 @@
         }
       }
     },
-    "Акустический отклик при активации, копировании и ошибках" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audio feedback on activation, copying and errors"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Акустический отклик при активации, копировании и ошибках"
-          }
-        }
-      }
-    },
     "Аппаратное ускорение" : {
       "localizations" : {
         "en" : {
@@ -930,22 +1058,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Давайте начнём"
-          }
-        }
-      }
-    },
-    "ДВИЖОК И УСКОРЕНИЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ENGINE & ACCELERATION"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ДВИЖОК И УСКОРЕНИЕ"
           }
         }
       }
@@ -1139,6 +1251,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Запуск при входе"
+          }
+        }
+      }
+    },
+    "Звуки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sounds"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Звуки"
           }
         }
       }
@@ -1563,22 +1691,6 @@
         }
       }
     },
-    "ОСНОВНЫЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GENERAL"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ОСНОВНЫЕ"
-          }
-        }
-      }
-    },
     "Открыть" : {
       "localizations" : {
         "en" : {
@@ -1886,22 +1998,6 @@
         }
       }
     },
-    "Промпты" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompts"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Промпты"
-          }
-        }
-      }
-    },
     "Работа в фоне без значка в Dock" : {
       "localizations" : {
         "en" : {
@@ -1994,22 +2090,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Синтез мысли..."
-          }
-        }
-      }
-    },
-    "Только звуки и заикания, без ИИ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fillers and stutters only, no AI"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Только звуки и заикания, без ИИ"
           }
         }
       }
@@ -2158,38 +2238,6 @@
         }
       }
     },
-    "Промпт" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompt"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Промпт"
-          }
-        }
-      }
-    },
-    "Дословно" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbatim"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Дословно"
-          }
-        }
-      }
-    },
     "Чисто" : {
       "localizations" : {
         "en" : {
@@ -2218,22 +2266,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Голосовая диктовка для macOS. Речь распознаётся на вашем Mac, без передачи данных посторонним."
-          }
-        }
-      }
-    },
-    "Умная речь" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Smart Voice"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Умная речь"
           }
         }
       }
@@ -2282,6 +2314,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Новый термин"
+          }
+        }
+      }
+    },
+    "Режим" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Режим"
           }
         }
       }
@@ -2428,22 +2476,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Система"
-          }
-        }
-      }
-    },
-    "Системные звуки" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "System sounds"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Системные звуки"
           }
         }
       }
@@ -2704,22 +2736,6 @@
         }
       }
     },
-    "УПРАВЛЕНИЕ" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CONTROL"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "УПРАВЛЕНИЕ"
-          }
-        }
-      }
-    },
     "Цвет интерфейса" : {
       "localizations" : {
         "en" : {
@@ -2764,22 +2780,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Язык приложения"
-          }
-        }
-      }
-    },
-    "Языковая модель" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Language model"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Языковая модель"
           }
         }
       }
@@ -3188,22 +3188,6 @@
         }
       }
     },
-    "Приложения" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apps"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Приложения"
-          }
-        }
-      }
-    },
     "Тон текста по приложению или сайту" : {
       "localizations" : {
         "en" : {
@@ -3364,6 +3348,22 @@
         }
       }
     },
+    "Правила" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rules"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правила"
+          }
+        }
+      }
+    },
     "Правило уже есть" : {
       "localizations" : {
         "en" : {
@@ -3376,70 +3376,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Правило уже есть"
-          }
-        }
-      }
-    },
-    "Режим промпта" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompt mode"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Режим промпта"
-          }
-        }
-      }
-    },
-    "%@ на одну диктовку" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ for one dictation"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ на одну диктовку"
-          }
-        }
-      }
-    },
-    "Недоступно с клавишей Shift" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not available with a Shift key"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Недоступно с клавишей Shift"
-          }
-        }
-      }
-    },
-    "Нет горячей клавиши" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hotkey"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нет горячей клавиши"
           }
         }
       }

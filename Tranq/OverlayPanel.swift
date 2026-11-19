@@ -274,7 +274,7 @@ private struct OverlaySuccessRow: View {
 /// обновления индикатора 20 раз в секунду не перерисовывали всю плашку.
 private struct RecordingLevelView: View {
     @ObservedObject var meter = RecordingMeter.shared
-    /// Пусто при обычной очистке; иначе «Промпт» или имя правила.
+    /// Пусто при обычной очистке; иначе имя правила.
     let modeLabel: String
 
     var body: some View {

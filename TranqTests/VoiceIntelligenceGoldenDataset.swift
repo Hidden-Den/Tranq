@@ -265,8 +265,6 @@ public struct VoiceIntelligenceGoldenDataset {
                 switch app {
                 case "com.apple.mail":
                     level = .rewrite(tone: "деловой")
-                case "com.microsoft.VSCode":
-                    level = .prompt
                 default:
                     level = .clean
                 }

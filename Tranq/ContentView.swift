@@ -2,7 +2,18 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-enum MainTab { case vocabulary, history, settings }
+enum MainTab: CaseIterable {
+    case vocabulary, rules, history, settings
+
+    var title: String {
+        switch self {
+        case .vocabulary: return String(localized: "Словарь")
+        case .rules: return String(localized: "Правила")
+        case .history: return String(localized: "История")
+        case .settings: return String(localized: "Настройки")
+        }
+    }
+}
 
 /// Наименьший размер главного окна. Одно значение на окно и на содержимое:
 /// раньше они расходились, и окно упиралось в больший из двух пределов.
@@ -32,6 +43,12 @@ struct ContentView: View {
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
+    /// Выбранный раздел настроек. Ключ общий с `SettingsSection.restore`.
+    @AppStorage(SettingsSection.storageKey) private var settingsSectionRaw: String = SettingsSection.dictation.rawValue
+
+    private var selectedSettingsSection: SettingsSection {
+        SettingsSection.from(raw: settingsSectionRaw)
+    }
 
     /// Границы ширины списка: уже — обрезает даты, шире — душит содержимое.
     static let sidebarMinWidth: Double = 220
@@ -53,13 +70,7 @@ struct ContentView: View {
     
     @State private var showAboutSheet = false
 
-    private var currentTabTitle: String {
-        switch currentTab {
-        case .vocabulary: return String(localized: "Словарь")
-        case .history: return String(localized: "История")
-        case .settings: return String(localized: "Настройки")
-        }
-    }
+    private var currentTabTitle: String { currentTab.title }
     
     private func toggleSidebar() {
         withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.52)) {
@@ -84,7 +95,11 @@ struct ContentView: View {
         .ignoresSafeArea()
         // Автоматическое открытие заметки
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AutoSelectNote"))) { notification in
-            if preferences.autoOpenNoteEnabled, let newId = notification.object as? UUID {
+            // Открытое окно не трогаем: новая запись остаётся непрочитанной, на неё указывает точка в истории
+            if AutoOpenPolicy.shouldSwitchToHistory(
+                autoOpenEnabled: preferences.autoOpenNoteEnabled,
+                isWindowVisible: MainWindowController.shared.isMainWindowOnScreen
+            ), let newId = notification.object as? UUID {
                 withAnimation {
                     self.currentTab = .history
                     self.searchText = ""
@@ -108,10 +123,15 @@ struct ContentView: View {
             scheduleSearch(newValue)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
+            // Со свёрнутым меню список разделов недоступен, поэтому раскрываем его вместе с переходом
+            isSidebarVisible = true
             currentTab = .settings
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
             currentTab = .vocabulary
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRulesTab"))) { _ in
+            currentTab = .rules
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
             toggleSidebar()
@@ -171,8 +191,9 @@ struct ContentView: View {
                 Group {
                     switch currentTab {
                     case .vocabulary: DictionaryView()
+                    case .rules: RulesView()
                     case .history: historyDetailView
-                    case .settings: SettingsView()
+                    case .settings: SettingsView(section: selectedSettingsSection)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -227,6 +248,10 @@ struct ContentView: View {
                     currentTab = .vocabulary
                     searchText = ""
                 }
+                SidebarTabButton(title: "Правила", icon: "slider.horizontal.3", isActive: currentTab == .rules) {
+                    currentTab = .rules
+                    searchText = ""
+                }
                 SidebarTabButton(title: "История", icon: "clock.fill", isActive: currentTab == .history) {
                     currentTab = .history
                     selectedItemId = nil
@@ -238,7 +263,13 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             
-            if currentTab == .history { historySearchAndList } else { Spacer() }
+            if currentTab == .history {
+                historySearchAndList
+            } else if currentTab == .settings {
+                settingsSectionList
+            } else {
+                Spacer()
+            }
             sidebarFooter
         }
         .padding(.top, 4)
@@ -293,6 +324,20 @@ struct ContentView: View {
         }.padding(.horizontal, 16)
     }
     
+    /// Шесть разделов настроек под кнопками вкладок, там же, где для истории список записей.
+    private var settingsSectionList: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Divider().background(Color.uiHairline).padding(.horizontal, 12).padding(.bottom, 6)
+            ForEach(SettingsSection.allCases) { section in
+                SidebarTabButton(title: LocalizedStringKey(section.title), icon: section.icon, isActive: section == selectedSettingsSection) {
+                    settingsSectionRaw = section.rawValue
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+    }
+
     private var historySearchAndList: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
