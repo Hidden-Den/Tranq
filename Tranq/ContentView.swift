@@ -40,6 +40,7 @@ struct ContentView: View {
     @ObservedObject var preferences = AppPreferences.shared
     @ObservedObject var permissions = PermissionManager.shared
     @ObservedObject var updates = UpdateService.shared
+    @ObservedObject var historyLock = HistoryLockCoordinator.shared
     
     @AppStorage("isSidebarVisible") private var isSidebarVisible: Bool = true
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
@@ -100,7 +101,8 @@ struct ContentView: View {
             // Открытое окно не трогаем: новая запись остаётся непрочитанной, на неё указывает точка в истории
             if AutoOpenPolicy.shouldSwitchToHistory(
                 autoOpenEnabled: preferences.autoOpenNoteEnabled,
-                isWindowVisible: MainWindowController.shared.isMainWindowOnScreen
+                isWindowVisible: MainWindowController.shared.isMainWindowOnScreen,
+                lockState: historyLock.state
             ), let newId = notification.object as? UUID {
                 withAnimation {
                     self.currentTab = .history
@@ -123,6 +125,15 @@ struct ContentView: View {
         }
         .onChange(of: searchText) { newValue in
             scheduleSearch(newValue)
+        }
+        // Запирание сбрасывает поиск и выбор: расшифрованного на экране не остаётся
+        .onChange(of: historyLock.state) { state in
+            guard state.hidesHistory else { return }
+            searchDebounce?.cancel()
+            searchText = ""
+            filteredResults = []
+            isSearching = false
+            selectedItemId = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenSettingsTab"))) { _ in
             // Со свёрнутым меню список разделов недоступен, поэтому раскрываем его вместе с переходом
@@ -278,7 +289,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             
-            if currentTab == .history {
+            if currentTab == .history && !historyLock.state.hidesHistory {
                 historySearchAndList
             } else if currentTab == .settings {
                 settingsSectionList
@@ -456,7 +467,13 @@ struct ContentView: View {
     var historyDetailView: some View {
         ZStack {
             VStack {
-                if let selected = historyStore.items.first(where: { $0.id == selectedItemId }) {
+                if historyLock.state.hidesHistory {
+                    HistoryLockedView(
+                        state: historyLock.state,
+                        onUnlock: { Task { await historyLock.unlock() } },
+                        onErase: { historyLock.eraseHistory() }
+                    )
+                } else if let selected = historyStore.items.first(where: { $0.id == selectedItemId }) {
                     HistoryNoteView(item: selected) {
                         itemToDelete = selected.id
                         showingDeleteAlert = true

@@ -3,6 +3,7 @@ import SwiftUI
 /// Содержимое вкладки «Настройки»: показывает один раздел, выбранный в боковом меню.
 struct SettingsView: View {
     let section: SettingsSection
+    @ObservedObject private var historyLock = HistoryLockCoordinator.shared
 
     var body: some View {
         switch section {
@@ -11,7 +12,7 @@ struct SettingsView: View {
         case .processing: SettingsPage { VoiceIntelligenceSection() }
         case .provider: SettingsPage { AIProviderSection() }
         case .app: AppSettingsSection()
-        case .data: DataSettingsSection()
+        case .data: DataSettingsSection(lockState: historyLock.state)
         }
     }
 }

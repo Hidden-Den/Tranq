@@ -43,6 +43,11 @@ enum HistoryLockState: Equatable {
     case keyUnavailable
 }
 
+extension HistoryLockState {
+    /// Заметки скрыты: на экране заглушка, списка и поиска нет.
+    var hidesHistory: Bool { self == .locked || self == .keyUnavailable }
+}
+
 /// Аудио заметки недоступно: история заперта или ключ не читается.
 enum HistoryAudioError: Error, Equatable {
     case locked
@@ -224,7 +229,7 @@ final class HistoryStore: ObservableObject {
     }
 
     /// При запертой истории заметка уходит только в свой конверт, `items` не трогается.
-    private var isHidden: Bool { lockState == .locked || lockState == .keyUnavailable }
+    private var isHidden: Bool { lockState.hidesHistory }
 
     // MARK: - Операции с заметками
 

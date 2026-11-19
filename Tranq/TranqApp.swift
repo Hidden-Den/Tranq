@@ -2,8 +2,14 @@ import SwiftUI
 import AppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Сон Mac, видимость окна и таймер замка истории.
+    private var historyLockMonitor: HistoryLockSystemMonitor?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppPreferences.shared.applyActivationPolicy()
+        // Замок встаёт до первой диктовки: хранилище и журнал сразу пишут конверты
+        let historyLock = HistoryLockCoordinator.shared
+        historyLockMonitor = HistoryLockSystemMonitor(coordinator: historyLock)
         let mic = PermissionManager.shared.isMicGranted
         let ax = PermissionManager.shared.isAccessibilityGranted
         AppLogger.shared.info("App", "Запуск Tranq",
@@ -50,6 +56,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }) {
                 MainWindowController.shared.register(window: window)
             }
+            // Начальная видимость окна: замок считает окно скрытым, пока не узнает иное
+            MainActor.assumeIsolated { self.historyLockMonitor?.start() }
         }
     }
 

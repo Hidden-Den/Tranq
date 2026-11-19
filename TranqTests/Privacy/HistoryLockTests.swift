@@ -263,4 +263,51 @@ struct HistoryLockTests {
         }
         #expect(presence.calls == 5)
     }
+
+    // MARK: - Хранилище не прочитало конверты
+
+    @Test func storeDowngradeToLockedFollows() async {
+        let resets = ResetCounter()
+        let lock = makeLock(resets: resets)
+        await lock.unlock()
+        lock.noteStoreDowngrade(to: .locked)
+        #expect(lock.state == .locked)
+        #expect(resets.count == 1)
+    }
+
+    @Test func storeDowngradeToKeyUnavailableFollows() async {
+        let lock = makeLock()
+        await lock.unlock()
+        lock.noteStoreDowngrade(to: .keyUnavailable)
+        #expect(lock.state == .keyUnavailable)
+    }
+
+    @Test func storeDowngradeIgnoredWhenNotUnlocked() async {
+        let resets = ResetCounter()
+        let lock = makeLock(resets: resets)
+        lock.noteStoreDowngrade(to: .keyUnavailable)
+        #expect(lock.state == .locked)
+        let off = makeLock(enabled: false)
+        off.noteStoreDowngrade(to: .locked)
+        #expect(off.state == .off)
+        #expect(resets.count == 0)
+    }
+
+    @Test func storeDowngradeIgnoresNonLockingStates() async {
+        let lock = makeLock()
+        await lock.unlock()
+        lock.noteStoreDowngrade(to: .off)
+        lock.noteStoreDowngrade(to: .unlocked)
+        #expect(lock.state == .unlocked)
+    }
+
+    @Test func unlockAfterStoreDowngradeWorksAgain() async {
+        let presence = TestPresence()
+        let lock = makeLock(presence: presence)
+        await lock.unlock()
+        lock.noteStoreDowngrade(to: .locked)
+        await lock.unlock()
+        #expect(lock.state == .unlocked)
+        #expect(presence.calls == 2)
+    }
 }

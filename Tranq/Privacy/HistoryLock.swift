@@ -74,6 +74,15 @@ final class HistoryLock: ObservableObject {
         if now().timeIntervalSince(hiddenSince) >= Self.idleTimeout { lock() }
     }
 
+    /// Хранилище не прочитало конверты после разлочки и само сбросилось: замок идёт за ним,
+    /// чтобы экран не показывал открытую историю над пустым списком.
+    func noteStoreDowngrade(to storeState: HistoryLockState) {
+        guard state == .unlocked, storeState.hidesHistory else { return }
+        generation += 1
+        resetSession()
+        state = storeState
+    }
+
     private enum Outcome { case unlocked, locked, keyUnavailable }
 
     private func run(started: Int) async -> Outcome {
