@@ -198,6 +198,104 @@ struct HistoryAudioTests {
         }
     }
 
+    /// Открытый wav с прошлого запуска в папке аудио.
+    private func placeOrphan(_ bytes: Data, in directory: URL) throws -> (UUID, URL) {
+        let id = UUID()
+        let audio = directory.appendingPathComponent("Audio", isDirectory: true)
+        try FileManager.default.createDirectory(at: audio, withIntermediateDirectories: true)
+        let url = audio.appendingPathComponent("\(id.uuidString).wav")
+        try bytes.write(to: url)
+        return (id, url)
+    }
+
+    @Test func orphanPlainWavIsSealedOnEnteringLock() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let bytes = randomData(2048)
+        let (id, plain) = try placeOrphan(bytes, in: directory)
+        let stranger = directory.appendingPathComponent("Audio/notes.wav")
+        try Data([1]).write(to: stranger)
+
+        // Хранилище подключается позже: метка `locked` без vault, затем `attach`.
+        let store = HistoryStore(directory: directory, saveDelay: 0, vault: nil, lockState: .locked)
+        store.flush()
+        #expect(FileManager.default.fileExists(atPath: plain.path))
+        store.attach(vault: HistoryVault(directory: directory, key: TestHistoryKey()))
+        store.flush()
+
+        #expect(!FileManager.default.fileExists(atPath: plain.path))
+        #expect(FileManager.default.fileExists(atPath: sealedURL(id, in: directory).path))
+        #expect(FileManager.default.fileExists(atPath: stranger.path), "чужие имена не трогаются")
+
+        // И при входе в `locked` из `off`.
+        let other = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: other) }
+        let (otherId, otherPlain) = try placeOrphan(bytes, in: other)
+        let (offStore, _) = makeStore(other, state: .off)
+        await offStore.applyLockStateAndWait(.locked)
+        #expect(!FileManager.default.fileExists(atPath: otherPlain.path))
+        await offStore.applyLockStateAndWait(.unlocked)
+        #expect(try offStore.audioData(for: otherId) == bytes)
+    }
+
+    @Test func unsealedAudioIsCountedAsFailure() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let key = TestHistoryKey()
+        key.failure = .unavailable
+        _ = try placeOrphan(randomData(512), in: directory)
+        let (store, _) = makeStore(directory, key: key, state: .locked)
+        store.storeAudio(for: UUID(), from: try writeSource(randomData(512), in: directory), move: true)
+        store.flush()
+        await mainHop()
+        #expect(store.sealFailureCount == 2)
+
+        key.failure = nil
+        await store.applyLockStateAndWait(.locked)
+        await mainHop()
+        #expect(store.sealFailureCount == 0)
+    }
+
+    @Test func clearAllWhileLockedRemovesPlainWavs() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let key = TestHistoryKey()
+        key.failure = .unavailable
+        let (_, orphan) = try placeOrphan(randomData(512), in: directory)
+        let (store, _) = makeStore(directory, key: key, state: .locked)
+        let id = UUID()
+        store.storeAudio(for: id, from: try writeSource(randomData(512), in: directory), move: true)
+        store.flush()
+        #expect(FileManager.default.fileExists(atPath: store.audioURL(for: id).path))
+
+        store.clearAll()
+        store.flush()
+        await mainHop()
+
+        #expect(!FileManager.default.fileExists(atPath: orphan.path))
+        #expect(!FileManager.default.fileExists(atPath: store.audioURL(for: id).path))
+        #expect(store.sealFailureCount == 0)
+    }
+
+    @Test func offStateDoesNotSweepPlainWavs() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let (id, plain) = try placeOrphan(randomData(512), in: directory)
+        let (store, _) = makeStore(directory, state: .off)
+        store.attach(vault: HistoryVault(directory: directory, key: TestHistoryKey()))
+        await store.applyLockStateAndWait(.off)
+
+        #expect(FileManager.default.fileExists(atPath: plain.path))
+        #expect(!FileManager.default.fileExists(atPath: sealedURL(id, in: directory).path))
+        #expect(store.sealFailureCount == 0)
+    }
+
+    private func mainHop() async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+    }
+
     private func waitUntil(_ condition: () -> Bool) async throws {
         for _ in 0..<100 where !condition() {
             try await Task.sleep(nanoseconds: 50_000_000)

@@ -66,7 +66,7 @@ final class HistoryStore: ObservableObject {
     @Published private(set) var lockState: HistoryLockState {
         didSet { updateReadAccess() }
     }
-    /// Сколько заметок ждут записи конверта: хранилища нет или запись не удалась.
+    /// Сколько заметок и аудио ждут записи конверта: хранилища нет или запись не удалась.
     @Published private(set) var sealFailureCount = 0
 
     let directory: URL
@@ -194,7 +194,10 @@ final class HistoryStore: ObservableObject {
         let sealsAudio = isSealed
         ioQueue.async { [self] in
             drainPendingSeals(vault)
-            if sealsAudio { drainPendingAudio(vault) }
+            guard sealsAudio else { return }
+            // Открытые wav, оставшиеся с прошлого запуска, тоже запечатываются.
+            pendingAudio.formUnion(plainAudioIDs())
+            drainPendingAudio(vault)
         }
     }
 
@@ -214,7 +217,7 @@ final class HistoryStore: ObservableObject {
     }
 
     private func publishSealFailures() {
-        let count = pendingSeal.count
+        let count = pendingSeal.count + pendingAudio.count
         DispatchQueue.main.async { [weak self] in
             if self?.sealFailureCount != count { self?.sealFailureCount = count }
         }
@@ -266,7 +269,7 @@ final class HistoryStore: ObservableObject {
         deleteFiles(for: item.id)
     }
 
-    /// При замке стирает все конверты заметок и аудио, даже непрочитанные.
+    /// При замке стирает все конверты заметок и аудио, даже непрочитанные, и все открытые `<uuid>.wav`.
     func clearAll() {
         let ids = items.map(\.id)
         let vault = isSealed ? vault : nil
@@ -276,6 +279,8 @@ final class HistoryStore: ObservableObject {
         ioQueue.async { [self] in
             ids.forEach(deleteFilesSync)
             vault?.deleteAll()
+            pendingAudio.formUnion(plainAudioIDs())
+            pendingAudio.forEach(deleteFilesSync)
             pendingSeal.removeAll()
             pendingAudio.removeAll()
             publishSealFailures()
@@ -359,8 +364,19 @@ final class HistoryStore: ObservableObject {
         }
     }
 
+    /// Id открытых `<uuid>.wav` в папке аудио. Чужие имена не трогаются.
+    private func plainAudioIDs() -> [UUID] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: audioDirectory, includingPropertiesForKeys: nil)) ?? []
+        return files.compactMap { url in
+            let name = url.deletingPathExtension().lastPathComponent
+            guard url.pathExtension == "wav", let id = UUID(uuidString: name), id.uuidString == name else { return nil }
+            return id
+        }
+    }
+
     /// Только на `ioQueue`. В лог идёт id заметки, звук — никогда.
     private func drainPendingAudio(_ vault: HistoryVault?) {
+        defer { publishSealFailures() }
         guard let vault else { return }
         for id in pendingAudio {
             let url = audioURL(for: id)
