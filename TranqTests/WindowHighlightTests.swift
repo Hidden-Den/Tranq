@@ -85,3 +85,40 @@ struct WindowHighlightPreferenceTests {
         #expect(AppPreferences.windowHighlightEnabled(in: d) == false)
     }
 }
+
+@MainActor
+struct WindowHighlightManagerTests {
+    /// Review Focus 3: цели нет — панель не показывается, хотя слежение идёт.
+    @Test func doesNotShowPanelWithoutTarget() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.start()
+        #expect(manager.isTracking == true)
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+
+    /// Review Focus 5: после остановки слежения не остаётся.
+    @Test func stopEndsTracking() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.start()
+        manager.stop()
+        #expect(manager.isTracking == false)
+        #expect(manager.isPanelVisible == false)
+    }
+
+    /// Review Focus 5: повторная остановка безопасна.
+    @Test func stopIsIdempotent() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.stop()
+        manager.stop()
+        #expect(manager.isTracking == false)
+    }
+
+    /// Review Focus 3: цель без прямоугольника окна панель не показывает.
+    @Test func doesNotShowPanelForTargetWithoutWindow() {
+        let manager = WindowHighlightManager(targetProvider: { HighlightTarget(pid: 999, windowRect: nil) })
+        manager.start()
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+}
