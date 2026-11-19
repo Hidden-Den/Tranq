@@ -209,18 +209,18 @@
         }
       }
     },
-    "Тон и режим для каждого приложения" : {
+    "Тон для приложений и сайтов" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tone and mode for each app"
+            "value" : "Tone for apps and sites"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Тон и режим для каждого приложения"
+            "value" : "Тон для приложений и сайтов"
           }
         }
       }
@@ -1994,22 +1994,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Проверить"
-          }
-        }
-      }
-    },
-    "Промпты" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prompts"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Промпты"
           }
         }
       }

@@ -132,29 +132,17 @@ struct TranqApp: App {
         
         MenuBarExtra {
             Text("Режим")
-            ForEach(HotKeyMode.allCases) { mode in
-                Button {
-                    hotKeySettings.mode = mode
-                } label: {
-                    if hotKeySettings.mode == mode {
-                        Label(mode.title, systemImage: "checkmark")
-                    } else {
-                        Text(mode.title)
-                    }
+            Picker("Режим", selection: $hotKeySettings.mode) {
+                ForEach(HotKeyMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
                 }
             }
+            .pickerStyle(.inline)
+            .labelsHidden()
 
             Divider()
 
-            Button {
-                preferences.soundEnabled.toggle()
-            } label: {
-                if preferences.soundEnabled {
-                    Label("Звуки", systemImage: "checkmark")
-                } else {
-                    Text("Звуки")
-                }
-            }
+            Toggle("Звуки", isOn: $preferences.soundEnabled)
 
             Divider()
 

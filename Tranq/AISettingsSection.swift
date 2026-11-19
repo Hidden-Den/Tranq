@@ -191,7 +191,7 @@ struct VoiceIntelligenceSection: View {
                         Text("Правила")
                             .font(.ui(.body, weight: .medium))
                             .foregroundColor(.uiInk)
-                        Text("Тон и режим для каждого приложения")
+                        Text("Тон для приложений и сайтов")
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
                     }
