@@ -31,19 +31,34 @@ struct TranscriptionItem: Identifiable, Codable, Hashable {
     }
 }
 
+/// Замок истории глазами хранилища.
+enum HistoryLockState: Equatable {
+    /// Замка нет: общий `history.json`, как раньше.
+    case off
+    /// `items` пуст, новые заметки пишутся конвертами.
+    case locked
+    /// Конверты прочитаны в `items`, каждая правка пишет файл своей заметки.
+    case unlocked
+    /// Конверты есть, но ключ на этом Mac не читается.
+    case keyUnavailable
+}
+
 /// История заметок, их аудио и тайминги слов.
 ///
 /// Мутации — с главного потока. Запись на диск откладывается на полсекунды и
 /// выполняется в фоне, поэтому частые правки не кодируют весь JSON на главном потоке.
+/// При включённом замке общий массив не пишется никогда: у каждой заметки свой конверт.
 final class HistoryStore: ObservableObject {
     static let shared = HistoryStore(directory: HistoryStore.defaultDirectory)
 
     @Published var items: [TranscriptionItem] = [] {
         didSet {
-            guard !isLoading else { return }
+            guard !isLoading, lockState == .off else { return }
             scheduleSave()
         }
     }
+
+    @Published private(set) var lockState: HistoryLockState
 
     let directory: URL
     var audioDirectory: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
@@ -53,33 +68,114 @@ final class HistoryStore: ObservableObject {
     private var pendingSave: DispatchWorkItem?
     private let ioQueue = DispatchQueue(label: "tranq.history.io", qos: .utility)
     private let saveDelay: TimeInterval
+    private var vault: HistoryVault?
+    /// Растёт на каждом переходе: запоздавшее чтение конвертов не оживит `items` после запирания.
+    private var generation = 0
 
     static var defaultDirectory: URL { AppEnvironment.dataDirectory }
 
     /// `directory` подменяется в тестах, чтобы не трогать настоящую историю пользователя.
-    init(directory: URL, saveDelay: TimeInterval = 0.5) {
+    init(directory: URL, saveDelay: TimeInterval = 0.5, vault: HistoryVault? = nil,
+         lockState: HistoryLockState = .off) {
         self.directory = directory
         self.saveDelay = saveDelay
+        self.vault = vault
+        self.lockState = .off
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        load()
+        if lockState == .off { load() } else { applyLockState(lockState) }
     }
+
+    // MARK: - Замок
+
+    /// Подключает или снимает хранилище конвертов на живом сторе. Состояние меняет `applyLockState`.
+    func attach(vault: HistoryVault?) {
+        self.vault = vault
+    }
+
+    /// Переход замка, с главного потока. `unlocked` читает конверты в фоне и публикует их на главном;
+    /// отказ подтверждения оставляет `locked`, потерянный ключ даёт `keyUnavailable`.
+    /// `locked` и `keyUnavailable` сразу очищают `items`. `off` перечитывает `history.json`.
+    /// `completion` зовётся на главном потоке, когда переход и все записи до него закончены.
+    func applyLockState(_ state: HistoryLockState, completion: (() -> Void)? = nil) {
+        generation += 1
+        let current = generation
+        pendingSave?.cancel()
+        pendingSave = nil
+        lockState = state
+        switch state {
+        case .off:
+            load()
+            finish(completion)
+        case .locked, .keyUnavailable:
+            setItemsQuietly([])
+            finish(completion)
+        case .unlocked:
+            setItemsQuietly([])
+            guard let vault else { finish(completion); return }
+            // Чтение на той же очереди, что и записи: заметки, записанные раньше, в него попадут.
+            ioQueue.async { [weak self] in
+                let result = Result { try vault.readNotes() }
+                DispatchQueue.main.async {
+                    defer { completion?() }
+                    guard let self, self.generation == current else { return }
+                    switch result {
+                    case .success(let loaded):
+                        // Вставленное за время чтения уже записано отдельно и стоит первым.
+                        let fresh = Set(self.items.map(\.id))
+                        self.setItemsQuietly(self.items + loaded.filter { !fresh.contains($0.id) })
+                    case .failure(HistoryKeyError.denied):
+                        self.lockState = .locked
+                        self.setItemsQuietly([])
+                    case .failure:
+                        self.lockState = .keyUnavailable
+                        self.setItemsQuietly([])
+                    }
+                }
+            }
+        }
+    }
+
+    /// Ждёт записей, поставленных раньше, затем зовёт `completion` на главном.
+    private func finish(_ completion: (() -> Void)?) {
+        guard let completion else { return }
+        ioQueue.async { DispatchQueue.main.async(execute: completion) }
+    }
+
+    private func setItemsQuietly(_ newItems: [TranscriptionItem]) {
+        isLoading = true
+        items = newItems
+        isLoading = false
+    }
+
+    private var isSealed: Bool { lockState != .off }
+
+    /// Пишет конверт одной заметки. Нужен только публичный ключ.
+    private func seal(_ item: TranscriptionItem) {
+        guard let vault else { return }
+        ioQueue.async { try? vault.writeNote(item) }
+    }
+
+    /// При запертой истории заметка уходит только в свой конверт, `items` не трогается.
+    private var isHidden: Bool { lockState == .locked || lockState == .keyUnavailable }
 
     // MARK: - Операции с заметками
 
     @discardableResult
     func addNote(text: String) -> UUID {
         let item = TranscriptionItem(id: UUID(), date: TranscriptionItem.formattedNow(), text: text, duration: "—", speedup: nil, isUnread: false)
-        items.insert(item, at: 0)
+        insert(item)
         return item.id
     }
 
     func insert(_ item: TranscriptionItem) {
-        items.insert(item, at: 0)
+        if isSealed { seal(item) }
+        if !isHidden { items.insert(item, at: 0) }
     }
 
     func markAsRead(id: UUID) {
         guard let idx = items.firstIndex(where: { $0.id == id }), items[idx].isUnread == true else { return }
         items[idx].isUnread = false
+        if isSealed { seal(items[idx]) }
     }
 
     func appendTextToNote(id: UUID, text: String) {
@@ -87,6 +183,7 @@ final class HistoryStore: ObservableObject {
         let current = items[idx].text.trimmingCharacters(in: .whitespacesAndNewlines)
         let newText = current.isEmpty ? text : current + "\n\n----------------\n\n" + text
         items[idx] = items[idx].withText(newText)
+        if isSealed { seal(items[idx]) }
     }
 
     func replaceNoteText(id: UUID, text: String) {
@@ -94,6 +191,7 @@ final class HistoryStore: ObservableObject {
         let oldText = items[idx].text
         guard oldText != text else { return }
         items[idx] = items[idx].withText(text)
+        if isSealed { seal(items[idx]) }
         DictionaryLearning.shared.learn(original: oldText, edited: text, noteId: id)
     }
 
@@ -103,10 +201,15 @@ final class HistoryStore: ObservableObject {
         deleteFiles(for: item.id)
     }
 
+    /// При замке стирает все конверты заметок и аудио, даже непрочитанные.
     func clearAll() {
         let ids = items.map(\.id)
+        let vault = isSealed ? vault : nil
         items.removeAll()
-        ioQueue.async { [self] in ids.forEach(deleteFilesSync) }
+        ioQueue.async { [self] in
+            ids.forEach(deleteFilesSync)
+            vault?.deleteAll()
+        }
     }
 
     // MARK: - Аудио заметок
@@ -138,7 +241,12 @@ final class HistoryStore: ObservableObject {
     }
 
     private func deleteFiles(for id: UUID) {
-        ioQueue.async { [self] in deleteFilesSync(id) }
+        let vault = isSealed ? vault : nil
+        ioQueue.async { [self] in
+            deleteFilesSync(id)
+            vault?.deleteNote(id: id)
+            vault?.deleteBlobs(id: id)
+        }
     }
 
     private func deleteFilesSync(_ id: UUID) {
@@ -169,6 +277,7 @@ final class HistoryStore: ObservableObject {
     }
 
     private func load() {
+        guard lockState == .off else { return }
         var loaded: [TranscriptionItem] = []
         var needsSave = false
         let fm = FileManager.default

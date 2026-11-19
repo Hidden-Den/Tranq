@@ -89,6 +89,14 @@ final class HistoryVault: @unchecked Sendable {
         noteFiles().count
     }
 
+    /// Стирает все конверты заметок, аудио и таймингов: имена заметок для этого не нужны.
+    func deleteAll() {
+        let fm = FileManager.default
+        for url in noteFiles() { try? fm.removeItem(at: url) }
+        let blobs = (try? fm.contentsOfDirectory(at: audioDirectory, includingPropertiesForKeys: nil)) ?? []
+        for url in blobs where url.pathExtension == "sealed" { try? fm.removeItem(at: url) }
+    }
+
     // MARK: Блобы
 
     /// Только `.audio` и `.timings`.
