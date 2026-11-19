@@ -93,12 +93,14 @@ final class AudioCapture: ObservableObject {
         isRecording = true
         transcribedText = String(localized: "Запись идет...")
         OverlayPanelManager.shared.showOverlay()
+        WindowHighlightManager.beginTracking()
     }
 
     func stopRecording() {
         guard isRecording else { return }
         removeEscMonitor()
         let focusTarget = InsertionService.shared.captureFocus()
+        if let focusTarget { WindowHighlightManager.pinTracking(to: focusTarget.pid) }
         // Контекст фиксируется сразу: новая запись сразу после этой не должна его подменить
         let frozenContext = contextCapture.freeze()
         hudStatusMessage = nil
@@ -106,6 +108,7 @@ final class AudioCapture: ObservableObject {
 
         guard let recording = recorder.stop() else {
             isRecording = false
+            WindowHighlightManager.endTracking()
             return
         }
         AppLogger.shared.info(
@@ -181,6 +184,7 @@ final class AudioCapture: ObservableObject {
         RecordingMeter.shared.reset()
         transcribedText = String(localized: "Запись отменена")
         OverlayPanelManager.shared.hideOverlay()
+        WindowHighlightManager.endTracking()
     }
 
     private func removeEscMonitor() {
@@ -209,6 +213,7 @@ final class AudioCapture: ObservableObject {
             case .audioUnreadable:
                 message = String(localized: "Ошибка чтения файла")
             }
+            WindowHighlightManager.endTracking()
             OverlayPanelManager.shared.showWarning(message: message)
         case .success(let output):
             save(output)
@@ -250,6 +255,7 @@ final class AudioCapture: ObservableObject {
             InsertionService.shared.copyToPasteboard(text: output.finalText, markTransient: false)
             hudStatusMessage = fallbackNotice
             SoundEffect.playSuccess()
+            WindowHighlightManager.endTracking()
             next()
             return
         }
@@ -266,6 +272,7 @@ final class AudioCapture: ObservableObject {
                     self?.hudStatusMessage = String(localized: "Нет прав")
                 }
                 SoundEffect.playSuccess()
+                WindowHighlightManager.endTracking()
                 next()
             }
         }

@@ -14,6 +14,15 @@ final class AppPreferences: ObservableObject {
         didSet { AppEnvironment.defaults.set(autoPasteEnabled, forKey: "autoPasteEnabled") }
     }
 
+    @Published var windowHighlightEnabled: Bool = AppPreferences.windowHighlightEnabled(in: AppEnvironment.defaults) {
+        didSet { AppEnvironment.defaults.set(windowHighlightEnabled, forKey: "windowHighlightEnabled") }
+    }
+
+    /// Значения нет — подсветка включена.
+    static func windowHighlightEnabled(in defaults: UserDefaults) -> Bool {
+        defaults.object(forKey: "windowHighlightEnabled") as? Bool ?? true
+    }
+
     @Published var autoOpenNoteEnabled: Bool = AppEnvironment.defaults.object(forKey: "autoOpenNoteEnabled") as? Bool ?? true {
         didSet { AppEnvironment.defaults.set(autoOpenNoteEnabled, forKey: "autoOpenNoteEnabled") }
     }

@@ -1,0 +1,220 @@
+import Testing
+import Foundation
+@testable import Tranq
+
+struct WindowHighlightGeometryTests {
+    /// Главный экран высотой 1000: окно в 100 пунктах от верхнего края AX
+    /// начинается в 700 пунктах от нижнего края AppKit.
+    @Test func convertsAccessibilityOriginToScreenOrigin() {
+        let rect = WindowHighlightGeometry.screenRect(
+            axOrigin: CGPoint(x: 50, y: 100),
+            axSize: CGSize(width: 400, height: 200),
+            primaryHeight: 1000
+        )
+        #expect(rect == CGRect(x: 50, y: 700, width: 400, height: 200))
+    }
+
+    /// Review Focus 2: монитор над главным даёт отрицательный y в координатах AX.
+    @Test func handlesDisplayAbovePrimary() {
+        let rect = WindowHighlightGeometry.screenRect(
+            axOrigin: CGPoint(x: 0, y: -500),
+            axSize: CGSize(width: 300, height: 300),
+            primaryHeight: 1000
+        )
+        #expect(rect == CGRect(x: 0, y: 1200, width: 300, height: 300))
+    }
+
+    /// Review Focus 2: монитор левее главного даёт отрицательный x, он сохраняется как есть.
+    @Test func handlesDisplayLeftOfPrimary() {
+        let rect = WindowHighlightGeometry.screenRect(
+            axOrigin: CGPoint(x: -1200, y: 0),
+            axSize: CGSize(width: 600, height: 400),
+            primaryHeight: 1000
+        )
+        #expect(rect == CGRect(x: -1200, y: 600, width: 600, height: 400))
+    }
+
+    @Test func panelIsOutsetOnEverySide() {
+        let panel = WindowHighlightGeometry.panelRect(for: CGRect(x: 100, y: 100, width: 400, height: 200))
+        let outset = WindowHighlightGeometry.glowOutset
+        #expect(panel == CGRect(x: 100 - outset, y: 100 - outset,
+                                width: 400 + outset * 2, height: 200 + outset * 2))
+    }
+}
+
+struct WindowHighlightPolicyTests {
+    private let rect = CGRect(x: 0, y: 0, width: 400, height: 300)
+
+    @Test func showsForForeignWindow() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: true, isOwnApp: false, windowRect: rect) == true)
+    }
+
+    @Test func hiddenWhenSettingOff() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: false, axTrusted: true, isOwnApp: false, windowRect: rect) == false)
+    }
+
+    /// Review Focus 1: без прав Accessibility рамки нет.
+    @Test func hiddenWithoutAccessibility() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: false, isOwnApp: false, windowRect: rect) == false)
+    }
+
+    /// Review Focus 4: себя не подсвечиваем.
+    @Test func hiddenForOwnApp() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: true, isOwnApp: true, windowRect: rect) == false)
+    }
+
+    /// Review Focus 3: фокусное окно не определилось.
+    @Test func hiddenWithoutWindow() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: true, isOwnApp: false, windowRect: nil) == false)
+    }
+
+    @Test func hiddenForEmptyWindow() {
+        #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: true, isOwnApp: false, windowRect: .zero) == false)
+    }
+}
+
+struct WindowHighlightPreferenceTests {
+    @Test func defaultsToOnWhenNothingStored() {
+        let d = UserDefaults(suiteName: "tranq-highlight-\(UUID().uuidString)")!
+        #expect(AppPreferences.windowHighlightEnabled(in: d) == true)
+    }
+
+    @Test func storedValueWins() {
+        let d = UserDefaults(suiteName: "tranq-highlight-\(UUID().uuidString)")!
+        d.set(false, forKey: "windowHighlightEnabled")
+        #expect(AppPreferences.windowHighlightEnabled(in: d) == false)
+    }
+}
+
+@MainActor
+struct WindowHighlightManagerTests {
+    /// Review Focus 3: цели нет — панель не показывается, хотя слежение идёт.
+    @Test func doesNotShowPanelWithoutTarget() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.start()
+        #expect(manager.isTracking == true)
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+
+    /// Review Focus 5: после остановки слежения не остаётся.
+    @Test func stopEndsTracking() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.start()
+        manager.stop()
+        #expect(manager.isTracking == false)
+        #expect(manager.isPanelVisible == false)
+    }
+
+    /// Review Focus 5: повторная остановка безопасна.
+    @Test func stopIsIdempotent() {
+        let manager = WindowHighlightManager(targetProvider: { nil })
+        manager.stop()
+        manager.stop()
+        #expect(manager.isTracking == false)
+    }
+
+    /// Review Focus 3: цель без прямоугольника окна панель не показывает.
+    @Test func doesNotShowPanelForTargetWithoutWindow() {
+        let manager = WindowHighlightManager(targetProvider: { HighlightTarget(pid: 999, windowRect: nil, isMinimized: false) })
+        manager.start()
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+}
+
+/// Находка 5 ревью: свёрнутое в Dock окно многие приложения всё ещё отдают как фокусное,
+/// с последними координатами на экране. Рамка не должна застывать на пустом месте.
+struct WindowHighlightMinimizedTests {
+    @Test func hiddenForMinimizedWindow() {
+        #expect(WindowHighlightPolicy.shouldShow(
+            enabled: true, axTrusted: true, isOwnApp: false,
+            isMinimized: true, windowRect: CGRect(x: 0, y: 0, width: 400, height: 300)
+        ) == false)
+    }
+}
+
+@MainActor
+struct WindowHighlightFixTests {
+    private static let rect = CGRect(x: 100, y: 100, width: 400, height: 300)
+
+    /// Находка 1 ревью: скрытие и показ внутри одного затухания 0,2 с оставляли панель
+    /// убранной с экрана навсегда — отложенный orderOut гасил уже показанную панель.
+    @Test func showAfterHideWithinFadeKeepsPanelOnScreen() async throws {
+        let current = Holder<HighlightTarget?>(HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false))
+        let manager = WindowHighlightManager(
+            targetProvider: { current.value },
+            isEnabled: { true },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        #expect(manager.isPanelOnScreen == true)
+
+        // Окно пропало на один такт и вернулось — обе смены укладываются в одно затухание.
+        current.value = HighlightTarget(pid: 4242, windowRect: nil, isMinimized: false)
+        manager.tickForTesting()
+        current.value = HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false)
+        manager.tickForTesting()
+
+        try await Task.sleep(for: .milliseconds(350))
+        #expect(manager.isPanelOnScreen == true)
+        manager.stop()
+    }
+
+    /// Находка 3 ревью: после отпускания клавиши текст уходит в зафиксированное приложение,
+    /// поэтому рамка не должна переезжать за передним окном.
+    @Test func pinnedTargetIgnoresOtherApps() {
+        let current = Holder<HighlightTarget?>(HighlightTarget(pid: 4242, windowRect: Self.rect, isMinimized: false))
+        let manager = WindowHighlightManager(
+            targetProvider: { current.value },
+            isEnabled: { true },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        manager.pin(to: 4242)
+        #expect(manager.isPanelVisible == true)
+
+        current.value = HighlightTarget(pid: 777, windowRect: Self.rect, isMinimized: false)
+        manager.tickForTesting()
+        #expect(manager.isPanelVisible == false)
+        manager.stop()
+    }
+
+    /// Находка 4 ревью: выключенная настройка не должна стоить ~90 обращений к Accessibility в секунду.
+    @Test func disabledSettingNeverQueriesAccessibility() {
+        let calls = Counter()
+        let manager = WindowHighlightManager(
+            targetProvider: { calls.bump(); return nil },
+            isEnabled: { false },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        manager.tickForTesting()
+        #expect(calls.value == 0)
+        manager.stop()
+    }
+
+    /// Находка 4 ревью: то же без прав Accessibility.
+    @Test func untrustedProcessNeverQueriesAccessibility() {
+        let calls = Counter()
+        let manager = WindowHighlightManager(
+            targetProvider: { calls.bump(); return nil },
+            isEnabled: { true },
+            isAXTrusted: { false }
+        )
+        manager.start()
+        manager.tickForTesting()
+        #expect(calls.value == 0)
+        manager.stop()
+    }
+}
+
+final class Counter: @unchecked Sendable {
+    private(set) var value = 0
+    func bump() { value += 1 }
+}
+
+final class Holder<T>: @unchecked Sendable {
+    var value: T
+    init(_ value: T) { self.value = value }
+}
