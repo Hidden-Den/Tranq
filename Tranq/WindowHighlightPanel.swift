@@ -53,6 +53,15 @@ final class WindowHighlightManager {
         self.targetProvider = targetProvider
     }
 
+    /// Вызовы из цикла записи: он не изолирован в MainActor, а панель живёт только там.
+    nonisolated static func beginTracking() {
+        Task { @MainActor in shared.start() }
+    }
+
+    nonisolated static func endTracking() {
+        Task { @MainActor in shared.stop() }
+    }
+
     func start() {
         guard !isTracking else { return }
         isTracking = true

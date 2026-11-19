@@ -93,6 +93,7 @@ final class AudioCapture: ObservableObject {
         isRecording = true
         transcribedText = String(localized: "Запись идет...")
         OverlayPanelManager.shared.showOverlay()
+        WindowHighlightManager.beginTracking()
     }
 
     func stopRecording() {
@@ -181,6 +182,7 @@ final class AudioCapture: ObservableObject {
         RecordingMeter.shared.reset()
         transcribedText = String(localized: "Запись отменена")
         OverlayPanelManager.shared.hideOverlay()
+        WindowHighlightManager.endTracking()
     }
 
     private func removeEscMonitor() {
@@ -209,6 +211,7 @@ final class AudioCapture: ObservableObject {
             case .audioUnreadable:
                 message = String(localized: "Ошибка чтения файла")
             }
+            WindowHighlightManager.endTracking()
             OverlayPanelManager.shared.showWarning(message: message)
         case .success(let output):
             save(output)
@@ -250,6 +253,7 @@ final class AudioCapture: ObservableObject {
             InsertionService.shared.copyToPasteboard(text: output.finalText, markTransient: false)
             hudStatusMessage = fallbackNotice
             SoundEffect.playSuccess()
+            WindowHighlightManager.endTracking()
             next()
             return
         }
@@ -266,6 +270,7 @@ final class AudioCapture: ObservableObject {
                     self?.hudStatusMessage = String(localized: "Нет прав")
                 }
                 SoundEffect.playSuccess()
+                WindowHighlightManager.endTracking()
                 next()
             }
         }
