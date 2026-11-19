@@ -38,7 +38,6 @@ struct DictionaryPackDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.uiCanvas)
         .onExitCommand(perform: onBack)
         .alert("Удалить набор?", isPresented: $confirmingDelete) {
             Button("Удалить", role: .destructive) {

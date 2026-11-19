@@ -27,7 +27,6 @@ struct SettingsPage<Content: View>: View {
             }
             .padding(20)
         }
-        .background(Color.uiCanvas)
     }
 }
 

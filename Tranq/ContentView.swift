@@ -56,6 +56,8 @@ struct ContentView: View {
 
     @State private var dragStartSidebarWidth: Double?
     @State private var isOverSidebarEdge = false
+    /// Высота курсора над границей в координатах подложки: отсюда расходится подсветка.
+    @State private var edgeGlowY: CGFloat = 0
     
     @State private var currentTab: MainTab = .history
     @State private var selectedItemId: UUID?
@@ -127,12 +129,6 @@ struct ContentView: View {
             isSidebarVisible = true
             currentTab = .settings
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenVocabularyTab"))) { _ in
-            currentTab = .vocabulary
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenRulesTab"))) { _ in
-            currentTab = .rules
-        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleSidebar"))) { _ in
             toggleSidebar()
         }
@@ -175,71 +171,90 @@ struct ContentView: View {
     }
     
     var mainInterface: some View {
-        VStack(spacing: 0) {
-            topBar
-            
-            HStack(spacing: 0) {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                // Полоса под светофор macOS: красная, жёлтая, зелёная кнопки занимают x = 18..66
+                Color.clear.frame(height: Self.titleBarHeight)
                 sidebarColumn
-                    .frame(width: sidebarWidth)
-                    .offset(x: isSidebarVisible ? 0 : -40)
-                    .opacity(isSidebarVisible ? 1.0 : 0.0)
-                    .frame(width: isSidebarVisible ? sidebarWidth : 0, alignment: .leading)
-                    .clipped()
-
-                if isSidebarVisible { sidebarResizeHandle }
-                
-                Group {
-                    switch currentTab {
-                    case .vocabulary: DictionaryView()
-                    case .rules: RulesView()
-                    case .history: historyDetailView
-                    case .settings: SettingsView(section: selectedSettingsSection)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(width: sidebarWidth)
+            .offset(x: isSidebarVisible ? 0 : -40)
+            .opacity(isSidebarVisible ? 1.0 : 0.0)
+            .frame(width: isSidebarVisible ? sidebarWidth : 0, alignment: .leading)
+            .clipped()
+
+            contentPanel
+                .padding(.top, isSidebarVisible ? Self.panelInset : Self.titleBarHeight)
+                .padding(.leading, isSidebarVisible ? 0 : Self.panelInset)
+                .padding([.trailing, .bottom], Self.panelInset)
         }
-        .frame(minWidth: WindowMetrics.minWidth, minHeight: WindowMetrics.minHeight)
-        .background(Color.uiCanvas)
-        .ignoresSafeArea()
-    }
-    
-    private var topBar: some View {
-        HStack(spacing: 8) {
-            // Точный отступ под светофор macOS (красная, жёлтая, зелёная кнопки: x = 18..66)
-            Spacer().frame(width: 76)
-            
-            // Кнопка сворачивания, центр которой строго совпадает с осью светофора (y = 16.2 pt)
-            sidebarToggleButton
-            
-            // Заголовок раздела показывается ТОЛЬКО когда боковое меню скрыто, чтобы не дублировать
+        .coordinateSpace(name: Self.mainAreaSpace)
+        // Заголовок раздела показывается только при скрытом меню, чтобы не дублировать
+        .overlay(alignment: .topLeading) {
             if !isSidebarVisible {
                 Text(currentTabTitle)
                     .font(.ui(.body, weight: .semibold))
                     .foregroundColor(.uiInk)
-                    .padding(.leading, 6)
+                    .frame(height: Self.titleBarHeight)
+                    .padding(.leading, 82)
                     .transition(.opacity)
             }
-            
-            Spacer()
         }
-        .frame(height: 32.5)
+        .frame(minWidth: WindowMetrics.minWidth, minHeight: WindowMetrics.minHeight)
+        .background(Color.uiWindow)
+        .ignoresSafeArea()
     }
-    
-    private var sidebarToggleButton: some View {
-        Button(action: toggleSidebar) {
-            Image(systemName: "sidebar.leading")
-                .font(.ui(.body, weight: .medium))
-                .foregroundColor(.uiInkSoft)
-                .frame(width: 26, height: 26)
-                .background(Color.uiPaper.opacity(0.6))
-                .cornerRadius(UIRadius.sm)
-                .contentShape(Rectangle())
+
+    static let titleBarHeight: CGFloat = 32.5
+    /// Отступ подложки от краёв окна, как у Linear.
+    static let panelInset: CGFloat = 8
+    static let panelRadius: CGFloat = UIRadius.md
+    static let mainAreaSpace = "mainArea"
+    /// Длина светящегося отрезка на границе: гаснет к концам от точки курсора.
+    static let edgeGlowLength: CGFloat = 280
+
+    /// Подложка содержимого другого цвета. Её левый край и есть граница, за которую тянут меню.
+    private var contentPanel: some View {
+        let shape = RoundedRectangle(cornerRadius: Self.panelRadius, style: .continuous)
+        return Group {
+            switch currentTab {
+            case .vocabulary: DictionaryView()
+            case .rules: RulesView()
+            case .history: historyDetailView
+            case .settings: SettingsView(section: selectedSettingsSection)
+            }
         }
-        .buttonStyle(TactileButtonStyle())
-        .help(isSidebarVisible ? LocalizedStringKey("Скрыть меню") : LocalizedStringKey("Показать меню"))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.uiPanel)
+        .clipShape(shape)
+        .overlay(shape.stroke(Color.uiHairline, lineWidth: 1))
+        .overlay(alignment: .topLeading) { edgeGlow.clipShape(shape) }
+        .overlay(alignment: .leading) {
+            if isSidebarVisible { sidebarResizeHandle }
+        }
     }
-    
+
+    private var isEdgeActive: Bool { isOverSidebarEdge || dragStartSidebarWidth != nil }
+
+    /// Подсветка границы: ярче всего там, где курсор взялся за край, и гаснет вверх и вниз.
+    private var edgeGlow: some View {
+        Color.clear.overlay(alignment: .topLeading) {
+            LinearGradient(
+                stops: [
+                    .init(color: Color.uiInk.opacity(0), location: 0),
+                    .init(color: Color.uiInk.opacity(0.6), location: 0.5),
+                    .init(color: Color.uiInk.opacity(0), location: 1),
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+            .frame(width: 1.5, height: Self.edgeGlowLength)
+            .offset(y: edgeGlowY - Self.edgeGlowLength / 2)
+        }
+        .opacity(isEdgeActive ? 1 : 0)
+        .animation(.easeOut(duration: 0.15), value: isEdgeActive)
+        .allowsHitTesting(false)
+    }
+
     private var sidebarColumn: some View {
         VStack(alignment: .leading, spacing: 14) {
             sidebarHeader
@@ -274,41 +289,46 @@ struct ContentView: View {
         }
         .padding(.top, 4)
         .frame(width: sidebarWidth)
-        .background(Color.uiCanvas)
+        .background(Color.uiWindow)
     }
 
-    /// Граница между списком и содержимым. Невидимая: границу и так показывает смена фона,
-    /// а курсор-стрелка подсказывает, что за край можно взяться.
+    /// Невидимая полоса захвата поверх левого края подложки.
     private var sidebarResizeHandle: some View {
         Color.clear
-            .frame(width: 1)
-            .overlay(
-                Color.clear
-                    .frame(width: 11)
-                    .contentShape(Rectangle())
-                    .onHover { inside in
-                        // Курсор-стрелка подсказывает, что за край можно взяться.
-                        // Флаг держит push и pop в паре: лишний pop ломает курсор всего приложения.
-                        guard inside != isOverSidebarEdge else { return }
-                        isOverSidebarEdge = inside
-                        if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+            .frame(width: 11)
+            .contentShape(Rectangle())
+            .offset(x: -5.5)
+            .onContinuousHover { phase in
+                // Курсор-стрелка подсказывает, что за край можно взяться.
+                // Флаг держит push и pop в паре: лишний pop ломает курсор всего приложения.
+                switch phase {
+                case .active(let location):
+                    if dragStartSidebarWidth == nil { edgeGlowY = location.y }
+                    guard !isOverSidebarEdge else { return }
+                    isOverSidebarEdge = true
+                    NSCursor.resizeLeftRight.push()
+                case .ended:
+                    guard isOverSidebarEdge else { return }
+                    isOverSidebarEdge = false
+                    NSCursor.pop()
+                }
+            }
+            // Сайдбар скрыли клавишей над ручкой: onHover не придёт, а курсор должен вернуться
+            .onDisappear {
+                guard isOverSidebarEdge else { return }
+                isOverSidebarEdge = false
+                NSCursor.pop()
+            }
+            .gesture(
+                // Неподвижная система координат окна: ручка едет за мышью, и в её собственной сдвиг считался бы от уехавшей точки
+                DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.mainAreaSpace))
+                    .onChanged { value in
+                        let start = dragStartSidebarWidth ?? sidebarWidth
+                        if dragStartSidebarWidth == nil { dragStartSidebarWidth = start }
+                        sidebarWidth = min(Self.sidebarMaxWidth, max(Self.sidebarMinWidth, start + value.translation.width))
+                        edgeGlowY = value.location.y - Self.panelInset
                     }
-                    // Сайдбар скрыли клавишей над ручкой: onHover не придёт, а курсор должен вернуться
-                    .onDisappear {
-                        guard isOverSidebarEdge else { return }
-                        isOverSidebarEdge = false
-                        NSCursor.pop()
-                    }
-                    .gesture(
-                        // Глобальные координаты: ручка едет за мышью, и в локальных сдвиг считался бы от уехавшей точки
-                        DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                            .onChanged { value in
-                                let start = dragStartSidebarWidth ?? sidebarWidth
-                                if dragStartSidebarWidth == nil { dragStartSidebarWidth = start }
-                                sidebarWidth = min(Self.sidebarMaxWidth, max(Self.sidebarMinWidth, start + value.translation.width))
-                            }
-                            .onEnded { _ in dragStartSidebarWidth = nil }
-                    )
+                    .onEnded { _ in dragStartSidebarWidth = nil }
             )
     }
     
@@ -435,7 +455,6 @@ struct ContentView: View {
     
     var historyDetailView: some View {
         ZStack {
-            Color.uiCanvas.ignoresSafeArea()
             VStack {
                 if let selected = historyStore.items.first(where: { $0.id == selectedItemId }) {
                     HistoryNoteView(item: selected) {
@@ -446,7 +465,9 @@ struct ContentView: View {
                 } else {
                     emptyHistoryCard
                 }
-            }.padding(20)
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 24)
         }
         .onChange(of: selectedItemId) { _ in playback.stopSyncedPlayback() }
         .onChange(of: currentTab) { _ in playback.stopSyncedPlayback() }
@@ -463,8 +484,8 @@ struct ContentView: View {
         } message: { Text("Это действие нельзя отменить.") }
     }
 
+    /// Пустое состояние лежит прямо на подложке, без своей карточки.
     private var emptyHistoryCard: some View {
-        UICard {
             VStack(spacing: 24) {
                 VStack(spacing: 6) {
                     HStack(spacing: 8) {
@@ -485,8 +506,8 @@ struct ContentView: View {
                 ) {
                     audioCapture.toggleRecording()
                 }
+                .frame(maxWidth: 520)
             }.padding(12).frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
     }
 }
 
@@ -560,9 +581,10 @@ struct SidebarTabButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
-            .foregroundColor(isActive ? .uiPaper : .uiInk).padding(.vertical, 8).padding(.horizontal, 12)
-            .background(isActive ? Color.uiInk : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
+            HStack(spacing: 10) { Image(systemName: icon).font(.ui(.body)).frame(width: 20); Text(title).font(.ui(.body, weight: .medium)); Spacer() }
+            .foregroundColor(.uiInk).padding(.vertical, 8).padding(.horizontal, 12)
+            // Выбранный пункт отмечен мягкой плашкой, как у Linear, а не залитой инверсией
+            .background(isActive ? Color.uiSelection : Color.clear).cornerRadius(UIRadius.md).contentShape(Rectangle())
         }
         .buttonStyle(TactileButtonStyle())
     }

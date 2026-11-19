@@ -42,7 +42,6 @@ struct DictionaryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.uiCanvas)
         .sheet(isPresented: $addingWord) { DictionaryAddWordSheet() }
         // Второе окно подтверждения висит на разделе «Мои слова»: два `.alert` на одном виде
         // SwiftUI не показывает оба.
@@ -55,10 +54,8 @@ struct DictionaryView: View {
     // MARK: Заголовок
 
     private var header: some View {
+        // Название раздела уже есть в боковом меню, шапка держит только поиск и добавление
         HStack(spacing: 12) {
-            Text("Словарь")
-                .font(.ui(.title, weight: .bold))
-                .foregroundColor(.uiInk)
             Spacer()
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
