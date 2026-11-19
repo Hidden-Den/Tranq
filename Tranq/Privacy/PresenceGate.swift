@@ -9,19 +9,42 @@ protocol PresenceAuthorizing {
 
 /// Общий контекст подтверждения: ключ истории используется с ним без второго диалога.
 /// `reset` забывает подтверждение, его зовут при запирании.
+///
+/// Порядок для вызывающих: сначала `PresenceAuthorizing.authorize`, потом `HistoryCrypto.open`,
+/// тогда `agree` диалога не показывает. `open` и `agree` зовут вне главного потока.
 final class HistoryAuthSession {
     static let shared = HistoryAuthSession()
 
     /// Текст диалога, если ключ просят до явной разблокировки.
     static let defaultReason = String(localized: "открыть историю")
 
+    /// Проверка личности: текст диалога и ответ «подтверждено».
+    typealias Evaluator = (_ reason: String, _ completion: @escaping (Bool) -> Void) -> Void
+
+    /// Одна идущая проверка, её ответ делят все ждущие.
+    private final class Flight {
+        let done = DispatchGroup()
+        var success = false
+    }
+
     private let lock = NSLock()
-    private var current = LAContext()
+    private let evaluator: Evaluator?
+    private var current: LAContext?
     private var authorized = false
+    private var flight: Flight?
+    private var generation = 0
+
+    /// `evaluator` подменяется в тестах; по умолчанию — `deviceOwnerAuthentication` на общем контексте.
+    init(evaluator: Evaluator? = nil) {
+        self.evaluator = evaluator
+    }
 
     var context: LAContext {
         lock.lock(); defer { lock.unlock() }
-        return current
+        if let current { return current }
+        let created = LAContext()
+        current = created
+        return created
     }
 
     var isAuthorized: Bool {
@@ -36,26 +59,50 @@ final class HistoryAuthSession {
 
     func reset() {
         lock.lock(); defer { lock.unlock() }
-        current.invalidate()
-        current = LAContext()
+        current?.invalidate()
+        current = nil
         authorized = false
+        flight = nil
+        generation += 1
     }
 
-    /// Программная проверка личности для пути без Secure Enclave. Блокирует поток до ответа,
-    /// диалог показывает система, поэтому зовётся и с главного потока.
+    /// Программная проверка личности для пути без Secure Enclave.
+    /// Блокирует поток до ответа: с главного потока не звать, он замрёт на всё время диалога.
+    /// Одновременные вызовы ждут одну проверку и получают её ответ.
     func ensureAuthorized() throws {
-        if isAuthorized { return }
-        let context = self.context
-        let reason = context.localizedReason.isEmpty ? Self.defaultReason : context.localizedReason
-        let done = DispatchSemaphore(value: 0)
-        var failure: Error?
-        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, error in
-            if !success { failure = error ?? HistoryKeyError.denied }
-            done.signal()
+        lock.lock()
+        if authorized { lock.unlock(); return }
+        if let running = flight {
+            lock.unlock()
+            running.done.wait()
+            if !running.success { throw HistoryKeyError.denied }
+            return
         }
-        done.wait()
-        if failure != nil { throw HistoryKeyError.denied }
-        markAuthorized(context)
+        let started = Flight()
+        started.done.enter()
+        flight = started
+        let startedGeneration = generation
+        lock.unlock()
+
+        evaluate(reason: Self.defaultReason) { success in
+            self.lock.lock()
+            started.success = success
+            if success && startedGeneration == self.generation { self.authorized = true }
+            if self.flight === started { self.flight = nil }
+            self.lock.unlock()
+            started.done.leave()
+        }
+        started.done.wait()
+        if !started.success { throw HistoryKeyError.denied }
+    }
+
+    private func evaluate(reason: String, completion: @escaping (Bool) -> Void) {
+        if let evaluator { return evaluator(reason, completion) }
+        let context = self.context
+        let text = context.localizedReason.isEmpty ? reason : context.localizedReason
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: text) { success, _ in
+            completion(success)
+        }
     }
 }
 

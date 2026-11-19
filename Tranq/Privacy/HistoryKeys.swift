@@ -43,7 +43,10 @@ struct SecureEnclaveHistoryKey: HistoryKeyProviding {
     var exists: Bool { FileManager.default.fileExists(atPath: blobURL.path) }
 
     var publicKey: Data {
-        get throws { try HistoryKeyFiles.read(publicURL) }
+        get throws {
+            guard exists else { throw HistoryKeyError.unavailable }
+            return try HistoryKeyFiles.read(publicURL)
+        }
     }
 
     func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
@@ -80,13 +83,13 @@ struct SecureEnclaveHistoryKey: HistoryKeyProviding {
         } catch {
             throw HistoryKeyError.unavailable
         }
-        try HistoryKeyFiles.write(key.publicKey.x963Representation, to: publicURL)
-        try HistoryKeyFiles.write(key.dataRepresentation, to: blobURL)
+        try HistoryKeyFiles.installPair(publicKey: key.publicKey.x963Representation, at: publicURL,
+                                        writePrivate: { try HistoryKeyFiles.write(key.dataRepresentation, to: blobURL) },
+                                        removePrivate: { _ = try? HistoryKeyFiles.remove(blobURL) })
     }
 
     func destroy() throws {
-        try HistoryKeyFiles.remove(blobURL)
-        try HistoryKeyFiles.remove(publicURL)
+        try HistoryKeyFiles.removePair(publicAt: publicURL) { try HistoryKeyFiles.remove(blobURL) }
     }
 }
 
@@ -113,7 +116,10 @@ struct KeychainHistoryKey: HistoryKeyProviding {
     }
 
     var publicKey: Data {
-        get throws { try HistoryKeyFiles.read(publicURL) }
+        get throws {
+            guard exists else { throw HistoryKeyError.unavailable }
+            return try HistoryKeyFiles.read(publicURL)
+        }
     }
 
     func agree(withEphemeral ephemeral: Data) throws -> SymmetricKey {
@@ -144,25 +150,46 @@ struct KeychainHistoryKey: HistoryKeyProviding {
         let key = Curve25519.KeyAgreement.PrivateKey()
         var item = itemQuery
         item[kSecValueData as String] = key.rawRepresentation
-        guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw HistoryKeyError.unavailable }
-        do {
-            try HistoryKeyFiles.write(key.publicKey.rawRepresentation, to: publicURL)
-        } catch {
-            try? destroy()
-            throw error
-        }
+        try HistoryKeyFiles.installPair(publicKey: key.publicKey.rawRepresentation, at: publicURL,
+                                        writePrivate: {
+                                            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else {
+                                                throw HistoryKeyError.unavailable
+                                            }
+                                        },
+                                        removePrivate: { _ = SecItemDelete(itemQuery as CFDictionary) })
     }
 
     func destroy() throws {
-        let status = SecItemDelete(itemQuery as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw HistoryKeyError.unavailable }
-        try HistoryKeyFiles.remove(publicURL)
+        try HistoryKeyFiles.removePair(publicAt: publicURL) {
+            let status = SecItemDelete(itemQuery as CFDictionary)
+            guard status == errSecSuccess || status == errSecItemNotFound else { throw HistoryKeyError.unavailable }
+        }
     }
 }
 
 /// Файлы ключа истории: запись атомарная, права 0600 с момента создания.
 enum HistoryKeyFiles {
     static let publicFileName = "history-key.pub"
+
+    /// Сначала приватная часть, публичная последней: без приватной публичной не бывает.
+    /// Сбой записи публичной откатывает приватную.
+    static func installPair(publicKey: Data, at publicURL: URL,
+                            writePrivate: () throws -> Void,
+                            removePrivate: () -> Void) throws {
+        try writePrivate()
+        do {
+            try write(publicKey, to: publicURL)
+        } catch {
+            removePrivate()
+            throw error
+        }
+    }
+
+    /// Публичная часть уходит первой: никто не запечатает конверт ключом, которого уже нет.
+    static func removePair(publicAt publicURL: URL, removePrivate: () throws -> Void) throws {
+        try remove(publicURL)
+        try removePrivate()
+    }
 
     static func write(_ data: Data, to url: URL) throws {
         let fm = FileManager.default
