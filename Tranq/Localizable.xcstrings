@@ -1885,6 +1885,22 @@
         }
       }
     },
+    "Подсветка окна" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Window highlight"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подсветка окна"
+          }
+        }
+      }
+    },
     "Поиск" : {
       "localizations" : {
         "en" : {
@@ -2042,6 +2058,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Разрешить"
+          }
+        }
+      }
+    },
+    "Рамка вокруг окна диктовки" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame around the dictation window"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рамка вокруг окна диктовки"
           }
         }
       }

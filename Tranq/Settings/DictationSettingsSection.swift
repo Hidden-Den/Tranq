@@ -124,6 +124,23 @@ struct DictationSettingsSection: View {
                             .labelsHidden()
                             .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
                     }
+
+                    Divider().background(Color.uiHairline)
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Подсветка окна")
+                                .font(.ui(.body, weight: .medium))
+                                .foregroundColor(.uiInk)
+                            Text("Рамка вокруг окна диктовки")
+                                .font(.ui(.caption))
+                                .foregroundColor(.uiMidGray)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $preferences.windowHighlightEnabled)
+                            .labelsHidden()
+                            .toggleStyle(SwitchToggleStyle(tint: Color.uiSuccess))
+                    }
                 }
             }
         }

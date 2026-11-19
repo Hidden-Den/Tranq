@@ -72,3 +72,16 @@ struct WindowHighlightPolicyTests {
         #expect(WindowHighlightPolicy.shouldShow(enabled: true, axTrusted: true, isOwnApp: false, windowRect: .zero) == false)
     }
 }
+
+struct WindowHighlightPreferenceTests {
+    @Test func defaultsToOnWhenNothingStored() {
+        let d = UserDefaults(suiteName: "tranq-highlight-\(UUID().uuidString)")!
+        #expect(AppPreferences.windowHighlightEnabled(in: d) == true)
+    }
+
+    @Test func storedValueWins() {
+        let d = UserDefaults(suiteName: "tranq-highlight-\(UUID().uuidString)")!
+        d.set(false, forKey: "windowHighlightEnabled")
+        #expect(AppPreferences.windowHighlightEnabled(in: d) == false)
+    }
+}
