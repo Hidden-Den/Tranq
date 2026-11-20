@@ -36,8 +36,10 @@ struct FallbackNoticeTests {
                 == String(localized: "ИИ недоступен"))
     }
 
-    @Test func unresolvableHostFailsFast() async {
-        let gateway = AIProviderConfig(baseURL: "https://tranq-no-such-host.invalid/v1", apiKey: "k", model: "m", providerID: "corporate")
+    /// Закрытый порт на этом же Mac отвечает отказом сразу и от DNS не зависит: разрешение имени на медленном
+    /// резолвере занимало больше трёх секунд даже для зоны `.invalid`.
+    @Test func unreachableGatewayFailsFast() async {
+        let gateway = AIProviderConfig(baseURL: "http://127.0.0.1:9/v1", apiKey: "k", model: "m", providerID: "corporate")
         let input = "ну короче давай перенесём встречу на четверг"
         let started = Date()
         let result = await ThoughtSynthesizer.shared.clean(
