@@ -143,6 +143,10 @@ public struct GroundingValidator {
             if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
                 return .rejected(reason: "Пропущен исходный термин \(missing)")
             }
+            // Русские аббревиатуры тоже: БТИ или НДС в результате нечем заменить
+            if let missing = missingCyrillicAbbreviation(input: trimmedInput, output: sanitizedOutput, termSuspects: termSuspects) {
+                return .rejected(reason: "Пропущен исходный термин \(missing)")
+            }
         }
 
         // 7. Дифференцированная проверка длины по стилям
@@ -159,11 +163,134 @@ public struct GroundingValidator {
         }
 
         // 8. Чистая мысль только удаляет мусор: пересказ своими словами отклоняется
+        // 9. Тон переписывает речь, но не отвечает вместо неё и не уходит от её темы
+        if isRewrite, let reason = toneViolation(input: trimmedInput, output: sanitizedOutput) {
+            return .rejected(reason: reason)
+        }
+
         if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms.union(spokenTerms)) {
             return .rejected(reason: reason)
         }
 
         return .valid(sanitizedText: sanitizedOutput)
+    }
+
+    // MARK: - Уровень с тоном
+
+    /// Слова ответа модели о самой задаче: отказ и разговор о тексте. Регулярные выражения
+    /// по тексту в нижнем регистре; второе поле — начала слов речи, при которых те же слова
+    /// сказал сам говорящий. Отдельные «не могу», «к сожалению», «нецензурная» бывают и
+    /// в деловом переписывании, поэтому признаки отказа только связками.
+    private static let toneMetaMarkers: [(pattern: String, spokenStems: [String])] = [
+        (#"не (?:могу|буду|стану) (?:обработ|выполн|помочь|перепис|переформулир|отредакт|ответить|продолж)"#, []),
+        (#"переформулир"#, ["формулир"]),
+        (#"корректн\w* форм|форм\w* обращени|более корректн"#, []),
+        (#"(?:текст|сообщени|расшифровк|запрос)\w* (?:не )?содерж"#, []),
+        (#"расшифровк"#, ["расшифр"]), (#"транскрип"#, ["транскрип"]),
+        (#"переписанн\w* (?:текст|вариант)|вот (?:текст|вариант)"#, []),
+        (#"в (?:деловом|живом) (?:тоне|стиле)"#, ["тон", "стил"]),
+    ]
+
+    /// Пожелания и вежливые формулы от первого лица, которых в речи не было:
+    /// «я хотел бы, чтобы вопрос был решён» к ругани про подрядчика не относится.
+    private static let toneInventedCourtesy: [(marker: String, spokenStems: [String])] = [
+        ("хотел бы", ["хоте", "хочу", "хочет"]), ("хотела бы", ["хоте", "хочу", "хочет"]),
+        ("хотели бы", ["хоте", "хочу", "хочет"]), ("хотелось бы", ["хоте", "хочу", "хочет"]),
+        ("буду признател", ["признател"]), ("будем признател", ["признател"]),
+        ("буду благодар", ["благодар"]), ("будем благодар", ["благодар"]),
+        ("благодарю за", ["благодар", "спасиб"]), ("заранее спасибо", ["спасиб"]),
+        ("с уважением", ["уважени"]),
+    ]
+
+    /// Служебные слова, общие для любых двух текстов: по ним тему не сверить.
+    private static let toneStopWords: Set<String> = [
+        "этот", "этого", "этому", "этом", "эта", "эту", "этой", "эти", "этих", "этим", "это",
+        "который", "которая", "которые", "которых", "чтобы", "когда", "если", "потом", "тоже",
+        "только", "очень", "можно", "нужно", "надо", "будет", "было", "были", "есть", "себя",
+        "свой", "своя", "свои", "такой", "такая", "такие", "также", "просто", "вообще", "тогда",
+        "здесь", "сейчас", "именно", "ещё", "еще", "даже", "уже", "либо", "или", "как", "что",
+        "так", "там", "тут", "вот", "они", "она", "оно", "него", "нему", "ними", "него", "мне",
+        "меня", "тебя", "тебе", "нас", "вас", "нам", "вам", "всё", "все", "всех", "весь",
+    ]
+
+    /// Ответ модели вместо переписанной речи: отказ, разговор о задаче, придуманное пожелание
+    /// от первого лица или текст совсем о другом. Тон вправе менять слова, но не тему: если
+    /// в речи от трёх смысловых слов, хотя бы одно из них остаётся в какой-то форме.
+    static func toneViolation(input: String, output: String) -> String? {
+        let spoken = input.lowercased().replacingOccurrences(of: "ё", with: "е")
+        let written = output.lowercased().replacingOccurrences(of: "ё", with: "е")
+        for (pattern, stems) in toneMetaMarkers where !stems.contains(where: spoken.contains) {
+            guard let found = written.range(of: pattern, options: .regularExpression),
+                  spoken.range(of: pattern, options: .regularExpression) == nil else { continue }
+            return "Модель ответила вместо переписанной речи: «\(written[found])»"
+        }
+        for (marker, stems) in toneInventedCourtesy where written.contains(marker) && !spoken.contains(marker)
+            && !stems.contains(where: spoken.contains) {
+            return "Модель добавила пожелание от себя: «\(marker)»"
+        }
+
+        let spokenContent = Set(toneContentWords(input))
+        guard spokenContent.count >= 3 else { return nil }
+        let writtenContent = toneContentWords(output)
+        let shared = spokenContent.contains { word in writtenContent.contains { sameRoot(word, $0) } }
+        return shared ? nil : "Модель ушла от темы речи: ни одного общего слова"
+    }
+
+    /// Смысловые слова для сверки темы: от четырёх букв, аббревиатуры и термины короче тоже.
+    private static func toneContentWords(_ text: String) -> [String] {
+        let abbreviations = Set(cyrillicAbbreviations(in: text).map { $0.lowercased() })
+            .union(extractLatinTokens(from: text).map { $0.lowercased() })
+        return comparableWords(text).filter { word in
+            !containsDigit(word) && !toneStopWords.contains(word)
+                && (word.count >= 4 || abbreviations.contains(word))
+        }
+    }
+
+    /// Один корень при свободной смене формы: «сломали» и «сломалось», «играть» и «игры».
+    /// Строже `sameLexeme` не нужно: здесь ищется хоть одна нить к речи, а не новые слова.
+    private static func sameRoot(_ a: String, _ b: String) -> Bool {
+        if sameLexeme(a, b) { return true }
+        let x = Array(a), y = Array(b)
+        let shorter = min(x.count, y.count)
+        guard shorter >= 3 else { return a == b }
+        var prefix = 0
+        while prefix < shorter, x[prefix] == y[prefix] { prefix += 1 }
+        return prefix >= min(4, shorter - 1)
+    }
+
+    // MARK: - Русские аббревиатуры
+
+    /// Аббревиатуры речи кириллицей: от двух заглавных букв подряд, без строчных. «БТИ», «НДС», «ТЗ».
+    static func cyrillicAbbreviations(in text: String) -> Set<String> {
+        let pattern = #"(?<![\p{L}\p{N}])[А-ЯЁ]{2,6}(?![\p{L}\p{N}])"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let ns = text as NSString
+        return Set(regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range) })
+    }
+
+    /// Первая аббревиатура речи, которой нет в результате ни в какой форме: «БТИ» живёт и в «БТИшники»,
+    /// а «ТЗ» в «техническом задании».
+    /// Не требуются отозванная говорящим, «НДС, точнее НДФЛ», и латинский термин, который
+    /// распознавание записало кириллицей: «ГИД» вместо Git, по словарю или по звучанию.
+    static func missingCyrillicAbbreviation(input: String, output: String, termSuspects: [TermSuspect] = []) -> String? {
+        let abbreviations = cyrillicAbbreviations(in: input)
+        guard !abbreviations.isEmpty else { return nil }
+        let lowered = Set(abbreviations.map { $0.lowercased() })
+        let retracted = retractedTerms(in: input, among: lowered)
+        let replaced = Set(termSuspects.filter { outputHasCandidate($0, output: output) }.map { $0.token.lowercased() })
+        let written = comparableWords(output)
+        let writtenLatin = extractLatinTokens(from: output)
+        return abbreviations.sorted().first { abbreviation in
+            let lower = abbreviation.lowercased()
+            if retracted.contains(lower) || replaced.contains(lower) { return false }
+            if written.contains(where: { $0.hasPrefix(lower) }) { return false }
+            // Раскрытая аббревиатура: «ТЗ» как «техническое задание»
+            let letters = Array(lower)
+            if written.count >= letters.count, (0...(written.count - letters.count)).contains(where: { start in
+                letters.indices.allSatisfy { written[start + $0].first == letters[$0] }
+            }) { return false }
+            return !writtenLatin.contains { soundsSpoken($0, words: [lower]) }
+        }
     }
 
     // MARK: - Словоформы
@@ -197,8 +324,12 @@ public struct GroundingValidator {
     /// по правилу самоисправления, и требовать их обратно нельзя. Нужен явный отказ:
     /// «не» и тот же термин, или «точнее», «вернее», «нет» не дальше четырёх слов.
     static func retractedTerms(in input: String) -> Set<String> {
+        retractedTerms(in: input, among: Set(extractLatinTokens(from: input).map { $0.lowercased() }))
+    }
+
+    /// Те же отказы для заданных терминов речи в нижнем регистре.
+    static func retractedTerms(in input: String, among latin: Set<String>) -> Set<String> {
         let words = comparableWords(input)
-        let latin = Set(extractLatinTokens(from: input).map { $0.lowercased() })
         var retracted = Set<String>()
         for (index, word) in words.enumerated() where latin.contains(word) {
             let window = words[(index + 1)..<min(index + 5, words.count)]
@@ -291,17 +422,19 @@ public struct GroundingValidator {
     /// Латинские слова подозрений в нижнем регистре, вместо которых в ответе стоит один из их кандидатов.
     static func replacedSuspectWords(_ suspects: [TermSuspect], output: String) -> Set<String> {
         var replaced = Set<String>()
-        for suspect in suspects {
-            let hasCandidate = suspect.candidates.contains { candidate in
-                let words = candidate.split(separator: " ").map { NSRegularExpression.escapedPattern(for: String($0)) }
-                let pattern = #"(?<![\p{L}\p{N}])"# + words.joined(separator: #"\s+"#) + #"(?![\p{L}\p{N}])"#
-                return output.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
-            }
-            if hasCandidate {
-                replaced.formUnion(extractLatinTokens(from: suspect.token).map { $0.lowercased() })
-            }
+        for suspect in suspects where outputHasCandidate(suspect, output: output) {
+            replaced.formUnion(extractLatinTokens(from: suspect.token).map { $0.lowercased() })
         }
         return replaced
+    }
+
+    /// Стоит ли в ответе один из кандидатов подозрения целым словом.
+    private static func outputHasCandidate(_ suspect: TermSuspect, output: String) -> Bool {
+        suspect.candidates.contains { candidate in
+            let words = candidate.split(separator: " ").map { NSRegularExpression.escapedPattern(for: String($0)) }
+            let pattern = #"(?<![\p{L}\p{N}])"# + words.joined(separator: #"\s+"#) + #"(?![\p{L}\p{N}])"#
+            return output.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+        }
     }
 
     /// Слова в нижнем регистре без знаков препинания по краям; «ё» приравнивается к «е».
