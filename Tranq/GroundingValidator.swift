@@ -182,7 +182,7 @@ public struct GroundingValidator {
     /// сказал сам говорящий. Отдельные «не могу», «к сожалению», «нецензурная» бывают и
     /// в деловом переписывании, поэтому признаки отказа только связками.
     private static let toneMetaMarkers: [(pattern: String, spokenStems: [String])] = [
-        (#"не (?:могу|буду|стану) (?:обработ|выполн|помочь|перепис|переформулир|отредакт|ответить|продолж)"#, []),
+        (#"не (?:могу|буду|стану) (?:обработ|перепис|переформулир|отредакт)"#, []),
         (#"переформулируй|(?:прошу|просим|предлагаю|попробуйте|можете|могли бы вы) переформулир"#, ["формулир"]),
         (#"корректн\w* форм|форм\w* обращени|более корректн"#, []),
         (#"(?:текст|сообщени|расшифровк|запрос)\w* (?:не )?содерж"#, []),
@@ -262,7 +262,7 @@ public struct GroundingValidator {
         if let greeting = opening.range(of: letterGreeting, options: .regularExpression) {
             opening = String(opening[greeting.upperBound...])
         }
-        guard let first = opening.split(whereSeparator: { $0 == " " }).first,
+        guard let first = opening.split(whereSeparator: \.isWhitespace).first,
               let mark = first.last, mark == "," || mark == "!" else { return nil }
         let addressed = String(first.dropLast())
         let spokenOpening = comparableWords(input).first ?? ""
@@ -293,9 +293,10 @@ public struct GroundingValidator {
 
     // MARK: - Русские аббревиатуры
 
-    /// Аббревиатуры речи кириллицей: от двух заглавных букв подряд, без строчных. «БТИ», «НДС», «ТЗ».
+    /// Аббревиатуры речи кириллицей: от двух до восьми заглавных букв подряд, без строчных.
+    /// «БТИ», «НДС», «ТЗ», «РОССТАТ».
     static func cyrillicAbbreviations(in text: String) -> Set<String> {
-        let pattern = #"(?<![\p{L}\p{N}])[А-ЯЁ]{2,6}(?![\p{L}\p{N}])"#
+        let pattern = #"(?<![\p{L}\p{N}])[А-ЯЁ]{2,8}(?![\p{L}\p{N}])"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let ns = text as NSString
         return Set(regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range) })
@@ -317,10 +318,14 @@ public struct GroundingValidator {
             let lower = abbreviation.lowercased()
             if retracted.contains(lower) || replaced.contains(lower) { return false }
             if written.contains(where: { $0.hasPrefix(lower) }) { return false }
-            // Раскрытая аббревиатура: «ТЗ» как «техническое задание»
+            // Раскрытая аббревиатура: «ТЗ» как «техническое задание». Слова раскрытия от пяти букв
+            // и не служебные, иначе «надо дать скидку» сошло бы за НДС
             let letters = Array(lower)
             if written.count >= letters.count, (0...(written.count - letters.count)).contains(where: { start in
-                letters.indices.allSatisfy { written[start + $0].first == letters[$0] }
+                letters.indices.allSatisfy { index in
+                    let word = written[start + index]
+                    return word.first == letters[index] && word.count >= 5 && !toneStopWords.contains(word)
+                }
             }) { return false }
             return !writtenLatin.contains { soundsSpoken($0, words: [lower]) }
         }

@@ -113,6 +113,9 @@ struct CleanupPromptTests {
         // Пример поручения не совпадает с фразами замера, иначе замер мерил бы подсказку
         #expect(ThoughtSynthesizer.rewriteKeepsThoughtsRule.contains("скажи Игорю"))
         #expect(ThoughtSynthesizer.rewriteKeepsThoughtsRule.contains("«я», «мы» и «мне» остаются"))
+        // Паразиты, поправки и повторы правила 1–3 убираются и в тоне: запрет только на мысли
+        #expect(!ThoughtSynthesizer.rewriteKeepsThoughtsRule.contains("Ничего не выбрасывай"))
+        #expect(ThoughtSynthesizer.rewriteKeepsThoughtsRule.contains("Ни одной мысли не выбрасывай"))
     }
 
     @Test func businessMatKeepsItsForce() {

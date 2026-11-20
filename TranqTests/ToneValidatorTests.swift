@@ -13,13 +13,25 @@ struct ToneValidatorTests {
         return false
     }
 
+    /// Причина отказа: тест проверяет именно ту проверку, ради которой написан.
+    private func reason(_ input: String, _ output: String, _ level: CleanupLevel) -> String {
+        if case .rejected(let reason) = GroundingValidator.validate(input: input, output: output, level: level) { return reason }
+        return "принято"
+    }
+
     // MARK: - Ответ модели вместо текста
 
     @Test func refusalInsteadOfTextIsRejected() {
-        let angry = "Эти ребята из БТИ совсем обнаглели, чтоб они провалились."
-        #expect(!isValid(angry, "Прошу предоставить более корректную форму обращения.", business))
-        #expect(!isValid(angry, "К сожалению, я не могу обработать этот текст.", business))
-        #expect(!isValid(angry, "Текст содержит оскорбления, перепишите его.", casual))
+        // Тема и термины речи на месте: отклонить может только признак отказа
+        let angry = "Эти подрядчики совсем обнаглели, опять сорвали ремонт, чтоб они провалились."
+        let refusals: [(String, CleanupLevel)] = [
+            ("Подрядчики сорвали ремонт. Прошу предоставить более корректную форму обращения.", business),
+            ("К сожалению, я не могу обработать текст про подрядчиков и ремонт.", business),
+            ("Текст содержит оскорбления подрядчиков, ремонт упомянут грубо.", casual),
+        ]
+        for (output, level) in refusals {
+            #expect(reason(angry, output, level).hasPrefix("Модель ответила вместо переписанной речи"), "\(output)")
+        }
     }
 
     @Test func talkAboutTheTaskIsRejected() {
@@ -44,6 +56,10 @@ struct ToneValidatorTests {
                         "Подготовьте заготовки, я надиктую их в деловом тоне.", business))
         #expect(isValid("ты диктуешь, а слова по ходу меняются и смысл фразы поправляется",
                         "При диктовке слова по ходу переформулируются, и смысл фразы корректируется.", business))
+        #expect(isValid("я с ними больше работать не буду, они опять сорвали сроки",
+                        "Они снова сорвали сроки. Дальнейшее сотрудничество с ними я не буду продолжать.", business))
+        #expect(isValid("я без понятия, что ответить клиенту по срокам поставки",
+                        "Не могу ответить клиенту по срокам поставки.", business))
         #expect(isValid("мы не можем дать скидку больше десяти процентов",
                         "К сожалению, мы не можем предоставить скидку больше 10 процентов.", business))
     }
@@ -70,7 +86,13 @@ struct ToneValidatorTests {
 
     @Test func lostTopicIsRejected() {
         let input = "эти подрядчики опять сорвали сроки по ремонту офиса"
-        #expect(!isValid(input, "Благодарю за обращение, вопрос будет рассмотрен в ближайшее время.", business))
+        #expect(reason(input, "Вопрос будет рассмотрен в ближайшее время ответственным специалистом.", business)
+            .hasPrefix("Модель ушла от темы речи"))
+    }
+
+    @Test func letterWithLineBreakIsRejected() {
+        let input = "Слушай, напиши Андрею, что встреча переносится, и спроси, удобно ли ему во вторник."
+        #expect(!isValid(input, "Андрей,\nвстреча переносится. Удобно ли вам во вторник?", business))
     }
 
     @Test func shortSpeechIsNotCheckedForTopic() {
@@ -120,6 +142,16 @@ struct ToneValidatorTests {
         #expect(!isValid(input, "Документы так и не пришли, без них регистрацию не примут.", .clean))
         #expect(!isValid(input, "Документы так и не поступили, без них регистрацию не примут.", business))
         #expect(isValid(input, "Документы из БТИ так и не поступили, без них регистрацию не примут.", business))
+    }
+
+    @Test func longAbbreviationMustSurvive() {
+        #expect(!isValid("данные из РОССТАТ за прошлый год не сходятся", "Данные за прошлый год не сходятся.", .clean))
+    }
+
+    /// Первые буквы случайных слов не раскрытие: «надо дать скидку» не НДС.
+    @Test func randomWordsAreNotAnExpansion() {
+        let input = "заложи НДС в смету, а клиенту надо дать скидку"
+        #expect(!isValid(input, "Заложи в смету, а клиенту надо дать скидку.", .clean))
     }
 
     @Test func expandedAbbreviationSurvives() {
