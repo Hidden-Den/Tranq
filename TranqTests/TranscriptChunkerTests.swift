@@ -16,6 +16,30 @@ struct TranscriptChunkerTests {
         (1...sentences).map { sentence($0, words: words) }.joined(separator: " ")
     }
 
+    /// Текст абзацами по три предложения, как его оставляет этап 1.
+    private func paragraphs(_ count: Int) -> String {
+        (0..<count).map { p in
+            (1...3).map { sentence(p * 3 + $0) }.joined(separator: " ")
+        }.joined(separator: "\n\n")
+    }
+
+    /// Куски по порядку дают исходный текст, если вернуть между ними исходный
+    /// пробел или перевод строки. Ни знак не теряется, ни лишний не появляется.
+    private func reassembles(_ chunks: [String], _ text: String) -> Bool {
+        var rest = Substring(text)
+        for (index, chunk) in chunks.enumerated() {
+            guard chunk.first?.isWhitespace == false, chunk.last?.isWhitespace == false else { return false }
+            if index > 0 {
+                let gap = rest.prefix { $0.isWhitespace }
+                guard !gap.isEmpty else { return false }
+                rest = rest.dropFirst(gap.count)
+            }
+            guard rest.hasPrefix(chunk) else { return false }
+            rest = rest.dropFirst(chunk.count)
+        }
+        return rest.isEmpty
+    }
+
     /// Короткая диктовка не режется: один запрос, как и раньше, и повторы мыслей
     /// по всему тексту модель видит целиком.
     @Test func shortTranscriptStaysWhole() {
@@ -41,10 +65,31 @@ struct TranscriptChunkerTests {
         }
     }
 
-    /// Нарезка не теряет и не добавляет ни знака: склейка через пробел даёт исходный текст.
+    /// Нарезка не теряет и не добавляет ни знака.
     @Test func chunksLoseNoText() {
         let long = text(sentences: 40) + " Хвост без точки"
-        #expect(TranscriptChunker.chunks(long).joined(separator: " ") == long)
+        #expect(reassembles(TranscriptChunker.chunks(long), long))
+    }
+
+    /// Перевод строки между абзацами тоже граница: этап 1 расставляет абзацы,
+    /// и кусок не должен склеивать конец одного абзаца с началом следующего.
+    @Test func paragraphBreakSeparatesSentences() {
+        #expect(TranscriptChunker.sentences("Первое.\n\nВторое. Третье") == ["Первое.", "Второе.", "Третье"])
+    }
+
+    /// Абзацы не теряются при нарезке, а куски режутся по границам абзацев.
+    @Test func chunksFollowParagraphs() {
+        let long = paragraphs(12)
+        #expect(long.count > TranscriptChunker.threshold)
+        let chunks = TranscriptChunker.chunks(long)
+        #expect(chunks.count > 1)
+        #expect(reassembles(chunks, long))
+        let paragraphSet = long.components(separatedBy: "\n\n")
+        for chunk in chunks {
+            // Каждый кусок состоит из целых абзацев, внутри перевод строки сохранён
+            #expect(chunk.components(separatedBy: "\n\n").allSatisfy(paragraphSet.contains))
+            #expect(chunk.count <= TranscriptChunker.target + TranscriptChunker.minimum)
+        }
     }
 
     /// Вопрос и восклицание тоже конец предложения.
@@ -63,7 +108,7 @@ struct TranscriptChunkerTests {
         let long = text(sentences: 10) + " " + giant + " " + text(sentences: 10)
         let chunks = TranscriptChunker.chunks(long)
         #expect(chunks.contains(giant))
-        #expect(chunks.joined(separator: " ") == long)
+        #expect(reassembles(chunks, long))
     }
 
     /// Крошечный хвост вроде «Вот.» приклеивается к предыдущему куску: отдельный запрос
@@ -75,7 +120,7 @@ struct TranscriptChunkerTests {
             let chunks = TranscriptChunker.chunks(long)
             #expect(chunks.last?.hasSuffix("Вот.") == true)
             #expect(chunks.allSatisfy { $0.count >= TranscriptChunker.minimum })
-            #expect(chunks.joined(separator: " ") == long)
+            #expect(reassembles(chunks, long))
         }
     }
 

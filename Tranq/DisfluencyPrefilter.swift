@@ -57,16 +57,43 @@ public struct DisfluencyPrefilter {
             }
         }
 
-        // 2. Удаление звуков-паразитов
+        // 2. Удаление звуков-паразитов. На месте паразита временно остаётся метка,
+        // чтобы поднять первую букву предложения только там, где что-то снято
         for regex in compiledFillerRegexes {
             let range = NSRange(location: 0, length: (result as NSString).length)
-            result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: "")
+            result = regex.stringByReplacingMatches(in: result, options: [], range: range, withTemplate: removedMark)
         }
+        result = capitalizeAfterRemoval(result)
+        result = result.replacingOccurrences(of: removedMark, with: "")
 
         // 3. Нормализация пробелов и знаков препинания после удаления
         result = normalizeWhitespaceAndPunctuation(result)
 
         return result
+    }
+
+    /// Метка снятого паразита: символ из области частного использования, в речи его нет.
+    private static let removedMark = "\u{E000}"
+
+    /// Начало предложения, где снят паразит, и первая буква после него:
+    /// «Ну. Э-э, тоже» и «Э-э, тоже» в начале текста.
+    private static let sentenceStartAfterRemoval: NSRegularExpression? = {
+        let pattern = "(?:^|[.!?…])[\\s,\u{E000}]*\u{E000}[\\s,\u{E000}]*(\\p{Ll})"
+        return try? NSRegularExpression(pattern: pattern)
+    }()
+
+    /// Поднимает первую букву предложения, если паразит стоял в его начале.
+    /// В остальном регистр распознавателя не трогается.
+    private static func capitalizeAfterRemoval(_ text: String) -> String {
+        guard let regex = sentenceStartAfterRemoval else { return text }
+        let source = text as NSString
+        let result = NSMutableString(string: text)
+        let matches = regex.matches(in: text, range: NSRange(location: 0, length: source.length))
+        for match in matches.reversed() {
+            let letter = match.range(at: 1)
+            result.replaceCharacters(in: letter, with: source.substring(with: letter).uppercased())
+        }
+        return result as String
     }
 
     private static func normalizeWhitespaceAndPunctuation(_ text: String) -> String {
@@ -79,6 +106,8 @@ public struct DisfluencyPrefilter {
         // Убираем запятые перед точкой или концом предложения: «думаю,.» -> «думаю.»
         cleaned = cleaned.replacingOccurrences(of: #",+\s*([.:;!?])"#, with: "$1", options: .regularExpression)
         cleaned = cleaned.replacingOccurrences(of: #",+\s*$"#, with: "", options: .regularExpression)
+        // Убираем запятые сразу после конца предложения: «кнопкой., тоже» -> «кнопкой. тоже»
+        cleaned = cleaned.replacingOccurrences(of: #"([.!?…])\s*,+"#, with: "$1", options: .regularExpression)
         // Убираем висячие запятые в начале строки: «, привет» -> «привет»
         cleaned = cleaned.replacingOccurrences(of: #"^[,.:;!?\s]+"#, with: "", options: .regularExpression)
         // Сохраняем оригинальную капитализацию расшифровки

@@ -8,7 +8,9 @@ import Foundation
 /// Кусок до 800 знаков модель чистит, а отказ по нему стоит одного абзаца, а не всего.
 ///
 /// Режется только по концу предложения: точке, вопросу, восклицанию или многоточию,
-/// за которыми идёт пробел. Предложение длиннее цели не рвётся посередине.
+/// за которыми идёт пробел, или по переводу строки между абзацами. Предложение длиннее
+/// цели не рвётся посередине. Если в куске есть граница абзаца, кусок кончается на ней:
+/// очищенные куски склеиваются абзацами, и абзацы этапа 1 остаются на своих местах.
 enum TranscriptChunker {
     /// Речь до этого размера идёт одним запросом: модель видит её целиком и сводит
     /// повторы мыслей по всему тексту. Это полторы-две минуты речи.
@@ -19,51 +21,90 @@ enum TranscriptChunker {
     /// отвечает как на обращение к себе, а не чистит.
     static let minimum = 200
 
-    /// Куски речи по порядку. Склейка через пробел даёт исходный текст.
+    /// Предложение и пробел или переводы строк перед ним, как в исходном тексте.
+    private struct Unit {
+        let gap: String
+        let text: String
+        var startsParagraph: Bool { gap.contains(where: \.isNewline) }
+    }
+
+    /// Куски речи по порядку, без пробелов по краям. Если вернуть между ними
+    /// исходный пробел или перевод строки, получится исходный текст.
     static func chunks(_ text: String) -> [String] {
         guard text.count > threshold else { return [text] }
+        let units = self.units(text)
+        guard !units.isEmpty else { return [text] }
 
-        var chunks: [String] = []
-        var current = ""
-        for sentence in sentences(text) {
-            if current.isEmpty {
-                current = sentence
-            } else if current.count + 1 + sentence.count <= target {
-                current += " " + sentence
-            } else {
-                chunks.append(current)
-                current = sentence
-            }
+        func length(_ range: Range<Int>) -> Int {
+            units[range].reduce(0) { $0 + $1.gap.count + $1.text.count } - units[range.lowerBound].gap.count
         }
-        if !current.isEmpty { chunks.append(current) }
+
+        var bounds: [Range<Int>] = []
+        var start = 0
+        var end = 1
+        while end < units.count {
+            if length(start..<(end + 1)) <= target {
+                end += 1
+                continue
+            }
+            // Кусок полон: режем по последней границе абзаца, если кусок до неё не крошечный
+            let paragraphCut = ((start + 1)...end).last { units[$0].startsParagraph && length(start..<$0) >= minimum }
+            let cut = paragraphCut ?? end
+            bounds.append(start..<cut)
+            start = cut
+            end = cut + 1
+        }
+        bounds.append(start..<units.count)
 
         // Крошечный хвост к предыдущему куску, даже если тот выйдет за цель
-        if chunks.count > 1, let last = chunks.last, last.count < minimum {
-            chunks.removeLast()
-            chunks[chunks.count - 1] += " " + last
+        if bounds.count > 1, let last = bounds.last, length(last) < minimum {
+            bounds.removeLast()
+            bounds[bounds.count - 1] = bounds[bounds.count - 1].lowerBound..<last.upperBound
         }
-        return chunks
+        return bounds.map { range in
+            units[range].enumerated().map { $0.offset == 0 ? $0.element.text : $0.element.gap + $0.element.text }.joined()
+        }
     }
 
     /// Предложения без пробелов между ними. Конец предложения это знак конца,
-    /// за которым идёт пробел: точка внутри «3.5» предложение не заканчивает.
+    /// за которым идёт пробел, или перевод строки: точка внутри «3.5» предложение не заканчивает.
     static func sentences(_ text: String) -> [String] {
+        units(text).map(\.text)
+    }
+
+    private static func units(_ text: String) -> [Unit] {
         let enders: Set<Character> = [".", "!", "?", "…"]
-        var result: [String] = []
+        var result: [Unit] = []
+        var gap = ""
         var current = ""
         var index = text.startIndex
         while index < text.endIndex {
             let char = text[index]
-            let next = text.index(after: index)
-            if char == " ", let last = current.last, enders.contains(last) {
-                result.append(current)
-                current = ""
+            if char.isWhitespace {
+                // Пробелы до следующего непробельного знака
+                var next = index
+                var run = ""
+                while next < text.endIndex, text[next].isWhitespace {
+                    run.append(text[next])
+                    next = text.index(after: next)
+                }
+                let endsSentence = current.last.map(enders.contains) == true || run.contains(where: \.isNewline)
+                if current.isEmpty {
+                    gap += run
+                } else if endsSentence {
+                    result.append(Unit(gap: gap, text: current))
+                    gap = run
+                    current = ""
+                } else {
+                    current += run
+                }
+                index = next
             } else {
                 current.append(char)
+                index = text.index(after: index)
             }
-            index = next
         }
-        if !current.isEmpty { result.append(current) }
+        if !current.isEmpty { result.append(Unit(gap: gap, text: current)) }
         return result
     }
 }
