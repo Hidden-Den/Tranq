@@ -5,15 +5,45 @@ import AVFoundation
 ///
 /// Раньше пути были фиксированными (`temp_chunk_0.wav` и т. п.), и две диктовки
 /// подряд могли перезаписать файлы друг друга, пока первая ещё распознавалась.
+///
+/// Замок истории путь распознавания не закрывает: движкам нужен открытый wav, а whisper-cli
+/// пишет открытый json. Поэтому папка закрыта правами `0o700`, файлы `0o600`, удаляет их тот,
+/// кто создал, сразу после работы.
 enum TempFiles {
     static let directory: URL = {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(AppEnvironment.dataFolderName, isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        prepareDirectory(dir)
         return dir
     }()
 
-    static func makeURL(prefix: String, ext: String) -> URL {
-        directory.appendingPathComponent("\(prefix)-\(UUID().uuidString).\(ext)")
+    /// Создаёт папку с правами `0o700`; если она уже есть и открыта шире, права ужимаются.
+    static func prepareDirectory(_ dir: URL) {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
+    }
+
+    /// Путь к новому пустому файлу с правами `0o600`. Запись в него идёт через `AudioPCM.writeWav`
+    /// или `AVAudioRecorder`: оба сохраняют права. Если запись пересоздаёт файл, права возвращает `restrict`.
+    static func makeURL(prefix: String, ext: String, in dir: URL = directory) -> URL {
+        prepareDirectory(dir)
+        let url = dir.appendingPathComponent("\(prefix)-\(UUID().uuidString).\(ext)")
+        createPrivateFile(at: url)
+        return url
+    }
+
+    /// Создаёт пустой файл с правами `0o600` вне зависимости от umask. Существующий файл не обрезает,
+    /// только ужимает права: так внешний процесс, дописывающий в него, оставляет те же права.
+    static func createPrivateFile(at url: URL) {
+        let fd = open(url.path, O_WRONLY | O_CREAT, 0o600)
+        guard fd >= 0 else { return }
+        fchmod(fd, 0o600)
+        close(fd)
+    }
+
+    /// Возвращает файлу права `0o600`, например после записи, подменившей файл новым.
+    static func restrict(_ url: URL) {
+        chmod(url.path, 0o600)
     }
 
     static func remove(_ url: URL) {
@@ -21,10 +51,11 @@ enum TempFiles {
     }
 
     /// Удаляет остатки прошлых запусков, например после аварийного завершения.
-    static func purgeStale(olderThan age: TimeInterval = 24 * 3600) {
+    /// Файлы моложе `age` остаются; `now` подменяется в тестах.
+    static func purgeStale(olderThan age: TimeInterval = 24 * 3600, in dir: URL = directory, now: Date = Date()) {
         let fm = FileManager.default
-        guard let items = try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
-        let cutoff = Date().addingTimeInterval(-age)
+        guard let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
+        let cutoff = now.addingTimeInterval(-age)
         for url in items {
             let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
             if modified < cutoff { try? fm.removeItem(at: url) }
@@ -110,6 +141,8 @@ enum AudioPCM {
             try? FileManager.default.removeItem(at: url)
             let file = try AVAudioFile(forWriting: url, settings: format.settings)
             try file.write(from: buffer)
+            // Файл создан заново с правами по умолчанию: возвращаем закрытые
+            TempFiles.restrict(url)
             return true
         } catch {
             return false

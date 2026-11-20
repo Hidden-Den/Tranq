@@ -44,6 +44,10 @@ final class MCPAccess: ObservableObject {
         didSet { defaults.set(historyAccess, forKey: Keys.historyAccess) }
     }
 
+    /// История заперта замком или её ключ не читается. Ставит `bindHistoryLock(to:)`, в настройки не пишется.
+    /// Читается и пишется только на главном потоке: дверь сама уходит на него перед проверкой.
+    var historyLocked = false
+
     enum Verdict: Equatable {
         case allow
         case deny(String)
@@ -70,9 +74,13 @@ final class MCPAccess: ObservableObject {
         }
         switch command {
         case .dictations:
-            return historyAccess
-                ? .allow
-                : .deny(String(localized: "Доступ нейронок к истории выключен. Включите его в настройках Tranq."))
+            // Выключенный доступ отвечает как раньше: нейронке не видно, что у человека стоит замок.
+            guard historyAccess else {
+                return .deny(String(localized: "Доступ нейронок к истории выключен. Включите его в настройках Tranq."))
+            }
+            return historyLocked
+                ? .deny(String(localized: "История заперта. Разблокируйте её в Tranq."))
+                : .allow
         case .setPack:
             return disablingPack && !fullAccess
                 ? .deny(String(localized: "Для этого нужен полный доступ нейронок. Включите его в настройках Tranq."))
@@ -80,5 +88,11 @@ final class MCPAccess: ObservableObject {
         case .packs, .words, .addWords, .removeWords, .revertAgentWords, .createPack, .deletePack, .packWords:
             return .allow
         }
+    }
+
+    /// Следит за замком истории: запертая и нечитаемая история закрывает `dictations`.
+    /// Первое значение применяется сразу, до первого запроса. Паблишер замка работает на главном потоке.
+    func bindHistoryLock(to states: AnyPublisher<HistoryLockState, Never>) -> AnyCancellable {
+        states.sink { [weak self] state in self?.historyLocked = state.hidesHistory }
     }
 }

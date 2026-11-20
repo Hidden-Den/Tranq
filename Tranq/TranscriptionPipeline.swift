@@ -127,7 +127,7 @@ final class TranscriptionPipeline {
         }
 
         let rawText = texts.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-        AppLogger.shared.info("Pipeline", "Этап 1 завершён: \(recognizer.displayName)", details: "Распознано: «\(rawText)», слов: \(words.count)")
+        AppLogger.shared.info("Pipeline", "Этап 1 завершён: \(recognizer.displayName)", details: "Распознано: \(AppLogger.shared.transcript(rawText)), слов: \(words.count)")
         guard !rawText.isEmpty else {
             if ownsAudioFile { TempFiles.remove(audioURL) }
             return .failure(.nothingRecognized(audioSeconds: audioSeconds))
@@ -224,7 +224,8 @@ final class TranscriptionPipeline {
                     level: level,
                     targetBundleId: target?.bundleIdentifier,
                     firedSpellings: dictionary.fired,
-                    language: language
+                    language: language,
+                    noteId: noteId
                 )
                 DispatchQueue.main.async {
                     // Повторный проход страхует от вариантов, которые вернула модель
@@ -242,7 +243,7 @@ final class TranscriptionPipeline {
                         return
                     }
                     let isFallback = cleaned.fallback != nil
-                    AppLogger.shared.info("Pipeline", "✔ Пайплайн завершён: \(isFallback ? "откат на распознанный текст" : "очистка выполнена")", details: "Финальный текст: «\(resolved)»")
+                    AppLogger.shared.info("Pipeline", "✔ Пайплайн завершён: \(isFallback ? "откат на распознанный текст" : "очистка выполнена")", details: "Финальный текст: \(AppLogger.shared.transcript(resolved, id: noteId))")
                     deliver(finalText: resolved, transformed: level != .verbatim && !isFallback, fallback: cleaned.fallback)
                 }
             }

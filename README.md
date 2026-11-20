@@ -82,7 +82,7 @@ Settings has six sections, listed in the sidebar:
 * **Processing:** engine, cleanup model, model instruction, links to the dictionary and rules.
 * **Provider:** provider presets, URL, key, connection check, telemetry.
 * **App:** language, appearance, launch at login, hide in Dock, open in History, about.
-* **Data:** agent access, app logs, erase history.
+* **Data:** agent access, app logs, history lock, erase history.
 
 ---
 
@@ -118,6 +118,12 @@ Tranq can hand its dictionary to an AI agent. The app ships a helper, `tranq-mcp
 **What the agent gets:** `list_dictionary_packs`, `list_user_words`, `list_pack_words`, `set_pack_enabled`, `add_words`, `remove_words`, `create_pack`, `delete_pack`, `revert_agent_words`, `list_dictations`. Words arrive in batches of up to 50; an agent keeps at most 20 packs of its own with up to 500 words in each. Its own words land in your personal list or in its pack, never inside a built-in dictionary, and the dictionary screen has a single action that takes all of them back.
 
 The socket protocol is written down in [mcp/PROTOCOL.md](mcp/PROTOCOL.md).
+
+---
+
+## History Lock
+
+Turn it on in Settings, section Data. Touch ID opens the history, and notes, audio and the dictation journal are encrypted on disk. The key lives on this Mac: with the Secure Enclave it cannot leave the chip, and on a Mac without one it sits in the login keychain, a weaker protection that depends on your login. Either way the history is not meant to be read on another Mac, so export a plain copy with Export before you move. The app log is not encrypted, but with the lock on it records only lengths and ids instead of dictated text, and dictionary words are redacted too. Recognition briefly writes audio to temporary files readable only by your account and deletes them when it finishes; after a crash, startup cleanup removes leftovers older than 24 hours. Erase history removes both the records and the key; with the lock on, new history is encrypted with a new key.
 
 ---
 

@@ -38,10 +38,20 @@ public struct JournalRecord: Codable, Identifiable {
     }
 }
 
+/// Как журнал пишет строки: открытым JSON или конвертом. Запечатать можно по одному публичному ключу.
+enum JournalSealing {
+    case off
+    case sealed(key: HistoryKeyProviding)
+}
+
 public final class TranscriptJournal: ObservableObject {
     public static let shared = TranscriptJournal(directory: AppEnvironment.dataDirectory)
 
     @Published public private(set) var lastRecord: JournalRecord?
+
+    /// Ложь, пока история заперта: последняя запись живёт в памяти открытым текстом,
+    /// и «Вставить оригинал речи» без этого отдал бы её мимо замка. Читается и меняется на главном потоке.
+    var readAllowed = true
 
     private let ioQueue = DispatchQueue(label: "com.tranq.transcript.journal", qos: .utility)
     private var pendingRecords: [UUID: JournalRecord] = [:]
@@ -49,6 +59,8 @@ public final class TranscriptJournal: ObservableObject {
     private let maxFileBytes: UInt64 = 5 * 1024 * 1024 // 5 MB ротация
 
     private let directory: URL
+    /// Читается и меняется только на ioQueue, поэтому смена режима идёт в одном порядке с записями.
+    private var sealing: JournalSealing
 
     private var journalFileURL: URL? {
         directory.appendingPathComponent("transcript_journal.jsonl")
@@ -60,9 +72,16 @@ public final class TranscriptJournal: ObservableObject {
     }
 
     /// `directory` подменяется в тестах, чтобы не трогать настоящий журнал пользователя.
-    init(directory: URL) {
+    init(directory: URL, sealing: JournalSealing = .off) {
         self.directory = directory
-        loadLastRecordFromDisk()
+        self.sealing = sealing
+        // Запечатанную строку без подтверждения личности не прочесть: последнюю запись с диска не поднимаем.
+        if case .off = sealing { loadLastRecordFromDisk() }
+    }
+
+    /// Переключает режим записи на ходу. Встаёт в очередь записи, поэтому уже принятые строки уйдут в прежнем режиме.
+    func setSealing(_ sealing: JournalSealing) {
+        ioQueue.async { self.sealing = sealing }
     }
 
     /// Стирает журнал, его архив и последнюю запись в памяти. «Вставить оригинал речи» после этого ничего не найдёт.
@@ -145,7 +164,7 @@ public final class TranscriptJournal: ObservableObject {
 
     /// Восстановление дословного оригинала речи: вставка под курсор или копирование в буфер
     public func pasteOriginal(completion: @escaping (Bool) -> Void) {
-        guard let record = lastRecord, !record.rawText.isEmpty else {
+        guard readAllowed, let record = lastRecord, !record.rawText.isEmpty else {
             completion(false)
             return
         }
@@ -186,35 +205,155 @@ public final class TranscriptJournal: ObservableObject {
         }
     }
 
+    /// Строка файла: открытый JSON или base64 конверта, смотря по режиму. Без публичного ключа строки нет, открытым не пишем.
+    private func encodeLine(_ record: JournalRecord) throws -> Data? {
+        let json = try JSONEncoder().encode(record)
+        switch sealing {
+        case .off:
+            return json
+        case .sealed(let key):
+            let envelope = try HistoryCrypto.seal(json, purpose: .journal, publicKey: key.publicKey)
+            return Data(try JSONEncoder().encode(envelope).base64EncodedString().utf8)
+        }
+    }
+
     private func appendToFile(_ record: JournalRecord) {
         guard let url = journalFileURL else { return }
         do {
-            let data = try JSONEncoder().encode(record)
-            if let line = String(data: data, encoding: .utf8) {
-                let entry = line + "\n"
-                guard let entryData = entry.data(using: .utf8) else { return }
+            guard var entryData = try encodeLine(record) else { return }
+            entryData.append(0x0A)
 
-                if FileManager.default.fileExists(atPath: url.path) {
-                    // Ротация при превышении 5 МБ: архивируем в .1.jsonl
-                    if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-                       let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
-                        let backupURL = Self.archiveURL(for: url)
-                        try? FileManager.default.removeItem(at: backupURL)
-                        try? FileManager.default.moveItem(at: url, to: backupURL)
-                    }
+            if FileManager.default.fileExists(atPath: url.path) {
+                // Ротация при превышении 5 МБ: архивируем в .1.jsonl
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                   let fileSize = attrs[.size] as? UInt64, fileSize > maxFileBytes {
+                    let backupURL = Self.archiveURL(for: url)
+                    try? FileManager.default.removeItem(at: backupURL)
+                    try? FileManager.default.moveItem(at: url, to: backupURL)
                 }
+            }
 
-                if FileManager.default.fileExists(atPath: url.path) {
-                    let fileHandle = try FileHandle(forWritingTo: url)
-                    fileHandle.seekToEndOfFile()
-                    try fileHandle.write(contentsOf: entryData)
-                    try fileHandle.close()
-                } else {
-                    try entryData.write(to: url, options: .atomic)
-                }
+            if FileManager.default.fileExists(atPath: url.path) {
+                let fileHandle = try FileHandle(forWritingTo: url)
+                fileHandle.seekToEndOfFile()
+                try fileHandle.write(contentsOf: entryData)
+                try fileHandle.close()
+            } else {
+                try entryData.write(to: url, options: .atomic)
             }
         } catch {
             AppLogger.shared.error("Journal", "Не удалось записать журнал транскриптов", details: error.localizedDescription)
         }
+    }
+
+    // MARK: - Миграция замка
+
+    /// Суффикс копии, которую миграция пишет рядом с файлом журнала до замены.
+    static let migrationSuffix = "migrating"
+
+    /// Файлы журнала по порядку: архив, затем текущий.
+    var migrationFiles: [URL] {
+        guard let url = journalFileURL else { return [] }
+        return [Self.archiveURL(for: url), url]
+    }
+
+    /// Все строки архива и текущего файла как есть, по порядку. Пустые строки пропускаются.
+    func migrationLines() -> [String] {
+        ioQueue.sync { migrationFiles.flatMap { Self.lines(of: $0) } }
+    }
+
+    /// Переписывает архив и текущий файл построчно в очереди записи, поэтому ни одна строка не теряется
+    /// и не встаёт между чтением и заменой. В конце журнал пишет в режиме `sealing`.
+    func rewriteForMigration(sealing: JournalSealing, transform: (String) throws -> String) throws {
+        try ioQueue.sync {
+            try Self.rewrite(migrationFiles, transform: transform)
+            self.sealing = sealing
+        }
+    }
+
+    /// Файлы журнала в папке данных по порядку: архив, затем текущий. Для запуска, когда очереди ещё нет.
+    static func migrationFiles(in directory: URL) -> [URL] {
+        let url = directory.appendingPathComponent("transcript_journal.jsonl")
+        return [archiveURL(for: url), url]
+    }
+
+    /// Есть ли в журнале хоть одна запечатанная строка.
+    static func hasSealedLines(in directory: URL, isSealed: (String) -> Bool) -> Bool {
+        migrationFiles(in: directory).contains { lines(of: $0).contains(where: isSealed) }
+    }
+
+    /// Каждый файл сначала пишется копией рядом, копия читается обратно и сверяется,
+    /// и только потом атомарно заменяет исходник. Сбой до замены убирает копии, исходники остаются как были.
+    /// Звать только из очереди журнала или при запуске, пока журналом никто не пишет.
+    static func rewrite(_ files: [URL], transform: (String) throws -> String) throws {
+        var copies: [(copy: URL, original: URL)] = []
+        do {
+            for original in files where FileManager.default.fileExists(atPath: original.path) {
+                // Файл есть, но не читается: ошибка, а не пустой журнал, иначе пустая копия заменила бы оригинал.
+                let source = try readLines(of: original)
+                let output = try source.map(transform)
+                guard output.count == source.count, !output.contains(where: { $0.contains("\n") }) else {
+                    throw HistoryMigrationError.verificationFailed
+                }
+                let data = Data((output.map { $0 + "\n" }.joined()).utf8)
+                let copy = original.appendingPathExtension(migrationSuffix)
+                copies.append((copy, original))
+                try data.write(to: copy, options: .atomic)
+                guard (try? Data(contentsOf: copy)) == data else { throw HistoryMigrationError.verificationFailed }
+            }
+        } catch {
+            for item in copies { try? FileManager.default.removeItem(at: item.copy) }
+            throw error
+        }
+        // Копии проверены: замена атомарная, исходник уходит только вместе с появлением копии.
+        var failed = false
+        for item in copies where Darwin.rename(item.copy.path, item.original.path) != 0 {
+            try? FileManager.default.removeItem(at: item.copy)
+            AppLogger.shared.error("Journal", "Файл журнала не заменён при миграции", details: item.original.lastPathComponent)
+            failed = true
+        }
+        if failed { throw HistoryMigrationError.verificationFailed }
+    }
+
+    /// Строки файла по `\n`, байт в байт. Нет файла — нет строк.
+    private static func readLines(of url: URL) throws -> [String] {
+        let data = try Data(contentsOf: url)
+        return String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+    }
+
+    private static func lines(of url: URL) -> [String] {
+        guard let data = try? Data(contentsOf: url) else { return [] }
+        return String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+    }
+
+    /// Читает архив и текущий файл, открывая каждую запечатанную строку. Нечитаемые строки пропускает,
+    /// ошибки ключа `HistoryKeyError` отдаёт наружу. Может показать запрос подтверждения: не звать с главного потока.
+    func readAllRecords(key: HistoryKeyProviding) throws -> [JournalRecord] {
+        // Снимок файлов берём в очереди записи, расшифровку делаем вне её: диалог не должен держать запись.
+        let contents: [String] = ioQueue.sync {
+            guard let url = journalFileURL else { return [] }
+            return [Self.archiveURL(for: url), url].compactMap { fileURL in
+                (try? Data(contentsOf: fileURL)).map { String(decoding: $0, as: UTF8.self) }
+            }
+        }
+
+        var records: [JournalRecord] = []
+        for content in contents {
+            for line in content.components(separatedBy: .newlines) where !line.isEmpty {
+                guard let data = Data(base64Encoded: line),
+                      let envelope = try? JSONDecoder().decode(SealedEnvelope.self, from: data) else { continue }
+                do {
+                    let json = try HistoryCrypto.open(envelope, purpose: .journal, key: key)
+                    if let record = try? JSONDecoder().decode(JournalRecord.self, from: json) {
+                        records.append(record)
+                    }
+                } catch let error as HistoryKeyError {
+                    throw error
+                } catch {
+                    continue
+                }
+            }
+        }
+        return records
     }
 }

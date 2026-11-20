@@ -1,9 +1,31 @@
 import SwiftUI
 import AppKit
+import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Сон Mac, видимость окна и таймер замка истории.
+    private var historyLockMonitor: HistoryLockSystemMonitor?
+    /// Подписки на состояние замка: доступ нейронок к истории и правило лога.
+    private var lockBindings: [AnyCancellable] = []
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppPreferences.shared.applyActivationPolicy()
+        // Замок встаёт до первой диктовки: хранилище и журнал сразу пишут конверты
+        let historyLock = HistoryLockCoordinator.shared
+        historyLockMonitor = HistoryLockSystemMonitor(coordinator: historyLock)
+        // Первое значение применяется сразу, а сокет двери открывается ниже: ни один запрос
+        // и ни одна строка лога не увидят замок без правил.
+        let lockStates = historyLock.$state.eraseToAnyPublisher()
+        // Пока читаются конверты после разблокировки, `dictations` закрыт: список ещё пуст, и ответ был бы ложным.
+        let mcpStates = historyLock.$state
+            .combineLatest(HistoryStore.shared.$isReadingNotes) { state, reading in
+                state == .unlocked && reading ? HistoryLockState.locked : state
+            }
+            .eraseToAnyPublisher()
+        lockBindings = [
+            MCPAccess.shared.bindHistoryLock(to: mcpStates),
+            AppLogger.shared.bindTranscriptRedaction(to: lockStates),
+        ]
         let mic = PermissionManager.shared.isMicGranted
         let ax = PermissionManager.shared.isAccessibilityGranted
         AppLogger.shared.info("App", "Запуск Tranq",
@@ -50,6 +72,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }) {
                 MainWindowController.shared.register(window: window)
             }
+            // Начальная видимость окна: замок считает окно скрытым, пока не узнает иное
+            MainActor.assumeIsolated { self.historyLockMonitor?.start() }
         }
     }
 

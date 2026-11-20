@@ -19,6 +19,7 @@ public final class ThoughtSynthesizer {
     /// - Parameters:
     ///   - backend: исполнитель; `nil` выбирает по настройке движка
     ///   - telemetry: хранилище замеров; `nil` берёт общее, подмена нужна тестам
+    ///   - noteId: заметка, для которой идёт очистка; при замке попадает в лог вместо текста
     func clean(
         _ text: String,
         level: CleanupLevel,
@@ -26,7 +27,8 @@ public final class ThoughtSynthesizer {
         firedSpellings: [String],
         language: DictionaryLanguage,
         backend: CleanupBackend? = nil,
-        telemetry: CleanupTelemetry? = nil
+        telemetry: CleanupTelemetry? = nil,
+        noteId: UUID? = nil
     ) async -> CleanupResult {
         let stageOne = Self.stageOne(text)
         // Речь из одних звуков: модель не нужна, а текст не от неё
@@ -39,7 +41,7 @@ public final class ThoughtSynthesizer {
         // Фразы до 3 слов не требуют модели
         let wordCount = stageOne.split(whereSeparator: { $0.isWhitespace }).count
         if wordCount <= 3 {
-            AppLogger.shared.info("Pipeline", "Этап 2 пропущен: короткая фраза (\(wordCount) сл.)", details: "Отдан текст: «\(stageOne)»")
+            AppLogger.shared.info("Pipeline", "Этап 2 пропущен: короткая фраза (\(wordCount) сл.)", details: "Отдан текст: \(AppLogger.shared.transcript(stageOne, id: noteId))")
             return CleanupResult(text: stageOne, fallback: .shortPhrase)
         }
 
@@ -91,7 +93,9 @@ public final class ThoughtSynthesizer {
         let termHint = DictionaryStore.shared.termHint(suspects)
         if !termHint.isEmpty {
             system += "\n\n" + termHint
-            AppLogger.shared.info("Pipeline", "Этап 2: подсказка терминов", details: termHint)
+            // Подсказка собрана из слов диктовки: при замке пишется только число слов
+            AppLogger.shared.info("Pipeline", "Этап 2: подсказка терминов",
+                                  details: AppLogger.shared.redactTranscripts ? "слов: \(suspects.count)" : termHint)
         }
 
         let store: CleanupTelemetry
@@ -128,10 +132,12 @@ public final class ThoughtSynthesizer {
         let customTerms = DictionaryStore.shared.index?.approvedSpellings ?? []
         switch GroundingValidator.validate(input: stageOne, output: cleaned, level: level, customTerms: customTerms, termSuspects: suspects) {
         case .valid(let validated):
-            AppLogger.shared.info("Pipeline", "Этап 2 завершён: модель очистила речь", details: "Итог: «\(validated)»")
+            AppLogger.shared.info("Pipeline", "Этап 2 завершён: модель очистила речь", details: "Итог: \(AppLogger.shared.transcript(validated, id: noteId))")
             return CleanupResult(text: validated, fallback: nil)
         case .rejected(let reason):
-            AppLogger.shared.warn("Pipeline", "Этап 2: валидатор отклонил результат, \(reason)", details: "Откат на текст этапа 1")
+            // Причина может назвать слово или число из диктовки, при замке она скрыта
+            let shown = AppLogger.shared.redactTranscripts ? "причина скрыта" : reason
+            AppLogger.shared.warn("Pipeline", "Этап 2: валидатор отклонил результат, \(shown)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: .rejected(reason))
         }
     }

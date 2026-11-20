@@ -12,10 +12,15 @@ concurrency:
 jobs:
   test:
     name: Сборка и unit-тесты
-    runs-on: macos-latest
+    # Раннеры Hidden-Den на своём Mac: сборка в разы быстрее облачного macos-latest.
+    # Код из чужих форков на него не попадает: такие запросы идут в облако.
+    runs-on: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","macOS","ARM64"]') || 'macos-latest' }}
     timeout-minutes: 30
     steps:
+      # Без чистки: build/DerivedData-ci переживает прогоны, и Xcode собирает только изменённое.
       - uses: actions/checkout@v4
+        with:
+          clean: false
 
       - name: Проверка имени
         run: bash scripts/check-brand.sh

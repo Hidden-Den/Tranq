@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 
 enum LogLevel: Int, Comparable, CaseIterable {
     case info = 0
@@ -37,6 +38,16 @@ final class AppLogger: ObservableObject {
     private let ioQueue = DispatchQueue(label: "Tranq.AppLogger.io")
     private let fileURL: URL?
     private var fileHandle: FileHandle?
+    private let redactLock = NSLock()
+    private var redacting = false
+
+    /// Замок истории включён: строки с текстом расшифровок пишут длину и номер заметки вместо текста.
+    /// Файл лога при этом не шифруется, правило лишь не даёт тексту попасть в него.
+    /// Логгер зовут с любых потоков, поэтому флаг под замком.
+    var redactTranscripts: Bool {
+        get { redactLock.lock(); defer { redactLock.unlock() }; return redacting }
+        set { redactLock.lock(); redacting = newValue; redactLock.unlock() }
+    }
 
     /// `directory` подменяется в тестах, чтобы не трогать настоящий лог пользователя.
     init(directory: URL = AppEnvironment.dataDirectory) {
@@ -47,6 +58,21 @@ final class AppLogger: ObservableObject {
     }
 
     var logFileURL: URL? { fileURL }
+
+    // MARK: - Текст расшифровок
+
+    /// Как писать в лог текст диктовки или слово из неё. Без замка это сам текст, по умолчанию в кавычках,
+    /// с замком длина и номер заметки, если он известен: `12 симв., id ...`.
+    func transcript(_ text: String, id: UUID? = nil, quoted: Bool = true) -> String {
+        guard redactTranscripts else { return quoted ? "«\(text)»" : text }
+        guard let id else { return "\(text.count) симв." }
+        return "\(text.count) симв., id \(id.uuidString)"
+    }
+
+    /// Включает правило, пока замок истории в любом состоянии, кроме выключенного.
+    func bindTranscriptRedaction(to states: AnyPublisher<HistoryLockState, Never>) -> AnyCancellable {
+        states.sink { [weak self] state in self?.redactTranscripts = state != .off }
+    }
 
     // MARK: - API
 

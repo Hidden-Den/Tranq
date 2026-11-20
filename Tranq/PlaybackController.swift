@@ -1,7 +1,10 @@
 import Foundation
 import AVFoundation
+import Combine
 
-/// Воспроизведение аудио заметки.
+/// Воспроизведение аудио заметки из памяти: `AVAudioPlayer(data:)`, открытых временных файлов нет.
+/// Байты приходят из `HistoryStore.loadAudio` в фоне, главный поток расшифровки не ждёт.
+/// Подписка на `lockState`: при запирании плеер останавливается и отпускает расшифрованное.
 final class PlaybackController: ObservableObject {
     static let shared = PlaybackController(history: .shared)
 
@@ -14,10 +17,22 @@ final class PlaybackController: ObservableObject {
     private let history: HistoryStore
     private var audioPlayer: AVAudioPlayer?
     private var playbackTimer: Timer?
+    /// Заметка, чьё аудио сейчас читается, и место, с которого начать.
+    private var loadingId: UUID?
+    /// Метка текущего чтения: устаревший ответ той же заметки не должен занять место нового запроса.
+    private var loadToken = UUID()
+    private var loadingStart: Double = 0
+    private var lockObserver: AnyCancellable?
 
     init(history: HistoryStore) {
         self.history = history
+        lockObserver = history.$lockState.sink { [weak self] state in
+            if state == .locked || state == .keyUnavailable { self?.release() }
+        }
     }
+
+    /// Держит ли плеер расшифрованные байты.
+    var isAudioLoaded: Bool { audioPlayer != nil }
 
     func hasAudio(for id: UUID) -> Bool {
         history.hasAudio(for: id)
@@ -26,16 +41,13 @@ final class PlaybackController: ObservableObject {
     /// Читает длительность аудио в фоне, чтобы строка плеера сразу показала время.
     func prepare(for id: UUID) {
         guard durations[id] == nil, history.hasAudio(for: id) else { return }
-        let url = history.audioURL(for: id)
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let player = try? AVAudioPlayer(contentsOf: url) else { return }
-            let duration = player.duration
-            DispatchQueue.main.async { self?.durations[id] = duration }
+        history.loadAudio(for: id) { [weak self] result in
+            guard case .success(let data?) = result, let player = try? AVAudioPlayer(data: data) else { return }
+            self?.durations[id] = player.duration
         }
     }
 
     func toggleSyncedPlayback(for id: UUID) {
-        guard history.hasAudio(for: id) else { return }
         if playingItemId == id, let player = audioPlayer {
             if player.isPlaying {
                 player.pause(); stopPlaybackTimer(); isPlayerPlaying = false
@@ -44,21 +56,15 @@ final class PlaybackController: ObservableObject {
             }
             return
         }
-        audioPlayer?.stop()
-        guard let player = try? AVAudioPlayer(contentsOf: history.audioURL(for: id)) else { return }
-        audioPlayer = player
-        durations[id] = player.duration
-        player.play()
-        playingItemId = id
-        playheadTime = 0
-        isPlayerPlaying = true
-        startPlaybackTimer(for: id)
+        startPlayback(for: id, at: 0)
     }
 
     /// Перемотка; если заметка ещё не играла, запускает её с нужного места.
     func seekSynced(to time: Double, for id: UUID) {
-        if playingItemId != id { toggleSyncedPlayback(for: id) }
-        guard playingItemId == id, let player = audioPlayer else { return }
+        guard playingItemId == id, let player = audioPlayer else {
+            startPlayback(for: id, at: time)
+            return
+        }
         player.currentTime = min(max(time, 0), player.duration)
         if !player.isPlaying {
             player.play()
@@ -71,10 +77,53 @@ final class PlaybackController: ObservableObject {
     func stopSyncedPlayback() {
         audioPlayer?.stop()
         audioPlayer = nil
+        loadingId = nil
+        loadToken = UUID()
         playingItemId = nil
         playheadTime = 0
         isPlayerPlaying = false
         stopPlaybackTimer()
+    }
+
+    /// Останавливает плеер и отпускает расшифрованные байты. Зовётся при запирании истории.
+    func release() {
+        stopSyncedPlayback()
+        durations.removeAll()
+    }
+
+    /// Читает аудио в фоне и запускает его с `time`. Повторный вызов во время чтения меняет только место.
+    private func startPlayback(for id: UUID, at time: Double) {
+        if loadingId == id {
+            loadingStart = time
+            return
+        }
+        guard history.hasAudio(for: id) else { return }
+        stopSyncedPlayback()
+        loadingId = id
+        loadingStart = time
+        let token = UUID()
+        loadToken = token
+        history.loadAudio(for: id) { [weak self] result in
+            guard let self, self.loadingId == id, self.loadToken == token else { return }
+            self.loadingId = nil
+            let data: Data
+            switch result {
+            case .success(let loaded?): data = loaded
+            case .success(nil), .failure(HistoryAudioError.locked): return
+            case .failure(let error):
+                AppLogger.shared.error("Playback", "Аудио заметки не прочитано", details: "\(id.uuidString): \(error)")
+                return
+            }
+            guard let player = try? AVAudioPlayer(data: data) else { return }
+            self.audioPlayer = player
+            self.durations[id] = player.duration
+            player.currentTime = min(max(self.loadingStart, 0), player.duration)
+            player.play()
+            self.playingItemId = id
+            self.playheadTime = player.currentTime
+            self.isPlayerPlaying = true
+            self.startPlaybackTimer(for: id)
+        }
     }
 
     private func startPlaybackTimer(for id: UUID) {

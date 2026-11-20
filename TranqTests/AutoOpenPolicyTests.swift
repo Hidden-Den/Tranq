@@ -3,16 +3,16 @@ import Testing
 
 struct AutoOpenPolicyTests {
     @Test func switchesWhenWindowHidden() {
-        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: true, isWindowVisible: false) == true)
+        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: true, isWindowVisible: false, lockState: .off) == true)
     }
 
     @Test func keepsScreenWhenWindowOpen() {
-        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: true, isWindowVisible: true) == false)
+        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: true, isWindowVisible: true, lockState: .off) == false)
     }
 
     @Test func neverSwitchesWhenSettingOff() {
-        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: false, isWindowVisible: false) == false)
-        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: false, isWindowVisible: true) == false)
+        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: false, isWindowVisible: false, lockState: .off) == false)
+        #expect(AutoOpenPolicy.shouldSwitchToHistory(autoOpenEnabled: false, isWindowVisible: true, lockState: .off) == false)
     }
 }
 

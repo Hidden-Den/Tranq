@@ -82,7 +82,7 @@ final class DictionaryLearning {
                   Self.contains(editedTokens, originalTokens, caseSensitive: exact) else { continue }
             store.removeVariant(replacement.variant, language: language, fromEntryKey: replacement.entryKey)
             consumed.append(replacement)
-            AppLogger.shared.info("Dictionary", "Замена отменена правкой", details: "\(replacement.original) -> \(replacement.replacement)")
+            AppLogger.shared.info("Dictionary", "Замена отменена правкой", details: "\(AppLogger.shared.transcript(replacement.original, id: noteId, quoted: false)) -> \(AppLogger.shared.transcript(replacement.replacement, id: noteId, quoted: false))")
         }
     }
 
@@ -115,7 +115,7 @@ final class DictionaryLearning {
         case .wait:
             return
         case .capped:
-            AppLogger.shared.info("Dictionary", "Дневной лимит обучения исчерпан", details: pair.replacement)
+            AppLogger.shared.info("Dictionary", "Дневной лимит обучения исчерпан", details: AppLogger.shared.transcript(pair.replacement, quoted: false))
         case .learn:
             let caseOnly = pair.pattern.lowercased() == pair.replacement.lowercased()
             let entry = store.addEntry(
@@ -126,7 +126,7 @@ final class DictionaryLearning {
             )
             // Подкреплённая запись не должна попасть под удаление неиспользуемых за 60 дней.
             store.touch(id: entry.id)
-            AppLogger.shared.info("Dictionary", "Слово выучено из правки", details: "\(pair.pattern) -> \(pair.replacement)")
+            AppLogger.shared.info("Dictionary", "Слово выучено из правки", details: "\(AppLogger.shared.transcript(pair.pattern, quoted: false)) -> \(AppLogger.shared.transcript(pair.replacement, quoted: false))")
         }
     }
 

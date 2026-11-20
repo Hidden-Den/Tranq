@@ -24,10 +24,13 @@ final class WhisperCLIEngine: SpeechRecognizer {
             return .empty
         }
         let wavURL = TempFiles.makeURL(prefix: "whisper", ext: "wav")
+        let jsonURL = wavURL.appendingPathExtension("json")
         defer {
             TempFiles.remove(wavURL)
-            TempFiles.remove(wavURL.appendingPathExtension("json"))
+            TempFiles.remove(jsonURL)
         }
+        // json пишет whisper-cli: заводим файл заранее закрытым, он дописывает в него
+        TempFiles.createPrivateFile(at: jsonURL)
         guard AudioPCM.writeWav(samples: samples, to: wavURL) else { return .empty }
 
         var arguments = ["-m", modelPath, "-f", wavURL.path, "-l", model.languageCode, "-nt", "-ojf"]
@@ -42,6 +45,7 @@ final class WhisperCLIEngine: SpeechRecognizer {
             arguments: arguments,
             timeout: processTimeout
         ) else { return .empty }
+        TempFiles.restrict(jsonURL)
         if !result.succeeded {
             AppLogger.shared.warn(
                 "Recognition",
@@ -56,7 +60,7 @@ final class WhisperCLIEngine: SpeechRecognizer {
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let duration = Double(samples.count) / AudioPCM.sampleRate
-        let words = Self.readWords(jsonURL: wavURL.appendingPathExtension("json"), audioDuration: duration)
+        let words = Self.readWords(jsonURL: jsonURL, audioDuration: duration)
         return RecognitionResult(text: text, words: words)
     }
 
