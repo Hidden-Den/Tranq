@@ -142,30 +142,38 @@ public final class ThoughtSynthesizer {
         }
     }
 
-    /// Предварительный прогрев сетевого сокета или локальной модели во время диктовки
-    public func prewarmConnection(for engine: VoiceEngine) {
+    /// Что греть перед диктовкой.
+    public enum PrewarmPlan: Equatable {
+        case nothing
+        case localModel(path: String)
+    }
+
+    /// Решение о прогреве. Внешний провайдер не греется: на стороне API греть нечего,
+    /// а сокет, открытый на старте записи, шлюз закрывает, пока человек говорит, и запрос
+    /// получает мёртвое соединение из пула. Рукопожатие TLS стоит 0,15 с, потеря очистки дороже.
+    static func prewarmPlan(engine: VoiceEngine, downloadedModelPath: String?) -> PrewarmPlan {
         switch engine {
-        case .airGapped:
-            // Прогревается только выбранная и скачанная модель, как в `clean`: чужая заняла бы гигабайты памяти зря
-            guard let model = SLMModelStore.shared.model(named: VoiceIntelligenceSettings.shared.localModel),
-                  SLMModelStore.shared.isModelDownloaded(model) else { return }
-            LocalSynthServiceClient.shared.prewarm(modelPath: SLMModelStore.shared.localFileURL(for: model).path)
-
         case .external:
-            let config = AIProviderStore.shared.config
-            guard !config.baseURL.isEmpty else { return }
+            return .nothing
+        case .airGapped:
+            // Греется только выбранная и скачанная модель, как в `clean`: чужая заняла бы гигабайты памяти зря
+            guard let path = downloadedModelPath else { return .nothing }
+            return .localModel(path: path)
+        }
+    }
 
-            Task.detached(priority: .utility) {
-                let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
-                guard let url = URL(string: "\(cleanBase)/models") else { return }
-                var request = URLRequest(url: url)
-                request.httpMethod = "HEAD"
-                ChatRequestBuilder.applyAuth(&request, config: config)
-                request.timeoutInterval = 2.0
-                if (try? await URLSession.shared.data(for: request)) != nil {
-                    AppLogger.shared.info("Synthesizer", "Соединение с внешним провайдером прогрето", details: config.baseURL)
-                }
-            }
+    /// Предварительный прогрев локальной модели во время диктовки
+    public func prewarmConnection(for engine: VoiceEngine) {
+        var downloaded: String?
+        if let model = SLMModelStore.shared.model(named: VoiceIntelligenceSettings.shared.localModel),
+           SLMModelStore.shared.isModelDownloaded(model) {
+            downloaded = SLMModelStore.shared.localFileURL(for: model).path
+        }
+        switch Self.prewarmPlan(engine: engine, downloadedModelPath: downloaded) {
+        case .nothing:
+            return
+        case .localModel(let path):
+            LocalSynthServiceClient.shared.prewarm(modelPath: path)
         }
     }
 

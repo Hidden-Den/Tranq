@@ -38,7 +38,8 @@ public struct CleanupResult: Equatable {
 public enum CleanupBackendError: Error, Equatable {
     case unavailable
     /// Соединение оборвалось на полпути. Так ведёт себя мёртвое соединение из пула:
-    /// прогрев открыл его на старте записи, человек говорил две минуты, шлюз его закрыл.
+    /// шлюз закрыл его, пока человек говорил. Прогрев, который открывал такое соединение
+    /// на старте записи, убран, но оборваться соединение может и само.
     case connectionLost
     case timeout
     case http(Int)
