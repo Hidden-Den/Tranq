@@ -6,7 +6,7 @@ import Foundation
 enum DataEraser {
     /// Шаги стирания. Сбой одного не останавливает остальные.
     enum Step: String {
-        case history, envelopes, journal, log, key
+        case history, envelopes, migrationCopies, journal, log, key
     }
 
     /// `vault` и `key` равны `nil` — этот шаг пропускается: так тесты не трогают настоящий ключ.
@@ -21,6 +21,7 @@ enum DataEraser {
         key: HistoryKeyProviding? = nil
     ) -> [Step] {
         var failed: [Step] = []
+        var leftFiles: [String] = []
         let fm = FileManager.default
 
         history.clearAll()
@@ -30,6 +31,13 @@ enum DataEraser {
             // Открытая копия, оставшаяся от прерванной миграции.
             let plain = history.directory.appendingPathComponent("history.json")
             if fm.fileExists(atPath: plain.path), (try? fm.removeItem(at: plain)) == nil { failed.append(.history) }
+        }
+
+        // Копии прерванной миграции и открытый звук: иначе уборка при запуске вернёт стёртое.
+        let left = removeMigrationCopies(in: history.directory)
+        if !left.isEmpty {
+            failed.append(.migrationCopies)
+            leftFiles += left
         }
 
         if let vault {
@@ -46,9 +54,28 @@ enum DataEraser {
         }
 
         if !failed.isEmpty {
-            logger.error("DataEraser", "Стирание не завершено: \(failed.map(\.rawValue).joined(separator: ", "))")
+            logger.error("DataEraser", "Стирание не завершено: \(failed.map(\.rawValue).joined(separator: ", "))",
+                         details: leftFiles.isEmpty ? nil : leftFiles.joined(separator: ", "))
         }
         return failed
+    }
+
+    /// Открытые копии миграции, её метка, копии журнала, открытый звук и тайминги.
+    /// Конверты не трогает: их убирает `HistoryVault.deleteAll`. Возвращает имена файлов, что остались.
+    private static func removeMigrationCopies(in directory: URL) -> [String] {
+        let layout = HistoryMigration.Layout(directory: directory)
+        var urls = [layout.historyRestore, layout.historyCandidate, layout.markerURL]
+        for suffix in [".wav", ".segments.json"] {
+            urls += layout.files(in: layout.audio, suffix: suffix).values
+            urls += layout.files(in: layout.audio, suffix: suffix + "." + HistoryMigration.restoreExtension).values
+        }
+        urls += TranscriptJournal.migrationFiles(in: directory)
+            .map { $0.appendingPathExtension(TranscriptJournal.migrationSuffix) }
+        let fm = FileManager.default
+        return urls.compactMap { url in
+            guard fm.fileExists(atPath: url.path) else { return nil }
+            return (try? fm.removeItem(at: url)) == nil ? url.lastPathComponent : nil
+        }
     }
 
     private static func hasSealedBlobs(in vault: HistoryVault) -> Bool {

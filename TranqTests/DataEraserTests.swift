@@ -200,4 +200,97 @@ struct DataEraserTests {
         #expect(coordinator.state == .unlocked)
         #expect(store.items.map(\.text) == ["новая заметка"])
     }
+
+    // MARK: - Копии миграции
+
+    /// Запертая история с копиями прерванной миграции: открытая копия истории и звук `.restore`.
+    private func lockedHistoryWithRestoreCopies(in dir: URL, key: TestHistoryKey) async throws -> (HistoryStore, UUID) {
+        let layout = HistoryMigration.Layout(directory: dir)
+        let item = TranscriptionItem(date: "d", text: "стёртая заметка", duration: "1 сек")
+        try FileManager.default.createDirectory(at: layout.audio, withIntermediateDirectories: true)
+        try JSONEncoder().encode([item]).write(to: layout.historyRestore)
+        try Data([0, 1, 2, 3]).write(to: layout.restore(layout.plainAudio(item.id)))
+        try Data("[]".utf8).write(to: layout.restore(layout.plainTimings(item.id)))
+        try Data("[]".utf8).write(to: layout.historyCandidate)
+        let vault = HistoryVault(directory: dir, key: key)
+        let store = await MainActor.run { HistoryStore(directory: dir, saveDelay: 0, vault: vault, lockState: .locked) }
+        return (store, item.id)
+    }
+
+    private func audioFiles(in dir: URL) -> [String] {
+        (try? FileManager.default.contentsOfDirectory(atPath: HistoryMigration.Layout(directory: dir).audio.path)) ?? []
+    }
+
+    /// Стёртая история не возвращается уборкой при запуске, когда новый ключ создан.
+    @Test func eraseRemovesRestoreCopiesSoLaunchCleanupBringsNothingBack() async throws {
+        let dir = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let key = TestHistoryKey()
+        let (store, id) = try await lockedHistoryWithRestoreCopies(in: dir, key: key)
+        let journal = TranscriptJournal(directory: dir)
+        let logger = AppLogger(directory: dir)
+
+        let failed = DataEraser.eraseAll(history: store, journal: journal, logger: logger,
+                                         vault: HistoryVault(directory: dir, key: key), key: key)
+        store.flush()
+        try key.create()
+
+        var flag: Bool?
+        let notice = HistoryMigration.cleanupHalfDone(vault: HistoryVault(directory: dir, key: key), lockEnabled: true,
+                                                      setLockEnabled: { flag = $0 })
+        let layout = HistoryMigration.Layout(directory: dir)
+        #expect(failed.isEmpty)
+        #expect(notice == nil)
+        #expect(flag == nil)
+        #expect(!exists(layout.history))
+        #expect(!exists(layout.historyRestore))
+        #expect(!exists(layout.historyCandidate))
+        #expect(!exists(layout.plainAudio(id)))
+        #expect(audioFiles(in: dir).isEmpty)
+    }
+
+    /// Ключ после стирания не создался: стёртая копия не выключает замок и не встаёт историей.
+    @Test func eraseWithoutNewKeyDoesNotTurnLockOffAtLaunch() async throws {
+        let dir = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let key = TestHistoryKey()
+        let (store, id) = try await lockedHistoryWithRestoreCopies(in: dir, key: key)
+        let journal = TranscriptJournal(directory: dir)
+        let logger = AppLogger(directory: dir)
+
+        DataEraser.eraseAll(history: store, journal: journal, logger: logger,
+                            vault: HistoryVault(directory: dir, key: key), key: key)
+        store.flush()
+        #expect(!key.exists)
+
+        var flag: Bool?
+        let notice = HistoryMigration.cleanupHalfDone(vault: HistoryVault(directory: dir, key: key), lockEnabled: true,
+                                                      setLockEnabled: { flag = $0 })
+        let layout = HistoryMigration.Layout(directory: dir)
+        #expect(notice == nil)
+        #expect(flag == nil)
+        #expect(!exists(layout.history))
+        #expect(!exists(layout.plainAudio(id)))
+    }
+
+    /// Открытые тайминги без заметки и метка миграции уходят вместе с историей.
+    @Test func eraseRemovesOrphanTimingsAndMarker() async throws {
+        let dir = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let key = TestHistoryKey()
+        let layout = HistoryMigration.Layout(directory: dir)
+        try FileManager.default.createDirectory(at: layout.audio, withIntermediateDirectories: true)
+        let orphan = layout.plainTimings(UUID())
+        try Data("[]".utf8).write(to: orphan)
+        try HistoryMigration.writeMarker(.enableJournal, in: dir)
+        let vault = HistoryVault(directory: dir, key: key)
+        let store = await MainActor.run { HistoryStore(directory: dir, saveDelay: 0, vault: vault, lockState: .locked) }
+
+        DataEraser.eraseAll(history: store, journal: TranscriptJournal(directory: dir), logger: AppLogger(directory: dir),
+                            vault: vault, key: key)
+        store.flush()
+
+        #expect(!exists(orphan))
+        #expect(!layout.hasMarker)
+    }
 }
