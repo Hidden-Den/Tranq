@@ -8,6 +8,7 @@ import Foundation
 @testable import Tranq
 
 /// Временные файлы на пути распознавания: права только для владельца и чистка остатков.
+@Suite(.serialized)
 struct TempFilesTests {
 
     private func makeBase() -> URL {
@@ -34,9 +35,10 @@ struct TempFilesTests {
         let dir = makeBase()
         defer { try? FileManager.default.removeItem(at: dir) }
 
+        // umask общий на процесс: держим изменённым только на время создания файла
         let old = umask(0)
-        defer { umask(old) }
         let url = TempFiles.makeURL(prefix: "test", ext: "wav", in: dir)
+        umask(old)
 
         #expect(mode(url) == 0o600, "права не зависят от umask")
     }
@@ -83,11 +85,10 @@ struct TempFilesTests {
         let dir = makeBase()
         defer { try? FileManager.default.removeItem(at: dir) }
         let url = TempFiles.makeURL(prefix: "test", ext: "json", in: dir)
-        // Внешний процесс удалил файл и создал заново с правами по умолчанию
-        let old = umask(0o022)
-        defer { umask(old) }
+        // Внешний процесс удалил файл и создал заново с открытыми правами
         try FileManager.default.removeItem(at: url)
         try Data("x".utf8).write(to: url)
+        #expect(chmod(url.path, 0o644) == 0)
         #expect(mode(url) == 0o644)
 
         TempFiles.restrict(url)
