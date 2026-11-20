@@ -38,6 +38,18 @@ struct ExternalBackend: CleanupBackend {
     var session: URLSession = .shared
 
     func complete(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
+        do {
+            return try await attempt(system: system, user: user, deadlines: deadlines)
+        } catch CleanupBackendError.connectionLost {
+            // Мёртвое соединение из пула: вторая попытка берёт живое. Сроки у неё свои,
+            // первая потратила часть ожидания на то, чтобы обрыв вообще всплыл.
+            AppLogger.shared.warn("Synthesizer", "Соединение потеряно, вторая попытка")
+            return try await attempt(system: system, user: user, deadlines: deadlines)
+        }
+    }
+
+    /// Одно обращение к провайдеру: поток под присмотром сроков.
+    private func attempt(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
         let progress = StreamProgress()
         return try await withThrowingTaskGroup(of: String.self) { group in
             group.addTask { try await stream(system: system, user: user, progress: progress) }
@@ -144,6 +156,8 @@ struct ExternalBackend: CleanupBackend {
             throw error
         } catch let error as URLError where error.code == .timedOut {
             throw CleanupBackendError.timeout
+        } catch let error as URLError where error.code == .networkConnectionLost {
+            throw CleanupBackendError.connectionLost
         } catch is CancellationError {
             throw CancellationError()
         } catch let error as URLError where error.code == .cancelled {

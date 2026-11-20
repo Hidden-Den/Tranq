@@ -37,6 +37,9 @@ public struct CleanupResult: Equatable {
 
 public enum CleanupBackendError: Error, Equatable {
     case unavailable
+    /// Соединение оборвалось на полпути. Так ведёт себя мёртвое соединение из пула:
+    /// прогрев открыл его на старте записи, человек говорил две минуты, шлюз его закрыл.
+    case connectionLost
     case timeout
     case http(Int)
     case empty
@@ -45,6 +48,7 @@ public enum CleanupBackendError: Error, Equatable {
     var logDescription: String {
         switch self {
         case .unavailable: return "нет соединения"
+        case .connectionLost: return "соединение потеряно"
         case .timeout: return "таймаут"
         case .http(let code): return "HTTP \(code)"
         case .empty: return "пустой ответ"

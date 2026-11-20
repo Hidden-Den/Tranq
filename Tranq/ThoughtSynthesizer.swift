@@ -114,7 +114,7 @@ public final class ThoughtSynthesizer {
             case .timeout: reason = .timeout
             case .empty: reason = .emptyResponse
             case .http(let code): reason = .providerError(code)
-            case .unavailable: reason = .providerUnavailable
+            case .unavailable, .connectionLost: reason = .providerUnavailable
             }
             AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, \(error.logDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: reason)
