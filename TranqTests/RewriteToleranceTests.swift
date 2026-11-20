@@ -22,7 +22,16 @@ struct RewriteToleranceTests {
         #expect(GroundingValidator.sameLexeme("окно", "окне"))
         #expect(GroundingValidator.sameLexeme("каком", "какое"))
         #expect(GroundingValidator.sameLexeme("режима", "режимов"))
-        #expect(GroundingValidator.sameLexeme("переключаться", "переключать"))
+        #expect(GroundingValidator.sameLexeme("переключаться", "переключаемся"))
+        #expect(GroundingValidator.sameLexeme("стоим", "стоит"))
+    }
+
+    /// Ревью PR 18: общее начало ещё не одно слово. Расходятся только буквы окончаний,
+    /// а «-ся» меняет значение глагола.
+    @Test func sharedPrefixIsNotALexeme() {
+        #expect(!GroundingValidator.sameLexeme("запас", "запах"))
+        #expect(!GroundingValidator.sameLexeme("переход", "перевод"))
+        #expect(!GroundingValidator.sameLexeme("переключаться", "переключать"))
     }
 
     /// Короткие слова с разной согласной в конце это разные слова.
@@ -59,6 +68,13 @@ struct RewriteToleranceTests {
         let output = "Возможно, стоит поправить системный промпт."
         #expect(validate("Возможно, какой-нибудь API, ну, не API, системный промпт поправить.", output)
                 == .valid(sanitizedText: output))
+    }
+
+    /// Ревью PR 18: «нет» в обычном отрицании не отказ от термина.
+    @Test func plainNegationIsNotARetraction() {
+        #expect(GroundingValidator.retractedTerms(in: "в этом API нет ошибок, всё работает") == [])
+        #expect(GroundingValidator.retractedTerms(in: "заведи задачу в Jira, нет, в Linear") == ["jira"])
+        #expect(GroundingValidator.retractedTerms(in: "заведи в Jira, точнее, в Linear") == ["jira"])
     }
 
     /// Термин, от которого не отказывались, по-прежнему обязан дожить до результата.

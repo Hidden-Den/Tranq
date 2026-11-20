@@ -19,17 +19,18 @@ enum TranscriptChunker {
     /// отвечает как на обращение к себе, а не чистит.
     static let minimum = 200
 
-    /// Куски речи по порядку. Склейка через пробел даёт исходный текст.
+    /// Куски речи по порядку. Каждый кусок это непрерывный отрезок исходного текста.
     static func chunks(_ text: String) -> [String] {
         guard text.count > threshold else { return [text] }
 
         var chunks: [String] = []
         var current = ""
-        for sentence in sentences(text) {
+        for (separator, sentence) in segments(text) {
             if current.isEmpty {
                 current = sentence
-            } else if current.count + 1 + sentence.count <= target {
-                current += " " + sentence
+            } else if current.count + separator.count + sentence.count <= target || current.count < minimum {
+                // Короткий кусок не уходит отдельно и в середине речи, даже ценой размера
+                current += separator + sentence
             } else {
                 chunks.append(current)
                 current = sentence
@@ -45,25 +46,36 @@ enum TranscriptChunker {
         return chunks
     }
 
-    /// Предложения без пробелов между ними. Конец предложения это знак конца,
-    /// за которым идёт пробел: точка внутри «3.5» предложение не заканчивает.
-    static func sentences(_ text: String) -> [String] {
+    /// Знаки, которые закрывают цитату или скобку после конца предложения: «…закрываем».
+    private static let closers: Set<Character> = ["»", "\"", "”", "’", ")"]
+
+    /// Предложения с пробельным разделителем перед каждым. Конец предложения это знак
+    /// конца, за которым, возможно после кавычки, идёт пробел или перенос строки:
+    /// точка внутри «3.5» предложение не заканчивает.
+    static func segments(_ text: String) -> [(separator: String, sentence: String)] {
         let enders: Set<Character> = [".", "!", "?", "…"]
-        var result: [String] = []
+        var result: [(String, String)] = []
+        var separator = ""
         var current = ""
-        var index = text.startIndex
-        while index < text.endIndex {
-            let char = text[index]
-            let next = text.index(after: index)
-            if char == " ", let last = current.last, enders.contains(last) {
-                result.append(current)
-                current = ""
+        var gap = ""
+        for char in text {
+            if char.isWhitespace {
+                let core = current.reversed().first { !closers.contains($0) }
+                if gap.isEmpty, let core, enders.contains(core) {
+                    result.append((separator, current))
+                    separator = ""
+                    current = ""
+                    gap.append(char)
+                    continue
+                }
+                if !gap.isEmpty { gap.append(char); continue }
+                current.append(char)
             } else {
+                if !gap.isEmpty { separator = gap; gap = "" }
                 current.append(char)
             }
-            index = next
         }
-        if !current.isEmpty { result.append(current) }
+        if !current.isEmpty { result.append((separator, current)) }
         return result
     }
 }

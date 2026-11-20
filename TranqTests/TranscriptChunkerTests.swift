@@ -62,7 +62,8 @@ struct TranscriptChunkerTests {
         let giant = "Начало " + Array(repeating: "слово", count: 300).joined(separator: " ") + "."
         let long = text(sentences: 10) + " " + giant + " " + text(sentences: 10)
         let chunks = TranscriptChunker.chunks(long)
-        #expect(chunks.contains(giant))
+        // Целиком внутри одного куска: короткий сосед может к нему приклеиться
+        #expect(chunks.contains { $0.contains(giant) })
         #expect(chunks.joined(separator: " ") == long)
     }
 
@@ -77,6 +78,36 @@ struct TranscriptChunkerTests {
             #expect(chunks.allSatisfy { $0.count >= TranscriptChunker.minimum })
             #expect(chunks.joined(separator: " ") == long)
         }
+    }
+
+    /// Этап 1 разбивает речь на абзацы: перенос строки после точки тоже граница.
+    /// Ревью PR 18: иначе диалог абзацами уходил одним огромным куском.
+    @Test func newlineAfterSentenceEndSplits() {
+        let long = (1...40).map { sentence($0) }.joined(separator: "\n\n")
+        let chunks = TranscriptChunker.chunks(long)
+        #expect(chunks.count > 1)
+        for chunk in chunks {
+            #expect(chunk.count <= TranscriptChunker.target)
+            #expect(long.contains(chunk))
+        }
+    }
+
+    /// Конец предложения перед закрывающей кавычкой: «…закрываем».
+    @Test func sentenceEndBeforeClosingQuoteSplits() {
+        let long = (1...40).map { "Он сказал: «Фраза \($0) " + Array(repeating: "слово", count: 12).joined(separator: " ") + ".»" }
+            .joined(separator: " ")
+        let chunks = TranscriptChunker.chunks(long)
+        #expect(chunks.count > 1)
+        for chunk in chunks { #expect(chunk.hasSuffix(".»")) }
+    }
+
+    /// Короткое предложение перед огромным не уходит отдельным куском и в середине речи.
+    @Test func shortMiddleChunkJoinsANeighbour() {
+        let giant = "Начало " + Array(repeating: "слово", count: 300).joined(separator: " ") + "."
+        let long = text(sentences: 10) + " Короче, вот. " + giant + " " + text(sentences: 10)
+        let chunks = TranscriptChunker.chunks(long)
+        #expect(chunks.allSatisfy { $0.count >= TranscriptChunker.minimum })
+        #expect(chunks.joined(separator: " ") == long)
     }
 
     /// Точка в числе или сокращении без пробела после неё не конец предложения.

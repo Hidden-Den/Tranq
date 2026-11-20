@@ -14,6 +14,7 @@
 Отчёт содержит текст личных диктовок: в репозиторий его не кладите и удаляйте после разбора.
 """
 import json
+import math
 import re
 import sys
 from collections import Counter
@@ -62,6 +63,17 @@ def same_lexeme(a, b):
     return p >= n - 1 and set(a[p:]) <= ENDINGS and set(b[p:]) <= ENDINGS
 
 
+def median(values):
+    """Медиана отсортированного списка: при чётном числе среднее двух средних."""
+    n = len(values)
+    return values[n // 2] if n % 2 else (values[n // 2 - 1] + values[n // 2]) / 2
+
+
+def nearest_rank(values, share):
+    """Перцентиль по ближайшему рангу: наименьшее значение, не меньше которого доля share."""
+    return values[max(0, math.ceil(share * len(values)) - 1)]
+
+
 def summary(rows):
     verdicts = Counter(r['verdict'] for r in rows)
     print(f"кусков {len(rows)}: прошло {verdicts['valid']}, отклонено {verdicts['rejected']}, "
@@ -70,10 +82,10 @@ def summary(rows):
     for verdict in ('valid', 'rejected'):
         ratios = sorted(len(r.get('output') or '') / max(1, len(r['input'])) for r in rows if r['verdict'] == verdict)
         if ratios:
-            print(f"  сжатие {verdict}: медиана {ratios[len(ratios) // 2]:.2f}")
+            print(f"  сжатие {verdict}: медиана {median(ratios):.2f}")
     seconds = sorted(r['seconds'] for r in rows if r.get('seconds') is not None)
     if seconds:
-        print(f"время на кусок: медиана {seconds[len(seconds) // 2]:.1f} с, 90% {seconds[int(len(seconds) * 0.9)]:.1f} с, "
+        print(f"время на кусок: медиана {median(seconds):.1f} с, 90% {nearest_rank(seconds, 0.9):.1f} с, "
               f"макс {seconds[-1]:.1f} с")
 
 
