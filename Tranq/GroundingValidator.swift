@@ -139,6 +139,7 @@ public struct GroundingValidator {
             let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
             // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
             let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
+                .union(retractedTerms(in: trimmedInput))
             if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
                 return .rejected(reason: "Пропущен исходный термин \(missing)")
             }
@@ -163,6 +164,52 @@ public struct GroundingValidator {
         }
 
         return .valid(sanitizedText: sanitizedOutput)
+    }
+
+    // MARK: - Словоформы
+
+    /// Буквы окончаний коротких слов: «окно» и «окне» одно слово, «стол» и «стоп» разные.
+    private static let endingLetters: Set<Character> = ["а", "е", "и", "о", "у", "ы", "э", "ю", "я", "ь", "й"]
+
+    /// Одно ли это слово в разных формах. Модель чинит согласование: «какое окно идёт
+    /// диктовка» → «в каком окне идёт диктовка», и новые формы не новые слова.
+    /// Слова от пяти букв: общее начало не короче четырёх букв и расходятся не больше трёх
+    /// последних. Короткие слова: расходится только последняя буква, и обе гласные.
+    static func sameLexeme(_ a: String, _ b: String) -> Bool {
+        if a == b { return true }
+        let x = Array(a), y = Array(b)
+        let shorter = min(x.count, y.count)
+        guard shorter >= 3 else { return false }
+        var prefix = 0
+        while prefix < shorter, x[prefix] == y[prefix] { prefix += 1 }
+        if shorter >= 5 { return prefix >= max(4, shorter - 3) }
+        guard prefix >= shorter - 1 else { return false }
+        return x[prefix...].allSatisfy(endingLetters.contains) && y[prefix...].allSatisfy(endingLetters.contains)
+    }
+
+    // MARK: - Отозванный термин
+
+    /// Слова, после которых говорящий отменяет только что сказанный термин.
+    private static let termRetractions: Set<String> = ["точнее", "вернее", "нет"]
+
+    /// Латинские термины речи в нижнем регистре, от которых говорящий сам отказался:
+    /// «какой-нибудь API, ну, не API» или «в Jira, точнее, в Linear». Модель убирает их
+    /// по правилу самоисправления, и требовать их обратно нельзя. Нужен явный отказ:
+    /// «не» и тот же термин, или «точнее», «вернее», «нет» не дальше четырёх слов.
+    static func retractedTerms(in input: String) -> Set<String> {
+        let words = comparableWords(input)
+        let latin = Set(extractLatinTokens(from: input).map { $0.lowercased() })
+        var retracted = Set<String>()
+        for (index, word) in words.enumerated() where latin.contains(word) {
+            let window = words[(index + 1)..<min(index + 5, words.count)]
+            for (offset, next) in zip(window.indices, window) {
+                if termRetractions.contains(next)
+                    || (next == "не" && offset + 1 < words.count && words[offset + 1] == word) {
+                    retracted.insert(word)
+                }
+            }
+        }
+        return retracted
     }
 
     // MARK: - Термин по звучанию
@@ -214,8 +261,9 @@ public struct GroundingValidator {
     /// Числа не учитываются, их сверяет проверка чисел. Возвращает причину отказа, если модель добавила
     /// много новых слов. Сокращение речи не ошибка: уровень очистки убирает повторы мыслей.
     static func rewriteViolation(input: String, output: String, customTerms: Set<String> = []) -> String? {
-        let inputWords = comparableWords(input).filter { !containsDigit($0) }
-        let outputWords = comparableWords(output).filter { !containsDigit($0) }
+        // Числа прописью сравниваются как цифры: «два» и «2» одно число, его сверяет проверка чисел
+        let inputWords = comparableWords(normalizedWords(input).joined(separator: " ")).filter { !containsDigit($0) }
+        let outputWords = comparableWords(normalizedWords(output).joined(separator: " ")).filter { !containsDigit($0) }
         guard !inputWords.isEmpty, !outputWords.isEmpty else { return nil }
 
         let allowed = Set(customTerms.flatMap { comparableWords($0) })
@@ -224,6 +272,9 @@ public struct GroundingValidator {
         for word in outputWords {
             if let count = remaining[word], count > 0 {
                 remaining[word] = count - 1
+            } else if let form = remaining.first(where: { $0.value > 0 && sameLexeme($0.key, word) })?.key {
+                // Та же лексема в другой форме: модель починила согласование
+                remaining[form]! -= 1
             } else if !allowed.contains(word) {
                 novel += 1
             }
