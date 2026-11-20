@@ -317,9 +317,14 @@ enum HistoryMigration {
             removeMarker(in: layout.directory)
             return notice
         case nil where !lockEnabled:
+            // Своя копия прогона без метки — это незафиксированное выключение: расшифрованное не остаётся.
+            layout.remove(layout.historyCandidate)
             layout.removeEnvelopesWithPlainTwins()
             return nil
         case nil:
+            // Своя копия прогона до метки: в ней расшифрованная история, а всё, что в ней есть, лежит
+            // в конвертах, в открытых файлах или жило только в памяти и пропадает при сбое, как и раньше.
+            layout.remove(layout.historyCandidate)
             layout.dropUncommittedRestores()
             guard layout.exists(layout.history) else { return nil }
             let onlyCopy = !vault.key.exists
@@ -443,7 +448,10 @@ extension HistoryMigration {
         let directory: URL
 
         var history: URL { directory.appendingPathComponent("history.json") }
+        /// Копия истории, оставшаяся от прошлого сбоя. Миграция её не перезаписывает.
         var historyRestore: URL { history.appendingPathExtension(restoreExtension) }
+        /// Собственная копия прогона выключения. Встаёт на место `history.json` только после фиксации.
+        var historyCandidate: URL { history.appendingPathExtension("restoring") }
         var notes: URL { directory.appendingPathComponent("Notes", isDirectory: true) }
         var audio: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
         var markerURL: URL { directory.appendingPathComponent(markerName) }
@@ -561,9 +569,13 @@ extension HistoryMigration {
         /// копии на место, затем убрать конверты, у которых есть открытый двойник.
         func finishDisable() {
             let fm = FileManager.default
+            if exists(historyCandidate), !exists(history) {
+                Darwin.rename(historyCandidate.path, history.path)
+            }
             if exists(historyRestore), !exists(history) {
                 Darwin.rename(historyRestore.path, history.path)
             }
+            removeLeftoverIfCovered()
             for suffix in [".wav", ".segments.json"] {
                 for (id, copy) in files(in: audio, suffix: suffix + "." + restoreExtension) {
                     let plain = suffix == ".wav" ? plainAudio(id) : plainTimings(id)
@@ -578,6 +590,33 @@ extension HistoryMigration {
                 }
             }
             removeEnvelopesWithPlainTwins()
+        }
+
+        private static let blankID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
+
+        /// Каждая заметка `items` лежит в `plain` тем же содержимым. Id и `createdAt` не в счёт:
+        /// слияние даёт другой версии новый id.
+        func coveredByContent(_ items: [TranscriptionItem], in plain: [TranscriptionItem]) -> Bool {
+            func content(_ item: TranscriptionItem) -> TranscriptionItem {
+                var copy = item
+                copy.id = Self.blankID
+                copy.createdAt = nil
+                return copy
+            }
+            let known = Set(plain.map(content))
+            return items.allSatisfy { known.contains(content($0)) }
+        }
+
+        /// Оставшаяся копия уходит, только если всё её содержимое уже в `history.json`.
+        func removeLeftoverIfCovered() {
+            guard exists(historyRestore) else { return }
+            guard let data = FileManager.default.contents(atPath: historyRestore.path),
+                  let items = try? JSONDecoder().decode([TranscriptionItem].self, from: data),
+                  let plain = plainHistory(), coveredByContent(items, in: plain) else {
+                AppLogger.shared.warn("History", "Копия истории оставлена", details: historyRestore.lastPathComponent)
+                return
+            }
+            remove(historyRestore)
         }
 
         /// Убирает конверты, у которых есть открытый двойник. Остальные остаются и пишутся в лог именем файла.
@@ -621,7 +660,9 @@ extension HistoryMigration {
         func rollbackDisable(digest: String?, key: HistoryKeyProviding,
                              journal: TranscriptJournal? = nil) -> LaunchNotice? {
             let noteIDs = Set(files(in: notes, suffix: ".note").keys)
-            settleHistoryCopy(noteIDs: noteIDs, digest: digest)
+            // Своя копия прогона, если сбой пришёл между меткой и заменой. Оставшаяся от прошлых сбоев
+            // копия разбирается ниже без отпечатка: из одних конвертов она не собиралась.
+            settleHistoryCopy(historyCandidate, noteIDs: noteIDs, digest: digest)
             if exists(history) {
                 let bytes = FileManager.default.contents(atPath: history.path)
                 let placed = digest != nil && bytes.map { HistoryMigration.digest($0) == digest } == true
@@ -632,7 +673,7 @@ extension HistoryMigration {
                     AppLogger.shared.warn("History", "Открытая история оставлена при откате", details: history.lastPathComponent)
                 }
             }
-            dropUncommittedRestores(digest: digest)
+            dropUncommittedRestores()
             if journal != nil {
                 let vault = HistoryVault(directory: directory, key: key)
                 for (id, url) in files(in: audio, suffix: ".segments.json") where exists(sealedTimings(id)) {
@@ -656,7 +697,7 @@ extension HistoryMigration {
 
         /// Непоставленная копия истории: уходит, только если всё в ней есть в другом месте.
         /// По конвертам — только при отпечатке, совпавшем с байтами копии, см. `rollbackDisable`.
-        private func settleHistoryCopy(noteIDs: Set<UUID>, digest: String?) {
+        private func settleHistoryCopy(_ historyRestore: URL, noteIDs: Set<UUID>, digest: String?) {
             guard exists(historyRestore) else { return }
             guard let data = FileManager.default.contents(atPath: historyRestore.path),
                   let copy = try? JSONDecoder().decode([TranscriptionItem].self, from: data) else {
@@ -691,8 +732,8 @@ extension HistoryMigration {
 
         /// Выключение не дошло до фиксации: конверты главные. Копия убирается, если конверт на месте,
         /// иначе встаёт открытым файлом, который хранилище запечатает.
-        func dropUncommittedRestores(digest: String? = nil) {
-            settleHistoryCopy(noteIDs: Set(files(in: notes, suffix: ".note").keys), digest: digest)
+        func dropUncommittedRestores() {
+            settleHistoryCopy(historyRestore, noteIDs: Set(files(in: notes, suffix: ".note").keys), digest: nil)
             for (id, copy) in files(in: audio, suffix: ".wav." + restoreExtension) {
                 if exists(sealedAudio(id)) || exists(plainAudio(id)) { remove(copy) } else { Darwin.rename(copy.path, plainAudio(id).path) }
             }
@@ -897,8 +938,10 @@ extension HistoryMigration {
         private(set) var journalMap: [String: String] = [:]
         /// SHA-256 проверенной открытой истории: по нему откат узнаёт свою копию.
         private(set) var historyDigest: String?
-        /// Копия истории, оставшаяся от прошлого сбоя. Читается один раз до первой перезаписи,
-        /// вливается в каждую попытку и не удаляется этим прогоном.
+        /// Копия истории, оставшаяся от прошлого сбоя. Читается один раз, вливается в каждую попытку.
+        /// Сам файл прогон не перезаписывает: слияние идёт в свою копию `historyCandidate`,
+        /// поэтому ни отмена, ни сбой не оставляют рядом с конвертами расшифрованное сверх прежнего.
+        /// Файл уходит только после замены, когда всё его содержимое лежит в поставленной истории.
         private var leftoverRestore: [TranscriptionItem]?
 
         init(layout: Layout, vault: HistoryVault) {
@@ -923,7 +966,7 @@ extension HistoryMigration {
                 existing = plain
             }
             if leftoverRestore == nil {
-                // Чужая копия не перезаписывается вслепую: её заметки вливаются в новую.
+                // Чужая копия не перезаписывается: её заметки вливаются в свою.
                 if layout.exists(layout.historyRestore) {
                     guard let data = FileManager.default.contents(atPath: layout.historyRestore.path),
                           let items = try? JSONDecoder().decode([TranscriptionItem].self, from: data) else {
@@ -935,18 +978,20 @@ extension HistoryMigration {
                 }
             }
             let leftover = leftoverRestore ?? []
-            // Ожидающая конверта правка первой, затем конверт, затем открытые файлы. Разные версии
-            // одной заметки остаются обе: остаток отката бывает новее своего конверта.
-            let merged = HistoryMigration.mergeKeepingBoth([pending, sealed, existing, leftover])
+            // Ожидающая конверта правка — по построению новая версия своей заметки: её конверт не записался.
+            // Она заменяет конверт с тем же id. Для открытых файлов против конвертов и прочих пар разные
+            // версии остаются обе: остаток отката бывает новее своего конверта.
+            let pendingIDs = Set(pending.map(\.id))
+            let current = pending + sealed.filter { !pendingIDs.contains($0.id) }
+            let merged = HistoryMigration.mergeKeepingBoth([current, existing, leftover])
             let data = try JSONEncoder().encode(merged)
             // Отпечаток только для копии из одних конвертов. Заметка, ждавшая конверта, или заметка
             // прежнего открытого файла есть лишь здесь: без отпечатка откат копию не удалит.
             historyDigest = pending.isEmpty && existing.isEmpty && leftover.isEmpty ? HistoryMigration.digest(data) : nil
-            // Копию, которая была до прогона, отмена не удаляет: после перезаписи в ней всё прежнее и больше.
-            if !(leftoverRestore?.isEmpty == false) { written.append(layout.historyRestore) }
-            try data.write(to: layout.historyRestore, options: .atomic)
+            written.append(layout.historyCandidate)
+            try data.write(to: layout.historyCandidate, options: .atomic)
             guard let back = try? JSONDecoder().decode([TranscriptionItem].self,
-                                                       from: Data(contentsOf: layout.historyRestore)),
+                                                       from: Data(contentsOf: layout.historyCandidate)),
                   back == merged else { throw HistoryMigrationError.verificationFailed }
 
             for (id, _) in layout.files(in: layout.audio, suffix: ".wav.sealed") where !layout.exists(layout.plainAudio(id)) {
@@ -985,11 +1030,13 @@ extension HistoryMigration {
         }
 
         /// На главном, в точке фиксации: проверенная копия встаёт на место `history.json` одной заменой.
+        /// Оставшаяся от прошлого сбоя копия уходит, только если всё её содержимое теперь в `history.json`.
         func placeHistory() throws {
-            guard Darwin.rename(layout.historyRestore.path, layout.history.path) == 0 else {
+            guard Darwin.rename(layout.historyCandidate.path, layout.history.path) == 0 else {
                 throw HistoryMigrationError.verificationFailed
             }
-            written.removeAll { $0 == layout.historyRestore }
+            written.removeAll { $0 == layout.historyCandidate }
+            layout.removeLeftoverIfCovered()
         }
 
         /// После перехода, первым шагом: журнал открывается. Бросает при сбое, тогда выключение откатывается.

@@ -173,7 +173,8 @@ struct HistoryMigrationTests {
 
     private func leftovers(_ rig: Rig) -> [String] {
         allFiles(rig).map(\.lastPathComponent)
-            .filter { $0.hasSuffix(".restore") || $0.hasSuffix(".migrating") || $0 == HistoryMigration.markerName }
+            .filter { $0.hasSuffix(".restore") || $0.hasSuffix(".restoring") || $0.hasSuffix(".migrating")
+                || $0 == HistoryMigration.markerName }
     }
 
     private func enable(_ rig: Rig, afterCopies: (@MainActor () -> Void)? = nil) async throws {
@@ -1049,25 +1050,100 @@ struct HistoryMigrationTests {
         #expect(merged[2] == other)
     }
 
-    /// Отмена выключения не удаляет копию истории, которая была до прогона.
-    @Test func abortKeepsPreexistingRestore() async throws {
+    /// Открытые файлы рядом с конвертами: ни в одном нет текста заметок из конвертов.
+    private func plainTextLeaks(_ rig: Rig) throws -> [String] {
+        let secret = Data("секрет".utf8)
+        return try allFiles(rig)
+            .filter { !["note", "sealed"].contains($0.pathExtension) && !$0.lastPathComponent.hasPrefix("transcript_journal") }
+            .filter { try Data(contentsOf: $0).range(of: secret) != nil }
+            .map(\.lastPathComponent)
+    }
+
+    /// Оставшаяся копия с заметкой не из конвертов: её байты, расшифрованного рядом нет.
+    private func writeLeftover(_ rig: Rig) throws -> (url: URL, bytes: Data, note: TranscriptionItem) {
+        let lone = note("только в копии", date: "12.11.2026, 10:00", createdAt: Date())
+        let url = historyURL(rig).appendingPathExtension("restore")
+        let bytes = try JSONEncoder().encode([lone])
+        try bytes.write(to: url)
+        return (url, bytes, lone)
+    }
+
+    /// Отмена из-за сбоя записи копии аудио: оставшаяся копия байт в байт прежняя, расшифрованного нет.
+    @Test func abortKeepsPreexistingRestoreBytes() async throws {
         let rig = makeRig()
         defer { cleanup(rig) }
         let seed = try seed(rig)
         try await enable(rig)
-        let lone = note("только в копии", date: "12.11.2026, 10:00", createdAt: Date())
-        let restore = historyURL(rig).appendingPathExtension("restore")
-        try JSONEncoder().encode([lone]).write(to: restore)
-        // Копия аудио не пишется: на её месте папка.
+        let leftover = try writeLeftover(rig)
         let audioID = try #require(seed.audio.keys.first)
         try FileManager.default.createDirectory(at: rig.store.audioURL(for: audioID).appendingPathExtension("restore"),
                                                 withIntermediateDirectories: true)
 
         await #expect(throws: (any Error).self) { try await disable(rig) }
 
-        let kept = try JSONDecoder().decode([TranscriptionItem].self, from: Data(contentsOf: restore))
-        #expect(kept.contains(lone))
+        #expect(try Data(contentsOf: leftover.url) == leftover.bytes)
+        #expect(try plainTextLeaks(rig).isEmpty)
         #expect(rig.store.lockState == .locked)
+    }
+
+    /// Отмена из-за истории, менявшейся на каждой попытке: то же.
+    @Test func busyAbortKeepsPreexistingRestoreBytes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        let leftover = try writeLeftover(rig)
+
+        await #expect(throws: HistoryMigrationError.busy) {
+            try await disable(rig) { rig.store.addNote(text: "каждый раз новая") }
+        }
+
+        #expect(try Data(contentsOf: leftover.url) == leftover.bytes)
+        #expect(try plainTextLeaks(rig).isEmpty)
+    }
+
+    /// Сбой сразу после записи своей копии: запуск не оставляет расшифрованного сверх прежней копии.
+    @Test func crashAfterCopyLeavesNoDecryptedHistory() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        let leftover = try writeLeftover(rig)
+        let candidate = historyURL(rig).appendingPathExtension("restoring")
+        var written: Data?
+
+        await #expect(throws: HistoryMigrationError.busy) {
+            try await disable(rig) {
+                if written == nil { written = FileManager.default.contents(atPath: candidate.path) }
+                rig.store.addNote(text: "каждый раз новая")
+            }
+        }
+        // Диск в момент сбоя: своя копия прогона лежит рядом.
+        let copy = try #require(written)
+        #expect(copy.range(of: Data("секрет".utf8)) != nil)
+        try copy.write(to: candidate)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(!FileManager.default.fileExists(atPath: candidate.path))
+        #expect(try plainTextLeaks(rig).isEmpty)
+        let kept = [leftover.url, historyURL(rig)].compactMap { FileManager.default.contents(atPath: $0.path) }
+        #expect(kept == [leftover.bytes])
+    }
+
+    /// Правка X', ждавшая конверта, заменяет конверт X: одна заметка, без дубля.
+    @Test func pendingEditSupersedesSealedVersion() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let edited = try await strandEdit(rig, seed: seed)
+
+        try await disable(rig)
+
+        let final = try decodeHistory(rig)
+        #expect(final.filter { $0.id == edited.id } == [edited])
+        #expect(!final.contains { $0.text == seed.items[0].text })
+        #expect(final.count == seed.items.count)
     }
 
     /// Обрезанный файл публичного ключа без данных: ключ создаётся заново, включение проходит.
