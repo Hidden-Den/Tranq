@@ -198,7 +198,7 @@ struct HistoryExportTests {
     }
 
     @Test func keyErrorAbortsAndCleansUp() async throws {
-        // Первое аудио расшифровывается, на втором ключ отказывает.
+        // Ключ отказывает на первом же чтении таймингов первой заметки, после записи её аудио.
         let key = CountdownKey(allowed: 1000)
         let rig = try await makeRig(key: key)
         defer { cleanup(rig) }
@@ -254,6 +254,80 @@ struct HistoryExportTests {
         for name in try FileManager.default.contentsOfDirectory(atPath: audioFolder.path) {
             #expect(try permissions(audioFolder.appendingPathComponent(name)) == 0o600)
         }
+    }
+
+    /// Том без `RENAME_EXCL`: любое переименование отвечает `ENOTSUP`.
+    private func noExclusiveOps(code: Int32 = ENOTSUP,
+                                move: @escaping (URL, URL) throws -> Void = HistoryExportCommitOps.system.move)
+        -> HistoryExportCommitOps {
+        HistoryExportCommitOps(exclusiveRename: { _, _ in code }, move: move)
+    }
+
+    @Test func fallbackWorksWhenExclusiveRenameIsUnsupported() async throws {
+        for code in [ENOTSUP, EINVAL] {
+            let rig = try await makeRig()
+            defer { cleanup(rig) }
+
+            let result = try await HistoryMigration.exportCopy(store: rig.store, vault: rig.vault, to: rig.target,
+                                                               commitOps: noExclusiveOps(code: code))
+
+            #expect(result.exportedNotes == 3)
+            #expect(result.exportedAudio == 2)
+            let entries = try FileManager.default.contentsOfDirectory(atPath: rig.target.path)
+            #expect(entries == [result.folder.lastPathComponent])
+            let data = try Data(contentsOf: result.folder.appendingPathComponent("history.json"))
+            #expect(try JSONDecoder().decode([TranscriptionItem].self, from: data) == rig.store.items)
+            let audioFolder = result.folder.appendingPathComponent("Audio")
+            for (id, bytes) in rig.audio {
+                #expect(try Data(contentsOf: audioFolder.appendingPathComponent("\(id.uuidString).wav")) == bytes)
+            }
+            for (id, bytes) in rig.timings {
+                #expect(try Data(contentsOf: audioFolder.appendingPathComponent("\(id.uuidString).segments.json")) == bytes)
+            }
+            #expect(try permissions(result.folder) == 0o700)
+            #expect(try permissions(audioFolder) == 0o700)
+            #expect(try permissions(result.folder.appendingPathComponent("history.json")) == 0o600)
+            for name in try FileManager.default.contentsOfDirectory(atPath: audioFolder.path) {
+                #expect(try permissions(audioFolder.appendingPathComponent(name)) == 0o600)
+            }
+        }
+    }
+
+    @Test func fallbackNeverOverwritesExistingFolder() async throws {
+        let rig = try await makeRig()
+        defer { cleanup(rig) }
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let ops = noExclusiveOps()
+
+        let first = try await HistoryMigration.exportCopy(store: rig.store, vault: rig.vault, to: rig.target,
+                                                          now: now, commitOps: ops)
+        let marker = first.folder.appendingPathComponent("marker.txt")
+        try Data("мой файл".utf8).write(to: marker)
+        let second = try await HistoryMigration.exportCopy(store: rig.store, vault: rig.vault, to: rig.target,
+                                                           now: now, commitOps: ops)
+
+        #expect(first.folder != second.folder)
+        #expect(second.folder.lastPathComponent.hasSuffix(" 2"))
+        #expect(try Data(contentsOf: marker) == Data("мой файл".utf8))
+        #expect(try exportFolders(rig).count == 2)
+    }
+
+    @Test func fallbackMoveFailureLeavesNoFolderBehind() async throws {
+        let rig = try await makeRig()
+        defer { cleanup(rig) }
+        struct Boom: Error {}
+        var moves = 0
+        let ops = noExclusiveOps(move: { from, to in
+            moves += 1
+            if moves == 2 { throw Boom() }
+            try HistoryExportCommitOps.system.move(from, to)
+        })
+
+        await #expect(throws: Boom.self) {
+            try await HistoryMigration.exportCopy(store: rig.store, vault: rig.vault, to: rig.target, commitOps: ops)
+        }
+        #expect(moves == 2)
+        #expect(try exportFolders(rig).isEmpty)
     }
 
     @Test func missingTargetFolderThrowsAndWritesNothing() async throws {
