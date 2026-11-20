@@ -47,12 +47,12 @@ public final class ThoughtSynthesizer {
 
         let settings = VoiceIntelligenceSettings.shared
         let resolvedBackend: CleanupBackend
-        let timeout: TimeInterval
+        let deadlines: CleanupDeadlines
         let modelName: String
         if let backend {
             resolvedBackend = backend
             modelName = String(describing: type(of: backend))
-            timeout = max(1.5, settings.adaptiveTimeoutSeconds)
+            deadlines = CleanupDeadlines.external(characters: stageOne.count, setting: settings.adaptiveTimeoutSeconds)
         } else {
             switch settings.engine {
             case .airGapped:
@@ -70,7 +70,7 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = LocalBackend(modelPath: SLMModelStore.shared.localFileURL(for: slmModel).path)
                 modelName = settings.localModel
-                timeout = max(6.0, settings.adaptiveTimeoutSeconds)
+                deadlines = CleanupDeadlines.local(setting: settings.adaptiveTimeoutSeconds)
 
             case .external:
                 guard AIProviderStore.shared.isConfigured else {
@@ -82,7 +82,7 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config, telemetry: telemetry)
                 modelName = AIProviderStore.shared.config.model
-                timeout = max(1.5, settings.adaptiveTimeoutSeconds)
+                deadlines = CleanupDeadlines.external(characters: stageOne.count, setting: settings.adaptiveTimeoutSeconds)
             }
         }
 
@@ -105,7 +105,7 @@ public final class ThoughtSynthesizer {
 
         let reply: String
         do {
-            reply = try await resolvedBackend.complete(system: system, user: stageOne, timeout: timeout)
+            reply = try await resolvedBackend.complete(system: system, user: stageOne, deadlines: deadlines)
             await store.finish(outcome: .success, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
         } catch let error as CleanupBackendError {
             await store.finish(outcome: error == .timeout ? .timeout : .error, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
