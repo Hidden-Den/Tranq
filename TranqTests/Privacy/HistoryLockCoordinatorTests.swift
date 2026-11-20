@@ -25,7 +25,12 @@ private final class FlakyHistoryKey: HistoryKeyProviding {
         return try inner.agree(withEphemeral: ephemeral)
     }
 
-    func create() throws { try inner.create() }
+    var createFails = false
+
+    func create() throws {
+        if createFails { throw HistoryKeyError.unavailable }
+        try inner.create()
+    }
     func destroy() throws { try inner.destroy() }
 }
 
@@ -44,7 +49,8 @@ struct HistoryLockCoordinatorTests {
         let erases: Counter
     }
 
-    private func makeRig(enabled: Bool, key: HistoryKeyProviding = TestHistoryKey()) -> Rig {
+    private func makeRig(enabled: Bool, key: HistoryKeyProviding = TestHistoryKey(),
+                         erase: @escaping () -> Void = {}) -> Rig {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("HistoryLockCoordinatorTests-\(UUID().uuidString)", isDirectory: true)
         let store = HistoryStore(directory: directory, saveDelay: 0)
@@ -54,7 +60,7 @@ struct HistoryLockCoordinatorTests {
         let erases = Counter()
         let coordinator = HistoryLockCoordinator(
             enabled: enabled, store: store, journal: journal, key: key, presence: presence,
-            directory: directory, erase: { erases.count += 1 }, resetSession: {}, now: { clock.date })
+            directory: directory, erase: { erases.count += 1; erase() }, resetSession: {}, now: { clock.date })
         return Rig(directory: directory, store: store, journal: journal, coordinator: coordinator,
                    presence: presence, clock: clock, erases: erases)
     }
@@ -240,11 +246,70 @@ struct HistoryLockCoordinatorTests {
         #expect(rig.presence.calls == 1)
     }
 
-    @Test func eraseGoesThroughEraserAndKeepsState() {
-        let rig = makeRig(enabled: true)
+    /// Стирание уничтожает ключ: координатор заводит новый и ставит замок заново, заметки ложатся конвертами.
+    @Test func eraseGoesThroughEraserAndReinstallsLock() async throws {
+        let key = TestHistoryKey()
+        let rig = makeRig(enabled: true, key: key, erase: { try? key.destroy() })
         defer { cleanup(rig) }
+        await rig.coordinator.unlock()
+        let oldVault = rig.coordinator.vault
+
         rig.coordinator.eraseHistory()
+
         #expect(rig.erases.count == 1)
+        #expect(key.exists)
         #expect(rig.coordinator.state == .locked)
+        #expect(rig.store.lockState == .locked)
+        #expect(rig.coordinator.vault != nil)
+        #expect(rig.coordinator.vault !== oldVault)
+        _ = rig.store.addNote(text: "после стирания")
+        rig.store.flush()
+        #expect(notesCount(rig.directory) == 1)
+        #expect(rig.store.sealFailureCount == 0)
+    }
+
+    /// Экран «не читается на этом Mac»: стирание ведёт обратно в рабочее запертое состояние.
+    @Test func eraseFromKeyUnavailableLandsOnLocked() async {
+        let key = TestHistoryKey(created: false)
+        let rig = makeRig(enabled: true, key: key)
+        defer { cleanup(rig) }
+        await rig.coordinator.unlock()
+        #expect(rig.coordinator.state == .keyUnavailable)
+
+        rig.coordinator.eraseHistory()
+
+        #expect(key.exists)
+        #expect(rig.coordinator.state == .locked)
+        await rig.coordinator.unlock()
+        #expect(rig.coordinator.state == .unlocked)
+    }
+
+    /// Новый ключ не создался: честное `keyUnavailable`, а не включённый замок без ключа.
+    @Test func eraseWithFailedKeyCreationLandsOnKeyUnavailable() {
+        let key = FlakyHistoryKey()
+        key.createFails = true
+        let rig = makeRig(enabled: true, key: key, erase: { try? key.destroy() })
+        defer { cleanup(rig) }
+
+        rig.coordinator.eraseHistory()
+
+        #expect(rig.erases.count == 1)
+        #expect(rig.coordinator.state == .keyUnavailable)
+        #expect(rig.store.lockState == .keyUnavailable)
+        #expect(rig.coordinator.isEnabled)
+    }
+
+    /// Выключенный замок после стирания ключа не заводит.
+    @Test func eraseWithLockOffStaysOff() {
+        let key = TestHistoryKey(created: false)
+        let rig = makeRig(enabled: false, key: key)
+        defer { cleanup(rig) }
+
+        rig.coordinator.eraseHistory()
+
+        #expect(rig.erases.count == 1)
+        #expect(rig.coordinator.state == .off)
+        #expect(!key.exists)
+        #expect(rig.coordinator.vault == nil)
     }
 }

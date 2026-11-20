@@ -118,4 +118,86 @@ struct DataEraserTests {
         #expect(!exists(logFile(in: dir)))
         #expect(journal.lastRecord == nil)
     }
+
+    private func sealedFiles(in dir: URL) -> [String] {
+        let fm = FileManager.default
+        let notes = (try? fm.contentsOfDirectory(atPath: dir.appendingPathComponent("Notes").path)) ?? []
+        let audio = (try? fm.contentsOfDirectory(atPath: dir.appendingPathComponent("Audio").path)) ?? []
+        return notes.filter { $0.hasSuffix(".note") } + audio.filter { $0.hasSuffix(".sealed") }
+    }
+
+    /// Запертая история: конверты заметок и аудио, запечатанный журнал, забытый открытый `history.json` и ключ.
+    @Test func eraseRemovesEnvelopesAndKey() async throws {
+        let dir = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let key = TestHistoryKey()
+        let vault = HistoryVault(directory: dir, key: key)
+        let item = TranscriptionItem(date: "d", text: "секретная заметка", duration: "1 сек")
+        try vault.writeNote(item)
+        try vault.writeBlob(Data([0, 1, 2, 3]), id: item.id, purpose: .audio)
+        let leftover = dir.appendingPathComponent("history.json")
+        try JSONEncoder().encode([TranscriptionItem(date: "d", text: "забытая копия", duration: "1 сек")]).write(to: leftover)
+        let history = await MainActor.run { HistoryStore(directory: dir, saveDelay: 0, vault: vault, lockState: .locked) }
+
+        let journal = TranscriptJournal(directory: dir, sealing: .sealed(key: key))
+        journal.recordInitial(id: UUID(), rawText: "ну это секретная фраза", durationSec: 2, targetAppName: nil)
+        journal.flush()
+        #expect(exists(journalFile(in: dir)))
+        #expect(sealedFiles(in: dir).count == 2)
+
+        let logger = AppLogger(directory: dir)
+        let failed = await MainActor.run {
+            DataEraser.eraseAll(history: history, journal: journal, logger: logger, vault: vault, key: key)
+        }
+        history.flush()
+        journal.flush()
+        logger.flush()
+
+        #expect(failed.isEmpty)
+        #expect(sealedFiles(in: dir).isEmpty)
+        #expect(!exists(journalFile(in: dir)))
+        #expect(!exists(leftover))
+        #expect(!key.exists)
+    }
+
+    /// После стирания замок остаётся включённым: новый ключ, новая заметка ложится конвертом и читается.
+    @MainActor
+    @Test func eraseLeavesLockEnabledForNewKey() async throws {
+        let dir = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let key = TestHistoryKey()
+        let store = HistoryStore(directory: dir, saveDelay: 0)
+        let journal = TranscriptJournal(directory: dir)
+        let logger = AppLogger(directory: dir)
+        let coordinator = HistoryLockCoordinator(
+            enabled: true, store: store, journal: journal, key: key, presence: TestPresence(), directory: dir,
+            erase: { DataEraser.eraseAll(history: store, journal: journal, logger: logger,
+                                         vault: HistoryVault(directory: dir, key: key), key: key) },
+            resetSession: {})
+        _ = store.addNote(text: "старая заметка")
+        store.flush()
+        let oldPublicKey = try key.publicKey
+
+        coordinator.eraseHistory()
+        store.flush()
+        journal.flush()
+
+        #expect(coordinator.isEnabled)
+        #expect(coordinator.state == .locked)
+        #expect(key.exists)
+        #expect(try key.publicKey != oldPublicKey)
+        #expect(sealedFiles(in: dir).isEmpty)
+
+        _ = store.addNote(text: "новая заметка")
+        store.flush()
+        #expect(sealedFiles(in: dir).count == 1)
+        #expect(store.sealFailureCount == 0)
+
+        await coordinator.unlock()
+        for _ in 0..<300 where store.items.isEmpty {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(coordinator.state == .unlocked)
+        #expect(store.items.map(\.text) == ["новая заметка"])
+    }
 }

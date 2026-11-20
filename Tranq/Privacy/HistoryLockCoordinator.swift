@@ -45,14 +45,14 @@ final class HistoryLockCoordinator: ObservableObject {
     private var windowOnScreen = false
     private var lockObserver: AnyCancellable?
 
-    /// `resetSession` подменяет сброс подтверждения в тестах; `nil` — настоящий.
+    /// `erase` и `resetSession` подменяются в тестах; `nil` — настоящие.
     init(enabled: Bool,
          store: HistoryStore,
          journal: TranscriptJournal,
          key: HistoryKeyProviding,
          presence: PresenceAuthorizing,
          directory: URL,
-         erase: @escaping () -> Void = { DataEraser.eraseAll() },
+         erase: (() -> Void)? = nil,
          resetSession: (() -> Void)? = nil,
          now: @escaping () -> Date = Date.init,
          launchNotice: HistoryMigration.LaunchNotice? = nil) {
@@ -62,7 +62,10 @@ final class HistoryLockCoordinator: ObservableObject {
         self.key = key
         self.presence = presence
         self.directory = directory
-        self.erase = erase
+        self.erase = erase ?? {
+            DataEraser.eraseAll(history: store, journal: journal,
+                                vault: HistoryVault(directory: directory, key: key), key: key)
+        }
         self.resetSession = resetSession
         self.now = now
         self.lock = HistoryLock(enabled: false, key: key, presence: presence, now: now)
@@ -130,8 +133,19 @@ final class HistoryLockCoordinator: ObservableObject {
     }
 
     /// `Стереть историю` после подтверждения. Сама собой история не стирается.
+    /// Стирание уничтожает ключ. Включённый замок получает новый ключ и ставится заново:
+    /// новые заметки сразу ложатся конвертами. Ключ не создался — `keyUnavailable`.
     func eraseHistory() {
         erase()
+        guard isEnabled else { return }
+        do {
+            try key.create()
+        } catch {
+            AppLogger.shared.error("HistoryLock", "Новый ключ после стирания не создан")
+            lock.noteKeyUnavailable()
+            return
+        }
+        install(enabled: true)
     }
 
     // MARK: - Системные события

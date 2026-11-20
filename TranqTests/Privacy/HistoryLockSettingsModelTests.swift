@@ -161,4 +161,10 @@ struct HistoryLockSettingsModelTests {
         model.sync(to: true)
         #expect(model.isOn == true)
     }
+
+    /// Находки уборки при запуске показываются одной строкой в карточке замка.
+    @Test func launchNoticeMapsToShortText() {
+        #expect(HistoryMigration.LaunchNotice.lockTurnedOff.text == String(localized: "Замок был выключен после сбоя"))
+        #expect(HistoryMigration.LaunchNotice.leftoverPlainHistory.text == String(localized: "Осталась открытая копия истории"))
+    }
 }

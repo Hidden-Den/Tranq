@@ -8,14 +8,25 @@ struct DataSettingsSection: View {
     @ObservedObject private var preferences = AppPreferences.shared
     /// Состояние замка: выгрузка доступна только при открытой истории.
     private let lockState: HistoryLockState
+    /// Находка уборки при запуске: строка в карточке замка до ухода из раздела.
+    private let launchNotice: HistoryMigration.LaunchNotice?
+    private let onNoticeSeen: () -> Void
+    private let onErase: () -> Void
 
-    /// `onEnable` и `onDisable` делают миграцию и пишут флаг, `onExport` — выгрузку.
+    /// `onEnable` и `onDisable` делают миграцию и пишут флаг, `onExport` — выгрузку,
+    /// `onErase` стирает историю и при включённом замке заводит новый ключ.
     init(lockState: HistoryLockState = .off,
          presence: PresenceAuthorizing = LocalAuthPresenceGate(),
+         launchNotice: HistoryMigration.LaunchNotice? = nil,
+         onNoticeSeen: @escaping () -> Void = {},
          onEnable: @escaping HistoryLockSettingsModel.Action = {},
          onDisable: @escaping HistoryLockSettingsModel.Action = {},
-         onExport: @escaping HistoryLockSettingsModel.Action = {}) {
+         onExport: @escaping HistoryLockSettingsModel.Action = {},
+         onErase: @escaping () -> Void = {}) {
         self.lockState = lockState
+        self.launchNotice = launchNotice
+        self.onNoticeSeen = onNoticeSeen
+        self.onErase = onErase
         _lockModel = StateObject(wrappedValue: HistoryLockSettingsModel(
             isOn: AppPreferences.historyLockEnabled(in: AppEnvironment.defaults),
             presence: presence, onEnable: onEnable, onDisable: onDisable, onExport: onExport))
@@ -40,7 +51,8 @@ struct DataSettingsSection: View {
                 }
             }
 
-            HistoryLockCard(model: lockModel, lockState: lockState)
+            HistoryLockCard(model: lockModel, lockState: lockState, notice: launchNotice)
+                .onDisappear { if launchNotice != nil { onNoticeSeen() } }
 
             UICard {
                 HStack {
@@ -66,7 +78,7 @@ struct DataSettingsSection: View {
             Button("Отмена", role: .cancel) { }
             Button("Стереть", role: .destructive) {
                 PlaybackController.shared.stopSyncedPlayback()
-                DataEraser.eraseAll()
+                onErase()
             }
         } message: { Text("Все сохраненные транскрипции будут удалены безвозвратно. Это действие нельзя отменить.") }
     }
@@ -76,6 +88,7 @@ struct DataSettingsSection: View {
 private struct HistoryLockCard: View {
     @ObservedObject var model: HistoryLockSettingsModel
     let lockState: HistoryLockState
+    let notice: HistoryMigration.LaunchNotice?
 
     var body: some View {
         UICard {
@@ -88,6 +101,11 @@ private struct HistoryLockCard: View {
                         Text("Требовать Touch ID")
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
+                        if let notice {
+                            Text(notice.text)
+                                .font(.ui(.caption))
+                                .foregroundColor(.uiEmber)
+                        }
                     }
                     Spacer()
                     Toggle("", isOn: Binding(

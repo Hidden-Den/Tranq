@@ -16,9 +16,12 @@ struct SettingsView: View {
             // Закрытия зовут долгоживущую службу: модель настроек захватывает их один раз.
             DataSettingsSection(lockState: historyLock.state,
                                 presence: historyLock.presence,
+                                launchNotice: historyLock.launchNotice,
+                                onNoticeSeen: { historyLock.launchNotice = nil },
                                 onEnable: { try await HistoryLockMigrator.shared.enable() },
                                 onDisable: { try await HistoryLockMigrator.shared.disable() },
-                                onExport: { try await HistoryExportAction.run() })
+                                onExport: { try await HistoryExportAction.run() },
+                                onErase: { historyLock.eraseHistory() })
         }
     }
 }

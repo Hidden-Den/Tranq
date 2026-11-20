@@ -96,3 +96,13 @@ final class HistoryLockSettingsModel: ObservableObject {
         isOn = stored
     }
 }
+
+/// Строка в карточке замка о том, что нашла уборка при запуске.
+extension HistoryMigration.LaunchNotice {
+    var text: String {
+        switch self {
+        case .lockTurnedOff: String(localized: "Замок был выключен после сбоя")
+        case .leftoverPlainHistory: String(localized: "Осталась открытая копия истории")
+        }
+    }
+}

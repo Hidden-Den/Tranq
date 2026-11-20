@@ -83,6 +83,14 @@ final class HistoryLock: ObservableObject {
         state = storeState
     }
 
+    /// Ключа нет и новый не создался: история не читается, экран предлагает стереть её.
+    func noteKeyUnavailable() {
+        guard state != .off else { return }
+        generation += 1
+        resetSession()
+        state = .keyUnavailable
+    }
+
     private enum Outcome { case unlocked, locked, keyUnavailable }
 
     private func run(started: Int) async -> Outcome {
