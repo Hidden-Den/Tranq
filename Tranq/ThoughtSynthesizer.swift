@@ -47,12 +47,13 @@ public final class ThoughtSynthesizer {
 
         let settings = VoiceIntelligenceSettings.shared
         let resolvedBackend: CleanupBackend
-        let deadlines: CleanupDeadlines
         let modelName: String
+        // Сроки считаются на кусок, а не на всю речь: у каждого куска свой размер
+        let deadlinesFor: (Int) -> CleanupDeadlines
         if let backend {
             resolvedBackend = backend
             modelName = String(describing: type(of: backend))
-            deadlines = CleanupDeadlines.external(characters: stageOne.count, setting: settings.adaptiveTimeoutSeconds)
+            deadlinesFor = { CleanupDeadlines.external(characters: $0, setting: settings.adaptiveTimeoutSeconds) }
         } else {
             switch settings.engine {
             case .airGapped:
@@ -70,7 +71,7 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = LocalBackend(modelPath: SLMModelStore.shared.localFileURL(for: slmModel).path)
                 modelName = settings.localModel
-                deadlines = CleanupDeadlines.local(setting: settings.adaptiveTimeoutSeconds)
+                deadlinesFor = { _ in CleanupDeadlines.local(setting: settings.adaptiveTimeoutSeconds) }
 
             case .external:
                 guard AIProviderStore.shared.isConfigured else {
@@ -82,10 +83,51 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config, telemetry: telemetry)
                 modelName = AIProviderStore.shared.config.model
-                deadlines = CleanupDeadlines.external(characters: stageOne.count, setting: settings.adaptiveTimeoutSeconds)
+                deadlinesFor = { CleanupDeadlines.external(characters: $0, setting: settings.adaptiveTimeoutSeconds) }
             }
         }
 
+        let store: CleanupTelemetry
+        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
+        let piece = { (piece: String) async -> CleanupResult in
+            await self.cleanPiece(
+                piece, level: level, firedSpellings: firedSpellings, language: language,
+                backend: resolvedBackend, modelName: modelName, deadlines: deadlinesFor(piece.count),
+                store: store, noteId: noteId
+            )
+        }
+
+        let pieces = TranscriptChunker.chunks(stageOne)
+        guard pieces.count > 1 else { return await piece(stageOne) }
+
+        // Длинная речь по кускам и по очереди: телеметрия держит одну текущую попытку,
+        // параллельные куски перемешали бы замеры
+        AppLogger.shared.info("Pipeline", "Этап 2: длинная речь, кусков: \(pieces.count)", details: "\(stageOne.count) симв.")
+        var results: [CleanupResult] = []
+        for text in pieces { results.append(await piece(text)) }
+
+        let cleaned = results.filter { $0.fallback == nil }.count
+        // Не прошёл ни один кусок: всё как при одном запросе, текст этапа 1 и первая причина
+        guard cleaned > 0 else { return CleanupResult(text: stageOne, fallback: results.first?.fallback) }
+        if cleaned < results.count {
+            AppLogger.shared.warn("Pipeline", "Этап 2: очищено кусков \(cleaned) из \(results.count)", details: "Остальные вставлены как сказаны")
+        }
+        return CleanupResult(text: results.map(\.text).joined(separator: "\n\n"), fallback: nil)
+    }
+
+    /// Очистка одного куска речи одним запросом. Любая проблема даёт сам кусок и причину:
+    /// отказ по куску стоит одного абзаца, а не всей диктовки.
+    private func cleanPiece(
+        _ stageOne: String,
+        level: CleanupLevel,
+        firedSpellings: [String],
+        language: DictionaryLanguage,
+        backend resolvedBackend: CleanupBackend,
+        modelName: String,
+        deadlines: CleanupDeadlines,
+        store: CleanupTelemetry,
+        noteId: UUID?
+    ) async -> CleanupResult {
         var system = Self.getSystemPrompt(for: level)
         let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
         if !dictionaryHint.isEmpty { system += "\n\n" + dictionaryHint }
@@ -98,8 +140,6 @@ public final class ThoughtSynthesizer {
                                   details: AppLogger.shared.redactTranscripts ? "слов: \(suspects.count)" : termHint)
         }
 
-        let store: CleanupTelemetry
-        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
         let attemptStarted = CFAbsoluteTimeGetCurrent()
         await store.begin(model: modelName)
 
