@@ -131,7 +131,7 @@ final class MCPLockTests {
         let clock = TestClock()
         let coordinator = HistoryLockCoordinator(
             enabled: true, store: store, journal: journal, key: key, presence: TestPresence(),
-            directory: directory, erase: {}, resetSession: {}, now: { clock.date })
+            directory: directory, erase: { [] }, resetSession: {}, now: { clock.date })
         defer { store.flush(); journal.flush() }
 
         let access = makeAccess(locked: false)

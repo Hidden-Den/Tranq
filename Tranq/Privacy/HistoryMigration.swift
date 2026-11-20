@@ -65,7 +65,8 @@ enum HistoryMigration {
                        vault: HistoryVault,
                        activate: (@MainActor () -> Void)? = nil,
                        setFlag: @MainActor (Bool) -> Void,
-                       afterCopies: (@MainActor () -> Void)? = nil) async throws {
+                       afterCopies: (@MainActor () -> Void)? = nil,
+                       logger: AppLogger = .shared) async throws {
         let layout = Layout(directory: vault.directory)
         guard store.lockState == .off else { throw HistoryMigrationError.wrongState }
         guard !layout.hasMarker else { throw HistoryMigrationError.interrupted }
@@ -102,6 +103,8 @@ enum HistoryMigration {
             return run.finish(journal: journal)
         }
         setFlag(true)
+        // В логе остались тексты диктовок, записанные до замка: после успеха он очищается.
+        logger.clear()
         // Остатки открытых файлов метку не держат: здесь сверено содержимое, а повтор на запуске
         // сверил бы только наличие конвертов. Держит метку только незапечатанный журнал:
         // запуск запечатает его по публичному ключу.
@@ -284,6 +287,7 @@ enum HistoryMigration {
     ///   `history.json` — только если каждая его заметка лежит конвертом. Журнал запечатывается
     ///   по публичному ключу; если не вышло, метка становится `enableJournal`. Флаг поднимается.
     /// - Метка `enableJournal`: только журнал. Метка уходит, когда он запечатан.
+    /// - После обеих меток включения лог очищается: в нём тексты диктовок до замка.
     /// - Метка `disable` и флаг выключен: флаг уже опущен, доделать уборку конвертов.
     /// - Метка `disable` и флаг включён: выключение не дошло до флага, откат, см. `rollbackDisable`.
     /// - Без метки и с выключенным флагом: включение упало до фиксации, исходники целы. Убираются конверты,
@@ -294,7 +298,8 @@ enum HistoryMigration {
     ///   тогда открытый файл — единственная копия истории. Иначе файл остаётся, и человеку говорят о нём.
     @discardableResult
     static func cleanupHalfDone(vault: HistoryVault, lockEnabled: Bool,
-                                setLockEnabled: (Bool) -> Void) -> LaunchNotice? {
+                                setLockEnabled: (Bool) -> Void,
+                                logger: AppLogger = .shared) -> LaunchNotice? {
         let layout = Layout(directory: vault.directory)
         layout.removeJournalCopies()
         let marker = layout.marker
@@ -302,10 +307,13 @@ enum HistoryMigration {
         case .enable?:
             layout.finishEnable(audio: nil, timings: nil, notes: nil)
             setLockEnabled(true)
+            // Включение зафиксировано, но лог мог не успеть очиститься.
+            logger.clear()
             finishJournalAtLaunch(layout: layout, key: vault.key)
             return layout.exists(layout.history) ? .leftoverPlainHistory : nil
         case .enableJournal?:
             setLockEnabled(true)
+            logger.clear()
             finishJournalAtLaunch(layout: layout, key: vault.key)
             return nil
         case .disable? where !lockEnabled:

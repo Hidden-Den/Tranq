@@ -556,6 +556,82 @@ struct HistoryMigrationTests {
         #expect(Set(restored.map(\.id)) == Set(seed.items.map(\.id) + [stray.id]))
     }
 
+    // MARK: - Лог при включении
+
+    /// Лог с текстом диктовки, записанным до замка.
+    private func seededLogger(_ rig: Rig) async -> AppLogger {
+        let logger = AppLogger(directory: rig.directory)
+        logger.info("Test", "Распознано: «секрет из лога»")
+        logger.flush()
+        await mainHop()
+        return logger
+    }
+
+    private func logHasSecret(_ logger: AppLogger) async -> Bool {
+        logger.flush()
+        await mainHop()
+        let file = logger.logFileURL.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+        return file.contains("секрет из лога") || logger.entries.contains { $0.message.contains("секрет из лога") }
+    }
+
+    @Test func enableClearsLog() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let logger = await seededLogger(rig)
+        #expect(await logHasSecret(logger))
+
+        try await HistoryMigration.enable(store: rig.store, journal: rig.journal, vault: rig.vault,
+                                          setFlag: { rig.flags.values.append($0) }, logger: logger)
+
+        #expect(rig.flags.values == [true])
+        #expect(await logHasSecret(logger) == false)
+    }
+
+    @Test func failedEnableKeepsLog() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let logger = await seededLogger(rig)
+        rig.key.agreeFails = true
+
+        await #expect(throws: (any Error).self) {
+            try await HistoryMigration.enable(store: rig.store, journal: rig.journal, vault: rig.vault,
+                                              setFlag: { rig.flags.values.append($0) }, logger: logger)
+        }
+
+        #expect(rig.flags.values.isEmpty)
+        #expect(await logHasSecret(logger))
+    }
+
+    @Test func launchFinishingEnableClearsLog() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        for item in seed.items { try rig.vault.writeNote(item) }
+        try HistoryMigration.writeMarker(.enable, in: rig.directory)
+        let logger = await seededLogger(rig)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                         setLockEnabled: { rig.flags.values.append($0) }, logger: logger)
+
+        #expect(rig.flags.values == [true])
+        #expect(await logHasSecret(logger) == false)
+    }
+
+    /// Выключение лог не трогает.
+    @Test func launchWithoutEnableMarkerKeepsLog() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        let logger = await seededLogger(rig)
+
+        HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                         setLockEnabled: { rig.flags.values.append($0) }, logger: logger)
+
+        #expect(await logHasSecret(logger))
+    }
+
     /// Сбой после фиксации включения: запуск доводит до конца и поднимает флаг.
     @Test func committedEnableIsFinishedOnNextLaunch() async throws {
         let rig = makeRig()
@@ -1251,7 +1327,7 @@ struct HistoryMigrationTests {
         let seed = try seed(rig)
         let coordinator = HistoryLockCoordinator(
             enabled: false, store: rig.store, journal: rig.journal, key: rig.key, presence: TestPresence(),
-            directory: rig.directory, erase: {}, resetSession: {})
+            directory: rig.directory, erase: { [] }, resetSession: {})
         let defaults = makeDefaults()
         let migrator = HistoryLockMigrator(coordinator: coordinator, store: rig.store, journal: rig.journal,
                                            directory: rig.directory,
