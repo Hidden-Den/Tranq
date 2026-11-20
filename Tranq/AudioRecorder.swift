@@ -32,6 +32,8 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
             recorder.delegate = self
             recorder.isMeteringEnabled = true
             recorder.prepareToRecord()
+            // Рекордер мог заново создать файл с правами по умолчанию
+            TempFiles.restrict(url)
             guard recorder.record() else {
                 TempFiles.remove(url)
                 return false

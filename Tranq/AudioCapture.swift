@@ -138,12 +138,12 @@ final class AudioCapture: ObservableObject {
             self.pipeline.run(job, onStageTwoStarted: { [weak self] in
                 self?.isSynthesizingThought = true
             }, progress: { _ in }) { [weak self] result in
+                defer { TempFiles.remove(recording.url) }
                 guard let self else { return }
                 self.isSynthesizingThought = false
                 self.handle(result, job: job) {
                     OverlayPanelManager.shared.scheduleHide(after: 1.0)
                 }
-                TempFiles.remove(recording.url)
             }
         }
     }
