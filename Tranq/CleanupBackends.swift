@@ -5,10 +5,13 @@ struct LocalBackend: CleanupBackend {
     let modelPath: String
 
     func complete(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
-        guard let result = await LocalSynthServiceClient.shared.synthesize(
+        switch await LocalSynthServiceClient.shared.synthesize(
             transcript: user, stylePrompt: system, modelPath: modelPath, timeout: deadlines.total
-        ) else { throw CleanupBackendError.unavailable }
-        return result
+        ) {
+        case .text(let result): return result
+        case .truncated: throw CleanupBackendError.truncated
+        case .failed: throw CleanupBackendError.unavailable
+        }
     }
 }
 

@@ -14,6 +14,7 @@ import Foundation
 ///   TRANQ_PIECE_EVAL_BASE, TRANQ_PIECE_EVAL_MODEL, TRANQ_PIECE_EVAL_KEY  провайдер
 ///   TRANQ_PIECE_EVAL_LOCAL_MODEL вместо провайдера: путь к .gguf, свой llama-server
 ///   TRANQ_PIECE_EVAL_TIMEOUT    срок локальной модели на кусок, по умолчанию боевые 6 с
+///   TRANQ_PIECE_EVAL_MAX_TOKENS лимит ответа локальной модели вместо боевого: проверка обрыва
 ///   TRANQ_PIECE_EVAL_PROMPT необязательно: файл с системным промптом вместо боевого
 ///   TRANQ_PIECE_EVAL_REPLAY необязательно: прежний отчёт; модель не зовётся, его ответы
 ///                           заново проходят валидатор. Так правка валидатора сравнивается
@@ -63,6 +64,7 @@ struct PieceEvalTests {
                 try #require(Date() < ready, "llama-server не загрузил модель за 180 с")
                 try await Task.sleep(nanoseconds: 500_000_000)
             }
+            if let limit = Int(env["TRANQ_PIECE_EVAL_MAX_TOKENS"] ?? "") { LocalLLMServer.maxTokens = limit }
             backend = LocalBackend(modelPath: modelPath)
             let setting = Double(env["TRANQ_PIECE_EVAL_TIMEOUT"] ?? "") ?? 6
             deadlinesFor = { _ in CleanupDeadlines.local(setting: setting) }

@@ -44,6 +44,8 @@ public enum CleanupBackendError: Error, Equatable {
     case timeout
     case http(Int)
     case empty
+    /// Ответ оборван по лимиту длины. Неполный текст валидатор пропустил бы: сокращение он разрешает.
+    case truncated
 
     /// Короткое описание для журнала.
     var logDescription: String {
@@ -53,6 +55,7 @@ public enum CleanupBackendError: Error, Equatable {
         case .timeout: return "таймаут"
         case .http(let code): return "HTTP \(code)"
         case .empty: return "пустой ответ"
+        case .truncated: return "ответ обрезан по лимиту длины"
         }
     }
 }

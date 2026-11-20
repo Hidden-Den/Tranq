@@ -85,7 +85,7 @@ extension SharedSettingsSuites {
                     transcript: "Тестовая надиктованная фраза",
                     stylePrompt: "Очисти от мусора"
                 )
-                #expect(result == nil, "При отсутствии XPC-демона инференс должен мгновенно возвращать nil для отката на этап 1")
+                #expect(result == .failed, "При отсутствии XPC-демона инференс должен мгновенно отказывать для отката на этап 1")
             }
 
             // Проверка полного сквозного отката ThoughtSynthesizer на этап 1 в режиме airGapped

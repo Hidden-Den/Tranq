@@ -155,6 +155,8 @@ public final class ThoughtSynthesizer {
             case .empty: reason = .emptyResponse
             case .http(let code): reason = .providerError(code)
             case .unavailable, .connectionLost: reason = .providerUnavailable
+            // Неполный текст не результат: кусок вставляется как сказан, а причина видна в журнале
+            case .truncated: reason = .rejected("Ответ модели обрезан по лимиту длины")
             }
             AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, \(error.logDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: reason)
