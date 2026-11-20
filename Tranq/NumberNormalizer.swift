@@ -95,6 +95,13 @@ public struct NumberNormalizer {
         // Токенизация с сохранением пунктуации
         let tokens = tokenize(text)
         var resultTokens: [String] = []
+        // Разделитель перед каждым выходным токеном: перевод строки между абзацами
+        // остаётся на месте, иначе этап 1 терял бы абзацы
+        var separators: [String] = []
+        func emit(_ text: String, from index: Int) {
+            separators.append(tokens[index].separator)
+            resultTokens.append(text)
+        }
         var i = 0
 
         while i < tokens.count {
@@ -103,14 +110,14 @@ public struct NumberNormalizer {
 
             // 1. Проверяем, не является ли это датой перед месяцем (например: "двадцать шестого мая")
             if let dateRange = tryParseDate(tokens: tokens, startIndex: i) {
-                resultTokens.append(dateRange.formatted)
+                emit(dateRange.formatted, from: i)
                 i = dateRange.nextIndex
                 continue
             }
 
             // 2. Проверяем время (например: "пятнадцать тридцать")
             if let timeRange = tryParseTime(tokens: tokens, startIndex: i) {
-                resultTokens.append(timeRange.formatted)
+                emit(timeRange.formatted, from: i)
                 i = timeRange.nextIndex
                 continue
             }
@@ -151,7 +158,7 @@ public struct NumberNormalizer {
                 let previous = i > 0 ? tokens[i - 1].word.lowercased() : ""
                 let loneScaleAfterFraction = words.allSatisfy { scales[$0] != nil } && fractionWords.contains(previous)
                 if hasOrdinal || loneScaleAfterFraction {
-                    resultTokens.append(contentsOf: tokens[i..<j].map(\.raw))
+                    for k in i..<j { emit(tokens[k].raw, from: k) }
                     i = j
                     continue
                 }
@@ -159,18 +166,20 @@ public struct NumberNormalizer {
                 if !numberTokens.isEmpty {
                     let total = calculateCompoundValue(numberTokens)
                     let trailingPunct = tokens[j - 1].trailingPunctuation
-                    resultTokens.append("\(total)\(trailingPunct)")
+                    emit("\(total)\(trailingPunct)", from: i)
                     i = j
                     continue
                 }
             }
 
             // 4. Обычное слово
-            resultTokens.append(token.raw)
+            emit(token.raw, from: i)
             i += 1
         }
 
-        return resultTokens.joined(separator: " ")
+        return zip(separators, resultTokens).enumerated()
+            .map { index, pair in index == 0 ? pair.1 : pair.0 + pair.1 }
+            .joined()
     }
 
     // MARK: - Вспомогательные методы парсинга
@@ -179,18 +188,37 @@ public struct NumberNormalizer {
         let raw: String
         let word: String
         let trailingPunctuation: String
+        /// Пробелы перед словом: один пробел, либо переводы строк как в исходном тексте
+        let separator: String
     }
 
     private static func tokenize(_ text: String) -> [Token] {
-        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-        return words.map { raw in
+        var tokens: [Token] = []
+        var gap = ""
+        var raw = ""
+        func flush() {
+            guard !raw.isEmpty else { return }
             var cleanWord = raw
             var punct = ""
             while let last = cleanWord.last, last.isPunctuation {
                 punct.insert(cleanWord.removeLast(), at: punct.startIndex)
             }
-            return Token(raw: raw, word: cleanWord, trailingPunctuation: punct)
+            // Пробелы схлопываются в один, переводы строк остаются как были
+            let separator = gap.contains(where: \.isNewline) ? gap.filter(\.isNewline) : " "
+            tokens.append(Token(raw: raw, word: cleanWord, trailingPunctuation: punct, separator: separator))
+            raw = ""
+            gap = ""
         }
+        for char in text {
+            if char.isWhitespace {
+                flush()
+                gap.append(char)
+            } else {
+                raw.append(char)
+            }
+        }
+        flush()
+        return tokens
     }
 
     private enum NumRank: Int {
