@@ -123,7 +123,7 @@ The socket protocol is written down in [mcp/PROTOCOL.md](mcp/PROTOCOL.md).
 
 ## History Lock
 
-Turn it on in Settings, section Data. Touch ID opens the history, and notes, audio and the dictation journal are encrypted on disk. The key lives only on this Mac: the history cannot be read on another Mac, so export a plain copy with Export before you move. The app log is not encrypted, but with the lock on it does not record dictated text. Recognition briefly writes audio to temporary files readable only by your account and deletes them right away. Erase history removes both the records and the key; with the lock on, new history is encrypted with a new key.
+Turn it on in Settings, section Data. Touch ID opens the history, and notes, audio and the dictation journal are encrypted on disk. The key lives on this Mac: with the Secure Enclave it cannot leave the chip, and on a Mac without one it sits in the login keychain, a weaker protection that depends on your login. Either way the history is not meant to be read on another Mac, so export a plain copy with Export before you move. The app log is not encrypted, but with the lock on it records only lengths and ids instead of dictated text, and dictionary words are redacted too. Recognition briefly writes audio to temporary files readable only by your account and deletes them when it finishes; after a crash, startup cleanup removes leftovers older than 24 hours. Erase history removes both the records and the key; with the lock on, new history is encrypted with a new key.
 
 ---
 

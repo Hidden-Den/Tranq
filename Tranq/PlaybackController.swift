@@ -19,6 +19,8 @@ final class PlaybackController: ObservableObject {
     private var playbackTimer: Timer?
     /// Заметка, чьё аудио сейчас читается, и место, с которого начать.
     private var loadingId: UUID?
+    /// Метка текущего чтения: устаревший ответ той же заметки не должен занять место нового запроса.
+    private var loadToken = UUID()
     private var loadingStart: Double = 0
     private var lockObserver: AnyCancellable?
 
@@ -76,6 +78,7 @@ final class PlaybackController: ObservableObject {
         audioPlayer?.stop()
         audioPlayer = nil
         loadingId = nil
+        loadToken = UUID()
         playingItemId = nil
         playheadTime = 0
         isPlayerPlaying = false
@@ -98,8 +101,10 @@ final class PlaybackController: ObservableObject {
         stopSyncedPlayback()
         loadingId = id
         loadingStart = time
+        let token = UUID()
+        loadToken = token
         history.loadAudio(for: id) { [weak self] result in
-            guard let self, self.loadingId == id else { return }
+            guard let self, self.loadingId == id, self.loadToken == token else { return }
             self.loadingId = nil
             let data: Data
             switch result {

@@ -26,7 +26,8 @@ enum DataEraser {
 
         history.clearAll()
         // Дождаться очереди хранилища: конверт, записанный до стирания, не переживёт его.
-        history.waitForIO()
+        // flush сразу пишет пустой список, а не после задержки: выход сразу после стирания не вернёт заметки.
+        history.flush()
         if history.lockState != .off {
             // Открытая копия, оставшаяся от прерванной миграции.
             let plain = history.directory.appendingPathComponent("history.json")

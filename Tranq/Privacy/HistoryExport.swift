@@ -52,6 +52,13 @@ extension HistoryMigration {
                            now: Date = Date(),
                            beforeCommit: (() throws -> Void)? = nil,
                            commitOps: HistoryExportCommitOps = .system) async throws -> HistoryExportResult {
+        // Пока конверты читаются после разблокировки, список пуст: пустая выгрузка прошла бы как успешная.
+        var waited = 0
+        while await MainActor.run(body: { store.isReadingNotes }) {
+            waited += 1
+            guard waited <= 400 else { throw HistoryExportError.notUnlocked }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
         let (state, items) = await MainActor.run { (store.lockState, store.items) }
         guard state == .unlocked else { throw HistoryExportError.notUnlocked }
         return try await withCheckedThrowingContinuation { continuation in
@@ -88,8 +95,8 @@ extension HistoryMigration {
                 }
                 let timings = try readForExport({
                     try vault.readBlob(id: item.id, purpose: .timings)
-                        ?? (try? Data(contentsOf: store.audioDirectory
-                            .appendingPathComponent("\(item.id.uuidString).segments.json")))
+                        ?? legacyTimings(at: store.audioDirectory
+                            .appendingPathComponent("\(item.id.uuidString).segments.json"))
                 }, skipped: &skipped)
                 if let timings {
                     try writePrivate(timings, to: audioFolder.appendingPathComponent("\(item.id.uuidString).segments.json"))
@@ -108,6 +115,12 @@ extension HistoryMigration {
             try? fm.removeItem(at: temp)
             throw error
         }
+    }
+
+    /// Открытые тайминги старых заметок. Нет файла — нет таймингов, нечитаемый файл — ошибка, её считает пропуск.
+    private static func legacyTimings(at url: URL) throws -> Data? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return try Data(contentsOf: url)
     }
 
     /// Отказ ключа и запертая история прерывают выгрузку, порча одного файла только считается.

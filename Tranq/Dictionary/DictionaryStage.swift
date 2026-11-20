@@ -35,7 +35,7 @@ enum DictionaryStage {
         for replacement in result.replacements {
             AppLogger.shared.info(
                 logSource,
-                "Словарь: \(AppLogger.shared.transcript(replacement.original, id: noteId)) → «\(replacement.replacement)», \(reasonTitle(replacement.reason)), \(sourceTitle(replacement.entryKey))"
+                "Словарь: \(AppLogger.shared.transcript(replacement.original, id: noteId)) → \(AppLogger.shared.transcript(replacement.replacement, id: noteId)), \(reasonTitle(replacement.reason)), \(sourceTitle(replacement.entryKey))"
             )
             if seen.insert(replacement.replacement).inserted { fired.append(replacement.replacement) }
         }
@@ -56,7 +56,7 @@ enum DictionaryStage {
         for hit in hits {
             AppLogger.shared.info(
                 logSource,
-                "Словарь: заменил бы \(AppLogger.shared.transcript(hit.token)) на «\(hit.spelling)», сходство \(String(format: "%.2f", hit.similarity))"
+                "Словарь: заменил бы \(AppLogger.shared.transcript(hit.token)) на \(AppLogger.shared.transcript(hit.spelling)), сходство \(String(format: "%.2f", hit.similarity))"
             )
         }
         return hits

@@ -101,7 +101,7 @@ Expected: FAIL, типы не найдены.
 
 - [ ] **Step 3: Implement**
 
-Схема: эфемерная пара той же кривой, что долгий ключ, `sharedSecretFromKeyAgreement`, `hkdfDerivedSymmetricKey` с `SHA256`, фиксированной солью `"tranq.history.v1"` и `sharedInfo` из `purpose.rawValue`, `AES.GCM` с 256-битным ключом. `version = 1`. В Связке ключей ключ лежит под сервисом `nuter.Tranq.historyKey`, с `kSecAttrAccessControl` и `userPresence`.
+Схема: эфемерная пара той же кривой, что долгий ключ, `sharedSecretFromKeyAgreement`, `hkdfDerivedSymmetricKey` с `SHA256`, фиксированной солью `"tranq.history.v1"` и `sharedInfo` из `purpose.rawValue`, `AES.GCM` с 256-битным ключом. `version = 1`. Релизы подписаны ad-hoc, и защищённая связка отвечает ошибкой -34018, поэтому ключ Secure Enclave лежит файлом `history-key.se` с правами `0o600` рядом с открытым `history-key.pub`, с флагами `privateKeyUsage` и `userPresence`. Без Secure Enclave запасной путь: байты Curve25519 в обычной связке входа под сервисом `nuter.Tranq.historyKey` и программная проверка Touch ID через общий `LAContext`. Запасной путь слабее, и в релизных заметках это сказано.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -387,7 +387,7 @@ struct HistoryMigrationTests {
 - [ ] **Step 2: Run tests to verify they fail**
 - [ ] **Step 3: Implement**
 
-Порядок: создать ключ, записать конверты рядом, прочитать каждый обратно и сверить с исходным, только потом удалить `history.json`, открытые `.wav`, `.segments.json` и открытый журнал, и лишь затем поднять флаг. Недописанные конверты при живом `history.json` удаляются на следующем запуске.
+Порядок: создать ключ, записать конверты рядом, прочитать каждый обратно и сверить с исходным, записать метку `history-migration`, и только потом удалить `history.json`, открытые `.wav`, `.segments.json` и открытый журнал, и лишь затем поднять флаг. Запуск доводит или откатывает прерванную миграцию по метке; недописанные конверты при живом `history.json` без метки удаляются.
 
 - [ ] **Step 4: Run tests to verify they pass**
 - [ ] **Step 5: Commit**
@@ -448,7 +448,7 @@ struct MCPLockTests {
 - [ ] **Step 2: Run tests to verify they fail**
 - [ ] **Step 3: Implement**
 
-Логгер при включённом замке вместо текста расшифровки пишет длину и идентификатор. Сам лог не шифруется.
+Логгер при включённом замке вместо текста расшифровки и слов словаря пишет длину и идентификатор. Сам лог не шифруется. Тексты, записанные до замка, остаются в нём, поэтому лог очищается после успешного включения, а при сбое между меткой и очисткой его чистит запуск.
 
 - [ ] **Step 4: Run tests to verify they pass**
 - [ ] **Step 5: Commit**

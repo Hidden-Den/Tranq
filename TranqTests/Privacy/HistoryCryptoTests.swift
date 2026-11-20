@@ -176,11 +176,13 @@ struct HistoryCryptoTests {
         private let lock = NSLock()
         private var count = 0
         let answer: Bool
-        init(answer: Bool) { self.answer = answer }
+        /// Отказ должен прийти заметно позже, чем стартуют все потоки: иначе опоздавший начнёт новую проверку.
+        let delay: Double
+        init(answer: Bool, delay: Double = 0.2) { self.answer = answer; self.delay = delay }
         var calls: Int { lock.lock(); defer { lock.unlock() }; return count }
         func evaluate(_ reason: String, _ completion: @escaping (Bool) -> Void) {
             lock.lock(); count += 1; lock.unlock()
-            DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { completion(self.answer) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + delay) { completion(self.answer) }
         }
     }
 
@@ -199,8 +201,30 @@ struct HistoryCryptoTests {
         #expect(evaluator.calls == 1)
     }
 
+    /// Ответ, пришедший после сброса сессии, устарел: проверка не засчитывается ни автору, ни ждущим.
+    @Test func resetDuringEvaluationRejectsStaleAnswer() throws {
+        let evaluator = SlowEvaluator(answer: true, delay: 0.5)
+        let session = HistoryAuthSession(evaluator: evaluator.evaluate)
+        let lock = NSLock()
+        var denied = false
+        let done = DispatchGroup()
+        done.enter()
+        DispatchQueue.global().async {
+            do { try session.ensureAuthorized() } catch HistoryKeyError.denied { lock.lock(); denied = true; lock.unlock() } catch {}
+            done.leave()
+        }
+        // Сброс должен прийти во время проверки, а не до её начала.
+        var waits = 0
+        while evaluator.calls == 0 && waits < 400 { Thread.sleep(forTimeInterval: 0.005); waits += 1 }
+        #expect(evaluator.calls == 1)
+        session.reset()
+        done.wait()
+        #expect(denied)
+        #expect(!session.isAuthorized)
+    }
+
     @Test func deniedEvaluationIsSharedAndRetriedLater() throws {
-        let evaluator = SlowEvaluator(answer: false)
+        let evaluator = SlowEvaluator(answer: false, delay: 1.0)
         let session = HistoryAuthSession(evaluator: evaluator.evaluate)
         let lock = NSLock()
         var denials = 0

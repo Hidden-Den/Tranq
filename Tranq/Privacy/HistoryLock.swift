@@ -100,6 +100,9 @@ final class HistoryLock: ObservableObject {
             return .unlocked
         } catch HistoryKeyError.unavailable {
             return .keyUnavailable
+        } catch HistoryCryptoError.unsupportedKey {
+            // Открытый ключ не того формата: этим ключом историю не открыть никогда.
+            return .keyUnavailable
         } catch {
             // Отказ и непонятные ошибки оставляют запертой: ложная потеря ключа предложила бы стереть историю.
             return .locked

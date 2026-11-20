@@ -79,6 +79,8 @@ final class HistoryStore: ObservableObject {
     }
     /// Сколько заметок и аудио ждут записи конверта: хранилища нет или запись не удалась.
     @Published private(set) var sealFailureCount = 0
+    /// Истина, пока после разблокировки читаются конверты: список ещё пуст, но это не пустая история.
+    @Published private(set) var isReadingNotes = false
 
     let directory: URL
     var audioDirectory: URL { directory.appendingPathComponent("Audio", isDirectory: true) }
@@ -140,6 +142,7 @@ final class HistoryStore: ObservableObject {
         pendingSave?.cancel()
         pendingSave = nil
         lockState = state
+        isReadingNotes = false
         retryPendingSeals()
         switch state {
         case .off:
@@ -156,6 +159,7 @@ final class HistoryStore: ObservableObject {
             finish(completion)
         case .unlocked:
             setItemsQuietly([])
+            isReadingNotes = true
             let vault = vault
             // Чтение на той же очереди, что и записи: заметки, записанные раньше, в него попадут.
             ioQueue.async { [weak self] in
@@ -165,6 +169,7 @@ final class HistoryStore: ObservableObject {
                 DispatchQueue.main.async { [weak self] in
                     defer { completion?() }
                     guard let self, self.generation == current else { return }
+                    self.isReadingNotes = false
                     switch result {
                     case .success(let loaded):
                         // Вставленное за время чтения уже записано отдельно и стоит первым.
@@ -427,14 +432,23 @@ final class HistoryStore: ObservableObject {
         guard let vault else { return }
         for id in pendingAudio {
             let url = audioURL(for: id)
-            guard let data = try? Data(contentsOf: url) else {
+            // Метка уходит, только когда открытого файла точно нет: пока он на диске, он ждёт запечатки.
+            guard FileManager.default.fileExists(atPath: url.path) else {
                 pendingAudio.remove(id)
+                continue
+            }
+            guard let data = try? Data(contentsOf: url) else {
+                AppLogger.shared.error("History", "Аудио не прочитано для запечатки", details: id.uuidString)
                 continue
             }
             do {
                 try vault.writeBlob(data, id: id, purpose: .audio)
                 try? FileManager.default.removeItem(at: url)
-                pendingAudio.remove(id)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    AppLogger.shared.error("History", "Открытое аудио не удалено после запечатки", details: id.uuidString)
+                } else {
+                    pendingAudio.remove(id)
+                }
             } catch {
                 AppLogger.shared.error("History", "Конверт аудио не записан", details: "\(id.uuidString): \(error)")
             }

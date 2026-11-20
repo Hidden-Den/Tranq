@@ -117,6 +117,7 @@ final class HistoryLockCoordinator: ObservableObject {
 
     private func apply(_ newState: HistoryLockState) {
         state = newState
+        journal.readAllowed = newState == .off || newState == .unlocked
         guard store.lockState != newState else { return }
         if newState == .unlocked {
             store.applyLockState(.unlocked) { [weak self] in

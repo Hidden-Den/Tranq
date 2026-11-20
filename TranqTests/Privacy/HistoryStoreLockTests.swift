@@ -53,6 +53,25 @@ struct HistoryStoreLockTests {
         #expect(!FileManager.default.fileExists(atPath: plainFile(directory).path))
     }
 
+    /// Пока конверты читаются после разблокировки, список пуст, но это не пустая история.
+    @Test func unlockMarksNotesAsReadingUntilLoaded() async throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let (store, _) = makeStore(directory, state: .locked)
+        store.addNote(text: "первая")
+        store.flush()
+        #expect(!store.isReadingNotes)
+
+        store.applyLockState(.unlocked)
+        #expect(store.isReadingNotes)
+
+        for _ in 0..<300 where store.isReadingNotes {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(!store.isReadingNotes)
+        #expect(store.items.map(\.text) == ["первая"])
+    }
+
     @Test func unlockReadsNotesWrittenWhileLocked() async throws {
         let directory = makeDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

@@ -186,7 +186,13 @@ struct HistoryLockTests {
         presence.delay = 50_000_000
         let lock = makeLock(presence: presence)
         async let attempt: Void = lock.unlock()
-        await Task.yield()
+        // Сон должен прийти уже во время проверки, а не до её начала.
+        var waits = 0
+        while presence.calls == 0 && waits < 400 {
+            try? await Task.sleep(nanoseconds: 5_000_000)
+            waits += 1
+        }
+        #expect(presence.calls == 1)
         lock.noteSystemWillSleep()
         await attempt
         #expect(lock.state == .locked)

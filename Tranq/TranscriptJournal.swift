@@ -49,6 +49,10 @@ public final class TranscriptJournal: ObservableObject {
 
     @Published public private(set) var lastRecord: JournalRecord?
 
+    /// Ложь, пока история заперта: последняя запись живёт в памяти открытым текстом,
+    /// и «Вставить оригинал речи» без этого отдал бы её мимо замка. Читается и меняется на главном потоке.
+    var readAllowed = true
+
     private let ioQueue = DispatchQueue(label: "com.tranq.transcript.journal", qos: .utility)
     private var pendingRecords: [UUID: JournalRecord] = [:]
     private let pendingLock = NSLock()
@@ -160,7 +164,7 @@ public final class TranscriptJournal: ObservableObject {
 
     /// Восстановление дословного оригинала речи: вставка под курсор или копирование в буфер
     public func pasteOriginal(completion: @escaping (Bool) -> Void) {
-        guard let record = lastRecord, !record.rawText.isEmpty else {
+        guard readAllowed, let record = lastRecord, !record.rawText.isEmpty else {
             completion(false)
             return
         }
@@ -285,7 +289,8 @@ public final class TranscriptJournal: ObservableObject {
         var copies: [(copy: URL, original: URL)] = []
         do {
             for original in files where FileManager.default.fileExists(atPath: original.path) {
-                let source = lines(of: original)
+                // Файл есть, но не читается: ошибка, а не пустой журнал, иначе пустая копия заменила бы оригинал.
+                let source = try readLines(of: original)
                 let output = try source.map(transform)
                 guard output.count == source.count, !output.contains(where: { $0.contains("\n") }) else {
                     throw HistoryMigrationError.verificationFailed
@@ -311,6 +316,11 @@ public final class TranscriptJournal: ObservableObject {
     }
 
     /// Строки файла по `\n`, байт в байт. Нет файла — нет строк.
+    private static func readLines(of url: URL) throws -> [String] {
+        let data = try Data(contentsOf: url)
+        return String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)
+    }
+
     private static func lines(of url: URL) -> [String] {
         guard let data = try? Data(contentsOf: url) else { return [] }
         return String(decoding: data, as: UTF8.self).split(separator: "\n").map(String.init)

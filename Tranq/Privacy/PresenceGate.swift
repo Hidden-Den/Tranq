@@ -86,8 +86,10 @@ final class HistoryAuthSession {
 
         evaluate(reason: Self.defaultReason) { success in
             self.lock.lock()
-            started.success = success
-            if success && startedGeneration == self.generation { self.authorized = true }
+            // Ответ, пришедший после сброса, устарел: ни автор вызова, ни ждущие его не получают доступ.
+            let current = startedGeneration == self.generation
+            started.success = success && current
+            if success && current { self.authorized = true }
             if self.flight === started { self.flight = nil }
             self.lock.unlock()
             started.done.leave()

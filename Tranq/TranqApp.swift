@@ -16,8 +16,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Первое значение применяется сразу, а сокет двери открывается ниже: ни один запрос
         // и ни одна строка лога не увидят замок без правил.
         let lockStates = historyLock.$state.eraseToAnyPublisher()
+        // Пока читаются конверты после разблокировки, `dictations` закрыт: список ещё пуст, и ответ был бы ложным.
+        let mcpStates = historyLock.$state
+            .combineLatest(HistoryStore.shared.$isReadingNotes) { state, reading in
+                state == .unlocked && reading ? HistoryLockState.locked : state
+            }
+            .eraseToAnyPublisher()
         lockBindings = [
-            MCPAccess.shared.bindHistoryLock(to: lockStates),
+            MCPAccess.shared.bindHistoryLock(to: mcpStates),
             AppLogger.shared.bindTranscriptRedaction(to: lockStates),
         ]
         let mic = PermissionManager.shared.isMicGranted

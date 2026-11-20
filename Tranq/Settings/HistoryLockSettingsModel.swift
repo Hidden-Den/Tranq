@@ -102,7 +102,7 @@ extension HistoryMigration.LaunchNotice {
     var text: String {
         switch self {
         case .lockTurnedOff: String(localized: "Замок был выключен после сбоя")
-        case .leftoverPlainHistory: String(localized: "Осталась открытая копия истории")
+        case .leftoverPlainHistory: String(localized: "Осталась незашифрованная копия истории")
         }
     }
 }

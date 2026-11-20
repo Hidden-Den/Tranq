@@ -171,6 +171,8 @@ final class HistoryVault: @unchecked Sendable {
         let fm = FileManager.default
         try fm.createDirectory(at: folder, withIntermediateDirectories: true,
                                attributes: [.posixPermissions: 0o700])
+        // Папка могла появиться раньше с правами по умолчанию, например `Audio` у старой установки.
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
         let data = try JSONEncoder().encode(envelope)
         let temp = folder.appendingPathComponent(".\(UUID().uuidString).tmp")
         guard fm.createFile(atPath: temp.path, contents: data, attributes: [.posixPermissions: 0o600]) else {

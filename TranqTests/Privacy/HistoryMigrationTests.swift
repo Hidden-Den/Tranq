@@ -1126,11 +1126,11 @@ struct HistoryMigrationTests {
         #expect(merged[2] == other)
     }
 
-    /// Открытые файлы рядом с конвертами: ни в одном нет текста заметок из конвертов.
+    /// Открытые файлы рядом с конвертами, и журнал тоже: ни в одном нет текста заметок из конвертов.
     private func plainTextLeaks(_ rig: Rig) throws -> [String] {
         let secret = Data("секрет".utf8)
         return try allFiles(rig)
-            .filter { !["note", "sealed"].contains($0.pathExtension) && !$0.lastPathComponent.hasPrefix("transcript_journal") }
+            .filter { !["note", "sealed"].contains($0.pathExtension) }
             .filter { try Data(contentsOf: $0).range(of: secret) != nil }
             .map(\.lastPathComponent)
     }
@@ -1347,5 +1347,65 @@ struct HistoryMigrationTests {
         #expect(coordinator.state == .off)
         #expect(rig.store.items == seed.items)
         #expect(!AppPreferences.historyLockEnabled(in: defaults))
+    }
+    // MARK: - Замечания ревью
+
+    /// Флаг опускается раньше уборки конвертов: сбой посреди неё запуск доведёт, а не откатит.
+    @Test func disableLowersFlagBeforeRemovingEnvelopes() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try await enable(rig)
+        var notesWhenFlagLowered = -1
+
+        try await HistoryMigration.disable(store: rig.store, journal: rig.journal, vault: rig.vault,
+                                           setFlag: {
+                                               notesWhenFlagLowered = rig.vault.noteFileCount()
+                                               rig.flags.values.append($0)
+                                           })
+
+        #expect(rig.flags.values.suffix(1) == [false])
+        #expect(notesWhenFlagLowered > 0)
+        #expect(rig.vault.noteFileCount() == 0)
+    }
+
+    /// Метка включения, а ключа уже нет: конверты не открыть, открытая история остаётся единственной копией.
+    @Test func enableMarkerWithoutKeyKeepsPlainHistory() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        let seed = try seed(rig)
+        let before = plainFiles(rig)
+        for item in seed.items { try rig.vault.writeNote(item) }
+        try HistoryMigration.writeMarker(.enable, in: rig.directory)
+        try rig.key.destroy()
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: false,
+                                                      setLockEnabled: { rig.flags.values.append($0) })
+
+        #expect(notice == nil)
+        #expect(plainFiles(rig) == before)
+        #expect(rig.flags.values.isEmpty)
+        #expect(leftovers(rig).isEmpty)
+    }
+
+    /// Журнал, который не читается, не заменяется пустой копией.
+    @Test func journalRewriteRefusesUnreadableFile() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("JournalUnreadable-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600],
+                                                   ofItemAtPath: directory.appendingPathComponent("j.jsonl").path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let url = directory.appendingPathComponent("j.jsonl")
+        try Data("{\"a\":1}\n".utf8).write(to: url)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: url.path)
+
+        #expect(throws: (any Error).self) { try TranscriptJournal.rewrite([url]) { $0 } }
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        #expect(try Data(contentsOf: url) == Data("{\"a\":1}\n".utf8))
+        #expect(!FileManager.default.fileExists(atPath: url.appendingPathExtension(TranscriptJournal.migrationSuffix).path))
     }
 }

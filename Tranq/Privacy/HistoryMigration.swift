@@ -235,16 +235,23 @@ enum HistoryMigration {
             // открытые копии этого выключения убираются по тем же правилам, что и на запуске.
             (reactivate ?? defaultActivation(store: store, journal: journal, vault: vault))()
             let digest = run.historyDigest
-            _ = await offMain { () -> LaunchNotice? in
+            let rolledBack = await offMain { () -> Layout.Rollback in
                 store.waitForIO()
                 return layout.rollbackDisable(digest: digest, key: vault.key, journal: journal)
             }
-            removeMarker(in: layout.directory)
+            // Открытые строки журнала без запечатки метку держат: запуск запечатает их по публичному ключу.
+            if rolledBack.journalSealed {
+                removeMarker(in: layout.directory)
+            } else {
+                try? writeMarker(.enableJournal, in: layout.directory)
+            }
             throw error
         }
 
-        await offMain { run.finishFiles() }
+        // Флаг опускается раньше уборки: сбой посреди неё запуск доведёт по метке `disable` при выключенном флаге.
+        // Иначе он откатил бы выключение, когда конверты уже убраны, и история осталась бы без читаемых заметок.
         setFlag(false)
+        await offMain { run.finishFiles() }
         // Порченые конверты и прочие остатки метку не держат: все шаги пройдены.
         removeMarker(in: layout.directory)
     }
@@ -304,6 +311,13 @@ enum HistoryMigration {
         layout.removeJournalCopies()
         let marker = layout.marker
         switch marker?.direction {
+        case .enable? where !lockEnabled && !vault.key.exists:
+            // Ключ пропал после метки: конверты не открыть, открытые файлы остаются единственными копиями.
+            AppLogger.shared.warn("History", "Ключа нет, включение отменено, открытая история сохранена")
+            layout.removeEnvelopesWithPlainTwins()
+            removeMarker(in: layout.directory)
+            // Замок остался выключенным, открытая история в нём живая: уведомление об остатке было бы ложным.
+            return nil
         case .enable?:
             layout.finishEnable(audio: nil, timings: nil, notes: nil)
             setLockEnabled(true)
@@ -321,9 +335,13 @@ enum HistoryMigration {
             removeMarker(in: layout.directory)
             return nil
         case .disable?:
-            let notice = layout.rollbackDisable(digest: marker?.digest, key: vault.key)
-            removeMarker(in: layout.directory)
-            return notice
+            let rolledBack = layout.rollbackDisable(digest: marker?.digest, key: vault.key)
+            if rolledBack.journalSealed {
+                removeMarker(in: layout.directory)
+            } else {
+                try? writeMarker(.enableJournal, in: layout.directory)
+            }
+            return rolledBack.notice
         case nil where !lockEnabled:
             // Своя копия прогона без метки — это незафиксированное выключение: расшифрованное не остаётся.
             layout.remove(layout.historyCandidate)
@@ -665,8 +683,14 @@ extension HistoryMigration {
         /// - открытые строки журнала снова запечатываются по публичному ключу.
         /// Возвращает `.leftoverPlainHistory`, если открытая история осталась.
         /// `journal` — живой журнал, если откат идёт в работающем приложении: тогда запечатка идёт в его очереди.
+        struct Rollback {
+            let notice: LaunchNotice?
+            /// Ложь, если открытые строки журнала остались без запечатки: метку снимать рано.
+            let journalSealed: Bool
+        }
+
         func rollbackDisable(digest: String?, key: HistoryKeyProviding,
-                             journal: TranscriptJournal? = nil) -> LaunchNotice? {
+                             journal: TranscriptJournal? = nil) -> Rollback {
             let noteIDs = Set(files(in: notes, suffix: ".note").keys)
             // Своя копия прогона, если сбой пришёл между меткой и заменой. Оставшаяся от прошлых сбоев
             // копия разбирается ниже без отпечатка: из одних конвертов она не собиралась.
@@ -689,6 +713,7 @@ extension HistoryMigration {
                     if let plain, (try? vault.readBlob(id: id, purpose: .timings)) == plain { remove(url) }
                 }
             }
+            var journalSealed = true
             do {
                 if let journal {
                     try journal.rewriteForMigration(sealing: .sealed(key: key)) { line in
@@ -698,9 +723,10 @@ extension HistoryMigration {
                     try sealJournal(key: key)
                 }
             } catch {
+                journalSealed = false
                 AppLogger.shared.error("History", "Журнал не запечатан при откате", details: error.localizedDescription)
             }
-            return exists(history) ? .leftoverPlainHistory : nil
+            return Rollback(notice: exists(history) ? .leftoverPlainHistory : nil, journalSealed: journalSealed)
         }
 
         /// Непоставленная копия истории: уходит, только если всё в ней есть в другом месте.

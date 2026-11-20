@@ -137,12 +137,10 @@ struct KeychainHistoryKey: HistoryKeyProviding {
         guard let key = try? Curve25519.KeyAgreement.PrivateKey(rawRepresentation: raw) else {
             throw HistoryKeyError.unavailable
         }
-        do {
-            let secret = try key.sharedSecretFromKeyAgreement(with: peer)
-            return secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }
-        } catch {
-            throw HistoryKeyError.denied
-        }
+        // Подтверждение уже получено: ошибка соглашения здесь значит порченый конверт, а не отказ.
+        // Она уходит как есть, и хранилище пропускает один конверт, а не запирает всю историю.
+        let secret = try key.sharedSecretFromKeyAgreement(with: peer)
+        return secret.withUnsafeBytes { SymmetricKey(data: Data($0)) }
     }
 
     func create() throws {
