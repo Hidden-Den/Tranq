@@ -174,7 +174,16 @@ final class AudioCapture: ObservableObject {
     func cancelRecording() {
         removeEscMonitor()
         guard isRecording else { return }
-        recorder.cancel()
+        // Esc ловится и в чужих окнах: длинную речь не стираем, а кладём в историю без вставки
+        let frozenContext = contextCapture.freeze()
+        if let recording = recorder.stop() {
+            AppLogger.shared.info("Recording", "Запись отменена", details: CancelledRecording.logDetails(duration: recording.duration))
+            if CancelledRecording.keepsSpeech(duration: recording.duration) {
+                keepInHistory(recording, context: frozenContext)
+            } else {
+                TempFiles.remove(recording.url)
+            }
+        }
         SoundEffect.playCancel()
         warningMessage = nil
         isRecording = false
@@ -185,6 +194,33 @@ final class AudioCapture: ObservableObject {
         transcribedText = String(localized: "Запись отменена")
         OverlayPanelManager.shared.hideOverlay()
         WindowHighlightManager.endTracking()
+    }
+
+    /// Распознаёт отменённую запись и сохраняет её в историю. Окошко, подсветка и поле ввода
+    /// не трогаются: к этому моменту может идти уже новая запись.
+    private func keepInHistory(_ recording: AudioRecorder.Recording, context frozenContext: FrozenDictationContext) {
+        Task { @MainActor [weak self] in
+            guard let self else {
+                TempFiles.remove(recording.url)
+                return
+            }
+            let resolved = self.resolveLevel(for: await frozenContext.resolve())
+            let job = TranscriptionPipeline.Job(
+                source: .recording(recording.url, duration: recording.duration),
+                focusTarget: nil,
+                level: resolved.level
+            )
+            self.pipeline.run(job, progress: { _ in }) { [weak self] result in
+                defer { TempFiles.remove(recording.url) }
+                switch result {
+                case .success(let output):
+                    self?.save(output)
+                    AppLogger.shared.info("Recording", "Отменённая запись сохранена в историю", details: "id \(output.noteId)")
+                case .failure:
+                    AppLogger.shared.warn("Recording", "Отменённая запись не распознана")
+                }
+            }
+        }
     }
 
     private func removeEscMonitor() {
