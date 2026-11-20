@@ -738,6 +738,18 @@ struct HistoryMigrationTests {
         #expect(journalLines(rig).allSatisfy(HistoryMigration.isSealedLine))
     }
 
+    /// Метка `enableJournal` не прячет открытую историю: уведомление об остатке сохраняется.
+    @Test func journalMarkerReportsRetainedPlainHistory() async throws {
+        let rig = makeRig()
+        defer { cleanup(rig) }
+        try seed(rig)
+        try HistoryMigration.writeMarker(.enableJournal, in: rig.directory)
+
+        let notice = HistoryMigration.cleanupHalfDone(vault: rig.vault, lockEnabled: true, setLockEnabled: { _ in })
+
+        #expect(notice == .leftoverPlainHistory)
+    }
+
     /// Журнал не открылся при выключении: замок остаётся, журнал запечатан, заметки читаются.
     @Test func failedDisableJournalStepKeepsLockOn() async throws {
         let rig = makeRig()

@@ -329,7 +329,8 @@ enum HistoryMigration {
             setLockEnabled(true)
             logger.clear()
             finishJournalAtLaunch(layout: layout, key: vault.key)
-            return nil
+            // Метку могла оставить и отмена выключения: открытая история в этом случае остаётся, и о ней говорят.
+            return layout.exists(layout.history) ? .leftoverPlainHistory : nil
         case .disable? where !lockEnabled:
             layout.finishDisable()
             removeMarker(in: layout.directory)
