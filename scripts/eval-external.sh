@@ -21,7 +21,7 @@ local_model=""; local_timeout=""
 if [ "${1:-}" = "--local" ]; then
   [ $# -ge 4 ] || { echo "Использование: $0 --local <модель.gguf> [срок, с] <расшифровки.json> <отчёт.json> [промпт.txt]" >&2; exit 2; }
   local_model="$(cd "$(dirname "$2")" && echo "$(pwd)/$(basename "$2")")"; shift 2
-  if [[ "${1:-}" =~ ^[0-9]+$ ]]; then local_timeout="$1"; shift; fi
+  if [[ "${1:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then local_timeout="$1"; shift; fi
 fi
 replay=""
 if [ "${1:-}" = "--replay" ]; then
@@ -38,7 +38,8 @@ prompt=""; [ $# -eq 3 ] && prompt="$(abs "$3")"
 [ -n "$replay" ] && replay="$(abs "$replay")"
 
 base=""; model=""; key=""
-if [ -z "$local_model" ]; then
+# Повтор не зовёт модель: настройки провайдера ему не нужны
+if [ -z "$local_model" ] && [ -z "$replay" ]; then
   base="$(defaults read nuter.Tranq ai.baseURL)"
   model="$(defaults read nuter.Tranq ai.model)"
   key="$(defaults read nuter.Tranq keystore.ai.apiKey)"

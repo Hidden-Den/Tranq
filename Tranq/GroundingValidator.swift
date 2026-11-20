@@ -171,18 +171,30 @@ public struct GroundingValidator {
     /// Буквы окончаний коротких слов: «окно» и «окне» одно слово, «стол» и «стоп» разные.
     private static let endingLetters: Set<Character> = ["а", "е", "и", "о", "у", "ы", "э", "ю", "я", "ь", "й"]
 
+    /// Буквы, из которых складываются окончания длинных слов: «каком» и «какое»,
+    /// «режима» и «режимов», «делал» и «делаю», «какого» и «какой».
+    private static let inflectionLetters = endingLetters.union(["м", "х", "т", "ш", "в", "л", "г"])
+
     /// Одно ли это слово в разных формах. Модель чинит согласование: «какое окно идёт
     /// диктовка» → «в каком окне идёт диктовка», и новые формы не новые слова.
-    /// Слова от пяти букв: общее начало не короче четырёх букв и расходятся не больше трёх
-    /// последних. Короткие слова: расходится только последняя буква, и обе гласные.
+    /// Слова от пяти букв: общее начало не короче четырёх букв, расходятся не больше трёх
+    /// последних, и расходятся только буквы окончаний: «запас» и «запах», «переход»
+    /// и «перевод» разные слова. Короткие слова: расходится только последняя гласная.
+    /// «-ся» меняет значение глагола: «переключать» и «переключаться» разные слова.
     static func sameLexeme(_ a: String, _ b: String) -> Bool {
         if a == b { return true }
-        let x = Array(a), y = Array(b)
+        var x = Array(a), y = Array(b)
+        let reflexive = { (word: [Character]) in word.count > 4 && ["ся", "сь"].contains(String(word.suffix(2))) }
+        guard reflexive(x) == reflexive(y) else { return false }
+        if reflexive(x) { x.removeLast(2); y.removeLast(2) }
         let shorter = min(x.count, y.count)
         guard shorter >= 3 else { return false }
         var prefix = 0
         while prefix < shorter, x[prefix] == y[prefix] { prefix += 1 }
-        if shorter >= 5 { return prefix >= max(4, shorter - 3) }
+        if shorter >= 5 {
+            return prefix >= max(4, shorter - 3)
+                && x[prefix...].allSatisfy(inflectionLetters.contains) && y[prefix...].allSatisfy(inflectionLetters.contains)
+        }
         guard prefix >= shorter - 1 else { return false }
         return x[prefix...].allSatisfy(endingLetters.contains) && y[prefix...].allSatisfy(endingLetters.contains)
     }
@@ -195,7 +207,8 @@ public struct GroundingValidator {
     /// Латинские термины речи в нижнем регистре, от которых говорящий сам отказался:
     /// «какой-нибудь API, ну, не API» или «в Jira, точнее, в Linear». Модель убирает их
     /// по правилу самоисправления, и требовать их обратно нельзя. Нужен явный отказ:
-    /// «не» и тот же термин, или «точнее», «вернее», «нет» не дальше четырёх слов.
+    /// «не» и тот же термин, или «точнее», «вернее», «нет» не дальше четырёх слов и за ними
+    /// не дальше трёх слов другой термин. «В этом API нет ошибок» обычное отрицание.
     static func retractedTerms(in input: String) -> Set<String> {
         let words = comparableWords(input)
         let latin = Set(extractLatinTokens(from: input).map { $0.lowercased() })
@@ -203,7 +216,9 @@ public struct GroundingValidator {
         for (index, word) in words.enumerated() where latin.contains(word) {
             let window = words[(index + 1)..<min(index + 5, words.count)]
             for (offset, next) in zip(window.indices, window) {
-                if termRetractions.contains(next)
+                let replacement = words[(offset + 1)..<min(offset + 4, words.count)]
+                    .contains { latin.contains($0) && $0 != word }
+                if (termRetractions.contains(next) && replacement)
                     || (next == "не" && offset + 1 < words.count && words[offset + 1] == word) {
                     retracted.insert(word)
                 }
@@ -229,6 +244,10 @@ public struct GroundingValidator {
         let readings = lower == soft ? [lower] : [lower, soft]
         for word in words {
             let wordKey = Phonetics.soundKey(word)
+            // Короткий термин вроде RAG: скелет из двух согласных, поэтому нужно точное написание
+            if wordKey.count == 2, readings.contains(where: {
+                Phonetics.soundKey($0) == wordKey && Phonetics.transliterateToCyrillic($0) == word
+            }) { return true }
             guard wordKey.count >= 3 else { continue }
             for reading in readings {
                 let key = Phonetics.soundKey(reading)

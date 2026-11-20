@@ -131,11 +131,13 @@ struct CleanupDeadlineTests {
         #expect(long.total > short.total + 5)
     }
 
-    /// Настройка остаётся нижней границей: поднял её человек, поднялись все сроки.
-    @Test func settingRaisesEveryDeadline() {
+    /// Настройка остаётся нижней границей срока до первого токена и потолка. Пауза между
+    /// токенами своя: поток, замолчавший на ней, оборван, сколько бы ни стояло в настройке.
+    @Test func settingRaisesFirstTokenAndTotal() {
         let deadlines = CleanupDeadlines.external(characters: 40, setting: 30)
         #expect(deadlines.firstToken >= 30)
         #expect(deadlines.total >= 30)
+        #expect(deadlines.idle == CleanupDeadlines.externalIdle)
     }
 
     /// Локальная модель живёт по прежнему одному сроку: без замеров её поведение не меняется.

@@ -12,6 +12,13 @@ struct SpokenTermTests {
         GroundingValidator.validate(input: input, output: output, level: .clean)
     }
 
+    /// Ревью PR 18: у короткого термина скелет из двух согласных, «раг» и RAG.
+    /// Такой принимается только при точном совпадении написания.
+    @Test func shortTermWithExactSpellingIsAccepted() {
+        #expect(GroundingValidator.soundsSpoken("RAG", words: ["раг"]))
+        #expect(!GroundingValidator.soundsSpoken("RAG", words: ["рог"]))
+    }
+
     @Test func termWrittenFromItsRussianSoundIsAccepted() {
         #expect(validate("Расскажи про линиар и как его настроить", "Расскажи про Linear и как его настроить")
                 == .valid(sanitizedText: "Расскажи про Linear и как его настроить"))
