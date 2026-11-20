@@ -119,9 +119,16 @@ public struct GroundingValidator {
             }
         }
 
+        // Термины, записанные латиницей вместо русского звучания: промпт сам велит так писать
+        let spokenWords = cyrillicWords(trimmedInput)
+        var spokenTerms = Set<String>()
         for token in outputLatin {
             let lowerToken = token.lowercased()
             if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
+                continue
+            }
+            if soundsSpoken(token, words: spokenWords) {
+                spokenTerms.insert(token)
                 continue
             }
             return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
@@ -151,11 +158,51 @@ public struct GroundingValidator {
         }
 
         // 8. Чистая мысль только удаляет мусор: пересказ своими словами отклоняется
-        if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms) {
+        if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms.union(spokenTerms)) {
             return .rejected(reason: reason)
         }
 
         return .valid(sanitizedText: sanitizedOutput)
+    }
+
+    // MARK: - Термин по звучанию
+
+    /// Наименьшая похожесть написаний, при которой латинский термин считается записью
+    /// русского слова из речи. Совпадения скелета согласных мало: «камень» и Gemini оба
+    /// дают к-м-н, а пишутся непохоже.
+    static let minSpokenTermSimilarity = 0.5
+
+    /// Звучит ли латинский термин как одно из русских слов речи: «Джиминай» как Gemini,
+    /// «антигравити» как Antigravity, «Линяр» как Linear. Нужны оба совпадения: скелет
+    /// согласных из `Phonetics.soundKey` и похожее написание после транслитерации.
+    static func soundsSpoken(_ term: String, words: [String]) -> Bool {
+        let lower = term.lowercased()
+        // Мягкое g перед e, i, y читается «дж»: Gemini это «джемини», а скелет у g твёрдый
+        let soft = lower.replacingOccurrences(of: #"g(?=[eiy])"#, with: "dzh", options: .regularExpression)
+        let readings = lower == soft ? [lower] : [lower, soft]
+        for word in words {
+            let wordKey = Phonetics.soundKey(word)
+            guard wordKey.count >= 3 else { continue }
+            for reading in readings {
+                let key = Phonetics.soundKey(reading)
+                guard key.count >= 3 else { continue }
+                // Короткий скелет только целиком, длинный с одной ошибкой на четыре звука
+                let skeleton = key == wordKey
+                    || (min(key.count, wordKey.count) >= 4 && Phonetics.normalizedDistance(key, wordKey) <= 0.25)
+                guard skeleton else { continue }
+                let letters = 1 - Phonetics.normalizedDistance(word, Phonetics.transliterateToCyrillic(reading))
+                if letters >= minSpokenTermSimilarity { return true }
+            }
+        }
+        return false
+    }
+
+    /// Русские слова речи в нижнем регистре, без знаков.
+    static func cyrillicWords(_ text: String) -> [String] {
+        text.lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+            .filter { word in word.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) } }
     }
 
     // MARK: - Защита от пересказа
