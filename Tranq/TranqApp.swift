@@ -1,15 +1,25 @@
 import SwiftUI
 import AppKit
+import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     /// Сон Mac, видимость окна и таймер замка истории.
     private var historyLockMonitor: HistoryLockSystemMonitor?
+    /// Подписки на состояние замка: доступ нейронок к истории и правило лога.
+    private var lockBindings: [AnyCancellable] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppPreferences.shared.applyActivationPolicy()
         // Замок встаёт до первой диктовки: хранилище и журнал сразу пишут конверты
         let historyLock = HistoryLockCoordinator.shared
         historyLockMonitor = HistoryLockSystemMonitor(coordinator: historyLock)
+        // Первое значение применяется сразу, а сокет двери открывается ниже: ни один запрос
+        // и ни одна строка лога не увидят замок без правил.
+        let lockStates = historyLock.$state.eraseToAnyPublisher()
+        lockBindings = [
+            MCPAccess.shared.bindHistoryLock(to: lockStates),
+            AppLogger.shared.bindTranscriptRedaction(to: lockStates),
+        ]
         let mic = PermissionManager.shared.isMicGranted
         let ax = PermissionManager.shared.isAccessibilityGranted
         AppLogger.shared.info("App", "Запуск Tranq",
