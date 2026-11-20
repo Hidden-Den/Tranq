@@ -183,7 +183,7 @@ public struct GroundingValidator {
     /// в деловом переписывании, поэтому признаки отказа только связками.
     private static let toneMetaMarkers: [(pattern: String, spokenStems: [String])] = [
         (#"не (?:могу|буду|стану) (?:обработ|выполн|помочь|перепис|переформулир|отредакт|ответить|продолж)"#, []),
-        (#"переформулир"#, ["формулир"]),
+        (#"переформулируй|(?:прошу|просим|предлагаю|попробуйте|можете|могли бы вы) переформулир"#, ["формулир"]),
         (#"корректн\w* форм|форм\w* обращени|более корректн"#, []),
         (#"(?:текст|сообщени|расшифровк|запрос)\w* (?:не )?содерж"#, []),
         (#"расшифровк"#, ["расшифр"]), (#"транскрип"#, ["транскрип"]),
@@ -213,9 +213,13 @@ public struct GroundingValidator {
         "меня", "тебя", "тебе", "нас", "вас", "нам", "вам", "всё", "все", "всех", "весь",
     ]
 
+    /// Смысловых слов в речи, с которых сверяется тема. Короткую фразу деловой тон вправе
+    /// переписать целиком: «спасибо огромное, вы нас выручили» и «благодарю за помощь».
+    static let minToneContentWords = 5
+
     /// Ответ модели вместо переписанной речи: отказ, разговор о задаче, придуманное пожелание
     /// от первого лица или текст совсем о другом. Тон вправе менять слова, но не тему: если
-    /// в речи от трёх смысловых слов, хотя бы одно из них остаётся в какой-то форме.
+    /// в речи от пяти смысловых слов, хотя бы одно из них остаётся в какой-то форме.
     static func toneViolation(input: String, output: String) -> String? {
         let spoken = input.lowercased().replacingOccurrences(of: "ё", with: "е")
         let written = output.lowercased().replacingOccurrences(of: "ё", with: "е")
@@ -229,11 +233,40 @@ public struct GroundingValidator {
             return "Модель добавила пожелание от себя: «\(marker)»"
         }
 
+        if let addressee = letterAddressee(input: input, output: output) {
+            return "Модель написала письмо адресату вместо поручения: \(addressee)"
+        }
+
         let spokenContent = Set(toneContentWords(input))
-        guard spokenContent.count >= 3 else { return nil }
+        guard spokenContent.count >= minToneContentWords else { return nil }
         let writtenContent = toneContentWords(output)
         let shared = spokenContent.contains { word in writtenContent.contains { sameRoot(word, $0) } }
         return shared ? nil : "Модель ушла от темы речи: ни одного общего слова"
+    }
+
+    /// Поручение написать или передать что-то человеку: «напиши Андрею», «передай Свете».
+    private static let errandPattern = #"(?i)(?:напиши|напишите|скажи|скажите|передай|передайте|ответь|ответьте|спроси|спросите)\s+([А-ЯЁ][а-яё]+)"#
+
+    /// Вежливый зачин письма перед обращением: «Добрый день, Андрей!».
+    private static let letterGreeting = #"^(?:здравствуйте|добрый (?:день|вечер)|доброе утро|привет)[,!.]?\s*"#
+
+    /// Имя адресата, если модель написала ему письмо вместо поручения: в речи «напиши Андрею»,
+    /// а ответ начинается с обращения «Андрей,». Обращение к нему же в самой речи не в счёт.
+    static func letterAddressee(input: String, output: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: errandPattern) else { return nil }
+        let ns = input as NSString
+        let names = regex.matches(in: input, range: NSRange(location: 0, length: ns.length))
+            .map { ns.substring(with: $0.range(at: 1)).lowercased() }
+        guard !names.isEmpty else { return nil }
+        var opening = output.lowercased().replacingOccurrences(of: "ё", with: "е")
+        if let greeting = opening.range(of: letterGreeting, options: .regularExpression) {
+            opening = String(opening[greeting.upperBound...])
+        }
+        guard let first = opening.split(whereSeparator: { $0 == " " }).first,
+              let mark = first.last, mark == "," || mark == "!" else { return nil }
+        let addressed = String(first.dropLast())
+        let spokenOpening = comparableWords(input).first ?? ""
+        return names.first { sameLexeme($0, addressed) && !sameLexeme(spokenOpening, addressed) }
     }
 
     /// Смысловые слова для сверки темы: от четырёх букв, аббревиатуры и термины короче тоже.
