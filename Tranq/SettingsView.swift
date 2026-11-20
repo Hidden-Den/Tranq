@@ -17,7 +17,8 @@ struct SettingsView: View {
             DataSettingsSection(lockState: historyLock.state,
                                 presence: historyLock.presence,
                                 onEnable: { try await HistoryLockMigrator.shared.enable() },
-                                onDisable: { try await HistoryLockMigrator.shared.disable() })
+                                onDisable: { try await HistoryLockMigrator.shared.disable() },
+                                onExport: { try await HistoryExportAction.run() })
         }
     }
 }
