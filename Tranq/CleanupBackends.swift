@@ -4,11 +4,30 @@ import Foundation
 struct LocalBackend: CleanupBackend {
     let modelPath: String
 
-    func complete(system: String, user: String, timeout: TimeInterval) async throws -> String {
-        guard let result = await LocalSynthServiceClient.shared.synthesize(
-            transcript: user, stylePrompt: system, modelPath: modelPath, timeout: timeout
-        ) else { throw CleanupBackendError.unavailable }
-        return result
+    func complete(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
+        switch await LocalSynthServiceClient.shared.synthesize(
+            transcript: user, stylePrompt: system, modelPath: modelPath, timeout: deadlines.total
+        ) {
+        case .text(let result): return result
+        case .truncated: throw CleanupBackendError.truncated
+        case .failed: throw CleanupBackendError.unavailable
+        }
+    }
+}
+
+/// Отметка последнего куска потока: пишет чтение ответа, читает наблюдатель за сроками.
+final class StreamProgress: @unchecked Sendable {
+    private let lock = NSLock()
+    private var last: CFAbsoluteTime?
+
+    /// Когда пришёл последний кусок текста; `nil`, пока не пришёл ни один.
+    var lastChunk: CFAbsoluteTime? {
+        lock.lock(); defer { lock.unlock() }
+        return last
+    }
+
+    func noteChunk() {
+        lock.lock(); last = CFAbsoluteTimeGetCurrent(); lock.unlock()
     }
 }
 
@@ -17,21 +36,81 @@ struct ExternalBackend: CleanupBackend {
     let config: AIProviderConfig
     /// Куда писать замеры потока; `nil` берёт общее хранилище, подмена нужна тестам.
     var telemetry: CleanupTelemetry?
+    /// Сессия запроса. Подмена нужна тестам: они отдают поток без сети, своей сессией,
+    /// не трогая общую регистрацию URLProtocol, глобальную на весь процесс.
+    var session: URLSession = .shared
 
-    func complete(system: String, user: String, timeout: TimeInterval) async throws -> String {
-        try await withThrowingTaskGroup(of: String.self) { group in
-            group.addTask { try await stream(system: system, user: user) }
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(max(0.1, timeout) * 1_000_000_000))
-                throw CleanupBackendError.timeout
-            }
+    func complete(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
+        do {
+            return try await attempt(system: system, user: user, deadlines: deadlines)
+        } catch CleanupBackendError.connectionLost {
+            // Мёртвое соединение из пула: вторая попытка берёт живое. Сроки у неё свои,
+            // первая потратила часть ожидания на то, чтобы обрыв вообще всплыл.
+            AppLogger.shared.warn("Synthesizer", "Соединение потеряно, вторая попытка")
+            return try await attempt(system: system, user: user, deadlines: deadlines)
+        }
+    }
+
+    /// Одно обращение к провайдеру: поток под присмотром сроков.
+    private func attempt(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
+        let progress = StreamProgress()
+        return try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask { try await stream(system: system, user: user, progress: progress) }
+            group.addTask { try await Self.watch(progress, deadlines: deadlines) }
             defer { group.cancelAll() }
             guard let first = try await group.next() else { throw CleanupBackendError.empty }
             return first
         }
     }
 
-    private func stream(system: String, user: String) async throws -> String {
+    /// Почему поток оборван. Текст для журнала собирается здесь же, чтобы причина
+    /// в логе всегда называла срок, а не общий «таймаут».
+    enum StreamCut: Equatable {
+        /// Ответ не начался за отведённое время.
+        case noStart
+        /// Поток начался и замолчал.
+        case stalled
+        /// Ответ не кончается, вышел общий потолок.
+        case ceiling
+    }
+
+    enum StreamVerdict: Equatable {
+        case wait
+        case cut(StreamCut)
+    }
+
+    /// Решение по срокам: ждать или обрывать. Чистая функция от времени, поэтому
+    /// её таблица проверяется тестами без таймеров и без сети.
+    /// `sinceLastChunk` это `nil`, пока не пришёл ни один кусок текста.
+    /// До первого куска срок простоя не применяется, после первого не применяется ожидание начала.
+    static func verdict(elapsed: TimeInterval, sinceLastChunk: TimeInterval?, deadlines: CleanupDeadlines) -> StreamVerdict {
+        if elapsed > deadlines.total { return .cut(.ceiling) }
+        guard let sinceLastChunk else {
+            return elapsed > deadlines.firstToken ? .cut(.noStart) : .wait
+        }
+        return sinceLastChunk > deadlines.idle ? .cut(.stalled) : .wait
+    }
+
+    /// Наблюдатель за сроками. Возврата у него нет: он либо бросает таймаут,
+    /// либо отменяется вместе с победившим потоком.
+    private static func watch(_ progress: StreamProgress, deadlines: CleanupDeadlines) async throws -> String {
+        let started = CFAbsoluteTimeGetCurrent()
+        while true {
+            // Отмена приходит сюда ошибкой сна: поток ответил первым, следить больше не за чем
+            try await Task.sleep(nanoseconds: 50_000_000)
+            let now = CFAbsoluteTimeGetCurrent()
+            let last = progress.lastChunk
+            switch verdict(elapsed: now - started, sinceLastChunk: last.map { now - $0 }, deadlines: deadlines) {
+            case .wait:
+                continue
+            case .cut(let cut):
+                AppLogger.shared.warn("Synthesizer", cut.logMessage(elapsed: now - started, sinceLastChunk: last.map { now - $0 }))
+                throw CleanupBackendError.timeout
+            }
+        }
+    }
+
+    private func stream(system: String, user: String, progress: StreamProgress) async throws -> String {
         let request = try ChatRequestBuilder.streamRequest(config: config, system: system, user: "<transcript>\(user)</transcript>")
 
         let store: CleanupTelemetry
@@ -39,7 +118,7 @@ struct ExternalBackend: CleanupBackend {
         let started = CFAbsoluteTimeGetCurrent()
         var accumulated = ""
         do {
-            let (bytes, response) = try await URLSession.shared.bytes(for: request)
+            let (bytes, response) = try await session.bytes(for: request)
             guard let http = response as? HTTPURLResponse else { throw CleanupBackendError.unavailable }
             guard http.statusCode == 200 else { throw CleanupBackendError.http(http.statusCode) }
 
@@ -55,6 +134,7 @@ struct ExternalBackend: CleanupBackend {
                     usage.apply(input: input, output: output)
                     continue
                 case .text(let piece):
+                    progress.noteChunk()
                     if !gotFirstToken {
                         gotFirstToken = true
                         let elapsed = CFAbsoluteTimeGetCurrent() - started
@@ -79,6 +159,8 @@ struct ExternalBackend: CleanupBackend {
             throw error
         } catch let error as URLError where error.code == .timedOut {
             throw CleanupBackendError.timeout
+        } catch let error as URLError where error.code == .networkConnectionLost {
+            throw CleanupBackendError.connectionLost
         } catch is CancellationError {
             throw CancellationError()
         } catch let error as URLError where error.code == .cancelled {
@@ -147,6 +229,17 @@ extension ExternalBackend {
         let output = (usage["completion_tokens"] as? Int) ?? (usage["output_tokens"] as? Int)
         guard input != nil || output != nil else { return nil }
         return .usage(input: input, output: output)
+    }
+}
+
+extension ExternalBackend.StreamCut {
+    /// Строка для журнала: называет срок и то время, на котором он вышел.
+    func logMessage(elapsed: TimeInterval, sinceLastChunk: TimeInterval?) -> String {
+        switch self {
+        case .noStart: return String(format: "Ответ не начался за %.1f с", elapsed)
+        case .stalled: return String(format: "Поток замолчал на %.1f с", sinceLastChunk ?? elapsed)
+        case .ceiling: return String(format: "Срок потока вышел: %.1f с", elapsed)
+        }
     }
 }
 

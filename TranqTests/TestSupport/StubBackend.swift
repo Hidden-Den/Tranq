@@ -30,7 +30,7 @@ final class StubBackend: CleanupBackend, @unchecked Sendable {
         return received
     }
 
-    func complete(system: String, user: String, timeout: TimeInterval) async throws -> String {
+    func complete(system: String, user: String, deadlines: CleanupDeadlines) async throws -> String {
         lock.lock()
         count += 1
         received = user

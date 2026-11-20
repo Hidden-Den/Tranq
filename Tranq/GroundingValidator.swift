@@ -119,9 +119,16 @@ public struct GroundingValidator {
             }
         }
 
+        // Термины, записанные латиницей вместо русского звучания: промпт сам велит так писать
+        let spokenWords = cyrillicWords(trimmedInput)
+        var spokenTerms = Set<String>()
         for token in outputLatin {
             let lowerToken = token.lowercased()
             if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
+                continue
+            }
+            if soundsSpoken(token, words: spokenWords) {
+                spokenTerms.insert(token)
                 continue
             }
             return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
@@ -132,6 +139,7 @@ public struct GroundingValidator {
             let outputLatinLower = Set(outputLatin.map { $0.lowercased() })
             // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
             let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
+                .union(retractedTerms(in: trimmedInput))
             if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
                 return .rejected(reason: "Пропущен исходный термин \(missing)")
             }
@@ -151,11 +159,116 @@ public struct GroundingValidator {
         }
 
         // 8. Чистая мысль только удаляет мусор: пересказ своими словами отклоняется
-        if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms) {
+        if isClean, let reason = rewriteViolation(input: trimmedInput, output: sanitizedOutput, customTerms: customTerms.union(spokenTerms)) {
             return .rejected(reason: reason)
         }
 
         return .valid(sanitizedText: sanitizedOutput)
+    }
+
+    // MARK: - Словоформы
+
+    /// Буквы окончаний коротких слов: «окно» и «окне» одно слово, «стол» и «стоп» разные.
+    private static let endingLetters: Set<Character> = ["а", "е", "и", "о", "у", "ы", "э", "ю", "я", "ь", "й"]
+
+    /// Буквы, из которых складываются окончания длинных слов: «каком» и «какое»,
+    /// «режима» и «режимов», «делал» и «делаю», «какого» и «какой».
+    private static let inflectionLetters = endingLetters.union(["м", "х", "т", "ш", "в", "л", "г"])
+
+    /// Одно ли это слово в разных формах. Модель чинит согласование: «какое окно идёт
+    /// диктовка» → «в каком окне идёт диктовка», и новые формы не новые слова.
+    /// Слова от пяти букв: общее начало не короче четырёх букв, расходятся не больше трёх
+    /// последних, и расходятся только буквы окончаний: «запас» и «запах», «переход»
+    /// и «перевод» разные слова. Короткие слова: расходится только последняя гласная.
+    /// «-ся» меняет значение глагола: «переключать» и «переключаться» разные слова.
+    static func sameLexeme(_ a: String, _ b: String) -> Bool {
+        if a == b { return true }
+        var x = Array(a), y = Array(b)
+        let reflexive = { (word: [Character]) in word.count > 4 && ["ся", "сь"].contains(String(word.suffix(2))) }
+        guard reflexive(x) == reflexive(y) else { return false }
+        if reflexive(x) { x.removeLast(2); y.removeLast(2) }
+        let shorter = min(x.count, y.count)
+        guard shorter >= 3 else { return false }
+        var prefix = 0
+        while prefix < shorter, x[prefix] == y[prefix] { prefix += 1 }
+        if shorter >= 5 {
+            return prefix >= max(4, shorter - 3)
+                && x[prefix...].allSatisfy(inflectionLetters.contains) && y[prefix...].allSatisfy(inflectionLetters.contains)
+        }
+        guard prefix >= shorter - 1 else { return false }
+        return x[prefix...].allSatisfy(endingLetters.contains) && y[prefix...].allSatisfy(endingLetters.contains)
+    }
+
+    // MARK: - Отозванный термин
+
+    /// Слова, после которых говорящий отменяет только что сказанный термин.
+    private static let termRetractions: Set<String> = ["точнее", "вернее", "нет"]
+
+    /// Латинские термины речи в нижнем регистре, от которых говорящий сам отказался:
+    /// «какой-нибудь API, ну, не API» или «в Jira, точнее, в Linear». Модель убирает их
+    /// по правилу самоисправления, и требовать их обратно нельзя. Нужен явный отказ:
+    /// «не» и тот же термин, или «точнее», «вернее», «нет» не дальше четырёх слов и за ними
+    /// не дальше трёх слов другой термин. «В этом API нет ошибок» обычное отрицание.
+    static func retractedTerms(in input: String) -> Set<String> {
+        let words = comparableWords(input)
+        let latin = Set(extractLatinTokens(from: input).map { $0.lowercased() })
+        var retracted = Set<String>()
+        for (index, word) in words.enumerated() where latin.contains(word) {
+            let window = words[(index + 1)..<min(index + 5, words.count)]
+            for (offset, next) in zip(window.indices, window) {
+                let replacement = words[(offset + 1)..<min(offset + 4, words.count)]
+                    .contains { latin.contains($0) && $0 != word }
+                if (termRetractions.contains(next) && replacement)
+                    || (next == "не" && offset + 1 < words.count && words[offset + 1] == word) {
+                    retracted.insert(word)
+                }
+            }
+        }
+        return retracted
+    }
+
+    // MARK: - Термин по звучанию
+
+    /// Наименьшая похожесть написаний, при которой латинский термин считается записью
+    /// русского слова из речи. Совпадения скелета согласных мало: «камень» и Gemini оба
+    /// дают к-м-н, а пишутся непохоже.
+    static let minSpokenTermSimilarity = 0.5
+
+    /// Звучит ли латинский термин как одно из русских слов речи: «Джиминай» как Gemini,
+    /// «антигравити» как Antigravity, «Линяр» как Linear. Нужны оба совпадения: скелет
+    /// согласных из `Phonetics.soundKey` и похожее написание после транслитерации.
+    static func soundsSpoken(_ term: String, words: [String]) -> Bool {
+        let lower = term.lowercased()
+        // Мягкое g перед e, i, y читается «дж»: Gemini это «джемини», а скелет у g твёрдый
+        let soft = lower.replacingOccurrences(of: #"g(?=[eiy])"#, with: "dzh", options: .regularExpression)
+        let readings = lower == soft ? [lower] : [lower, soft]
+        for word in words {
+            let wordKey = Phonetics.soundKey(word)
+            // Короткий термин вроде RAG: скелет из двух согласных, поэтому нужно точное написание
+            if wordKey.count == 2, readings.contains(where: {
+                Phonetics.soundKey($0) == wordKey && Phonetics.transliterateToCyrillic($0) == word
+            }) { return true }
+            guard wordKey.count >= 3 else { continue }
+            for reading in readings {
+                let key = Phonetics.soundKey(reading)
+                guard key.count >= 3 else { continue }
+                // Короткий скелет только целиком, длинный с одной ошибкой на четыре звука
+                let skeleton = key == wordKey
+                    || (min(key.count, wordKey.count) >= 4 && Phonetics.normalizedDistance(key, wordKey) <= 0.25)
+                guard skeleton else { continue }
+                let letters = 1 - Phonetics.normalizedDistance(word, Phonetics.transliterateToCyrillic(reading))
+                if letters >= minSpokenTermSimilarity { return true }
+            }
+        }
+        return false
+    }
+
+    /// Русские слова речи в нижнем регистре, без знаков.
+    static func cyrillicWords(_ text: String) -> [String] {
+        text.lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+            .filter { word in word.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) } }
     }
 
     // MARK: - Защита от пересказа
@@ -167,8 +280,9 @@ public struct GroundingValidator {
     /// Числа не учитываются, их сверяет проверка чисел. Возвращает причину отказа, если модель добавила
     /// много новых слов. Сокращение речи не ошибка: уровень очистки убирает повторы мыслей.
     static func rewriteViolation(input: String, output: String, customTerms: Set<String> = []) -> String? {
-        let inputWords = comparableWords(input).filter { !containsDigit($0) }
-        let outputWords = comparableWords(output).filter { !containsDigit($0) }
+        // Числа прописью сравниваются как цифры: «два» и «2» одно число, его сверяет проверка чисел
+        let inputWords = comparableWords(normalizedWords(input).joined(separator: " ")).filter { !containsDigit($0) }
+        let outputWords = comparableWords(normalizedWords(output).joined(separator: " ")).filter { !containsDigit($0) }
         guard !inputWords.isEmpty, !outputWords.isEmpty else { return nil }
 
         let allowed = Set(customTerms.flatMap { comparableWords($0) })
@@ -177,6 +291,9 @@ public struct GroundingValidator {
         for word in outputWords {
             if let count = remaining[word], count > 0 {
                 remaining[word] = count - 1
+            } else if let form = remaining.first(where: { $0.value > 0 && sameLexeme($0.key, word) })?.key {
+                // Та же лексема в другой форме: модель починила согласование
+                remaining[form]! -= 1
             } else if !allowed.contains(word) {
                 novel += 1
             }

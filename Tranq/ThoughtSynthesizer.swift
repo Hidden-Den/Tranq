@@ -47,12 +47,13 @@ public final class ThoughtSynthesizer {
 
         let settings = VoiceIntelligenceSettings.shared
         let resolvedBackend: CleanupBackend
-        let timeout: TimeInterval
         let modelName: String
+        // Сроки считаются на кусок, а не на всю речь: у каждого куска свой размер
+        let deadlinesFor: (Int) -> CleanupDeadlines
         if let backend {
             resolvedBackend = backend
             modelName = String(describing: type(of: backend))
-            timeout = max(1.5, settings.adaptiveTimeoutSeconds)
+            deadlinesFor = { CleanupDeadlines.external(characters: $0, setting: settings.adaptiveTimeoutSeconds) }
         } else {
             switch settings.engine {
             case .airGapped:
@@ -70,7 +71,7 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = LocalBackend(modelPath: SLMModelStore.shared.localFileURL(for: slmModel).path)
                 modelName = settings.localModel
-                timeout = max(6.0, settings.adaptiveTimeoutSeconds)
+                deadlinesFor = { _ in CleanupDeadlines.local(setting: settings.adaptiveTimeoutSeconds) }
 
             case .external:
                 guard AIProviderStore.shared.isConfigured else {
@@ -82,10 +83,51 @@ public final class ThoughtSynthesizer {
                 }
                 resolvedBackend = ExternalBackend(config: AIProviderStore.shared.config, telemetry: telemetry)
                 modelName = AIProviderStore.shared.config.model
-                timeout = max(1.5, settings.adaptiveTimeoutSeconds)
+                deadlinesFor = { CleanupDeadlines.external(characters: $0, setting: settings.adaptiveTimeoutSeconds) }
             }
         }
 
+        let store: CleanupTelemetry
+        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
+        let piece = { (piece: String) async -> CleanupResult in
+            await self.cleanPiece(
+                piece, level: level, firedSpellings: firedSpellings, language: language,
+                backend: resolvedBackend, modelName: modelName, deadlines: deadlinesFor(piece.count),
+                store: store, noteId: noteId
+            )
+        }
+
+        let pieces = TranscriptChunker.chunks(stageOne)
+        guard pieces.count > 1 else { return await piece(stageOne) }
+
+        // Длинная речь по кускам и по очереди: телеметрия держит одну текущую попытку,
+        // параллельные куски перемешали бы замеры
+        AppLogger.shared.info("Pipeline", "Этап 2: длинная речь, кусков: \(pieces.count)", details: "\(stageOne.count) симв.")
+        var results: [CleanupResult] = []
+        for text in pieces { results.append(await piece(text)) }
+
+        let cleaned = results.filter { $0.fallback == nil }.count
+        // Не прошёл ни один кусок: всё как при одном запросе, текст этапа 1 и первая причина
+        guard cleaned > 0 else { return CleanupResult(text: stageOne, fallback: results.first?.fallback) }
+        if cleaned < results.count {
+            AppLogger.shared.warn("Pipeline", "Этап 2: очищено кусков \(cleaned) из \(results.count)", details: "Остальные вставлены как сказаны")
+        }
+        return CleanupResult(text: results.map(\.text).joined(separator: "\n\n"), fallback: nil)
+    }
+
+    /// Очистка одного куска речи одним запросом. Любая проблема даёт сам кусок и причину:
+    /// отказ по куску стоит одного абзаца, а не всей диктовки.
+    private func cleanPiece(
+        _ stageOne: String,
+        level: CleanupLevel,
+        firedSpellings: [String],
+        language: DictionaryLanguage,
+        backend resolvedBackend: CleanupBackend,
+        modelName: String,
+        deadlines: CleanupDeadlines,
+        store: CleanupTelemetry,
+        noteId: UUID?
+    ) async -> CleanupResult {
         var system = Self.getSystemPrompt(for: level)
         let dictionaryHint = DictionaryStore.shared.promptHint(firedSpellings: firedSpellings, language: language)
         if !dictionaryHint.isEmpty { system += "\n\n" + dictionaryHint }
@@ -98,14 +140,12 @@ public final class ThoughtSynthesizer {
                                   details: AppLogger.shared.redactTranscripts ? "слов: \(suspects.count)" : termHint)
         }
 
-        let store: CleanupTelemetry
-        if let telemetry { store = telemetry } else { store = await CleanupTelemetry.shared }
         let attemptStarted = CFAbsoluteTimeGetCurrent()
         await store.begin(model: modelName)
 
         let reply: String
         do {
-            reply = try await resolvedBackend.complete(system: system, user: stageOne, timeout: timeout)
+            reply = try await resolvedBackend.complete(system: system, user: stageOne, deadlines: deadlines)
             await store.finish(outcome: .success, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
         } catch let error as CleanupBackendError {
             await store.finish(outcome: error == .timeout ? .timeout : .error, totalSeconds: CFAbsoluteTimeGetCurrent() - attemptStarted)
@@ -114,7 +154,9 @@ public final class ThoughtSynthesizer {
             case .timeout: reason = .timeout
             case .empty: reason = .emptyResponse
             case .http(let code): reason = .providerError(code)
-            case .unavailable: reason = .providerUnavailable
+            case .unavailable, .connectionLost: reason = .providerUnavailable
+            // Неполный текст не результат: кусок вставляется как сказан, а причина видна в журнале
+            case .truncated: reason = .rejected("Ответ модели обрезан по лимиту длины")
             }
             AppLogger.shared.warn("Pipeline", "Этап 2: модель не дала ответ, \(error.logDescription)", details: "Откат на текст этапа 1")
             return CleanupResult(text: stageOne, fallback: reason)
@@ -142,30 +184,38 @@ public final class ThoughtSynthesizer {
         }
     }
 
-    /// Предварительный прогрев сетевого сокета или локальной модели во время диктовки
-    public func prewarmConnection(for engine: VoiceEngine) {
+    /// Что греть перед диктовкой.
+    public enum PrewarmPlan: Equatable {
+        case nothing
+        case localModel(path: String)
+    }
+
+    /// Решение о прогреве. Внешний провайдер не греется: на стороне API греть нечего,
+    /// а сокет, открытый на старте записи, шлюз закрывает, пока человек говорит, и запрос
+    /// получает мёртвое соединение из пула. Рукопожатие TLS стоит 0,15 с, потеря очистки дороже.
+    static func prewarmPlan(engine: VoiceEngine, downloadedModelPath: String?) -> PrewarmPlan {
         switch engine {
-        case .airGapped:
-            // Прогревается только выбранная и скачанная модель, как в `clean`: чужая заняла бы гигабайты памяти зря
-            guard let model = SLMModelStore.shared.model(named: VoiceIntelligenceSettings.shared.localModel),
-                  SLMModelStore.shared.isModelDownloaded(model) else { return }
-            LocalSynthServiceClient.shared.prewarm(modelPath: SLMModelStore.shared.localFileURL(for: model).path)
-
         case .external:
-            let config = AIProviderStore.shared.config
-            guard !config.baseURL.isEmpty else { return }
+            return .nothing
+        case .airGapped:
+            // Греется только выбранная и скачанная модель, как в `clean`: чужая заняла бы гигабайты памяти зря
+            guard let path = downloadedModelPath else { return .nothing }
+            return .localModel(path: path)
+        }
+    }
 
-            Task.detached(priority: .utility) {
-                let cleanBase = config.baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/ "))
-                guard let url = URL(string: "\(cleanBase)/models") else { return }
-                var request = URLRequest(url: url)
-                request.httpMethod = "HEAD"
-                ChatRequestBuilder.applyAuth(&request, config: config)
-                request.timeoutInterval = 2.0
-                if (try? await URLSession.shared.data(for: request)) != nil {
-                    AppLogger.shared.info("Synthesizer", "Соединение с внешним провайдером прогрето", details: config.baseURL)
-                }
-            }
+    /// Предварительный прогрев локальной модели во время диктовки
+    public func prewarmConnection(for engine: VoiceEngine) {
+        var downloaded: String?
+        if let model = SLMModelStore.shared.model(named: VoiceIntelligenceSettings.shared.localModel),
+           SLMModelStore.shared.isModelDownloaded(model) {
+            downloaded = SLMModelStore.shared.localFileURL(for: model).path
+        }
+        switch Self.prewarmPlan(engine: engine, downloadedModelPath: downloaded) {
+        case .nothing:
+            return
+        case .localModel(let path):
+            LocalSynthServiceClient.shared.prewarm(modelPath: path)
         }
     }
 
@@ -187,10 +237,14 @@ public final class ThoughtSynthesizer {
             base = custom.isEmpty ? VoiceIntelligenceSettings.defaultCustomPrompt : custom
 
         case .rewrite(let tone):
-            base = VoiceIntelligenceSettings.defaultCustomPrompt.replacingOccurrences(
-                of: VoiceIntelligenceSettings.keepWordsRule,
-                with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
-            )
+            // Тон переписывает речь по задаче: запрет пересказа и пример буквальной очистки ему противоречат
+            base = VoiceIntelligenceSettings.defaultCustomPrompt
+                .replacingOccurrences(
+                    of: VoiceIntelligenceSettings.keepWordsRule,
+                    with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
+                )
+                .replacingOccurrences(of: "\n" + VoiceIntelligenceSettings.noRetellRule, with: "")
+                .replacingOccurrences(of: "\n\n" + VoiceIntelligenceSettings.addressedExample, with: "")
             keepsProfanity = !tone.contains(RuleTone.dropProfanity) && !tone.contains(RuleTone.keepProfanity)
         }
         let tail = keepsProfanity ? termsRule + "\n" + profanityRule : termsRule

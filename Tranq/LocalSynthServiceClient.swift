@@ -39,16 +39,16 @@ public final class LocalSynthServiceClient: ObservableObject {
         stylePrompt: String,
         modelPath: String? = nil,
         timeout: TimeInterval = 4.0
-    ) async -> String? {
-        guard HardwareWatchdog.evaluateInferenceSafety() == .allowed else { return nil }
+    ) async -> LocalCompletion {
+        guard HardwareWatchdog.evaluateInferenceSafety() == .allowed else { return .failed }
 
         if let mock = mockService {
-            return await executeMockService(mock, transcript: transcript, stylePrompt: stylePrompt, timeout: timeout)
+            return Self.completion(await executeMockService(mock, transcript: transcript, stylePrompt: stylePrompt, timeout: timeout))
         }
 
         guard let modelPath, FileManager.default.fileExists(atPath: modelPath) else {
             AppLogger.shared.info("LocalSynthClient", "Локальная модель не передана — мгновенный откат на этап 1")
-            return nil
+            return .failed
         }
         let prompt = "<transcript>\n\(transcript)\n</transcript>"
         let modelName = URL(fileURLWithPath: modelPath).lastPathComponent
@@ -56,8 +56,14 @@ public final class LocalSynthServiceClient: ObservableObject {
         if LocalLLMServer.isAvailable {
             if LocalLLMServer.shared.isReady(for: modelPath) {
                 AppLogger.shared.info("LocalSynthClient", "Инференс через llama-server", details: "Модель: \(modelName)")
-                if let raw = await LocalLLMServer.shared.complete(system: stylePrompt, user: prompt, modelPath: modelPath, timeout: timeout) {
-                    return Self.cleanModelOutput(raw)
+                switch await LocalLLMServer.shared.complete(system: stylePrompt, user: prompt, modelPath: modelPath, timeout: timeout) {
+                case .text(let raw):
+                    return Self.completion(Self.cleanModelOutput(raw))
+                case .truncated:
+                    // llama-cli оборвал бы тот же ответ так же, только позже: прогонять второй раз незачем
+                    return .truncated
+                case .failed:
+                    break
                 }
             } else {
                 // Сервер догружается в фоне; эту диктовку обслужит llama-cli, если модель это позволяет
@@ -68,16 +74,21 @@ public final class LocalSynthServiceClient: ObservableObject {
 
         guard allowsCLIFallback(modelPath: modelPath) else {
             AppLogger.shared.info("LocalSynthClient", "Модель работает только через llama-server — откат на этап 1", details: "Модель: \(modelName)")
-            return nil
+            return .failed
         }
         guard isCLIEnabled, let cliPath = Self.llamaCLIPath else {
             AppLogger.shared.info("LocalSynthClient", "Локальный исполнитель недоступен — откат на этап 1")
-            return nil
+            return .failed
         }
         AppLogger.shared.info("LocalSynthClient", "Инференс через llama-cli", details: "Модель: \(modelName)")
-        return await Task.detached(priority: .userInitiated) {
+        return Self.completion(await Task.detached(priority: .userInitiated) {
             Self.runCLISynthesis(cliPath: cliPath, modelPath: modelPath, prompt: prompt, stylePrompt: stylePrompt, timeout: timeout)
-        }.value
+        }.value)
+    }
+
+    /// Текст исполнителя, который о причине окончания не сообщает: подмена и llama-cli.
+    private static func completion(_ text: String?) -> LocalCompletion {
+        text.map(LocalCompletion.text) ?? .failed
     }
 
     /// Запасной путь через llama-cli закрыт для моделей, которые работают только через llama-server:

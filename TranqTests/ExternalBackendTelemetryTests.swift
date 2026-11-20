@@ -26,6 +26,10 @@ final class SSEStubProtocol: URLProtocol {
 @Suite(.serialized)
 @MainActor
 struct ExternalBackendTelemetryTests {
+    /// Набор проверяет разбор потока, а не сроки: они взяты заведомо большими, чтобы
+    /// загруженная машина не превращала проверку разбора в проверку секундомера.
+    static let parsingDeadlines = CleanupDeadlines(firstToken: 60, idle: 60, total: 60)
+
     private func makeStore() -> CleanupTelemetry {
         CleanupTelemetry(storeURL: FileManager.default.temporaryDirectory
             .appendingPathComponent("telemetry-\(UUID().uuidString).json"))
@@ -39,7 +43,7 @@ struct ExternalBackendTelemetryTests {
         let store = makeStore()
         let config = AIProviderConfig(baseURL: baseURL, apiKey: "k", model: "m", providerID: providerID)
         store.begin(model: "m")
-        let reply = try await ExternalBackend(config: config, telemetry: store).complete(system: "системный промпт", user: "привет мир", timeout: 5)
+        let reply = try await ExternalBackend(config: config, telemetry: store).complete(system: "системный промпт", user: "привет мир", deadlines: Self.parsingDeadlines)
         store.finish(outcome: .success, totalSeconds: 1)
         return (reply, try #require(store.records.first))
     }

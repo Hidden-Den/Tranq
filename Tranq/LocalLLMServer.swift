@@ -64,8 +64,23 @@ final class LocalLLMServer {
         queue.sync { state == .ready && self.modelPath == modelPath && process?.isRunning == true }
     }
 
-    /// Чат-запрос к загруженной модели. Возвращает nil, если сервер не готов или не ответил вовремя.
-    func complete(system: String, user: String, modelPath: String, timeout: TimeInterval) async -> String? {
+    /// Лимит ответа в токенах. Речь до 1200 знаков идёт одним запросом, и при прежних 256
+    /// gemma 4 E4B оборвала ответ в 1026 знаков на полуслове. Запас вчетверо: долгий ответ
+    /// всё равно ограничен сроком на кусок. Стенд замера ставит его ниже, чтобы проверить обрыв.
+    static var maxTokens = 1024
+
+    /// Разбор ответа llama-server. Обрыв по лимиту длины не результат, даже если текст пришёл:
+    /// валидатор разрешает сокращение и пропустил бы обрубок без последних фраз.
+    static func parseCompletion(_ data: Data) -> LocalCompletion {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choice = (json["choices"] as? [[String: Any]])?.first,
+              let content = (choice["message"] as? [String: Any])?["content"] as? String else { return .failed }
+        if choice["finish_reason"] as? String == "length" { return .truncated }
+        return .text(content)
+    }
+
+    /// Чат-запрос к загруженной модели. `.failed`, если сервер не готов или не ответил вовремя.
+    func complete(system: String, user: String, modelPath: String, timeout: TimeInterval) async -> LocalCompletion {
         let endpoint: (port: UInt16, key: String)? = queue.sync {
             startIfNeededLocked(modelPath: modelPath)
             scheduleIdleStopLocked()
@@ -82,11 +97,12 @@ final class LocalLLMServer {
             scheduleIdleStopLocked()
             return (port, apiKey)
         }
-        return await send(endpoint: endpoint, system: system, user: user, timeout: timeout)
+        if case .text(let text) = await send(endpoint: endpoint, system: system, user: user, timeout: timeout) { return text }
+        return nil
     }
 
-    private func send(endpoint: (port: UInt16, key: String)?, system: String, user: String, timeout: TimeInterval) async -> String? {
-        guard let endpoint, let url = URL(string: "http://127.0.0.1:\(endpoint.port)/v1/chat/completions") else { return nil }
+    private func send(endpoint: (port: UInt16, key: String)?, system: String, user: String, timeout: TimeInterval) async -> LocalCompletion {
+        guard let endpoint, let url = URL(string: "http://127.0.0.1:\(endpoint.port)/v1/chat/completions") else { return .failed }
 
         var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = "POST"
@@ -98,7 +114,7 @@ final class LocalLLMServer {
                 ["role": "user", "content": user]
             ],
             "temperature": 0,
-            "max_tokens": 256,
+            "max_tokens": Self.maxTokens,
             "stream": false,
             // Qwen 3 и производные иначе тратят токены на рассуждения
             "chat_template_kwargs": ["enable_thinking": false]
@@ -107,18 +123,22 @@ final class LocalLLMServer {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200,
-                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let choices = json["choices"] as? [[String: Any]],
-                  let message = choices.first?["message"] as? [String: Any],
-                  let content = message["content"] as? String else {
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                 AppLogger.shared.warn("LocalLLM", "llama-server вернул неожиданный ответ")
-                return nil
+                return .failed
             }
-            return content
+            let completion = Self.parseCompletion(data)
+            switch completion {
+            case .text: break
+            case .truncated:
+                AppLogger.shared.warn("LocalLLM", "Ответ обрезан по лимиту длины", details: "max_tokens \(Self.maxTokens)")
+            case .failed:
+                AppLogger.shared.warn("LocalLLM", "llama-server вернул неожиданный ответ")
+            }
+            return completion
         } catch {
             AppLogger.shared.warn("LocalLLM", "Запрос к llama-server не выполнен", details: error.localizedDescription)
-            return nil
+            return .failed
         }
     }
 
@@ -259,4 +279,12 @@ final class LocalLLMServer {
         guard named == 0 else { return nil }
         return UInt16(bigEndian: addr.sin_port)
     }
+}
+
+/// Исход запроса к локальной модели.
+public enum LocalCompletion: Equatable {
+    case text(String)
+    /// Ответ оборван по лимиту длины: текст неполный, принимать его нельзя.
+    case truncated
+    case failed
 }
