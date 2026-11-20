@@ -8,7 +8,10 @@ import Foundation
 /// Кусок до 800 знаков модель чистит, а отказ по нему стоит одного абзаца, а не всего.
 ///
 /// Режется только по концу предложения: точке, вопросу, восклицанию или многоточию,
-/// за которыми идёт пробел. Предложение длиннее цели не рвётся посередине.
+/// за которыми, возможно после закрывающей кавычки, идёт пробел, или по переводу строки
+/// между абзацами. Предложение длиннее цели не рвётся посередине. Если в куске есть граница
+/// абзаца, кусок кончается на ней: очищенные куски склеиваются абзацами, и абзацы этапа 1
+/// остаются на своих местах. Кусок короче минимума не уходит отдельно и в середине речи.
 enum TranscriptChunker {
     /// Речь до этого размера идёт одним запросом: модель видит её целиком и сводит
     /// повторы мыслей по всему тексту. Это полторы-две минуты речи.
@@ -19,63 +22,101 @@ enum TranscriptChunker {
     /// отвечает как на обращение к себе, а не чистит.
     static let minimum = 200
 
-    /// Куски речи по порядку. Каждый кусок это непрерывный отрезок исходного текста.
+    /// Предложение и пробел или переводы строк перед ним, как в исходном тексте.
+    private struct Unit {
+        let gap: String
+        let text: String
+        var startsParagraph: Bool { gap.contains(where: \.isNewline) }
+    }
+
+    /// Куски речи по порядку, без пробелов по краям. Если вернуть между ними
+    /// исходный пробел или перевод строки, получится исходный текст.
     static func chunks(_ text: String) -> [String] {
         guard text.count > threshold else { return [text] }
+        let units = self.units(text)
+        guard !units.isEmpty else { return [text] }
 
-        var chunks: [String] = []
-        var current = ""
-        for (separator, sentence) in segments(text) {
-            if current.isEmpty {
-                current = sentence
-            } else if current.count + separator.count + sentence.count <= target || current.count < minimum {
-                // Короткий кусок не уходит отдельно и в середине речи, даже ценой размера
-                current += separator + sentence
-            } else {
-                chunks.append(current)
-                current = sentence
-            }
+        func length(_ range: Range<Int>) -> Int {
+            units[range].reduce(0) { $0 + $1.gap.count + $1.text.count } - units[range.lowerBound].gap.count
         }
-        if !current.isEmpty { chunks.append(current) }
+
+        var bounds: [Range<Int>] = []
+        var start = 0
+        var end = 1
+        while end < units.count {
+            if length(start..<(end + 1)) <= target {
+                end += 1
+                continue
+            }
+            // Кусок полон: режем по последней границе абзаца, если кусок до неё не крошечный
+            let paragraphCut = ((start + 1)...end).last { units[$0].startsParagraph && length(start..<$0) >= minimum }
+            let cut = paragraphCut ?? end
+            // Короткий кусок перед огромным предложением растёт за его счёт, даже за цель:
+            // одно-два предложения модель приняла бы за обращение к себе (ревью PR 18)
+            if length(start..<cut) < minimum {
+                end += 1
+                continue
+            }
+            bounds.append(start..<cut)
+            start = cut
+            end = cut + 1
+        }
+        bounds.append(start..<units.count)
 
         // Крошечный хвост к предыдущему куску, даже если тот выйдет за цель
-        if chunks.count > 1, let last = chunks.last, last.count < minimum {
-            chunks.removeLast()
-            chunks[chunks.count - 1] += " " + last
+        if bounds.count > 1, let last = bounds.last, length(last) < minimum {
+            bounds.removeLast()
+            bounds[bounds.count - 1] = bounds[bounds.count - 1].lowerBound..<last.upperBound
         }
-        return chunks
+        return bounds.map { range in
+            units[range].enumerated().map { $0.offset == 0 ? $0.element.text : $0.element.gap + $0.element.text }.joined()
+        }
+    }
+
+    /// Предложения без пробелов между ними. Конец предложения это знак конца,
+    /// за которым идёт пробел, или перевод строки: точка внутри «3.5» предложение не заканчивает.
+    static func sentences(_ text: String) -> [String] {
+        units(text).map(\.text)
     }
 
     /// Знаки, которые закрывают цитату или скобку после конца предложения: «…закрываем».
     private static let closers: Set<Character> = ["»", "\"", "”", "’", ")"]
 
-    /// Предложения с пробельным разделителем перед каждым. Конец предложения это знак
-    /// конца, за которым, возможно после кавычки, идёт пробел или перенос строки:
-    /// точка внутри «3.5» предложение не заканчивает.
-    static func segments(_ text: String) -> [(separator: String, sentence: String)] {
+    private static func units(_ text: String) -> [Unit] {
         let enders: Set<Character> = [".", "!", "?", "…"]
-        var result: [(String, String)] = []
-        var separator = ""
-        var current = ""
+        var result: [Unit] = []
         var gap = ""
-        for char in text {
+        var current = ""
+        var index = text.startIndex
+        while index < text.endIndex {
+            let char = text[index]
             if char.isWhitespace {
-                let core = current.reversed().first { !closers.contains($0) }
-                if gap.isEmpty, let core, enders.contains(core) {
-                    result.append((separator, current))
-                    separator = ""
-                    current = ""
-                    gap.append(char)
-                    continue
+                // Пробелы до следующего непробельного знака
+                var next = index
+                var run = ""
+                while next < text.endIndex, text[next].isWhitespace {
+                    run.append(text[next])
+                    next = text.index(after: next)
                 }
-                if !gap.isEmpty { gap.append(char); continue }
-                current.append(char)
+                // Знак конца, возможно перед закрывающей кавычкой, или перевод строки
+                let core = current.reversed().first { !closers.contains($0) }
+                let endsSentence = core.map(enders.contains) == true || run.contains(where: \.isNewline)
+                if current.isEmpty {
+                    gap += run
+                } else if endsSentence {
+                    result.append(Unit(gap: gap, text: current))
+                    gap = run
+                    current = ""
+                } else {
+                    current += run
+                }
+                index = next
             } else {
-                if !gap.isEmpty { separator = gap; gap = "" }
                 current.append(char)
+                index = text.index(after: index)
             }
         }
-        if !current.isEmpty { result.append((separator, current)) }
+        if !current.isEmpty { result.append(Unit(gap: gap, text: current)) }
         return result
     }
 }
