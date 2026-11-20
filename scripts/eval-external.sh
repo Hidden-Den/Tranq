@@ -7,6 +7,7 @@
 # --local гонит локальную модель через свой llama-server вместо провайдера. Срок на кусок
 # по умолчанию боевой, 6 с; с большим сроком видно настоящее время каждого куска.
 # TRANQ_PIECE_EVAL_MAX_TOKENS в окружении занижает лимит ответа: так проверяется обрыв.
+# TRANQ_PIECE_EVAL_TONE=business или casual в окружении меряет уровень с тоном правила.
 #
 # --replay не зовёт модель: прежние ответы заново проходят валидатор. Так правка
 # валидатора сравнивается на тех же самых текстах.
@@ -56,6 +57,7 @@ env DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
   ${local_model:+TEST_RUNNER_TRANQ_PIECE_EVAL_LOCAL_MODEL="$local_model"} \
   ${local_timeout:+TEST_RUNNER_TRANQ_PIECE_EVAL_TIMEOUT="$local_timeout"} \
   ${TRANQ_PIECE_EVAL_MAX_TOKENS:+TEST_RUNNER_TRANQ_PIECE_EVAL_MAX_TOKENS="$TRANQ_PIECE_EVAL_MAX_TOKENS"} \
+  ${TRANQ_PIECE_EVAL_TONE:+TEST_RUNNER_TRANQ_PIECE_EVAL_TONE="$TRANQ_PIECE_EVAL_TONE"} \
   xcodebuild test -project Tranq.xcodeproj -scheme Tranq -destination 'platform=macOS' \
     -only-testing:TranqTests/PieceEvalTests -derivedDataPath build/DerivedData-ci \
     CODE_SIGN_IDENTITY=- > "$log" 2>&1 || {

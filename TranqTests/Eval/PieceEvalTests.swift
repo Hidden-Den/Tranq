@@ -15,6 +15,7 @@ import Foundation
 ///   TRANQ_PIECE_EVAL_LOCAL_MODEL вместо провайдера: путь к .gguf, свой llama-server
 ///   TRANQ_PIECE_EVAL_TIMEOUT    срок локальной модели на кусок, по умолчанию боевые 6 с
 ///   TRANQ_PIECE_EVAL_MAX_TOKENS лимит ответа локальной модели вместо боевого: проверка обрыва
+///   TRANQ_PIECE_EVAL_TONE       business или casual: уровень с тоном правила вместо чистой мысли
 ///   TRANQ_PIECE_EVAL_PROMPT необязательно: файл с системным промптом вместо боевого
 ///   TRANQ_PIECE_EVAL_REPLAY необязательно: прежний отчёт; модель не зовётся, его ответы
 ///                           заново проходят валидатор. Так правка валидатора сравнивается
@@ -32,10 +33,20 @@ struct PieceEvalTests {
         var seconds: Double? = nil
     }
 
+    /// Уровень замера: тон правила из окружения или чистая мысль.
+    static func level(_ env: [String: String]) -> CleanupLevel {
+        switch env["TRANQ_PIECE_EVAL_TONE"] {
+        case "business": return .rewrite(tone: RuleTone.business.instruction)
+        case "casual": return .rewrite(tone: RuleTone.casual.instruction)
+        default: return .clean
+        }
+    }
+
     @Test(.timeLimit(.minutes(30))) func liveExternalPieces() async throws {
         let env = ProcessInfo.processInfo.environment
+        let level = Self.level(env)
         if let replayPath = env["TRANQ_PIECE_EVAL_REPLAY"], let outPath = env["TRANQ_PIECE_EVAL_OUT"] {
-            try replay(from: replayPath, to: outPath)
+            try replay(from: replayPath, to: outPath, level: Self.level(env))
             return
         }
         guard let casesPath = env["TRANQ_PIECE_EVAL_CASES"], let outPath = env["TRANQ_PIECE_EVAL_OUT"] else { return }
@@ -45,7 +56,7 @@ struct PieceEvalTests {
         if let promptPath = env["TRANQ_PIECE_EVAL_PROMPT"] {
             system = try String(contentsOfFile: promptPath, encoding: .utf8)
         } else {
-            system = ThoughtSynthesizer.getSystemPrompt(for: .clean)
+            system = ThoughtSynthesizer.getSystemPrompt(for: level)
         }
         let store = DictionaryStore.shared
         // Индекс собирается в фоне: без ожидания замер шёл бы без словаря, строже приложения
@@ -108,7 +119,7 @@ struct PieceEvalTests {
                         let reply = try await backend.complete(system: prompt, user: job.piece, deadlines: deadlines)
                         let seconds = Date().timeIntervalSince(started)
                         let cleaned = ThoughtSynthesizer.stripThinkingTags(from: reply)
-                        switch GroundingValidator.validate(input: job.piece, output: cleaned, level: .clean,
+                        switch GroundingValidator.validate(input: job.piece, output: cleaned, level: level,
                                                            customTerms: customTerms, termSuspects: suspects) {
                         case .valid(let text):
                             return Row(caseIndex: job.caseIndex, pieceIndex: job.pieceIndex, input: job.piece,
@@ -136,7 +147,7 @@ struct PieceEvalTests {
     }
 
     /// Прежние ответы модели заново через валидатор, без запросов.
-    private func replay(from replayPath: String, to outPath: String) throws {
+    private func replay(from replayPath: String, to outPath: String, level: CleanupLevel) throws {
         let store = DictionaryStore.shared
         store.waitForIndex()
         let customTerms = store.index?.approvedSpellings ?? []
@@ -144,7 +155,7 @@ struct PieceEvalTests {
         let rows = previous.map { row -> Row in
             guard let output = row.output, row.verdict != "failed" else { return row }
             let suspects = store.index?.termSuspects(in: row.input, language: .ru) ?? []
-            switch GroundingValidator.validate(input: row.input, output: output, level: .clean,
+            switch GroundingValidator.validate(input: row.input, output: output, level: level,
                                                customTerms: customTerms, termSuspects: suspects) {
             case .valid(let text):
                 return Row(caseIndex: row.caseIndex, pieceIndex: row.pieceIndex, input: row.input,
