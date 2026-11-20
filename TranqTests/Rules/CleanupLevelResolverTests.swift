@@ -67,7 +67,7 @@ struct CleanupLevelResolverTests {
     }
 
     @Test func toneInstructionsAreExact() {
-        #expect(RuleTone.business.instruction == "деловой: вежливо и по делу, полными предложениями, без разговорных слов; \(RuleTone.dropProfanity)")
+        #expect(RuleTone.business.instruction == "деловой: вежливо и по делу, полными предложениями, без разговорных слов; резкость и недовольство передай твёрдыми деловыми словами, а не убирай; иронию передай по смыслу, а не дословно; не добавляй просьб и пожеланий, которых не было; \(RuleTone.dropProfanity)")
         #expect(RuleTone.casual.instruction == "живой: коротко и просто, как в переписке с коллегой; \(RuleTone.keepProfanity)")
         #expect(RuleTone.custom("  пиши как поэт  ").instruction == "пиши как поэт; \(RuleTone.keepProfanity)")
     }

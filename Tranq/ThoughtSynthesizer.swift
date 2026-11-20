@@ -227,6 +227,11 @@ public final class ThoughtSynthesizer {
     /// Речь говорящего передаётся как есть, мат в том числе. Тон правила может это переопределить.
     static let profanityRule = "Мат и грубые слова говорящего оставь как сказано: не смягчай, не маскируй звёздочками и не заменяй."
 
+    /// Тон меняет слова, а не состав речи и не лицо. Замер делового тона 20.11.2026 на 68 диктовках:
+    /// haiku выбрасывала резкие фразы целиком, обезличивала «я заказал» в «заказ был оформлен»
+    /// и превращала поручение в безличное «Ольге нужно подготовить договор».
+    static let rewriteKeepsThoughtsRule = "Сохрани каждую мысль говорящего, её намерение и лицо: кто говорит и к кому обращается, «я», «мы» и «мне» остаются. Ничего не выбрасывай и не добавляй от себя. Поручение другому человеку оставь поручением: «скажи Игорю, чтобы прислал счёт» не превращай ни в письмо Игорю, ни в безличное «Игорю нужно прислать счёт»."
+
     public static func getSystemPrompt(for level: CleanupLevel) -> String {
         let base: String
         // Тон правила может сам решить судьбу мата: тогда общее правило не добавляется.
@@ -241,7 +246,7 @@ public final class ThoughtSynthesizer {
             base = VoiceIntelligenceSettings.defaultCustomPrompt
                 .replacingOccurrences(
                     of: VoiceIntelligenceSettings.keepWordsRule,
-                    with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
+                    with: "4. Перепиши в тоне: \(tone). \(rewriteKeepsThoughtsRule) Структурируй по абзацам, если текст длинный."
                 )
                 .replacingOccurrences(of: "\n" + VoiceIntelligenceSettings.noRetellRule, with: "")
                 .replacingOccurrences(of: "\n\n" + VoiceIntelligenceSettings.addressedExample, with: "")
