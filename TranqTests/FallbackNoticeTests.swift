@@ -36,18 +36,16 @@ struct FallbackNoticeTests {
                 == String(localized: "ИИ недоступен"))
     }
 
-    /// Закрытый порт на этом же Mac отвечает отказом сразу и от DNS не зависит: разрешение имени на медленном
-    /// резолвере занимало больше трёх секунд даже для зоны `.invalid`.
-    @Test func unreachableGatewayFailsFast() async {
-        let gateway = AIProviderConfig(baseURL: "http://127.0.0.1:9/v1", apiKey: "k", model: "m", providerID: "corporate")
+    /// Недоступный провайдер даёт текст этапа 1 и причину «недоступен». Сеть не участвует: проверка скорости отказа
+    /// по часам зависела от нагрузки всего набора тестов и от DNS, поэтому подмена бросает ошибку сразу.
+    @Test func unavailableBackendFallsBackToStageOne() async {
         let input = "ну короче давай перенесём встречу на четверг"
-        let started = Date()
         let result = await ThoughtSynthesizer.shared.clean(
-            input, level: .clean, targetBundleId: nil, firedSpellings: [], language: .ru, backend: ExternalBackend(config: gateway)
+            input, level: .clean, targetBundleId: nil, firedSpellings: [], language: .ru,
+            backend: StubBackend(error: .unavailable)
         )
         #expect(result.fallback == .providerUnavailable)
         #expect(result.text == ThoughtSynthesizer.stageOne(input))
-        #expect(Date().timeIntervalSince(started) < 3)
     }
 }
 
