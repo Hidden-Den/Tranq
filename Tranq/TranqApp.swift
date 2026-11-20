@@ -155,7 +155,6 @@ struct TranqApp: App {
         .defaultSize(width: 990, height: 710)
         
         MenuBarExtra {
-            Text("Режим")
             Picker("Режим", selection: $hotKeySettings.mode) {
                 ForEach(HotKeyMode.allCases) { mode in
                     Text(mode.title).tag(mode)
