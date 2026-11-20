@@ -34,6 +34,14 @@ struct ToneValidatorTests {
         }
     }
 
+    /// Ревью PR 19: общий отказ на короткую просьбу, где тему не сверить.
+    @Test func genericRefusalOnShortRequestIsRejected() {
+        let input = "Пришли мне отчёт завтра."
+        for output in ["Не могу помочь с этим запросом.", "Не могу ответить на ваш запрос.", "Не могу выполнить эту просьбу."] {
+            #expect(reason(input, output, business).hasPrefix("Модель ответила вместо переписанной речи"), "\(output)")
+        }
+    }
+
     @Test func talkAboutTheTaskIsRejected() {
         let input = "ну короче скинь мне отчёт по продажам до пятницы"
         #expect(!isValid(input, "Вот переписанный текст в деловом тоне: пришлите отчёт по продажам до пятницы.", business))
