@@ -235,10 +235,14 @@ public final class ThoughtSynthesizer {
             base = custom.isEmpty ? VoiceIntelligenceSettings.defaultCustomPrompt : custom
 
         case .rewrite(let tone):
-            base = VoiceIntelligenceSettings.defaultCustomPrompt.replacingOccurrences(
-                of: VoiceIntelligenceSettings.keepWordsRule,
-                with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
-            )
+            // Тон переписывает речь по задаче: запрет пересказа и пример буквальной очистки ему противоречат
+            base = VoiceIntelligenceSettings.defaultCustomPrompt
+                .replacingOccurrences(
+                    of: VoiceIntelligenceSettings.keepWordsRule,
+                    with: "4. Перепиши в тоне: \(tone). Структурируй по абзацам, если текст длинный."
+                )
+                .replacingOccurrences(of: "\n" + VoiceIntelligenceSettings.noRetellRule, with: "")
+                .replacingOccurrences(of: "\n\n" + VoiceIntelligenceSettings.addressedExample, with: "")
             keepsProfanity = !tone.contains(RuleTone.dropProfanity) && !tone.contains(RuleTone.keepProfanity)
         }
         let tail = keepsProfanity ? termsRule + "\n" + profanityRule : termsRule
