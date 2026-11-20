@@ -17,6 +17,7 @@ struct SettingsView: View {
             DataSettingsSection(lockState: historyLock.state,
                                 presence: historyLock.presence,
                                 launchNotice: historyLock.launchNotice,
+                                eraseFailed: historyLock.lastEraseFailed,
                                 onNoticeSeen: { historyLock.launchNotice = nil },
                                 onEnable: { try await HistoryLockMigrator.shared.enable() },
                                 onDisable: { try await HistoryLockMigrator.shared.disable() },

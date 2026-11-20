@@ -4947,6 +4947,38 @@
           }
         }
       }
+    },
+    "Логи приложения будут очищены." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App logs will be cleared."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Логи приложения будут очищены."
+          }
+        }
+      }
+    },
+    "Не всё удалось стереть" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not everything could be erased"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не всё удалось стереть"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

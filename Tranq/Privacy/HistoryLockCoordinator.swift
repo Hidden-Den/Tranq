@@ -27,6 +27,8 @@ final class HistoryLockCoordinator: ObservableObject {
     @Published private(set) var state: HistoryLockState = .off
     /// Что уборка при запуске нашла и о чём стоит сказать человеку. Показ — дело экрана.
     @Published var launchNotice: HistoryMigration.LaunchNotice?
+    /// Последнее стирание убрало не всё. Сбрасывается удачным стиранием.
+    @Published private(set) var lastEraseFailed = false
 
     let key: HistoryKeyProviding
     let presence: PresenceAuthorizing
@@ -39,7 +41,7 @@ final class HistoryLockCoordinator: ObservableObject {
     private let store: HistoryStore
     private let journal: TranscriptJournal
     private let directory: URL
-    private let erase: () -> Void
+    private let erase: () -> [DataEraser.Step]
     private let resetSession: (() -> Void)?
     private let now: () -> Date
     private var windowOnScreen = false
@@ -52,7 +54,7 @@ final class HistoryLockCoordinator: ObservableObject {
          key: HistoryKeyProviding,
          presence: PresenceAuthorizing,
          directory: URL,
-         erase: (() -> Void)? = nil,
+         erase: (() -> [DataEraser.Step])? = nil,
          resetSession: (() -> Void)? = nil,
          now: @escaping () -> Date = Date.init,
          launchNotice: HistoryMigration.LaunchNotice? = nil) {
@@ -95,6 +97,8 @@ final class HistoryLockCoordinator: ObservableObject {
         }
         let lock = HistoryLock(enabled: enabled, key: key, presence: presence, now: now)
         if let resetSession { lock.resetSession = resetSession }
+        // Проверка ключа при включении и стирании могла оставить подтверждение действующим.
+        if enabled { lock.resetSession() }
         lock.noteWindowVisibility(windowOnScreen)
         self.lock = lock
         observe(lock)
@@ -134,16 +138,20 @@ final class HistoryLockCoordinator: ObservableObject {
 
     /// `Стереть историю` после подтверждения. Сама собой история не стирается.
     /// Стирание уничтожает ключ. Включённый замок получает новый ключ и ставится заново:
-    /// новые заметки сразу ложатся конвертами. Ключ не создался — `keyUnavailable`.
+    /// новые заметки сразу ложатся конвертами. Если конверты или ключ не стёрлись, новый ключ
+    /// не заводится: замок ставится на то, что осталось, и `lastEraseFailed` говорит о сбое.
+    /// Ключа нет — установка замка сама даёт `keyUnavailable`.
     func eraseHistory() {
-        erase()
+        let failed = erase()
+        launchNotice = nil
+        lastEraseFailed = !failed.isEmpty
         guard isEnabled else { return }
-        do {
-            try key.create()
-        } catch {
-            AppLogger.shared.error("HistoryLock", "Новый ключ после стирания не создан")
-            lock.noteKeyUnavailable()
-            return
+        if !failed.contains(.envelopes) && !failed.contains(.key) {
+            do {
+                try key.create()
+            } catch {
+                AppLogger.shared.error("HistoryLock", "Новый ключ после стирания не создан")
+            }
         }
         install(enabled: true)
     }

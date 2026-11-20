@@ -12,12 +12,15 @@ struct DataSettingsSection: View {
     private let launchNotice: HistoryMigration.LaunchNotice?
     private let onNoticeSeen: () -> Void
     private let onErase: () -> Void
+    /// Последнее стирание убрало не всё.
+    private let eraseFailed: Bool
 
     /// `onEnable` и `onDisable` делают миграцию и пишут флаг, `onExport` — выгрузку,
     /// `onErase` стирает историю и при включённом замке заводит новый ключ.
     init(lockState: HistoryLockState = .off,
          presence: PresenceAuthorizing = LocalAuthPresenceGate(),
          launchNotice: HistoryMigration.LaunchNotice? = nil,
+         eraseFailed: Bool = false,
          onNoticeSeen: @escaping () -> Void = {},
          onEnable: @escaping HistoryLockSettingsModel.Action = {},
          onDisable: @escaping HistoryLockSettingsModel.Action = {},
@@ -27,6 +30,7 @@ struct DataSettingsSection: View {
         self.launchNotice = launchNotice
         self.onNoticeSeen = onNoticeSeen
         self.onErase = onErase
+        self.eraseFailed = eraseFailed
         _lockModel = StateObject(wrappedValue: HistoryLockSettingsModel(
             isOn: AppPreferences.historyLockEnabled(in: AppEnvironment.defaults),
             presence: presence, onEnable: onEnable, onDisable: onDisable, onExport: onExport))
@@ -63,6 +67,11 @@ struct DataSettingsSection: View {
                         Text("Все диктовки удалятся с устройства безвозвратно")
                             .font(.ui(.caption))
                             .foregroundColor(.uiMidGray)
+                        if eraseFailed {
+                            Text("Не всё удалось стереть")
+                                .font(.ui(.caption))
+                                .foregroundColor(.uiEmber)
+                        }
                     }
                     Spacer()
                     UIDestructiveButton(title: "Очистить") {
@@ -162,6 +171,7 @@ private struct HistoryLockSheet: View {
                     Text("На другом Mac история не прочитается.")
                     Text("Копию можно сохранить заранее.")
                     Text("Вернуть её в Tranq пока нельзя.")
+                    Text("Логи приложения будут очищены.")
                 }
                 .font(.ui(.body))
                 .foregroundColor(.uiMidGray)

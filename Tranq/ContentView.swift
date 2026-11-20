@@ -470,6 +470,8 @@ struct ContentView: View {
                 if historyLock.state.hidesHistory {
                     HistoryLockedView(
                         state: historyLock.state,
+                        keyExists: historyLock.state == .keyUnavailable && historyLock.key.exists,
+                        eraseFailed: historyLock.lastEraseFailed,
                         onUnlock: { Task { await historyLock.unlock() } },
                         onErase: { historyLock.eraseHistory() }
                     )

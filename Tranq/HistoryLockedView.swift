@@ -4,9 +4,23 @@ import AppKit
 /// Заглушка запертой истории. О содержимом молчит: ни счётчика записей, ни точек непрочитанного.
 /// Подтверждение личности просит только кнопка, при появлении экрана диалога нет.
 struct HistoryLockedView: View {
+    enum Action: Equatable { case unlock, erase }
+
     let state: HistoryLockState
+    /// Ключ на месте, но не прочитался: разлочку можно повторить.
+    var keyExists = false
+    /// Последнее стирание убрало не всё.
+    var eraseFailed = false
     let onUnlock: () -> Void
     let onErase: () -> Void
+
+    /// Кнопки заглушки. «Не читается» с ключом на месте даёт повторить разлочку.
+    static func actions(for state: HistoryLockState, keyExists: Bool) -> [Action] {
+        switch state {
+        case .keyUnavailable: keyExists ? [.unlock, .erase] : [.erase]
+        default: [.unlock]
+        }
+    }
 
     @State private var confirmingErase = false
 
@@ -27,14 +41,29 @@ struct HistoryLockedView: View {
                         .foregroundColor(.uiMidGray)
                 }
                 .multilineTextAlignment(.center)
-                UIDestructiveButton(title: "Стереть историю") {
-                    confirmingErase = true
-                }
             } else {
                 Text("История заперта")
                     .font(.ui(.headline, weight: .semibold))
                     .foregroundColor(.uiInk)
-                UIPrimaryButton(title: "Разблокировать", action: onUnlock)
+            }
+
+            HStack(spacing: 12) {
+                ForEach(Self.actions(for: state, keyExists: keyExists), id: \.self) { action in
+                    switch action {
+                    case .unlock:
+                        UIPrimaryButton(title: "Разблокировать", action: onUnlock)
+                    case .erase:
+                        UIDestructiveButton(title: "Стереть историю") {
+                            confirmingErase = true
+                        }
+                    }
+                }
+            }
+
+            if eraseFailed {
+                Text("Не всё удалось стереть")
+                    .font(.ui(.caption))
+                    .foregroundColor(.uiEmber)
             }
         }
         .padding(12)

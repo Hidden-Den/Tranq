@@ -27,7 +27,12 @@ final class HistoryLock: ObservableObject {
 
     init(enabled: Bool, key: HistoryKeyProviding, presence: PresenceAuthorizing,
          now: @escaping () -> Date = Date.init) {
-        self.state = enabled ? .locked : .off
+        // Ключа нет или он не читается: сразу экран «не читается», а не вечное «заперто».
+        if !enabled {
+            self.state = .off
+        } else {
+            self.state = Self.keyReadable(key) ? .locked : .keyUnavailable
+        }
         self.key = key
         self.presence = presence
         self.now = now
@@ -83,14 +88,6 @@ final class HistoryLock: ObservableObject {
         state = storeState
     }
 
-    /// Ключа нет и новый не создался: история не читается, экран предлагает стереть её.
-    func noteKeyUnavailable() {
-        guard state != .off else { return }
-        generation += 1
-        resetSession()
-        state = .keyUnavailable
-    }
-
     private enum Outcome { case unlocked, locked, keyUnavailable }
 
     private func run(started: Int) async -> Outcome {
@@ -119,6 +116,12 @@ final class HistoryLock: ObservableObject {
         case .keyUnavailable:
             state = .keyUnavailable
         }
+    }
+
+    /// Ключ на месте и его публичная часть читается. Без подтверждения личности.
+    private static func keyReadable(_ key: HistoryKeyProviding) -> Bool {
+        guard key.exists else { return false }
+        return (try? key.publicKey) != nil
     }
 
     /// Ключ открывает: запечатать байт и открыть обратно.
