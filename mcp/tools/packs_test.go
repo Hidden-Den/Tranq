@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode"
 
-	"github.com/Nuteres/Tranq/mcp/door"
+	"github.com/Hidden-Den/Tranq/mcp/door"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

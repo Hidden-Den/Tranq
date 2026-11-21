@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Nuteres/Tranq/mcp/door"
-	"github.com/Nuteres/Tranq/mcp/internal/doortest"
+	"github.com/Hidden-Den/Tranq/mcp/door"
+	"github.com/Hidden-Den/Tranq/mcp/internal/doortest"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -50,7 +50,7 @@ enum ChatRequestBuilder {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         applyAuth(&request, config: config)
         if config.isOpenRouter {
-            request.setValue("https://github.com/Nuteres/Tranq", forHTTPHeaderField: "HTTP-Referer")
+            request.setValue("https://github.com/Hidden-Den/Tranq", forHTTPHeaderField: "HTTP-Referer")
             request.setValue("Tranq", forHTTPHeaderField: "X-Title")
         }
 

@@ -15,8 +15,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Nuteres/Tranq/mcp/door"
-	"github.com/Nuteres/Tranq/mcp/tools"
+	"github.com/Hidden-Den/Tranq/mcp/door"
+	"github.com/Hidden-Den/Tranq/mcp/tools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

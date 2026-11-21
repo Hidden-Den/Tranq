@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Nuteres/Tranq/mcp/internal/doortest"
+	"github.com/Hidden-Den/Tranq/mcp/internal/doortest"
 )
 
 const humanUnavailable = "Откройте Tranq и включите доступ для нейронок в настройках"

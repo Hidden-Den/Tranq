@@ -1,4 +1,4 @@
-module github.com/Nuteres/Tranq/mcp
+module github.com/Hidden-Den/Tranq/mcp
 
 go 1.27
 

@@ -56,10 +56,10 @@ struct AboutView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     AboutLinkButton(title: "GitHub", icon: "terminal.fill") {
-                        openURL(URL(string: "https://github.com/Nuteres/Tranq")!)
+                        openURL(URL(string: "https://github.com/Hidden-Den/Tranq")!)
                     }
                     AboutLinkButton(title: "Релизы", icon: "doc.text") {
-                        openURL(URL(string: "https://github.com/Nuteres/Tranq/releases")!)
+                        openURL(URL(string: "https://github.com/Hidden-Den/Tranq/releases")!)
                     }
                 }
             }

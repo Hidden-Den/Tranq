@@ -12,8 +12,8 @@ final class UpdateService: ObservableObject {
 
     @Published private(set) var updateInfo: UpdateInfo?
 
-    static let releasesAPIURL = URL(string: "https://api.github.com/repos/Nuteres/Tranq/releases/latest")!
-    static let releasesPage = URL(string: "https://github.com/Nuteres/Tranq/releases")!
+    static let releasesAPIURL = URL(string: "https://api.github.com/repos/Hidden-Den/Tranq/releases/latest")!
+    static let releasesPage = URL(string: "https://github.com/Hidden-Den/Tranq/releases")!
     private let checkInterval: TimeInterval = 4 * 3600
 
     private var currentVersion: String {
