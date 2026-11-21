@@ -12,22 +12,20 @@ concurrency:
 jobs:
   test:
     name: Сборка и unit-тесты
-    # Облачный раннер GitHub: репозиторий публичный, минуты macOS бесплатны,
-    # а чужой код из пулл-реквестов не попадает на личные машины.
-    runs-on: macos-latest
-    timeout-minutes: 45
+    # Только свои раннеры Hidden-Den: облачные macOS не дожидаются свободной машины.
+    # Пулл-реквесты из чужих форков задачу пропускают, на личные машины их код не попадает.
+    # Если форк уберёт это условие в своём ci.yml, запуск всё равно ждёт ручного одобрения:
+    # смотрите изменения в .github/ перед тем, как одобрить.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
+      # Без чистки: build/DerivedData-ci переживает прогоны, и Xcode собирает только изменённое.
       - uses: actions/checkout@v4
-
-      # Swift-пакеты, в том числе xcframework transcribe.cpp, не качаются заново
-      - name: Кэш Swift-пакетов
-        uses: actions/cache@v4
         with:
-          path: build/DerivedData-ci/SourcePackages
-          key: spm-${{ runner.os }}-${{ hashFiles('Packages/**/Package.swift', 'Tranq.xcodeproj/project.pbxproj') }}
-          restore-keys: spm-${{ runner.os }}-
+          clean: false
 
       - name: Проверка имени
         run: bash scripts/check-brand.sh
