@@ -12,15 +12,22 @@ concurrency:
 jobs:
   test:
     name: Сборка и unit-тесты
-    # Раннеры Hidden-Den на своём Mac: сборка в разы быстрее облачного macos-latest.
-    # Код из чужих форков на него не попадает: такие запросы идут в облако.
-    runs-on: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","macOS","ARM64"]') || 'macos-latest' }}
-    timeout-minutes: 30
+    # Облачный раннер GitHub: репозиторий публичный, минуты macOS бесплатны,
+    # а чужой код из пулл-реквестов не попадает на личные машины.
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
-      # Без чистки: build/DerivedData-ci переживает прогоны, и Xcode собирает только изменённое.
       - uses: actions/checkout@v4
+
+      # Swift-пакеты, в том числе xcframework transcribe.cpp, не качаются заново
+      - name: Кэш Swift-пакетов
+        uses: actions/cache@v4
         with:
-          clean: false
+          path: build/DerivedData-ci/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('Packages/**/Package.swift', 'Tranq.xcodeproj/project.pbxproj') }}
+          restore-keys: spm-${{ runner.os }}-
 
       - name: Проверка имени
         run: bash scripts/check-brand.sh
