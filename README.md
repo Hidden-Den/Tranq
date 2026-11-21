@@ -1,165 +1,111 @@
-# Tranq: Clean Voice Dictation for macOS
-
-> **Read this in another language: [Русский](README_RU.md)**
-
-<p align="left">
-  <a href="https://github.com/Nuteres/Tranq/releases">
-    <img src="https://img.shields.io/github/v/release/Nuteres/Tranq?style=for-the-badge&color=black&logo=apple" alt="Latest Release">
-  </a>
-  <a href="https://github.com/Nuteres/Tranq/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-black?style=for-the-badge" alt="License">
-  </a>
+<p align="center">
+  <img src="Brand/tq.svg" width="96" alt="Tranq">
 </p>
 
-> [!IMPORTANT]
-> **Disclaimer: Early Alpha Stage**
-> The application is currently in an active alpha development stage. A comprehensive overhaul is underway to strip out legacy and redundant features from the original fork while introducing truly useful capabilities.
-> At this stage, architecture and interfaces are undergoing rapid changes: certain features may be unstable, and parts of the original repository functionality may be removed or completely rewritten in upcoming releases.
-> The app is being reshaped for new workflows. Current development efforts are strictly focused on perfecting and polishing the **macOS** version. Once all core features are refined and stable, cross-platform porting to **Windows** and **Linux** will follow.
+<h1 align="center">Tranq</h1>
 
-Voice dictation for macOS. Press a key, speak, and clean, concise text lands in the active field — without filler words, slips, or repeated thoughts. Speech is recognized on-device by Sber GigaAM v3; text cleanup runs on the language model of your choice: local and offline, an external API, or a corporate gateway. Nothing is sent anywhere except to the model you choose; the only statistics are local API token and latency counters, hidden by default.
+<p align="center">
+  <b>Чистая голосовая диктовка для macOS</b><br>
+  Нажал клавишу, сказал — в активное поле вставился чистый, лаконичный текст.
+</p>
 
-The app targets Russian speech with Latin-script technical terms.
+<p align="center">
+  <a href="https://github.com/Hidden-Den/Tranq/releases/latest"><img src="https://img.shields.io/github/v/release/Hidden-Den/Tranq?style=flat-square&color=black&label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F" alt="Последняя версия"></a>
+  <img src="https://img.shields.io/badge/macOS-13.5%2B-black?style=flat-square&logo=apple" alt="macOS 13.5 и новее">
+  <img src="https://img.shields.io/badge/Apple%20Silicon-M1%2B-black?style=flat-square" alt="Apple Silicon">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-black?style=flat-square" alt="Лицензия MIT"></a>
+</p>
 
----
-
-## Capabilities
-
-* **Offline recognition.** GigaAM v3 runs on-device; audio never leaves your Mac. Whisper Large-v3 Turbo and Medium are available as English-only alternatives.
-* **Speech cleanup.** With a cleanup model set up, local or through an API, it removes filler words, self-corrections, and repeated thoughts while keeping the speaker's own words and facts. Without one, only sounds and stutters are removed. Numbers and Latin terms are guarded by a validator: if the model drops or invents something, the text is inserted without its edits.
-* **App and site rules.** Set a tone for an app or for the site in the active browser tab, for example a business tone for work email. Without a rule, every app gets the same clean speech. Rules have their own item in the sidebar.
-* **Three processing options:**
-  * local models without network access, with a recommendation based on your Mac's memory;
-  * an external API: OpenRouter, OpenAI, Anthropic, DeepSeek, Ollama;
-  * an OpenAI-compatible corporate gateway. If it is unreachable, for example with VPN off, the text is inserted without cleanup and the overlay shows a notice.
-* **Terms.** Built-in dictionaries for IT, business, HR, finance, and more. Latin terms stay in Latin script, Russian abbreviations stay in Cyrillic. The dictionary learns from your note edits.
-* **Agent access.** Off by default. Once turned on in Settings, an AI agent connected over MCP reads the dictionary and adds your words with pronunciation variants, collects themed packs of its own, and, with history access granted separately, reads past dictations to find words the recognizer keeps getting wrong. Everything an agent wrote is marked in the dictionary screen and comes off with one action.
-* **Insertion under the cursor** in any app. Two hotkey modes: toggle and push-to-talk.
-* **History.** Notes with the final text, the raw transcript, and the voice recording. Edit text in place.
+<p align="center">
+  <a href="https://github.com/Hidden-Den/Tranq/releases/latest"><b>Скачать</b></a> ·
+  <a href="#быстрый-старт">Быстрый старт</a> ·
+  <a href="docs/README.md">Документация</a> ·
+  <a href="CHANGELOG.md">Что нового</a> ·
+  <a href="README.en.md">English</a>
+</p>
 
 ---
 
-## Technical Specifications
+Tranq превращает живую русскую речь в текст, который не стыдно отправить. Слова-паразиты, оговорки, самоисправления и повторы мыслей убираются, а ваши слова, числа и факты остаются на месте. Латинские термины вроде Kubernetes, PostgreSQL или Figma пишутся латиницей.
 
-| Component | Specification |
+Речь распознаётся прямо на Mac моделью **GigaAM v3** от Сбера, звук никуда не уходит. Очистку делает языковая модель на ваш выбор: локальная без сети, внешний API или корпоративный шлюз.
+
+## Возможности
+
+- **Распознавание без сети.** GigaAM v3 работает на устройстве. Для английской речи есть Whisper Large-v3 Turbo и Medium.
+- **Очистка речи.** Убирает «ну», «короче», «э-э», оговорки и повторы, не пересказывает и не сокращает мысль. Если модель потеряла число или придумала слово, проверка это заметит и вставит текст без её правок.
+- **Длинные диктовки.** Речь длиннее 1200 знаков чистится кусками и вставляется абзацами.
+- **Три способа обработки:**
+  - локальная модель без сети, приложение само подскажет подходящую по памяти Mac;
+  - внешний API: OpenRouter, OpenAI, Anthropic, DeepSeek, Ollama;
+  - корпоративный шлюз в формате OpenAI. Если он недоступен, например выключен VPN, вставляется текст без обработки с пометкой «Шлюз недоступен».
+- **Правила для приложений и сайтов.** Деловой тон для рабочей почты, свободный для мессенджера. Без правила везде одинаковая чистая речь.
+- **Словарь терминов.** Встроенные наборы для IT, бизнеса, HR, финансов и других областей, плюс ваши слова. Словарь учится на ваших правках.
+- **Вставка под курсор** в любое приложение. Два режима клавиши: переключение и рация.
+- **История.** Итоговый текст, сырая расшифровка и запись голоса. Можно закрыть Touch ID и зашифровать на диске.
+- **Доступ для нейронок по MCP.** Claude Code, Cursor, Codex и другие агенты могут пополнять ваш словарь. По умолчанию выключено.
+
+## Быстрый старт
+
+1. Скачайте `Tranq.dmg` со [страницы релизов](https://github.com/Hidden-Den/Tranq/releases/latest).
+2. Перетащите `Tranq.app` в «Программы».
+3. Сборка подписана без платного сертификата Apple, поэтому при первом запуске выполните в Терминале:
+
+   ```bash
+   xattr -cr /Applications/Tranq.app
+   ```
+
+   Или откройте приложение через правый клик → «Открыть» → «Открыть».
+4. Выдайте разрешения: **Микрофон** для записи и **Универсальный доступ** для вставки текста и клавиши `Fn`.
+5. Нажмите `⌥ Пробел`, скажите фразу и нажмите ещё раз. Текст появится в активном поле.
+
+Без модели очистки Tranq убирает только звуки и заикания. Чтобы включить полную очистку, выберите модель в разделе **Настройки → Обработка**. Подробнее в [руководстве](docs/guide.md#обработка-текста).
+
+## Управление
+
+| Действие | Как |
 | :--- | :--- |
-| **OS** | macOS 13.5+ |
-| **Architecture** | Apple Silicon |
-| **Languages & Frameworks** | Swift 5.9+, SwiftUI, AppKit |
-| **Speech Models** | GigaAM v3 RNN-T, Whisper Large-v3 Turbo, Whisper Medium |
-| **Local Cleanup** | llama-server with Gemma 4 and T-lite models |
-| **HotKey Subsystem** | Carbon Event Manager for combos, CGEventTap for modifiers and `Fn` |
-| **Agent Access** | Bundled `tranq-mcp` helper in Go 1.27: MCP over stdin and stdout, a Unix socket to the app |
-| **Telemetry** | Local only: API tokens and latency, hidden by default |
+| Начать и закончить диктовку | `⌥ Пробел` или `Fn`, клавишу можно сменить |
+| Режим «Рация» | держите клавишу, пока говорите |
+| Отменить диктовку | `Esc` |
+| Открыть настройки | `⌘ ,` или значок в строке меню |
 
----
+## Приватность
 
-## Installation
+- Звук распознаётся на вашем Mac и никуда не отправляется.
+- Текст уходит только в ту модель очистки, которую вы выбрали. С локальной моделью он не покидает Mac.
+- Никакой аналитики и телеметрии. Есть только локальные счётчики токенов и задержек API, по умолчанию скрытые.
+- Проверка обновлений раз в несколько часов обращается к GitHub, больше приложение никуда само не ходит.
+- Доступ для нейронок выключен, пока вы сами его не включите.
 
-1. Download `Tranq.dmg` from the [Releases](https://github.com/Nuteres/Tranq/releases) section.
-2. Drag `Tranq.app` to your `/Applications` folder.
+Подробно: [Приватность и данные](docs/privacy.md).
 
-### Gatekeeper Quarantine Removal
+## Требования
 
-This build is distributed as open source without a paid Apple Developer certificate. If macOS blocks the initial launch, remove the quarantine attribute:
+- macOS 13.5 или новее.
+- Mac на Apple Silicon.
+- Около 300 МБ на диске под приложение с моделью распознавания. Локальная модель очистки занимает ещё 3–5 ГБ и скачивается по желанию.
 
-```bash
-xattr -cr /Applications/Tranq.app
-```
+## Документация
 
-*(Alternatively: Control + Right-click `Tranq.app` -> Open -> Confirm).*
+- [Руководство пользователя](docs/guide.md): настройки, правила, словарь, история.
+- [Приватность и данные](docs/privacy.md): что, где и как хранится.
+- [Доступ для нейронок](docs/mcp.md): подключение MCP-клиентов.
+- [Частые вопросы](docs/faq.md): разрешения, обновления, проблемы.
+- [Сборка из исходников](CONTRIBUTING.md#сборка-из-исходников) и [как помочь проекту](CONTRIBUTING.md).
 
----
+## Обратная связь
 
-## Sidebar and Settings
+Нашли ошибку — [заведите issue](https://github.com/Hidden-Den/Tranq/issues/new/choose). Есть вопрос или идея — пишите в [обсуждения](https://github.com/Hidden-Den/Tranq/discussions). Об уязвимостях сообщайте по правилам из [SECURITY.md](SECURITY.md).
 
-The sidebar has four items: Dictionary, Rules, History, Settings. A finished dictation opens History only while the main window is hidden; with the window open, the new note waits with an unread dot.
+## Благодарности
 
-Settings has six sections, listed in the sidebar:
+- [GigaAM](https://github.com/salute-developers/GigaAM) от Сбера — распознавание русской речи.
+- [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) и [whisper.cpp](https://github.com/ggml-org/whisper.cpp) — движки распознавания.
+- [llama.cpp](https://github.com/ggml-org/llama.cpp) — локальные языковые модели.
+- Шрифты [Inter](https://github.com/rsms/inter) и [Knewave](https://fonts.google.com/specimen/Knewave), лицензия SIL OFL.
+- Tranq вырос из форка проекта Kozak Developer ([Berliner187](https://github.com/Berliner187)).
 
-* **Dictation:** hotkey, hotkey mode, auto-paste, sounds.
-* **Recognition:** speech model.
-* **Processing:** engine, cleanup model, model instruction, links to the dictionary and rules.
-* **Provider:** provider presets, URL, key, connection check, telemetry.
-* **App:** language, appearance, launch at login, hide in Dock, open in History, about.
-* **Data:** agent access, app logs, history lock, erase history.
+## Лицензия
 
----
-
-## System Permissions
-
-* **Microphone:** Required for capturing voice input.
-* **Accessibility:** Required for simulated keyboard insertion (`⌘ + V`) into active applications and global modifier event taps (`Fn`).
-
----
-
-## Controls
-
-* **Global Hotkey (Default `⌥ + Space` or `Fn`):**
-  * In **Toggle** mode: 1st press starts recording, 2nd press finalizes transcription and pastes text.
-  * In **Push-to-Talk** mode: Hold key to record, release to transcribe.
-* **`ESC`:** Cancels recording immediately without saving or pasting.
-* **Menu Bar Status Icon:** Choose Toggle or Push-to-Talk, turn sounds on or off, open the app and settings. `⌘ + ,` opens Settings.
-
----
-
-## Agent Access
-
-Tranq can hand its dictionary to an AI agent. The app ships a helper, `tranq-mcp`, that speaks MCP over stdin and stdout and reaches the app through a Unix socket in its data folder. Nothing listens on the network, and the agent you already use is the only one that sees the data.
-
-**Switches in Settings, section Data, all off until you turn them on:**
-
-* **Access** — read the dictionary, add words, create packs of its own.
-* **Full access** — delete any word, your own hand-typed ones included, and disable packs. Confirmed with a warning.
-* **History** — read your dictations. Confirmed with a warning: the text goes to the model your agent runs on.
-
-**Connecting a client.** The settings block shows the config with the path to the helper. Clients that read an `mcpServers` config — Claude Code, Cursor, Gemini CLI, Antigravity — take the JSON tab. Codex keeps servers in TOML, so for it the block shows a `codex mcp add` command for the terminal. Copy what is shown; there is nothing else to set up.
-
-**What the agent gets:** `list_dictionary_packs`, `list_user_words`, `list_pack_words`, `set_pack_enabled`, `add_words`, `remove_words`, `create_pack`, `delete_pack`, `revert_agent_words`, `list_dictations`. Words arrive in batches of up to 50; an agent keeps at most 20 packs of its own with up to 500 words in each. Its own words land in your personal list or in its pack, never inside a built-in dictionary, and the dictionary screen has a single action that takes all of them back.
-
-The socket protocol is written down in [mcp/PROTOCOL.md](mcp/PROTOCOL.md).
-
----
-
-## History Lock
-
-Turn it on in Settings, section Data. Touch ID opens the history, and notes, audio and the dictation journal are encrypted on disk. The key lives on this Mac: with the Secure Enclave it cannot leave the chip, and on a Mac without one it sits in the login keychain, a weaker protection that depends on your login. Either way the history is not meant to be read on another Mac, so export a plain copy with Export before you move. The app log is not encrypted, but with the lock on it records only lengths and ids instead of dictated text, and dictionary words are redacted too. Recognition briefly writes audio to temporary files readable only by your account and deletes them when it finishes; after a crash, startup cleanup removes leftovers older than 24 hours. Erase history removes both the records and the key; with the lock on, new history is encrypted with a new key.
-
----
-
-## Building from Source
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Nuteres/Tranq.git
-cd Tranq
-
-# 2. Install Go 1.27 or newer, needed to build the bundled tranq-mcp helper
-brew install go
-
-# 3. Fetch the GigaAM model and llama-server; versions and SHA-256 checksums are pinned in the script
-scripts/fetch-deps.sh
-
-# 4. Open the project in Xcode
-open Tranq.xcodeproj
-```
-
-Every Xcode build of the app runs a Go build phase for `tranq-mcp` and fails without Go. It uses the vendored dependencies, so Go needs no network.
-
-Press `⌘ + R` in Xcode to build and run. Xcode downloads the transcribe.cpp engine on its own as a Swift package.
-
-Release DMG, ad-hoc signed with hardened runtime:
-
-```bash
-scripts/build-dmg.sh
-```
-
-Unit tests also run in GitHub Actions on every push to `main` and on pull requests. They do not need models or binaries.
-
----
-
-## License
-
-Licensed under the [MIT License](LICENSE).
-Original work Copyright (c) 2026 Kozak Developer (Berliner187).
-Modifications Copyright (c) 2026 Nuteres.
+[MIT](LICENSE). Исходный код: © 2026 Kozak Developer (Berliner187). Изменения: © 2026 Nuteres.

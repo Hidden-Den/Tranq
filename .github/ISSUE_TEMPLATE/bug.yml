@@ -1,0 +1,49 @@
+name: Ошибка
+description: Что-то работает не так, как должно
+labels: [ошибка]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что случилось
+      description: Что вы делали, что ожидали и что произошло на самом деле.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как повторить
+      placeholder: |
+        1. Открыть ...
+        2. Нажать ...
+        3. Сказать ...
+  - type: input
+    id: version
+    attributes:
+      label: Версия Tranq
+      description: Настройки → Приложение → О программе.
+      placeholder: "3.5.2"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: Версия macOS и модель Mac
+      placeholder: "macOS 26.1, MacBook Air M2, 16 ГБ"
+    validations:
+      required: true
+  - type: dropdown
+    id: cleanup
+    attributes:
+      label: Способ обработки
+      options:
+        - Без модели
+        - Локальная модель
+        - Внешний API
+        - Корпоративный шлюз
+  - type: textarea
+    id: log
+    attributes:
+      label: Лог
+      description: Фрагмент из ~/Library/Application Support/Tranq/Logs. Уберите из него личный текст.
+      render: text

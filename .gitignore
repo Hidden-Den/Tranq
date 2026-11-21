@@ -12,3 +12,8 @@ Vendor/llama/*
 Packages/*/.build/
 Packages/*/.swiftpm/
 CLAUDE.md
+
+# Внутренние заметки разработки: остаются на диске, в репозиторий не идут
+AGENTS.md
+docs/superpowers/
+.claude/
