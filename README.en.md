@@ -55,7 +55,7 @@ Audio stays on your Mac. Text goes only to the cleanup model you choose; with a 
 
 ## Building
 
-See [CONTRIBUTING.md](CONTRIBUTING.md#сборка-из-исходников): Xcode 26+, Go 1.27+, then `scripts/fetch-deps.sh` and `open Tranq.xcodeproj`.
+See [docs/development.md](docs/development.md), in Russian: Xcode 26+, Go 1.27+, then `scripts/fetch-deps.sh` and `open Tranq.xcodeproj`.
 
 ## License
 
