@@ -131,6 +131,9 @@ public struct GroundingValidator {
                 spokenTerms.insert(token)
                 continue
             }
+            if isLatinVariant(token, from: withoutNumberSign(sanitizedOutput), in: withoutNumberSign(trimmedInput)) {
+                continue
+            }
             return .rejected(reason: "Новый термин \(token) не найден в речи или словаре")
         }
 
@@ -140,7 +143,12 @@ public struct GroundingValidator {
             // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
             let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
                 .union(retractedTerms(in: trimmedInput))
-            if let missing = inputLatinLower.sorted().first(where: { !outputLatinLower.contains($0) && !replaced.contains($0) }) {
+            let outputForTerms = withoutNumberSign(sanitizedOutput)
+            let inputForTerms = withoutNumberSign(trimmedInput)
+            if let missing = inputLatinLower.sorted().first(where: {
+                !outputLatinLower.contains($0) && !replaced.contains($0)
+                    && !isLatinVariant($0, from: inputForTerms, in: outputForTerms)
+            }) {
                 return .rejected(reason: "Пропущен исходный термин \(missing)")
             }
             // Русские аббревиатуры тоже: БТИ или НДС в результате нечем заменить
@@ -465,7 +473,12 @@ public struct GroundingValidator {
             } else if let form = remaining.first(where: { $0.value > 0 && sameLexeme($0.key, word) })?.key {
                 // Та же лексема в другой форме: модель починила согласование
                 remaining[form]! -= 1
-            } else if !allowed.contains(word) {
+            } else if allowed.contains(word) {
+                continue
+            } else if word.first.map({ $0.isASCII && $0.isLetter }) == true, isLatinVariant(word, from: output, in: input) {
+                // Термин, который распознаватель записал с ошибкой, а модель исправила: «Pullequest» и pull request
+                continue
+            } else {
                 novel += 1
             }
         }
@@ -614,6 +627,69 @@ public struct GroundingValidator {
             if replaced { corrected.insert(number.value) }
         }
         return corrected
+    }
+
+    // MARK: - Написание латинского термина
+
+    /// Доля букв, на которую написание термина может разойтись с речью: одна буква на восемь.
+    /// Замер 23.11.2026: «land flow» и Langflow, «Pullequest» и pull request, «Stanging» и staging.
+    static let maxLatinSpellingDistance = 0.15
+    /// Короче этого термин сверяется только точно: в CI одна буква уже другой термин.
+    static let minFuzzyLatinLength = 6
+    /// Сколько соседних латинских слов может слиться в один термин или разойтись из одного.
+    private static let maxLatinWindow = 3
+
+    /// Тот же ли это термин, что и в другом тексте, с точностью до написания.
+    /// Распознаватель пишет латиницу по звуку: «lang-flow», «Lang Flow», «land flow», и модель
+    /// вправе исправить это на Langflow. Сравниваются группы соседних латинских слов без регистра,
+    /// пробелов и дефисов; группа должна включать сам `token`.
+    static func isLatinVariant(_ token: String, from source: String, in target: String) -> Bool {
+        let parts = latinParts(token)
+        guard !parts.isEmpty else { return false }
+        let targetWindows = Set(latinPhrases(in: target).flatMap { windows(of: $0) })
+        guard !targetWindows.isEmpty else { return false }
+        for phrase in latinPhrases(in: source) {
+            for candidate in windows(of: phrase, containing: parts) {
+                for other in targetWindows {
+                    if candidate == other { return true }
+                    guard min(candidate.count, other.count) >= minFuzzyLatinLength else { continue }
+                    if Phonetics.normalizedDistance(candidate, other) <= maxLatinSpellingDistance { return true }
+                }
+            }
+        }
+        return false
+    }
+
+    /// Латинские слова текста группами: соседние через пробел или дефис, в нижнем регистре.
+    static func latinPhrases(in text: String) -> [[String]] {
+        let pattern = #"\b[A-Za-z][A-Za-z0-9_]*(?:[ \-]+[A-Za-z][A-Za-z0-9_]*)*\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let source = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: source.length))
+            .map { latinParts(source.substring(with: $0.range)) }
+            .filter { !$0.isEmpty }
+    }
+
+    private static func latinParts(_ text: String) -> [String] {
+        text.lowercased().split(whereSeparator: { $0 == " " || $0 == "-" }).map(String.init)
+    }
+
+    /// Слитные написания подряд идущих слов группы, до трёх слов, только те, где есть `parts` целиком.
+    private static func windows(of phrase: [String], containing parts: [String]? = nil) -> [String] {
+        var result: [String] = []
+        for start in phrase.indices {
+            for end in start..<min(phrase.count, start + maxLatinWindow + (parts?.count ?? 1) - 1) {
+                let slice = Array(phrase[start...end])
+                if let parts, !contains(slice, parts) { continue }
+                result.append(slice.joined())
+            }
+        }
+        return result
+    }
+
+    private static func contains(_ slice: [String], _ parts: [String]) -> Bool {
+        guard parts.count <= slice.count else { return false }
+        return (0...(slice.count - parts.count)).contains { Array(slice[$0..<($0 + parts.count)]) == parts }
     }
 
     private static func extractLatinTokens(from text: String) -> Set<String> {

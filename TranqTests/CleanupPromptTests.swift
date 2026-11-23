@@ -54,7 +54,21 @@ struct CleanupPromptTests {
             VoiceIntelligenceSettings.migrateLegacyPrompt(defaults)
             #expect(defaults.string(forKey: "voice.customSystemPrompt") == nil)
         }
-        #expect(VoiceIntelligenceSettings.legacyDefaultPrompts.count == 4)
+        #expect(VoiceIntelligenceSettings.legacyDefaultPrompts.count == 5)
+    }
+
+    /// Замер 23.11.2026: паразиты, которых нет в списке промпта, модели оставляли.
+    @Test func cleanPromptNamesCommonFillers() {
+        let prompt = ThoughtSynthesizer.getSystemPrompt(for: .clean)
+        for filler in ["получается", "по сути", "в принципе", "как раз-таки", "вот"] {
+            #expect(prompt.contains(filler), "\(filler)")
+        }
+        #expect(prompt.contains("Повторы слов и оборванные начала фраз убери"))
+    }
+
+    /// Прежний текст не должен совпасть с новым, иначе миграция сотрёт настоящий промпт.
+    @Test func currentDefaultIsNotLegacy() {
+        #expect(!VoiceIntelligenceSettings.legacyDefaultPrompts.contains(VoiceIntelligenceSettings.defaultCustomPrompt))
     }
 
     /// Промпт по умолчанию до 20.11.2026: кто его не правил, получает новый.
