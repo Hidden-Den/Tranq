@@ -30,6 +30,14 @@ struct WindowHighlightView: View {
     }
 }
 
+/// Панель рамки. У развёрнутого окна она вместе с запасом на свечение выходит за края
+/// экрана, и AppKit по умолчанию сдвигает её обратно, отчего рамка съезжает с окна.
+final class WindowHighlightPanel: NSPanel {
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+}
+
 /// Ведёт рамку за фокусным окном переднего приложения, пока идёт диктовка.
 ///
 /// Смену приложения ловит уведомление `NSWorkspace`: это мгновенно и бесплатно.
@@ -63,6 +71,7 @@ final class WindowHighlightManager {
     private(set) var isPanelVisible = false
 
     var isPanelOnScreen: Bool { panel?.isVisible ?? false }
+    var panelFrame: CGRect? { panel?.frame }
 
     init(
         targetProvider: @escaping () -> HighlightTarget?,
@@ -201,7 +210,7 @@ final class WindowHighlightManager {
     private func existingOrNewPanel() -> NSPanel {
         if let panel { return panel }
 
-        let panel = NSPanel(
+        let panel = WindowHighlightPanel(
             contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,

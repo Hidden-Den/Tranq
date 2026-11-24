@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import AppKit
 @testable import Tranq
 
 struct WindowHighlightGeometryTests {
@@ -158,6 +159,21 @@ struct WindowHighlightFixTests {
 
         try await Task.sleep(for: .milliseconds(350))
         #expect(manager.isPanelOnScreen == true)
+        manager.stop()
+    }
+
+    /// Развёрнутое окно занимает весь экран, панель с запасом на свечение выходит
+    /// за его края. AppKit не должен двигать её обратно в экран: иначе рамка съезжает.
+    @Test func maximizedWindowPanelIsNotPushedBackOnScreen() throws {
+        let screen = try #require(NSScreen.main)
+        let windowRect = screen.visibleFrame
+        let manager = WindowHighlightManager(
+            targetProvider: { HighlightTarget(pid: 4242, windowRect: windowRect, isMinimized: false) },
+            isEnabled: { true },
+            isAXTrusted: { true }
+        )
+        manager.start()
+        #expect(manager.panelFrame == WindowHighlightGeometry.panelRect(for: windowRect))
         manager.stop()
     }
 
