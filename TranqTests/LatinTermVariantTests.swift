@@ -43,12 +43,16 @@ struct LatinTermVariantTests {
         #expect(reason.contains("main"))
     }
 
+    /// 25.11.2026 название сверяется целиком по звучанию: «cload fla» звучит как Claude Flow,
+    /// и раньше верная догадка модели уходила в отказ. Далёкая догадка по-прежнему отказ.
     @Test func farGuessIsStillRejected() {
-        // «cload fla» не даёт оснований для Claude Flow: слишком много букв не совпадает
-        let input = "Полностью удали скиллы cload fla, ну все"
-        let output = "Полностью удали скиллы Claude Flow"
-        guard case .rejected = GroundingValidator.validate(input: input, output: output, level: .clean) else {
-            Issue.record("Claude Flow должен отклоняться"); return
+        let spoken = "Полностью удали скиллы cload fla, ну все"
+        let named = "Полностью удали скиллы Claude Flow"
+        #expect(GroundingValidator.validate(input: spoken, output: named, level: .clean) == .valid(sanitizedText: named))
+
+        let input = "Полностью удали скиллы клоуна, ну все"
+        guard case .rejected = GroundingValidator.validate(input: input, output: named, level: .clean) else {
+            Issue.record("Claude Flow без опоры в речи должен отклоняться"); return
         }
     }
 

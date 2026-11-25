@@ -121,13 +121,15 @@ public struct GroundingValidator {
 
         // Термины, записанные латиницей вместо русского звучания: промпт сам велит так писать
         let spokenWords = cyrillicWords(trimmedInput)
-        var spokenTerms = Set<String>()
+        // Названия из нескольких слов сверяются целиком: «гид хоп» и git hub
+        let names = spokenNames(output: withoutNumberSign(sanitizedOutput), input: withoutNumberSign(trimmedInput))
+        var spokenTerms = names.outputWords
         for token in outputLatin {
             let lowerToken = token.lowercased()
             if inputLatinLower.contains(lowerToken) || customTermsTokens.contains(lowerToken) {
                 continue
             }
-            if soundsSpoken(token, words: spokenWords) {
+            if soundsSpoken(token, words: spokenWords) || names.outputTokens.contains(lowerToken) {
                 spokenTerms.insert(token)
                 continue
             }
@@ -143,6 +145,7 @@ public struct GroundingValidator {
             // Слово, которое распознавание исказило из термина, можно заменить подобранным термином
             let replaced = replacedSuspectWords(termSuspects, output: sanitizedOutput)
                 .union(retractedTerms(in: trimmedInput))
+                .union(names.inputWords)
             let outputForTerms = withoutNumberSign(sanitizedOutput)
             let inputForTerms = withoutNumberSign(trimmedInput)
             if let missing = inputLatinLower.sorted().first(where: {
@@ -420,8 +423,15 @@ public struct GroundingValidator {
         let lower = term.lowercased()
         // Мягкое g перед e, i, y читается «дж»: Gemini это «джемини», а скелет у g твёрдый
         let soft = lower.replacingOccurrences(of: #"g(?=[eiy])"#, with: "dzh", options: .regularExpression)
-        let readings = lower == soft ? [lower] : [lower, soft]
+        // Английское чтение: Arc это «арк», а не «арс»
+        var readings: [String] = []
+        for reading in [lower, soft, englishReading(lower), englishReading(soft)] where !readings.contains(reading) {
+            readings.append(reading)
+        }
         for word in words {
+            // Буква в букву, как Haiku и «хайку»: у такого слова скелет бывает из одной согласной
+            let letters = Phonetics.latinLetters(word)
+            if letters.count >= 3, readings.contains(letters) { return true }
             let wordKey = Phonetics.soundKey(word)
             // Короткий термин вроде RAG: скелет из двух согласных, поэтому нужно точное написание
             if wordKey.count == 2, readings.contains(where: {
@@ -448,6 +458,154 @@ public struct GroundingValidator {
             .split(whereSeparator: { !$0.isLetter })
             .map(String.init)
             .filter { word in word.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) } }
+    }
+
+    // MARK: - Название из нескольких слов по звучанию
+
+    /// Сколько соседних слов речи может звучать как одно название: «ворлд оф варкрафт».
+    private static let maxNameWindow = 4
+    /// Служебные слова названий: в речи их глотают или произносят по-русски.
+    private static let nameServiceWords: Set<String> = ["of", "the", "a", "an", "and", "оф", "зе", "энд"]
+
+    /// Что сверка названий нашла: латинские слова ответа, которые звучат как слова речи,
+    /// и слова речи, которые они заменили.
+    struct SpokenNames {
+        /// Латинские слова ответа в нижнем регистре так, как их режет проверка терминов: «baldur», «s».
+        var outputTokens = Set<String>()
+        /// Те же слова ответа целиком, как их видит защита от пересказа: «baldur's», «half-life».
+        var outputWords = Set<String>()
+        /// Слова речи в нижнем регистре, на месте которых стоит название: «чат», «gpt», «shits».
+        var inputWords = Set<String>()
+    }
+
+    /// Названия ответа, записанные латиницей, которые звучат как соседние слова речи.
+    /// Слова по одному сверяет `soundsSpoken`; здесь название сверяется целиком: «гид хоп» и
+    /// git hub, «чат GPT» и ChatGPT, «Лига Легенд» и League of Legends. Замер 25.11.2026:
+    /// модель верно восстанавливала такие названия, а валидатор отклонял ответ.
+    static func spokenNames(output: String, input: String) -> SpokenNames {
+        var result = SpokenNames()
+        let spoken = input.lowercased()
+            .replacingOccurrences(of: "ё", with: "е")
+            .replacingOccurrences(of: #"['’]"#, with: "", options: .regularExpression)
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+        guard !spoken.isEmpty else { return result }
+
+        var windows: [(core: [String], words: [String])] = []
+        for start in spoken.indices {
+            for end in start..<min(spoken.count, start + maxNameWindow) {
+                let slice = Array(spoken[start...end])
+                let core = slice.filter { !nameServiceWords.contains($0) }
+                if !core.isEmpty { windows.append((core, slice)) }
+            }
+        }
+
+        for phrase in nameWords(in: output) {
+            for start in phrase.indices {
+                for end in start..<min(phrase.count, start + maxNameWindow) {
+                    let slice = phrase[start...end]
+                    let core = slice.map(\.joined).filter { !nameServiceWords.contains($0) }
+                    guard core.joined().count >= 4,
+                          let hit = windows.first(where: { nameMatches(core, $0.core) }) else { continue }
+                    for word in slice {
+                        result.outputTokens.formUnion(word.tokens)
+                        result.outputWords.insert(word.whole)
+                    }
+                    result.inputWords.formUnion(hit.words)
+                }
+            }
+        }
+        return result
+    }
+
+    /// Совпадает ли название с окном речи. Одно слово может слиться из нескольких или разойтись
+    /// на несколько: «тест Флейт» и TestFlight, «антигравити» и Anti Gravity. Название из нескольких слов сверяется ещё и по словам, и звучать иначе может
+    /// только одно: git hub и «гид хоп» проходят, а «Debian Vite staging» вместо
+    /// «The Dieplay Fitun Astaging» нет, хотя целиком звучит похоже.
+    private static func nameMatches(_ name: [String], _ spoken: [String]) -> Bool {
+        guard soundsLikeName(name.joined(), spoken.joined()) else { return false }
+        // Одно слово сливается из нескольких или расходится на несколько: «антигравити» и Anti Gravity
+        guard name.count > 1, spoken.count > 1 else { return true }
+        guard name.count == spoken.count else { return false }
+        let unlike = zip(name, spoken).filter { !wordSoundsLike($0, $1) }.count
+        return unlike <= 1
+    }
+
+    /// Слово названия звучит как слово речи: тем же скелетом при похожих буквах, как Legends и «легенд».
+    private static func wordSoundsLike(_ word: String, _ spoken: String) -> Bool {
+        if soundsLikeName(word, spoken) { return true }
+        let written = englishReading(word), said = englishReading(spoken)
+        let key = Phonetics.soundKey(written)
+        guard !key.isEmpty, key == Phonetics.soundKey(said) else { return false }
+        let letters = 1 - Phonetics.normalizedDistance(Phonetics.latinLetters(written), Phonetics.latinLetters(said))
+        return letters >= minSpokenTermSimilarity
+    }
+
+    /// Латинское слово ответа: целиком, слитно без знаков и так, как его режет `extractLatinTokens`.
+    private struct NameWord {
+        let whole: String
+        let joined: String
+        let tokens: Set<String>
+    }
+
+    /// Группы соседних латинских слов ответа. Апостроф и дефис остаются внутри слова: Baldur's, Half-Life.
+    private static func nameWords(in text: String) -> [[NameWord]] {
+        let word = #"[A-Za-z][A-Za-z0-9]*(?:['’\-][A-Za-z0-9]+)*"#
+        guard let regex = try? NSRegularExpression(pattern: word + #"(?:\s+"# + word + ")*") else { return [] }
+        let source = text as NSString
+        return regex.matches(in: text, range: NSRange(location: 0, length: source.length)).map { match in
+            source.substring(with: match.range).split(whereSeparator: \.isWhitespace).map { part in
+                let whole = part.lowercased()
+                return NameWord(
+                    whole: whole,
+                    joined: whole.filter { $0.isLetter || $0.isNumber },
+                    tokens: Set(extractLatinTokens(from: String(part)).map { $0.lowercased() }))
+            }
+        }
+    }
+
+    /// Звучит ли латинское название как слова речи, слитые вместе. Как `soundsSpoken`, нужны оба
+    /// совпадения: скелет согласных и похожие буквы. Латиница сначала читается по-английски:
+    /// Camry это «камри», Switch это «свич», Notion это «ноушн».
+    static func soundsLikeName(_ name: String, _ spoken: String) -> Bool {
+        // Русское окончание последнего слова не часть названия: «в Тредах» это Threads
+        let stem = spoken.replacingOccurrences(of: russianEnding, with: "", options: .regularExpression)
+        return [spoken, stem].contains { soundsLikeWholeName(name, $0) }
+    }
+
+    /// Падежные окончания, которые русская речь добавляет к названию: «в Фигме», «на Нетфликсе».
+    private static let russianEnding = #"(ами|ями|ах|ях|ом|ем|ой|ей|ов|ев|а|я|у|ю|е|и|ы)$"#
+
+    private static func soundsLikeWholeName(_ name: String, _ spoken: String) -> Bool {
+        let said = englishReading(spoken)
+        let saidKey = Phonetics.soundKey(said)
+        guard saidKey.count >= 3 else { return false }
+        let base = englishReading(name)
+        // Мягкое g: Gemini это «джемини», а legends остаётся «легендс»
+        let soft = base.replacingOccurrences(of: #"g(?=[eiy])"#, with: "dzh", options: .regularExpression)
+        for reading in Set([base, soft]) {
+            let key = Phonetics.soundKey(reading)
+            guard key.count >= 3 else { continue }
+            let skeleton = key == saidKey
+                || (max(key.count, saidKey.count) >= 4 && Phonetics.normalizedDistance(key, saidKey) <= 0.25)
+            guard skeleton else { continue }
+            let letters = 1 - Phonetics.normalizedDistance(Phonetics.latinLetters(reading), Phonetics.latinLetters(said))
+            if letters >= minSpokenTermSimilarity { return true }
+        }
+        return false
+    }
+
+    /// Английские правила чтения латиницы, которых нет в посимвольной транслитерации.
+    /// Кириллицу не трогает: в окне речи бывают обе азбуки, «чат GPT».
+    static func englishReading(_ text: String) -> String {
+        var s = text.lowercased()
+        for (pattern, replacement) in [
+            ("tch", "ch"), ("tion", "shon"), ("ght", "t"), ("qu", "kv"), ("ck", "k"),
+            ("c(?=[eiy])", "s"), ("c(?!h)", "k"),
+        ] {
+            s = s.replacingOccurrences(of: pattern, with: replacement, options: .regularExpression)
+        }
+        return s
     }
 
     // MARK: - Защита от пересказа
