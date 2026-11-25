@@ -2,7 +2,7 @@ import Foundation
 import AVFoundation
 
 /// Whisper через whisper-cli. Модель грузится на каждый фрагмент, поэтому
-/// это запасной путь для английских моделей; основной русский движок — `GigaAMEngine`.
+/// это запасной путь для английских моделей; русские модели работают в процессе через `TranscribeEngine`.
 final class WhisperCLIEngine: SpeechRecognizer {
     let model: RecognitionModel
     let maxChunkSeconds: Double = 25.0

@@ -22,6 +22,18 @@ extension RecognitionModel {
         sizeMB: 273,
         downloadURL: nil
     )
+    /// Whisper для русской речи: англицизмы пишет латиницей вдвое чаще GigaAM,
+    /// замер scripts/eval-asr.py 25.11.2026. q5 мерили, она легче q8.
+    static let russianTurbo = RecognitionModel(
+        id: "ru_turbo",
+        name: "RecognitionModel.RussianTurbo",
+        systemName: "Whisper Large-v3 Turbo",
+        languageCode: "ru",
+        fileName: "ggml-large-v3-turbo-q5_0.bin",
+        isBundled: false,
+        sizeMB: 547,
+        downloadURL: URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin")
+    )
     static let englishTurbo = RecognitionModel(
         id: "en_turbo",
         name: "RecognitionModel.EnglishTurbo",
@@ -47,7 +59,7 @@ extension RecognitionModel {
 final class ModelStore: NSObject, ObservableObject {
     static let shared = ModelStore()
 
-    static let catalog: [RecognitionModel] = [.russianGigaAM, .englishTurbo, .englishMedium]
+    static let catalog: [RecognitionModel] = [.russianGigaAM, .russianTurbo, .englishTurbo, .englishMedium]
 
     @Published var downloadingID: String?
     @Published var downloadProgress: Double = 0

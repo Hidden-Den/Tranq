@@ -23,8 +23,8 @@ enum SpeechRecognizerFactory {
     static func current() -> SpeechRecognizer? {
         let store = ModelStore.shared
         guard let model = store.model(named: store.activeModelID) else { return nil }
-        if model.isBundled {
-            return GigaAMEngine.shared
+        if let engine = TranscribeEngine.engine(for: model) {
+            return engine
         }
         return WhisperCLIEngine(model: model)
     }
