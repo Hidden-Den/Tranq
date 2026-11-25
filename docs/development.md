@@ -22,7 +22,7 @@
 ```
 Микрофон ─► AudioCapture ─► TranscriptionPipeline
                               │
-                              ├─ 1. Распознавание: GigaAMEngine или WhisperCLIEngine,
+                              ├─ 1. Распознавание: TranscribeEngine или WhisperCLIEngine,
                               │     длинная запись режется по самой тихой точке
                               ├─ 2. Этап A без модели: TextFormatter
                               ├─ 3. Словарь: DictionaryStage, до модели

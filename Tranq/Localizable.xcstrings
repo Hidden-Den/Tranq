@@ -822,6 +822,22 @@
         }
       }
     },
+    "RecognitionModel.RussianTurbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Russian — Whisper Turbo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Русская — Whisper Turbo"
+          }
+        }
+      }
+    },
     "Авто-вставка текста" : {
       "localizations" : {
         "en" : {

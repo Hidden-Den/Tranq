@@ -1,0 +1,20 @@
+# Cubic ревьюит только код: данные, лок-файлы, сборки и документация не тратят квоту
+reviews:
+  ignore:
+    - "**/*.json"
+    - "**/*.jsonl"
+    - "**/*.xcstrings"
+    - "**/data/**"
+    - "**/fixtures/**"
+    - "**/dictionaries/**"
+    - "Tranq/Dictionaries/**"
+    - "*.lock"
+    - "go.sum"
+    - "**/go.sum"
+    - "vendor/**"
+    - "**/vendor/**"
+    - "dist/**"
+    - "build/**"
+    - "docs/**"
+    - "*.md"
+    - "**/*.md"
