@@ -17,3 +17,6 @@ CLAUDE.md
 AGENTS.md
 docs/superpowers/
 .claude/
+
+# Наборы для замера качества: скачиваются, в репозиторий не идут
+eval-data/
